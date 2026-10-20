@@ -18,12 +18,15 @@ Open http://127.0.0.1:3400. `npm ci` copies the pinned Tesseract worker, WASM an
 npm run typecheck
 npm test
 npm run evaluate
+npm run ocr:evaluate
 npm run embeddings:evaluate
 npm run build
 npm start
 ```
 
 Stop the dev server before `npm start` because both bind port 3400. `npm start` serves the production build on loopback only. The API origin gate is intentionally local-only; this is not a publicly deployable authenticated service.
+
+`npm run ocr:evaluate` reruns a local diagnostic on five real packaging photos provisioned under ignored `docs/evidence/private/`. It verifies their manifest hashes and writes field-level results without storing photo bytes or raw OCR text. See [the evaluation report](docs/REAL_OCR_EVALUATION.md) for the measured limits; this Node diagnostic is not browser acceptance.
 
 ## Use
 

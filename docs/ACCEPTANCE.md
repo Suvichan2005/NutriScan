@@ -9,6 +9,7 @@ Updated 2026-10-21 from the current checkout. “Implemented” describes code p
 | Variable photos and no mandatory front/back pair | Implemented | Up to 10 inputs, camera, previews, remove/replace, role hints, note and crop target; real browser interaction pending |
 | Product-only or text-only starting path with open question | Implemented | Client route parses supplied details and retains the question; exact product research stays a separate explicit source action |
 | OCR runs locally | Real browser-tested in earlier checkpoint | Multiple real packages tried previously; incomplete readings remain, and current collection flow has not been re-tested |
+| Repeatable real-photo OCR comparison | Node diagnostic executed | 5 photos / 37 human-read nutrient fields; best tested pass 1 correct, 0 incorrect, 34 omitted, 2 withheld; English-only model matched no French or Spanish fields. See [method and limitations](REAL_OCR_EVALUATION.md). This is not browser E2E or a population accuracy estimate. |
 | Nutrition scaling, conflicts and missing values | Unit-tested; synthetic evaluation executed | `npm test`, `npm run evaluate`; not a real-photo accuracy score |
 | Follow-ups preserve package data and use the user's new question | Unit-tested | Deterministic local answers; unsupported open topics still need question-specific research or enabled Gemini |
 | Public-source API boundaries | Live-source HTTP tested in earlier checkpoint | Date, market, identity and inventory caveats documented in `INTEGRATIONS.md` |

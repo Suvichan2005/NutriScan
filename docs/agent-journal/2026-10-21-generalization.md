@@ -23,6 +23,13 @@ Continued the existing local NutriScan implementation. No source history or remo
 - Provider: Gemini disabled; no key configured and no live call.
 - Git: local branch `main`, no configured remote. Implementation checkpoint commit: `6f7b375`.
 
+## Follow-on OCR diagnostic
+
+- Added `npm run ocr:evaluate`, a reproducible Node diagnostic using the production parser and five genuine public source photographs whose local bytes are SHA-256 checked against the ignored-photo manifest.
+- Across 37 visually annotated nutrient fields, the best of five tested English Tesseract passes matched 1 field, omitted 34 and withheld 2. The English-only model matched no fields on the one French and one Spanish nutrition panel. A native automatic-page pass produced two wrong values; one Saffola sodium reading was 10x the visual annotation.
+- The diagnostic stores aggregate and field outcomes only, not source photographs or raw OCR text. The detailed method and limits are in [REAL_OCR_EVALUATION.md](../REAL_OCR_EVALUATION.md).
+- These results are a small Node diagnostic, not an end-to-end browser result, independent blinded benchmark, or estimate of expected real-world accuracy. They do not justify automatically accepting extracted values. The current browser setting still blocks a fresh screenshot interaction audit, and Gemini remains disabled without credentials.
+
 ## Limits
 
 A real browser pass is still required for dynamic attachments, text-only first question, optional context dialog, mobile layouts, keyboard focus and consented image selection. OCR remains imperfect on glossy, multilingual and multi-column packaging. Product identity and changing regulatory claims need exact, dated corroboration.
