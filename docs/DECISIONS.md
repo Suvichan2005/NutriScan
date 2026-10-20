@@ -27,3 +27,9 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - Omit the optional profile field entirely from an assistant request when every user context value is blank. Blank objects do not represent user context.
 - Keep food allergies and food intolerances in separate fields and separate prompt labels. The label can inform ingredient checks but cannot diagnose, prove individual safety or rule out cross-contact.
 - Local ingredient comparison is literal and observation-linked. A miss remains unresolved; do not claim synonym, derivative, cross-contact or safety analysis that the parser has not performed.
+
+## 21 October 2026 — incremental photo evidence
+
+- Treat follow-up label photos as new evidence in the current investigation. Track OCR provenance by image ID and skip unchanged images; expose a deliberate full reread when there are no pending photos.
+- Preserve package identity, existing portion, chat and historical observations when new photo data is merged. Keep differing values on compatible bases and mark them as conflicts; never average or silently choose one. If a later barcode disagrees, retain the original identifier and show a warning that the photos may not represent the same product.
+- Clear product-dependent remote findings when package evidence changes. Keep local conversation available. Browser interaction for this path remains unverified pending browser selection.

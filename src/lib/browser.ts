@@ -54,7 +54,7 @@ export async function readImages(assets:ImageAsset[],onProgress:(label:string,pr
    const result=await Promise.race([worker.recognize(image,{}, {text:true,blocks:true,tsv:true}),abortPromise]);
    texts.push(result.data.text);confidence+=result.data.confidence;
    for(const block of result.data.blocks??[]) for(const paragraph of block.paragraphs??[]) for(const line of paragraph.lines??[]){
-    observations.push({id:crypto.randomUUID(),field:'ocr-line',text:line.text,side:assets[i].side,confidence:line.confidence,bbox:line.bbox,origin:'ocr'});
+    observations.push({id:crypto.randomUUID(),field:'ocr-line',text:line.text,side:assets[i].side,confidence:line.confidence,bbox:line.bbox,origin:'ocr',imageId:assets[i].id});
    }
   }
   if(cancelled)throw new Error('Reading stopped. Your photos are still here.');

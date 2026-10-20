@@ -2,7 +2,7 @@ import { z } from 'zod';
 export const nutrientKeys = ['energy','carbohydrate','sugars','addedSugars','protein','fat','saturatedFat','fiber','sodium','salt'] as const;
 export type NutrientKey = typeof nutrientKeys[number];
 export const basisSchema = z.object({amount:z.number().positive().max(10000),unit:z.enum(['g','ml']),description:z.string().max(150)});
-export const observationSchema = z.object({id:z.string(),field:z.string(),text:z.string(),side:z.enum(['front','back','extra','text']),confidence:z.number().min(0).max(100).nullable(),bbox:z.object({x0:z.number(),y0:z.number(),x1:z.number(),y1:z.number()}).optional(),origin:z.enum(['ocr','user','vision','fixture']),value:z.number().optional(),unit:z.string().optional()});
+export const observationSchema = z.object({id:z.string(),field:z.string(),text:z.string(),side:z.enum(['front','back','extra','text']),confidence:z.number().min(0).max(100).nullable(),bbox:z.object({x0:z.number(),y0:z.number(),x1:z.number(),y1:z.number()}).optional(),origin:z.enum(['ocr','user','vision','fixture']),imageId:z.string().optional(),value:z.number().optional(),unit:z.string().optional()});
 export type Observation = z.infer<typeof observationSchema>;
 export const nutrientSchema = z.object({key:z.enum(nutrientKeys),value:z.number().finite().nonnegative().max(100000),unit:z.enum(['g','mg','kcal','kJ']),basis:basisSchema.nullable(),observationIds:z.array(z.string()),status:z.enum(['observed','corrected','conflict'])});
 export type Nutrient = z.infer<typeof nutrientSchema>;

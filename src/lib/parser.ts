@@ -45,10 +45,13 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   const lines=text.replace(/\r/g,'').split('\n').map(line=>line.trim()).filter(Boolean);
   const id=crypto.randomUUID();
   const observations:Observation[]=(options.observations??[]).map(o=>({...o}));
+  const inputObservations=new Map<string,Observation[]>();
+  for(const observation of options.observations??[]){const key=observation.text.trim();inputObservations.set(key,[...(inputObservations.get(key)??[]),observation]);}
   const warnings:string[]=[];
   const observe=(field:string,line:string,value?:number,unit?:string)=> {
-    const original=(options.observations??[]).find(o=>o.text.trim()===line);
-    const obs:Observation={id:`${id}-o${observations.length}`,field,text:line,side:original?.side??options.side??'text',origin:original?.origin??options.origin??'user',confidence:original?.confidence??options.confidence??null,...(original?.bbox?{bbox:original.bbox}:{}),...(value!==undefined?{value}:{}),...(unit?{unit}:{})};
+    const originals=inputObservations.get(line.trim());
+    const original=originals?.shift();
+    const obs:Observation={id:`${id}-o${observations.length}`,field,text:line,side:original?.side??options.side??'text',origin:original?.origin??options.origin??'user',confidence:original?.confidence??options.confidence??null,...(original?.bbox?{bbox:original.bbox}:{}),...(original?.imageId?{imageId:original.imageId}:{}),...(value!==undefined?{value}:{}),...(unit?{unit}:{})};
     observations.push(obs); return obs.id;
   };
   const servingMatch=text.match(/(?:serving\s+size|serve\s+size|portion\s+size)\s*[:\-]?\s*(?:[^\n\d]{0,20})?(\d+(?:\.\d+)?)\s*(g|ml)\b/i);

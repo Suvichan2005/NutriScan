@@ -44,8 +44,8 @@ describe('conservative package extraction',()=>{
     expect(calc('Per 100 g\nSugars .5 g',100).calculations[0].result).toBe(.5);
   });
   it('keeps original side, confidence and bounding box on exact line matches',()=>{
-    const pkg=parseLabel('Per 100 g\nSodium 100 mg',{origin:'ocr',observations:[{id:'region-1',field:'raw',text:'Sodium 100 mg',side:'back',origin:'ocr',confidence:55,bbox:{x0:1,y0:2,x1:3,y1:4}}]});
-    const obs=pkg.observations.find(o=>o.field==='sodium');expect(obs?.side).toBe('back');expect(obs?.bbox?.x0).toBe(1);expect(obs?.confidence).toBe(55);
+    const pkg=parseLabel('Per 100 g\nSodium 100 mg',{origin:'ocr',observations:[{id:'region-1',field:'raw',text:'Sodium 100 mg',side:'back',origin:'ocr',confidence:55,imageId:'photo-back',bbox:{x0:1,y0:2,x1:3,y1:4}}]});
+    const obs=pkg.observations.find(o=>o.field==='sodium');expect(obs?.side).toBe('back');expect(obs?.bbox?.x0).toBe(1);expect(obs?.confidence).toBe(55);expect(obs?.imageId).toBe('photo-back');
   });
   it('recognizes common explicit colon headers and limited French label terms',()=>{
     const pkg=label('Per: 100 ml 330 ml\nOf which saturates 0 g 0 g\nOf which sugars 10.6 g 35 g');
