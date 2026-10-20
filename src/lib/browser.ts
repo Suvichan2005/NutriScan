@@ -20,7 +20,7 @@ export type Crop = {x:number;y:number;width:number;height:number};
 export async function prepareImage(asset:ImageAsset,rotation=0,contrast=false,crop?:Crop,invert=false):Promise<Blob>{
  const bitmap=await createImageBitmap(asset.blob);
  const box=crop?{x:bitmap.width*crop.x/100,y:bitmap.height*crop.y/100,w:bitmap.width*crop.width/100,h:bitmap.height*crop.height/100}:{x:0,y:0,w:bitmap.width,h:bitmap.height};
- const scale=Math.min(3,2200/Math.max(box.w,box.h));
+ const scale=Math.min(3,3000/Math.max(box.w,box.h));
  const width=Math.round(box.w*scale),height=Math.round(box.h*scale);
  const canvas=document.createElement('canvas');
  const swap=rotation%180!==0; canvas.width=swap?height:width;canvas.height=swap?width:height;
@@ -29,7 +29,7 @@ export async function prepareImage(asset:ImageAsset,rotation=0,contrast=false,cr
  ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(rotation*Math.PI/180);
  ctx.filter=[contrast?'grayscale(1) contrast(1.5)':'',invert?'invert(1)':''].filter(Boolean).join(' ')||'none';
  ctx.drawImage(bitmap,box.x,box.y,box.w,box.h,-width/2,-height/2,width,height);bitmap.close();
- return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Image preparation failed.')),'image/jpeg',0.94));
+ return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Image preparation failed.')),'image/jpeg',0.98));
 }
 
 export async function readImages(assets:ImageAsset[],onProgress:(label:string,progress:number)=>void,signal:AbortSignal,options:{rotation:number;contrast:boolean;invert?:boolean;crop?:Crop;cropTarget?:string}):Promise<{text:string;observations:Observation[];confidence:number}>{

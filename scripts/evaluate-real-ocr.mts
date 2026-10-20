@@ -26,8 +26,8 @@ try{
  for(const record of records){
   const imagePath=path.join('docs/evidence/private',record.file);const bytes=await fs.readFile(imagePath);const hash=crypto.createHash('sha256').update(bytes).digest('hex');
   if(hash!==record.hash)throw new Error(`Source hash mismatch for ${record.file}`);
-  const browserPrepared=await sharp(bytes).rotate().resize({width:2200,height:2200,fit:'inside',withoutEnlargement:false}).jpeg({quality:94}).toBuffer();
-  const enhanced=await sharp(bytes).rotate().resize({width:2200,height:2200,fit:'inside',withoutEnlargement:false}).grayscale().normalize().sharpen().jpeg({quality:94}).toBuffer();
+  const browserPrepared=await sharp(bytes).rotate().resize({width:3000,height:3000,fit:'inside',withoutEnlargement:false}).jpeg({quality:98}).toBuffer();
+  const enhanced=await sharp(bytes).rotate().resize({width:3000,height:3000,fit:'inside',withoutEnlargement:false}).grayscale().normalize().sharpen().jpeg({quality:98}).toBuffer();
   const attempts:[Mode,number,Buffer][]=[['eng-auto-native',PSM.AUTO,bytes],['eng-single-native',PSM.SINGLE_BLOCK,bytes],['eng-sparse-native',PSM.SPARSE_TEXT,bytes],['eng-single-browser-prepared',PSM.SINGLE_BLOCK,browserPrepared],['eng-single-enhanced',PSM.SINGLE_BLOCK,enhanced]];
   for(const [mode,psm,input] of attempts){
    await worker.setParameters({tessedit_pageseg_mode:psm,preserve_interword_spaces:'1'});

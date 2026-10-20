@@ -19,14 +19,14 @@ Continued the existing local NutriScan implementation. No source history or remo
 - Core synthetic suite: 20/20 passed; 29/29 annotated fields, 4/4 annotated absences, 11/11 withholding checks and 19 numerical comparisons.
 - Local retrieval suite: 12 queries and 7 documents; hybrid top-1, recall@3 and MRR@5 each measured 1.0 on this developer-authored tuning set.
 - Optimized Next production build: passed.
-- Current browser screenshot audit: blocked by Codex Work settings, which returned “Local browser use is disabled in Work settings.” No fresh interaction/screenshot acceptance is claimed.
+- Codex in-app screenshot audit was blocked by Work settings. This continuation used installed Chrome through Playwright for fresh first-visit, text-only and follow-up screenshots and accessibility checks; details are in [UX_AUDIT.md](../UX_AUDIT.md).
 - Provider: Gemini disabled; no key configured and no live call.
 - Git: local branch `main`, no configured remote. Implementation checkpoint commit: `6f7b375`.
 
 ## Follow-on OCR diagnostic
 
 - Added `npm run ocr:evaluate`, a reproducible Node diagnostic using the production parser and five genuine public source photographs whose local bytes are SHA-256 checked against the ignored-photo manifest.
-- Across 37 visually annotated nutrient fields, the best of five tested English Tesseract passes matched 1 field, omitted 34 and withheld 2. The English-only model matched no fields on the one French and one Spanish nutrition panel. A native automatic-page pass produced two wrong values; one Saffola sodium reading was 10x the visual annotation.
+- Across 37 visually annotated nutrient fields, the current best 3,000 px quality-98 English Tesseract pass matched 2 fields, omitted 34 and withheld 1. The English-only model matched no fields on the one French and one Spanish nutrition panel. A native automatic-page pass produced two wrong values; one Saffola sodium reading was 10x the visual annotation.
 - The diagnostic stores aggregate and field outcomes only, not source photographs or raw OCR text. The detailed method and limits are in [REAL_OCR_EVALUATION.md](../REAL_OCR_EVALUATION.md).
 - These results are a small Node diagnostic, not an end-to-end browser result, independent blinded benchmark, or estimate of expected real-world accuracy. They do not justify automatically accepting extracted values. Gemini remains disabled without credentials.
 
@@ -38,8 +38,8 @@ Continued the existing local NutriScan implementation. No source history or remo
 - Re-ran local browser OCR on four genuine photos across Saffola, Bagrrys and Coca-Cola investigations. No image set yielded a usable nutrient calculation; noisy, conflicting, or basis/unit-incomplete readings remained unknown. This agrees with the low Node diagnostic yield and strengthens the case for targeted crop/language-mode experiments while preserving fail-closed behavior.
 - Gemini remains disabled; browser camera hardware and full image editing interaction are not verified.
 - An optional offline French/Spanish OCR probe compared language-specific and English-plus-language data with automatic and single-block segmentation on the two non-English annotated images. All 56 per-run field comparisons were omitted and the parser produced no nutrient rows. The optional packages remain out of normal dependencies and browser assets; see [REAL_OCR_EVALUATION.md](../REAL_OCR_EVALUATION.md) and the machine-readable [probe result](../evidence/real-ocr-language-probe.json).
-- A six-variant Saffola preprocessing probe found two exact-basis matches from 9 fields at 3,000 px upscaling or grayscale/normalize/sharpen, while green/blue channel isolation and hard thresholding returned none. The 3,000 px full-set proxy tied the 2,200 px baseline, and the browser still lacked a reliable basis for the extra raw numbers. Production scaling remains at 2,200 px; the reproducible single-photo results are in [real-ocr-preprocessing-probe.json](../evidence/real-ocr-preprocessing-probe.json).
+- A six-variant Saffola preprocessing probe found two exact-basis matches from 9 fields at 3,000 px upscaling or grayscale/normalize/sharpen, while green/blue channel isolation and hard thresholding returned none. The current 3,000 px full-set proxy matched 2/37 versus 1/37 at 2,200 px; in-browser Saffola also exposed two values, but their basis remained unresolved. The browser now uses 3,000 px/quality 98 and continues to withhold values without a basis. Reproducible single-photo results are in [real-ocr-preprocessing-probe.json](../evidence/real-ocr-preprocessing-probe.json).
 
 ## Limits
 
-A real browser pass is still required for dynamic attachments, text-only first question, optional context dialog, mobile layouts, keyboard focus and consented image selection. OCR remains imperfect on glossy, multilingual and multi-column packaging. Product identity and changing regulatory claims need exact, dated corroboration.
+Additional browser acceptance is still required for photo removal/replacement, keyboard focus, camera hardware and consented image selection. OCR remains imperfect on glossy, multilingual and multi-column packaging. Product identity and changing regulatory claims need exact, dated corroboration.

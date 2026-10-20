@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "node-local-ocr-diagnostic",
-  "generatedAt": "2026-10-20T23:07:56.225Z",
+  "generatedAt": "2026-10-20T23:10:19.871Z",
   "source": "Open Food Facts photo manifest; no photographs are copied into this result.",
   "licenseUrl": "https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/tutorials/license-be-on-the-legal-side/",
   "photos": 5,
@@ -1362,19 +1362,19 @@
     },
     "eng-single-browser-prepared": {
       "expectedFields": 37,
-      "correct": 1,
+      "correct": 2,
       "incorrect": 0,
       "omitted": 34,
-      "withheld": 2,
-      "fieldAccuracy": 0.027,
+      "withheld": 1,
+      "fieldAccuracy": 0.0541,
       "byLanguage": {
         "English": {
           "photos": 3,
           "expected": 23,
-          "correct": 1,
+          "correct": 2,
           "incorrect": 0,
           "omitted": 20,
-          "withheld": 2
+          "withheld": 1
         },
         "French": {
           "photos": 1,
@@ -1397,45 +1397,45 @@
         {
           "code": "5449000000996",
           "file": "coca-cola-label-off-5449000000996.jpg",
-          "confidence": 53,
-          "chars": 576,
-          "numericTokens": 16,
+          "confidence": 49,
+          "chars": 615,
+          "numericTokens": 13,
           "basis": false,
-          "labelTerms": 7
+          "labelTerms": 8
         },
         {
           "code": "3017620422003",
           "file": "nutella-nutrition-nl-off-3017620422003.jpg",
-          "confidence": 55,
-          "chars": 168,
+          "confidence": 29,
+          "chars": 576,
           "numericTokens": 5,
           "basis": false,
-          "labelTerms": 4
+          "labelTerms": 2
         },
         {
           "code": "3017620422003",
           "file": "nutella-nutrition-es-off-3017620422003.jpg",
-          "confidence": 55,
-          "chars": 168,
+          "confidence": 29,
+          "chars": 576,
           "numericTokens": 5,
           "basis": false,
-          "labelTerms": 4
+          "labelTerms": 2
         },
         {
           "code": "8901088068758",
           "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
-          "confidence": 54,
-          "chars": 638,
-          "numericTokens": 25,
+          "confidence": 48,
+          "chars": 512,
+          "numericTokens": 17,
           "basis": true,
-          "labelTerms": 6
+          "labelTerms": 4
         },
         {
           "code": "8902710100150",
           "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
-          "confidence": 64,
-          "chars": 1005,
-          "numericTokens": 34,
+          "confidence": 66,
+          "chars": 869,
+          "numericTokens": 30,
           "basis": true,
           "labelTerms": 11
         }
@@ -1488,7 +1488,7 @@
               "key": "protein",
               "expected": 0,
               "unit": "g",
-              "result": "withheld",
+              "result": "omitted",
               "read": null
             },
             {
@@ -1707,8 +1707,8 @@
               "key": "fat",
               "expected": 9.9,
               "unit": "g",
-              "result": "omitted",
-              "read": null
+              "result": "correct",
+              "read": 9.9
             },
             {
               "code": "8901088068758",
@@ -1759,7 +1759,7 @@
               "key": "carbohydrate",
               "expected": 66,
               "unit": "g",
-              "result": "omitted",
+              "result": "withheld",
               "read": null
             },
             {
@@ -1777,7 +1777,7 @@
               "key": "fiber",
               "expected": 10.2,
               "unit": "g",
-              "result": "withheld",
+              "result": "omitted",
               "read": null
             },
             {
@@ -1813,19 +1813,19 @@
     },
     "eng-single-enhanced": {
       "expectedFields": 37,
-      "correct": 1,
-      "incorrect": 1,
-      "omitted": 35,
-      "withheld": 0,
-      "fieldAccuracy": 0.027,
+      "correct": 2,
+      "incorrect": 0,
+      "omitted": 33,
+      "withheld": 2,
+      "fieldAccuracy": 0.0541,
       "byLanguage": {
         "English": {
           "photos": 3,
           "expected": 23,
-          "correct": 1,
-          "incorrect": 1,
-          "omitted": 21,
-          "withheld": 0
+          "correct": 2,
+          "incorrect": 0,
+          "omitted": 19,
+          "withheld": 2
         },
         "French": {
           "photos": 1,
@@ -1848,45 +1848,45 @@
         {
           "code": "5449000000996",
           "file": "coca-cola-label-off-5449000000996.jpg",
-          "confidence": 39,
-          "chars": 515,
-          "numericTokens": 16,
+          "confidence": 48,
+          "chars": 595,
+          "numericTokens": 20,
           "basis": false,
-          "labelTerms": 6
+          "labelTerms": 8
         },
         {
           "code": "3017620422003",
           "file": "nutella-nutrition-nl-off-3017620422003.jpg",
-          "confidence": 26,
-          "chars": 4361,
-          "numericTokens": 41,
+          "confidence": 24,
+          "chars": 7426,
+          "numericTokens": 67,
           "basis": false,
           "labelTerms": 0
         },
         {
           "code": "3017620422003",
           "file": "nutella-nutrition-es-off-3017620422003.jpg",
-          "confidence": 26,
-          "chars": 4361,
-          "numericTokens": 41,
+          "confidence": 24,
+          "chars": 7426,
+          "numericTokens": 67,
           "basis": false,
           "labelTerms": 0
         },
         {
           "code": "8901088068758",
           "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
-          "confidence": 59,
-          "chars": 671,
-          "numericTokens": 19,
+          "confidence": 56,
+          "chars": 672,
+          "numericTokens": 17,
           "basis": true,
-          "labelTerms": 9
+          "labelTerms": 8
         },
         {
           "code": "8902710100150",
           "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
-          "confidence": 63,
-          "chars": 820,
-          "numericTokens": 29,
+          "confidence": 61,
+          "chars": 852,
+          "numericTokens": 25,
           "basis": true,
           "labelTerms": 10
         }
@@ -2167,8 +2167,8 @@
               "key": "saturatedFat",
               "expected": 3.4,
               "unit": "g",
-              "result": "omitted",
-              "read": null
+              "result": "correct",
+              "read": 3.4
             },
             {
               "code": "8901088068758",
@@ -2176,8 +2176,8 @@
               "key": "sodium",
               "expected": 2283,
               "unit": "mg",
-              "result": "incorrect",
-              "read": 22830
+              "result": "withheld",
+              "read": null
             }
           ]
         },
@@ -2210,7 +2210,7 @@
               "key": "carbohydrate",
               "expected": 66,
               "unit": "g",
-              "result": "omitted",
+              "result": "withheld",
               "read": null
             },
             {
