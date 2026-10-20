@@ -77,3 +77,7 @@ The following were real HTTP calls to `http://127.0.0.1:3400` with explicit matc
 | Cross-origin product request | 403 / origin_rejected, before source work | Failure receipt inspected directly |
 
 Focused failure/numerical suite: `npx vitest run src/lib/server/server.test.ts` — **18 passed** after Host normalization, US recall scope, shell rejection and answer-reconstruction additions. Full `npx tsc --noEmit` also passed at this milestone. These boundary checks do not prove genuine provider or photo acceptance.
+
+## Product comparison browser receipt — 21 October 2026
+
+A local Chrome/Playwright run submitted barcode `3017620422003` through the UI, received the live Open Food Facts Nutella record, and compared it with a controlled text-label fixture specified per 25 g. The UI normalized both to 100 g; 7 shared values matched after conversion/rounding. Community-only added-sugar, fiber and sodium fields remained not comparable because the fixture contained no matching package readings. The comparison scroll region was made keyboard-focusable after an axe finding; the resulting view had zero axe violations and no page errors. This is a numeric/UI integration receipt, not a real Nutella package photo or independent formulation confirmation.

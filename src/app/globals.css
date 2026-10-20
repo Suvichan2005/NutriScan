@@ -38,3 +38,6 @@ footer{border-top:1px solid var(--line);margin-top:35px;padding:22px 0 25px;disp
  .guide-step p{line-height:1.65}
  .scan-card>.section-description{line-height:1.65}
 }
+.comparison-normalized{display:block;margin-top:4px;color:#304f30;font-weight:600;white-space:nowrap}
+.comparison-unavailable{color:#80634a}
+.comparison .table-scroll table{min-width:640px}
