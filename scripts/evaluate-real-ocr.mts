@@ -10,11 +10,11 @@ type Expected={key:NutrientKey;value:number;unit:string};
 type RecordEntry={file:string;hash:string;code:string;type:string;manualAnnotation?:{basis:{amount:number;unit:'g'|'ml'}|null;nutrients:Expected[];status:string}};
 const manifest=JSON.parse(await fs.readFile('data/semantic-photo-manifest.json','utf8')) as {records:RecordEntry[]};
 const records=manifest.records.filter(r=>r.manualAnnotation?.basis&&r.manualAnnotation.nutrients.length>0);
-const modes=['eng-auto-native','eng-single-native','eng-sparse-native','eng-single-browser-prepared','eng-single-enhanced'] as const;
+const modes=['eng-auto-native','eng-single-native','eng-sparse-native','eng-auto-browser-prepared','eng-single-column-browser-prepared','eng-single-browser-prepared','eng-single-enhanced'] as const;
 type Mode=typeof modes[number];
 const aggregate=Object.fromEntries(modes.map(mode=>[mode,{expected:0,correct:0,incorrect:0,omitted:0,withheld:0,fields:[]}])) as Record<Mode,{expected:number;correct:number;incorrect:number;omitted:number;withheld:number;fields:{code:string;file:string;key:NutrientKey;expected:number;unit:string;result:'correct'|'incorrect'|'omitted'|'withheld';read:number|null}[]}>;
 const worker=await createWorker('eng',1,{langPath:path.resolve('public/ocr')});
-const rawRun:Record<string,{confidence:number;chars:number;numericTokens:number;basis:boolean;labelTerms:number}>={};
+const rawRun:Record<string,{confidence:number;chars:number;numericTokens:number;basis:boolean;labelTerms:number;parsedNutrients:number;explicitBasisNutrients:number;unconflictedBasisNutrients:number;conflictedNutrients:number;ingredientLines:number;claims:number}>={};
 function normalized(key:NutrientKey,value:number,unit:string){
  if(key==='energy')return unit==='kJ'?value/4.184:value;
  if(key==='sodium')return unit==='g'?value*1000:value;
@@ -28,10 +28,10 @@ try{
   if(hash!==record.hash)throw new Error(`Source hash mismatch for ${record.file}`);
   const browserPrepared=await sharp(bytes).rotate().resize({width:3000,height:3000,fit:'inside',withoutEnlargement:false}).jpeg({quality:98}).toBuffer();
   const enhanced=await sharp(bytes).rotate().resize({width:3000,height:3000,fit:'inside',withoutEnlargement:false}).grayscale().normalize().sharpen().jpeg({quality:98}).toBuffer();
-  const attempts:[Mode,number,Buffer][]=[['eng-auto-native',PSM.AUTO,bytes],['eng-single-native',PSM.SINGLE_BLOCK,bytes],['eng-sparse-native',PSM.SPARSE_TEXT,bytes],['eng-single-browser-prepared',PSM.SINGLE_BLOCK,browserPrepared],['eng-single-enhanced',PSM.SINGLE_BLOCK,enhanced]];
+  const attempts:[Mode,number,Buffer][]=[['eng-auto-native',PSM.AUTO,bytes],['eng-single-native',PSM.SINGLE_BLOCK,bytes],['eng-sparse-native',PSM.SPARSE_TEXT,bytes],['eng-auto-browser-prepared',PSM.AUTO,browserPrepared],['eng-single-column-browser-prepared',PSM.SINGLE_COLUMN,browserPrepared],['eng-single-browser-prepared',PSM.SINGLE_BLOCK,browserPrepared],['eng-single-enhanced',PSM.SINGLE_BLOCK,enhanced]];
   for(const [mode,psm,input] of attempts){
    await worker.setParameters({tessedit_pageseg_mode:psm,preserve_interword_spaces:'1'});
-   const result=await worker.recognize(input);const text=result.data.text;const pkg:PackageData=parseLabel(text,{origin:'ocr',confidence:result.data.confidence,side:'extra'});const aggregateMode=aggregate[mode];const metrics=signal(text);const detail={confidence:Number(result.data.confidence.toFixed(2)),...metrics};rawRun[`${record.code}:${mode}`]=detail;
+   const result=await worker.recognize(input);const text=result.data.text;const pkg:PackageData=parseLabel(text,{origin:'ocr',confidence:result.data.confidence,side:'extra'});const aggregateMode=aggregate[mode];const metrics=signal(text);const detail={confidence:Number(result.data.confidence.toFixed(2)),...metrics,parsedNutrients:pkg.nutrients.length,explicitBasisNutrients:pkg.nutrients.filter(n=>n.basis).length,unconflictedBasisNutrients:pkg.nutrients.filter(n=>n.basis&&n.status!=='conflict').length,conflictedNutrients:pkg.nutrients.filter(n=>n.status==='conflict').length,ingredientLines:pkg.ingredients.length,claims:pkg.claims.length};rawRun[`${record.code}:${mode}`]=detail;
    for(const expected of record.manualAnnotation!.nutrients){
     aggregateMode.expected++;
     const rows=pkg.nutrients.filter(n=>n.key===expected.key&&n.basis?.amount===record.manualAnnotation!.basis!.amount&&n.basis?.unit===record.manualAnnotation!.basis!.unit);
