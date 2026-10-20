@@ -1,24 +1,24 @@
-# UX audit record
+# UX and browser evidence
 
-## Current run
+Updated: 2026-10-21. The Codex in-app browser is disabled in Work settings, so this review used the locally installed Google Chrome through Playwright 1.64 against the running local NutriScan app. Screenshots came from the actual browser at 390 × 844 and 1440 × 1000 CSS pixels. The Next.js development badge was hidden in the saved captures; product UI was not altered for the screenshots.
 
-Product: NutriScan local web application. Intended journey: start with a product image, product description or label text; ask a question; inspect the result and sources; then continue with a user-written follow-up.
+## Verified journeys
 
-Capture tool: Codex in-app browser through CUA. The fresh tool inventory returned no browser and the explicit error “Local browser use is disabled in Work settings.” The installed Product Design audit workflow requires current browser screenshots and stops when the selected browser cannot capture or control the product. Therefore this run did not complete a screenshot-grounded UX audit, did not reuse prior screenshots as current evidence, and does not claim visual or accessibility acceptance.
+- First visit: no product or question is prefilled. The optional-context dialog opened with all eight profile controls empty.
+- Text-only investigation: entered a label and asked “How much sodium is in 50 g?” The app parsed the supplied label, displayed a 50 g portion and reported 200 mg sodium. A follow-up asking for 25 g updated the same package and returned 100 mg sodium, with no rescan.
+- Mobile and desktop first-visit screens rendered without browser page errors. Axe reported zero violations on the mobile first visit, mobile result/follow-up page, and desktop first visit.
+- Mobile visual inspection found that “New investigation” and “Add optional context” wrapped in the narrow workspace bar. A mobile CSS adjustment keeps the controls on one line and raises the smallest intake/helper text to 12 px. The fresh mobile capture confirms the wrap is resolved.
+- Real browser OCR: one Saffola photo, one Bagrrys photo, and a two-photo Coca-Cola investigation (four genuine public source photos total) were run through the app's current client-side OCR. No case produced a usable nutrient calculation. Saffola returned garbled label text and no parsed nutrients; Bagrrys returned ambiguous multi-column readings that stayed in conflict; the Coke OCR read some row-like text but lacked a reliable value/unit/basis combination. The app left calculated nutrient values unknown. These results are separate from the Node diagnostic and are not a population accuracy estimate.
 
-The current code-based interaction review found a rigid two-slot photo intake, example-specific profile inputs, a preset condition/meal placeholder, and three fixed follow-up chips. These findings were confirmed in source, not from screenshots. The current changes replace those controls with a flexible photo collection, optional free-text profile categories and a natural-language question field; visual quality, keyboard flow and responsive layout still require browser confirmation.
+## Screenshots
 
-## Required follow-up capture
+- [First visit on mobile, 390 px](evidence/08-first-visit-mobile-390.png)
+- [Text-only question and follow-up on mobile, 390 px](evidence/09-text-only-followup-mobile-390.png)
+- [First visit on desktop, 1440 px](evidence/10-first-visit-desktop-1440.png)
+- Real-photo OCR screenshots remain under ignored `docs/evidence/private/` because they display source package photographs and raw label text.
 
-When the Codex in-app browser is enabled, capture and inspect fresh screenshots for:
+## Remaining acceptance work
 
-1. First visit with no profile, product, or question.
-2. One-photo upload and OCR progress/result.
-3. Multiple images with remove/replace, one optional hint, and crop targeting.
-4. Product details plus a typed question without a photo.
-5. Optional context with blank fields and separately entered preferences/restrictions.
-6. Ingredient or nutrition result, evidence/source expansion, and a typed follow-up.
-7. Image-selection and consent disclosure in the Gemini panel while the provider is disabled.
-8. Mobile widths around 360–390 px and desktop around 1440 px; inspect keyboard focus and contrast in addition to screenshots.
-
-Prior run screenshots remain stored under `docs/evidence/`, but are not evidence for this changed interaction architecture.
+- The photographed labels still fail to yield reliable nutrient calculations automatically. Test an explicitly selected nutrition-panel hint and a tightly targeted crop on real labels; do not weaken ambiguity handling to improve yield.
+- A real photo from the same package as each product identity, direct camera hardware, replace/remove interactions, keyboard focus order, color contrast, and the consented Gemini image-selection flow still need dedicated acceptance.
+- The Codex in-app screenshot/control route remains unavailable. The Playwright browser runs do not establish phone performance, camera permission behavior, or a fresh interactive audit of every research/results panel.

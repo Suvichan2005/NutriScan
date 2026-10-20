@@ -28,7 +28,15 @@ Continued the existing local NutriScan implementation. No source history or remo
 - Added `npm run ocr:evaluate`, a reproducible Node diagnostic using the production parser and five genuine public source photographs whose local bytes are SHA-256 checked against the ignored-photo manifest.
 - Across 37 visually annotated nutrient fields, the best of five tested English Tesseract passes matched 1 field, omitted 34 and withheld 2. The English-only model matched no fields on the one French and one Spanish nutrition panel. A native automatic-page pass produced two wrong values; one Saffola sodium reading was 10x the visual annotation.
 - The diagnostic stores aggregate and field outcomes only, not source photographs or raw OCR text. The detailed method and limits are in [REAL_OCR_EVALUATION.md](../REAL_OCR_EVALUATION.md).
-- These results are a small Node diagnostic, not an end-to-end browser result, independent blinded benchmark, or estimate of expected real-world accuracy. They do not justify automatically accepting extracted values. The current browser setting still blocks a fresh screenshot interaction audit, and Gemini remains disabled without credentials.
+- These results are a small Node diagnostic, not an end-to-end browser result, independent blinded benchmark, or estimate of expected real-world accuracy. They do not justify automatically accepting extracted values. Gemini remains disabled without credentials.
+
+## Browser journey and portion correction
+
+- Used installed Chrome with Playwright at mobile 390 × 844 and desktop 1440 × 1000. Fresh screenshots and the visual review are recorded in [UX_AUDIT.md](../UX_AUDIT.md). Axe found zero violations in the checked first-visit and result pages; the optional context dialog showed eight empty controls.
+- The browser run found that an amount in the initial question was ignored while follow-up amounts worked. Added a shared requested-portion resolver and tests. “How much sodium is in 50 g?” now selects 50 g and displays 200 mg from the test label; a 25 g follow-up updates to 100 mg.
+- The mobile screenshot exposed wrapping in the workspace navigation. Updated mobile flex/nowrap and small-text styles; current 390 px screenshot shows the navigation on one line.
+- Re-ran local browser OCR on four genuine photos across Saffola, Bagrrys and Coca-Cola investigations. No image set yielded a usable nutrient calculation; noisy, conflicting, or basis/unit-incomplete readings remained unknown. This agrees with the low Node diagnostic yield and strengthens the case for targeted crop/language-mode experiments while preserving fail-closed behavior.
+- Gemini remains disabled; browser camera hardware and full image editing interaction are not verified.
 
 ## Limits
 
