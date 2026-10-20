@@ -62,16 +62,22 @@ describe('public source normalization', () => {
     expect(product.nutrients[0].basis).toBeNull(); expect(product.warnings?.join(' ')).toContain('could not be established');
   });
   it('filters candidates to an explicitly selected country without asserting stock', async () => {
-    expect(productInput.safeParse({query:'oats',alternatives:true}).success).toBe(false);
     expect(productInput.safeParse({query:'oats',alternatives:true,country:'France'}).success).toBe(true);
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ products: [{ code: '8901234567890', product_name: 'Oats', countries_tags: ['en:india'] }, { code: '3017620422003', product_name: 'Other', countries_tags: ['en:france'] }] }), { headers: { 'content-type': 'application/json' } })); vi.stubGlobal('fetch', fetcher);
     const result = await lookupProducts({ query: 'oats', alternatives: true, country:'France' });
     expect(result.products).toHaveLength(1); expect(result.message).toContain('does not establish local stock');
     const url = fetcher.mock.calls[0][0] as URL; expect(url.hostname).toBe('search.openfoodfacts.org'); expect(url.pathname).toBe('/search'); expect(JSON.parse(fetcher.mock.calls[0][1].body).q).toBe('oats countries_tags:"en:france"');
   });
-  it('does not manufacture alternative verification', async () => {
-    const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher);
-    expect(await research({ query: 'local alternatives', topic: 'alternatives' })).toMatchObject({ status: 'unavailable', items: [] }); expect(fetcher).not.toHaveBeenCalled();
+  it('searches candidate products without assuming a country or local stock', async () => {
+    expect(productInput.safeParse({query:'oats',alternatives:true}).success).toBe(true);
+    const payload = { products: [{ code: '8901234567890', product_name: 'Oats India', countries_tags: ['en:india'] }, { code: '3017620422003', product_name: 'Oats France', countries_tags: ['en:france'] }] };
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { headers: { 'content-type': 'application/json' } })); vi.stubGlobal('fetch', fetcher);
+    const result = await lookupProducts({ query: 'oats', alternatives: true, excludeBarcode:'3017620422003' });
+    expect(result.products).toHaveLength(1); expect(result.products[0].barcode).toBe('8901234567890'); expect(result.message).toContain('Country tags may be missing or stale'); expect(result.message).toContain('current stock is unverified'); expect(result.message).toContain('no better formulation is implied');
+    const body = JSON.parse(fetcher.mock.calls[0][1].body); expect(body.q).toBe('oats');
+  });
+  it('rejects the removed nonfunctional alternatives topic on the research endpoint', () => {
+    expect(researchInput.safeParse({ query: 'local alternatives', topic: 'alternatives' }).success).toBe(false);
     expect(researchInput.safeParse({ query: 'sugar', topic: 'unknown' }).success).toBe(false);
   });
   it('keeps US FDA historical reports attributable and jurisdiction-bounded', async () => {

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { ResearchItem } from '../contracts';
 import { ApiError, fixedFetch, plain } from './http';
 
-export const researchInput = z.object({ query: z.string().trim().min(3).max(250), topic: z.enum(['science', 'regulation', 'claims', 'brand', 'alternatives', 'recalls']) }).strict();
+export const researchInput = z.object({ query: z.string().trim().min(3).max(250), topic: z.enum(['science', 'regulation', 'claims', 'brand', 'recalls']) }).strict();
 type Entry = { id: string; title: string; url: string; publisher: string; terms: string[]; publishedAt: string | null; category: string };
 export const primaryRegistry: Entry[] = [
   { id: 'fssai-regulations-live', title: 'FSSAI food safety and standards regulations index', url: 'https://www.fssai.gov.in/cms/food-safety-and-standards-regulations.php', publisher: 'FSSAI', terms: ['regulation', 'label', 'claim', 'additive', 'india', 'fssai', 'ins'], publishedAt: null, category: 'regulation index' },
@@ -59,7 +59,6 @@ export async function research(data: z.infer<typeof researchInput>) {
     return { status: items.length ? 'ok' : 'empty', items, message: 'Live Europe PMC discovery, ordered by search relevance. These are candidate publications, not an evidence synthesis or personalized advice.' };
   }
   if (data.topic === 'brand' || data.topic === 'recalls') return researchRecalls(data.query);
-  if (data.topic === 'alternatives') return { status: 'unavailable', items: [], message: 'Use product search for candidates tagged as sold in India. Local stock cannot be verified.' };
   const words = data.query.toLowerCase();
   const candidates = primaryRegistry.map(entry => ({ entry, score: entry.terms.filter(t => words.includes(t)).length + (entry.publisher === 'FSSAI' ? 1 : 0) })).sort((a, b) => b.score - a.score).slice(0, 2);
   const results = await Promise.allSettled(candidates.map(async ({ entry }): Promise<ResearchItem> => {

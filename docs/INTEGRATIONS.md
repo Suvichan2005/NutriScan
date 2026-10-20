@@ -9,8 +9,8 @@ Local OCR, package editing, numerical analysis and browser storage do not use th
 | Route | Strict request | Result |
 | --- | --- | --- |
 | `GET /api/status` | No body | `gemini.configured`, `enabled`, `model`, `searchEnabled`, explanation; no key or credential material |
-| `POST /api/products` | `{query?:string,barcode?:string,alternatives?:boolean,country?:string}`; alternatives require an explicitly selected country | `{status,products:ProductRecord[],message,requestId}` |
-| `POST /api/research` | `{query:string,topic:'science'|'regulation'|'claims'|'brand'|'alternatives'|'recalls'}` | `{status,items:ResearchItem[],message,requestId}` |
+| `POST /api/products` | `{query?:string,barcode?:string,alternatives?:boolean,country?:string,excludeBarcode?:string}`; country is optional for candidates and only applies a catalog-tag filter when supplied | `{status,products:ProductRecord[],message,requestId}` |
+| `POST /api/research` | `{query:string,topic:'science'|'regulation'|'claims'|'brand'|'recalls'}` | `{status,items:ResearchItem[],message,requestId}` |
 | `POST /api/assist` | `{consent:true,question,package,profile?,evidence?,images?}` | `{status,answer,claims,limitations,inspectImage,requestId}` |
 | `POST /api/vision` | `{consent:true,image:{mimeType,base64,side},instruction?}` | `{status,observations,limitations,requestId}` |
 
@@ -20,7 +20,7 @@ Errors return `{status,code,message,requestId}` with a relevant HTTP status. `di
 
 ## Public services
 
-Exact barcode lookups use the canonical Open Food Facts v2 product endpoint. Candidate name search uses the official Search-a-licious POST search service. The v2 product server does not support full-text search. Candidate requests return at most four matches and enrich each with at most one canonical product fetch. Country-filtered alternatives require a country explicitly entered by the user and a matching upstream country tag. A country tag does not establish present availability. All results state `local stock unverified`.
+Exact barcode lookups use the canonical Open Food Facts v2 product endpoint. Candidate name search uses the official Search-a-licious POST search service. The v2 product server does not support full-text search. Candidate requests return at most four matches and enrich each with at most one canonical product fetch. Alternative candidates can be searched globally or filtered by a country explicitly entered by the user; when a current package barcode is provided, that exact record is excluded from candidate results. Catalog country tags may be incomplete or stale and do not establish present availability. Candidate search does not rank healthfulness or imply a better formulation. All product records state `local stock unverified`.
 
 Nutrients retain upstream explicit `100g` or `100ml` metadata. When that metadata is absent the basis is `null`; package quantity is never used to invent the basis. Sodium is converted from upstream grams to milligrams. Zero survives; missing, negative and non-finite values do not become zero. Crowdsourced records require comparison against the photographed regional package. Last-modified and retrieval timestamps are separate.
 
@@ -69,6 +69,8 @@ The following were real HTTP calls to `http://127.0.0.1:3400` with explicit matc
 | Status | 200; configured=false, enabled=false, searchEnabled=false | Status does not generate a request ID |
 | Exact barcode `3017620422003` | 200 / ok / 1 result, explicit 100g | `fa99d7f4-0ddd-4255-aff3-5a56ef5369a1` |
 | India oats alternatives | 200 / ok / 4 canonically enriched 100g candidates | `330bdc78-699b-457e-b07a-93ae2c76b90c` |
+| Global oats candidates excluding current barcode `8901088068758` | 200 / ok / 4 canonically enriched records, each with explicit 100g basis; country tags spanned UK, US/world, UAE and Austria; no stock/better-formulation claim | `b0fb9041-fa6e-4821-8cdc-02ee4cd35656` |
+| Global oats candidates excluding current barcode `8901088068758` | 200 / ok / 4 canonically enriched records, each with explicit 100g basis; country tags spanned UK, US/world, UAE and Austria; no stock/better-formulation claim | `b0fb9041-fa6e-4821-8cdc-02ee4cd35656` |
 | Science `aspartame randomized trial` | 200 / ok / 6 Europe PMC discovery results | `9aed7d8e-33e6-4b33-8200-367fbb661a85` |
 | WHO `sugar sweeteners weight` | 200 / ok / 2 usable primary pages | `417b66f2-48e4-48de-a016-2a0ed67e3a71` |
 | US FDA recall candidates `Nestle` | 200 / ok / 4 historical reports: F-0535-2025, F-0261-2025, F-1491-2023, F-0732-2023 | `183e47dc-1823-4de4-830c-962c0be72025` |
