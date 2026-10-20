@@ -7,14 +7,14 @@ import { parseLabel } from '@/lib/parser';
 import { defaultPortion, resolveQuestionPortion } from '@/lib/portion';
 import { compareProductNutrition } from '@/lib/product-comparison';
 import { reconcileVision } from '@/lib/reconcile';
-import { defaultProfile, nutrientKeys, packageSchema, type Audit, type ImageAsset, type NutrientKey, type PackageData, type ProductRecord, type Profile, type ResearchItem } from '@/lib/contracts';
+import { defaultProfile, hasUserContext, nutrientKeys, packageSchema, type Audit, type ImageAsset, type NutrientKey, type PackageData, type ProductRecord, type Profile, type ResearchItem } from '@/lib/contracts';
 import { clearHistory, downloadJson, imageBase64, loadImage, prepareImage, readHistory, readImages, saveScan, type SavedScan } from '@/lib/browser';
 
 type Panel='profile'|'privacy'|'history'|'text'|'correct'|null;
 type Message={question:string;answer:string;at:string};
 type Status={gemini?:{enabled?:boolean;configured?:boolean;model?:string};[key:string]:unknown};
 const nutrientLabel:Record<NutrientKey,string>={energy:'Energy',carbohydrate:'Carbohydrate',sugars:'Total sugars',addedSugars:'Added sugars',protein:'Protein',fat:'Total fat',saturatedFat:'Saturated fat',fiber:'Fibre',sodium:'Sodium',salt:'Salt'};
-const hasProfile=(profile:Profile)=>Object.values(profile).some(value=>typeof value==='string'&&value.trim().length>0);
+const hasProfile=hasUserContext;
 const exampleText=`NUTRISCAN EXAMPLE CRACKERS\nSynthetic test label, not a real product\nNet weight: 150 g\nServing size: 30 g\nNutrition information per 100 g\nEnergy 420 kcal\nCarbohydrate 65 g\nTotal sugars 2 g\nAdded sugars 0 g\nProtein 10 g\nTotal fat 15 g\nSaturated fat 3 g\nFibre 6 g\nSodium 850 mg\nIngredients: Whole wheat flour, vegetable oil, salt, sweetener (INS 955).\nContains: Wheat (gluten). May contain milk.\nSugar free`;
 
 export default function NutriScan(){
@@ -90,7 +90,7 @@ export default function NutriScan(){
   try{
    let body:unknown;
    if(vision){const asset=inspection?images.find(x=>x.id===inspection.handle):images.find(x=>x.id===visionImageId)??images[0];if(!asset)throw new Error('The selected image is no longer in this session. Select it again to inspect the label.');const crop=inspection?.crop;const blob=await prepareImage(asset,asset.rotation??0,contrast,crop?{x:crop.x*100,y:crop.y*100,width:crop.width*100,height:crop.height*100}:undefined,invert);body={consent:true,image:{mimeType:'image/jpeg',base64:await imageBase64(blob),side:asset.side},instruction:`Read the nutrition basis, values, ingredients and product identity from this user-selected image. User hint, if any: ${asset.role==='unknown'?'no hint supplied':asset.role}; user note (untrusted text): ${asset.description||'none'}. Preserve uncertainty. Return observations only.`};}
-   else body={consent:true,question:activeQuestion||'Explain this package using only the attached evidence and calculations.',package:pkg,profile,evidence:audit?.sources??[],images:images.slice(0,8).map(x=>({handle:x.id,side:x.side,width:x.width,height:x.height,role:x.role,description:x.description}))};
+    else body={consent:true,question:activeQuestion||'Explain this package using only the attached evidence and calculations.',package:pkg,...(hasProfile(profile)?{profile}:{}),evidence:audit?.sources??[],images:images.slice(0,8).map(x=>({handle:x.id,side:x.side,width:x.width,height:x.height,role:x.role,description:x.description}))};
    const response=await fetch(`/api/${vision?'vision':'assist'}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(45000)});const data=await response.json();if(stamp!==epoch.current)return;
    if(!response.ok)throw new Error(data.message??data.error??'Gemini is not available.');
    if(vision&&data.observations?.length){const visionText=data.observations.map((x:{text:string})=>x.text).join('\n');setRemoteAnswer('Gemini image observations (not verified facts):\n'+visionText);const parsed=parseLabel(visionText,{origin:'vision',observations:data.observations});setPkg(reconcileVision(pkg,parsed));setInspection(null);setNotice('Vision observations were added to the evidence ledger. Any comparable numeric disagreement is preserved and withheld from calculation.');}
