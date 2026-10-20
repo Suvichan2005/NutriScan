@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "node-local-ocr-diagnostic",
-  "generatedAt": "2026-10-20T22:53:32.109Z",
+  "generatedAt": "2026-10-20T23:07:56.225Z",
   "source": "Open Food Facts photo manifest; no photographs are copied into this result.",
   "licenseUrl": "https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/tutorials/license-be-on-the-legal-side/",
   "photos": 5,

@@ -1,0 +1,370 @@
+{
+  "schemaVersion": 1,
+  "kind": "single-photo-node-preprocessing-probe",
+  "generatedAt": "2026-10-20T23:09:15.174Z",
+  "photo": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+  "annotatedFields": 9,
+  "source": "Hash-verified public Open Food Facts photo; source bytes remain ignored by Git.",
+  "modes": [
+    {
+      "variant": "native",
+      "confidence": 54,
+      "characters": 680,
+      "numericTokens": 20,
+      "basisSignal": true,
+      "parsedNutrientRows": 3,
+      "correct": 0,
+      "incorrect": 1,
+      "omitted": 7,
+      "withheld": 1,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 376,
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 8.8,
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 69.2,
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 5.1,
+          "result": "omitted"
+        },
+        {
+          "key": "addedSugars",
+          "expected": 3.6,
+          "result": "omitted"
+        },
+        {
+          "key": "fiber",
+          "expected": 12.4,
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 9.9,
+          "result": "withheld"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 3.4,
+          "result": "incorrect"
+        },
+        {
+          "key": "sodium",
+          "expected": 2283,
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "variant": "wide-upscale-3000",
+      "confidence": 48,
+      "characters": 512,
+      "numericTokens": 17,
+      "basisSignal": true,
+      "parsedNutrientRows": 2,
+      "correct": 2,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 376,
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 8.8,
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 69.2,
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 5.1,
+          "result": "omitted"
+        },
+        {
+          "key": "addedSugars",
+          "expected": 3.6,
+          "result": "omitted"
+        },
+        {
+          "key": "fiber",
+          "expected": 12.4,
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 9.9,
+          "result": "correct"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 3.4,
+          "result": "correct"
+        },
+        {
+          "key": "sodium",
+          "expected": 2283,
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "variant": "gray-normalize-3000",
+      "confidence": 56,
+      "characters": 672,
+      "numericTokens": 17,
+      "basisSignal": true,
+      "parsedNutrientRows": 4,
+      "correct": 2,
+      "incorrect": 0,
+      "omitted": 6,
+      "withheld": 1,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 376,
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 8.8,
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 69.2,
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 5.1,
+          "result": "omitted"
+        },
+        {
+          "key": "addedSugars",
+          "expected": 3.6,
+          "result": "omitted"
+        },
+        {
+          "key": "fiber",
+          "expected": 12.4,
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 9.9,
+          "result": "correct"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 3.4,
+          "result": "correct"
+        },
+        {
+          "key": "sodium",
+          "expected": 2283,
+          "result": "withheld"
+        }
+      ]
+    },
+    {
+      "variant": "green-channel-3000",
+      "confidence": 51,
+      "characters": 491,
+      "numericTokens": 14,
+      "basisSignal": false,
+      "parsedNutrientRows": 1,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 1,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 376,
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 8.8,
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 69.2,
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 5.1,
+          "result": "omitted"
+        },
+        {
+          "key": "addedSugars",
+          "expected": 3.6,
+          "result": "omitted"
+        },
+        {
+          "key": "fiber",
+          "expected": 12.4,
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 9.9,
+          "result": "withheld"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 3.4,
+          "result": "omitted"
+        },
+        {
+          "key": "sodium",
+          "expected": 2283,
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "variant": "blue-channel-3000",
+      "confidence": 31,
+      "characters": 401,
+      "numericTokens": 11,
+      "basisSignal": false,
+      "parsedNutrientRows": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 9,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 376,
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 8.8,
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 69.2,
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 5.1,
+          "result": "omitted"
+        },
+        {
+          "key": "addedSugars",
+          "expected": 3.6,
+          "result": "omitted"
+        },
+        {
+          "key": "fiber",
+          "expected": 12.4,
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 9.9,
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 3.4,
+          "result": "omitted"
+        },
+        {
+          "key": "sodium",
+          "expected": 2283,
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "variant": "green-threshold-145",
+      "confidence": 34,
+      "characters": 980,
+      "numericTokens": 18,
+      "basisSignal": false,
+      "parsedNutrientRows": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 9,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 376,
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 8.8,
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 69.2,
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 5.1,
+          "result": "omitted"
+        },
+        {
+          "key": "addedSugars",
+          "expected": 3.6,
+          "result": "omitted"
+        },
+        {
+          "key": "fiber",
+          "expected": 12.4,
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 9.9,
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 3.4,
+          "result": "omitted"
+        },
+        {
+          "key": "sodium",
+          "expected": 2283,
+          "result": "omitted"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "One selected image; not representative or independently blinded.",
+    "Node Tesseract only, single-block segmentation; not browser end-to-end evidence.",
+    "Only annotated values at the explicit 100 g basis are scored.",
+    "No raw OCR text or photograph bytes are written to this result."
+  ]
+}

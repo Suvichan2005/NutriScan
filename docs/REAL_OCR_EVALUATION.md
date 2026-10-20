@@ -32,3 +32,9 @@ Reproduce on a checkout with the ignored source photographs by running:
 npm install --no-save --package-lock=false --ignore-scripts '@tesseract.js-data/fra@1.0.0' '@tesseract.js-data/spa@1.0.0'
 npm run ocr:evaluate:languages
 ```
+
+## Image preprocessing probe
+
+I also compared six single-block passes on the hash-verified Saffola panel: native pixels, 3,000 px upscaling, grayscale/normalize/sharpen at 3,000 px, isolated green or blue channels, and a hard green-channel threshold. The 3,000 px and grayscale passes each matched 2 of 9 annotated values with no wrong fields; grayscale also withheld one. Isolating a channel or thresholding matched none. The result is recorded in [the preprocessing probe](evidence/real-ocr-preprocessing-probe.json) and can be regenerated with `npm run ocr:evaluate:preprocessing`.
+
+The five-photo 3,000 px proxy remained at 1/37 exact-basis matches, tied with 2,200 px, while the enhanced full-sample pass regressed to 0/37. In a real browser run with a nutrition-panel hint, 3,000 px exposed additional Saffola numeric text, but not a reliable printed basis; duplicate and basis-unknown values remained withheld. Increasing the default image size therefore did not establish a safe end-to-end benefit, so production remains at 2,200 px. This optimization experiment is evidence for future crop/deskew work, not an accepted automatic value-reading improvement.
