@@ -113,7 +113,20 @@ describe('nutrition numerical invariants',()=>{
     expect(audit.nextQuestions).toContain('Which ingredient or declared amount should I compare with your stated intolerance?');
     expect(audit.calculations.find(c=>c.nutrient==='carbohydrate')?.result).toBe(12);
     expect(pkg.nutrients[0].value).toBe(60);expect(pkg.observations.length).toBeGreaterThan(0);
-  });  it('keeps ORS current legal questions explicitly unresolved',()=>{
+   });
+  it('surfaces literal allergy and intolerance mentions as separate unverified label observations',()=>{
+    const pkg=label('Ingredients: Milk powder, sugar\nContains: Milk');
+    const profile={...defaultProfile,allergies:'milk',intolerances:'lactose'};
+    const audit=buildAudit(pkg,100,'g',profile,'Is this suitable for me?');
+    const allergy=audit.findings.find(f=>f.title==='Food allergy: literal mention');
+    const intolerance=audit.findings.find(f=>f.title==='Food intolerance: not established');
+    expect(allergy?.status).toBe('uncertain');
+    expect(allergy?.observationIds.length).toBeGreaterThan(0);
+    expect(allergy?.detail).toMatch(/not a medical determination|not an individual-safety assessment/i);
+    expect(intolerance?.detail).toMatch(/No direct text match/);
+    expect(intolerance?.detail).toMatch(/not a safety clearance/);
+  });
+  it('keeps ORS current legal questions explicitly unresolved',()=>{
     const audit=buildAudit(label('ORS drink\nPer 100 ml\nSugars 10 g'),100,'ml',defaultProfile,'Is this ORS legal in India today?');
     expect(audit.trace.find(t=>t.tool==='check_regulatory_updates')?.status).toMatch(/not performed/);
     expect(audit.limitations.join(' ')).toMatch(/Static corpus entries do not establish current law/);

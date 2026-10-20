@@ -1,5 +1,6 @@
 import { packageSchema, profileSchema, nutrientKeys, type Audit, type Calculation, type Finding, type Nutrient, type NutrientKey, type PackageData, type Profile } from './contracts';
 import { detectAdditives, evidenceSources, lookupAdditive, retrieveEvidence } from './knowledge';
+import { findDeclaredFoodMentions } from './ingredient-context';
 
 const display:Record<NutrientKey,string>={energy:'Energy',carbohydrate:'Carbohydrate',sugars:'Total sugars',addedSugars:'Added sugars',protein:'Protein',fat:'Fat',saturatedFat:'Saturated fat',fiber:'Fibre',sodium:'Sodium',salt:'Salt'};
 const rounded=(n:number)=>Math.round((n+Number.EPSILON)*10000)/10000;
@@ -38,6 +39,17 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ/i.test(question)||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
   const trace:Audit['trace']=[{tool:'reuse_package_observations',reason:'Use the current label evidence for this question; no rescan required.',status:`${pkg.observations.length} observations`},{tool:'calculate_portions',reason:'Scale only unambiguous values with compatible explicit bases.',status:'local deterministic calculation'}];
   const finding=(data:Omit<Finding,'id'>)=> {data.sourceIds.forEach(s=>sourceIds.add(s));findings.push({...data,id:`finding-${findings.length+1}`});};
+  const ingredientEvidence=pkg.observations.filter(o=>o.field==='ingredients'||o.field==='allergens').map(o=>o.id);
+  for(const mention of findDeclaredFoodMentions(pkg,profile)){
+    const labelTextPresent=pkg.ingredients.length>0||pkg.allergens.length>0;
+    const kind=mention.kind==='allergy'?'Food allergy':'Food intolerance';
+    const detail=mention.matched
+      ?`The extracted ingredient/allergen wording contains a literal text match for “${mention.term}”. This is not a medical determination or individual-safety assessment; the label may not show derivatives or cross-contact. Inspect the original package.`
+      :labelTextPresent
+        ?`No direct text match for “${mention.term}” was found in the extracted ingredient/allergen wording. Synonyms, derivatives, OCR omissions and cross-contact are not checked; this is not a safety clearance.`
+        :'No readable ingredient/allergen wording is available to compare with “'+mention.term+'”. Its absence from the extraction is not evidence that it is absent from the product.';
+    finding({title:`${kind}: ${mention.matched?'literal mention':'not established'}`,detail,status:'uncertain',observationIds:mention.observationIds.length?mention.observationIds:ingredientEvidence,sourceIds:[],calculationIds:[]});
+  }
   const candidates=new Map<NutrientKey,Usable>();
   for(const key of nutrientKeys){const candidate=usable(pkg,key,portionUnit);if(candidate)candidates.set(key,candidate);}
   const salt=candidates.get('salt');const sodium=candidates.get('sodium');

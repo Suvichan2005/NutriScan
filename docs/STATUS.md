@@ -37,6 +37,8 @@ The scanner now supports up to 10 additive image attachments, per-image removal/
 
 The calculation control no longer falls back to the sample fixture's 30 g when a real package has no declared serving. It prefers the package's declared serving, then a non-conflicted nutrient basis, and otherwise uses a clearly labeled 100 g/ml comparison reference. This is an amount for transparent arithmetic, not a personal serving recommendation. Regression tests cover each branch; the new visual wording still needs a fresh screenshot review.
 
+User-declared allergies and intolerances are separate in the profile contract, UI and local reasoning context. When entered, the local audit can surface literal text matches in extracted ingredient/allergen wording, tied to their supporting observations. A non-match is not a safety clearance; synonyms, derivatives, OCR omissions and cross-contact are not inferred. Fresh screenshots of the new context fields are pending browser access.
+
 ## Owner-dependent items
 
 See [owner actions](OWNER_ACTIONS.md) for the consolidated list: authorized Gemini project/key and cost decision; paired, real-market product labels for OCR evaluation; current official regulatory documents or an authorized live source; an approved private Git remote if sharing is wanted; and hosting plus real-device decisions.
