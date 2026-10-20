@@ -28,6 +28,8 @@ Science search uses Europe PMC core records. It returns publication dates, publi
 
 Regulation/claim discovery uses a fixed registry of primary FSSAI and WHO pages. A retrieved page excerpt is plain text, never rendered HTML. FSSAI discovery cannot establish consolidated current law, an effective date, authorization or package compliance. No arbitrary external URL fetch is offered.
 
+The registry also includes the official 24 March 2026 Labelling and Display Gazette PDF, with separate publication and stated effective dates. The server accepts PDFs only from the existing HTTPS host allowlist, requires `application/pdf` plus the `%PDF-` signature, caps the download at 1.2 MB, and extracts at most 40 pages / 50,000 characters with PDF.js. Scanned pages are not OCRed, excerpts are not interpreted, and later rules/orders still require review. In a direct local probe on 21 October 2026, the official PDF URL responded HTTP 200 with `text/html`; the research path rejected it and returned no Gazette text. The fixture tests prove PDF parsing, bounds and date separation, not live FSSAI availability.
+
 `brand` and `recalls` search the fixed public openFDA food-enforcement endpoint without an API key. At most four records, sorted by report date, are returned as **historical United States candidate matches**. Each retains exact recall number, firm, product description, lot/code, distribution, report and initiation dates when provided, source link and dataset-update caveat. This is not a universal brand-credibility score, an Indian recall check, a live alert or a recall-lifecycle service. FDA warns that recorded status may not be updated after classification. Empty results do not establish safety or absence of recalls; failures are reported separately. No consumer reviews are scraped or invented.
 
 ## Gemini activation and boundaries
@@ -75,6 +77,7 @@ The following were real HTTP calls to `http://127.0.0.1:3400` with explicit matc
 | WHO `sugar sweeteners weight` | 200 / ok / 2 usable primary pages | `417b66f2-48e4-48de-a016-2a0ed67e3a71` |
 | US FDA recall candidates `Nestle` | 200 / ok / 4 historical reports: F-0535-2025, F-0261-2025, F-1491-2023, F-0732-2023 | `183e47dc-1823-4de4-830c-962c0be72025` |
 | FSSAI labelling | 200 / unavailable / zero usable evidence pages; no current-law verdict | `fa78b268-cce3-4f58-a0c3-7ff3111b1173` |
+| FSSAI Labelling and Display 2026 Gazette PDF query `infant nutrition RDA FSSAI amendment` | 200 / unavailable / official host returned HTML rather than a valid PDF; no Gazette text or current-law verdict | `ba24ba95-adf7-4305-a1bd-f30099e0689f` |
 | Consented synthetic empty assist input, provider disabled | 503 / disabled / provider_disabled; no provider call | `ec11cda2-c85c-471f-97ec-7b4660958cc8` |
 | Cross-origin product request | 403 / origin_rejected, before source work | Failure receipt inspected directly |
 

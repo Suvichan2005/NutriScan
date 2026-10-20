@@ -1,12 +1,14 @@
 import { z } from 'zod';
 import type { ResearchItem } from '../contracts';
 import { ApiError, fixedFetch, plain } from './http';
+import { extractPdfText } from './pdf-text';
 
 export const researchInput = z.object({ query: z.string().trim().min(3).max(250), topic: z.enum(['science', 'regulation', 'claims', 'brand', 'recalls']) }).strict();
-type Entry = { id: string; title: string; url: string; publisher: string; terms: string[]; publishedAt: string | null; category: string };
+type Entry = { id: string; title: string; url: string; publisher: string; terms: string[]; publishedAt: string | null; category: string; effectiveAt?: string | null; format?: 'html' | 'pdf' };
 export const primaryRegistry: Entry[] = [
   { id: 'fssai-regulations-live', title: 'FSSAI food safety and standards regulations index', url: 'https://www.fssai.gov.in/cms/food-safety-and-standards-regulations.php', publisher: 'FSSAI', terms: ['regulation', 'label', 'claim', 'additive', 'india', 'fssai', 'ins'], publishedAt: null, category: 'regulation index' },
   { id: 'fssai-label-amendments-live', title: 'FSSAI labelling and display amendments', url: 'https://fssai.gov.in/food-law/regulations/amendments/labelling-display', publisher: 'FSSAI', terms: ['regulation', 'label', 'display', 'india', 'fssai'], publishedAt: null, category: 'amendment index' },
+  { id: 'fssai-label-amendment-2026', title: 'FSSAI Labelling and Display First Amendment Regulations, 2026', url: 'https://www.fssai.gov.in/upload/notifications/2026/04/69cca2b3f3ce9Notification%20dt%2024.03.2026_NRC.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['infant', 'nutrition', 'rda', 'servings', 'non-retail', 'small package', '100 cm', 'logos', 'label', 'labelling', 'display', 'amendment', '2026'], publishedAt: '2026-03-24', effectiveAt: '2027-07-01', category: 'final Gazette notification; future commencement', format: 'pdf' },
   { id: 'who-sugars-live', title: 'WHO guideline: sugars intake for adults and children', url: 'https://www.who.int/publications/i/item/9789241549028', publisher: 'World Health Organization', terms: ['sugar', 'sugars', 'sweet', 'carbohydrate'], publishedAt: '2015-03-04', category: 'population guideline' },
   { id: 'who-sweeteners-live', title: 'WHO guideline: use of non-sugar sweeteners', url: 'https://www.who.int/publications/i/item/9789240073616', publisher: 'World Health Organization', terms: ['sweetener', 'sweeteners', 'aspartame', 'sucralose', 'weight'], publishedAt: '2023-05-15', category: 'population guideline' },
 ];
@@ -62,11 +64,31 @@ export async function research(data: z.infer<typeof researchInput>) {
   const words = data.query.toLowerCase();
   const candidates = primaryRegistry.map(entry => ({ entry, score: entry.terms.filter(t => words.includes(t)).length + (entry.publisher === 'FSSAI' ? 1 : 0) })).sort((a, b) => b.score - a.score).slice(0, 2);
   const results = await Promise.allSettled(candidates.map(async ({ entry }): Promise<ResearchItem> => {
-    const html = await fixedFetch(new URL(entry.url), 'html', 1_200_000) as string;
-    const excerpt = excerptHtml(html, data.query);
+    const source = await fixedFetch(new URL(entry.url), entry.format ?? 'html', 1_200_000);
+    const pdf = entry.format === 'pdf' ? await extractPdfText(source as Uint8Array) : null;
+    const excerpt = pdf ? excerptPlain(pdf.text, data.query) : excerptHtml(source as string, data.query);
     if (excerpt.length < 100 || /access denied|captcha|request rejected/i.test(excerpt)) throw new Error('Unusable source page');
-    return { id: entry.id, title: entry.title, url: entry.url, publisher: entry.publisher, publishedAt: entry.publishedAt, retrievedAt: new Date().toISOString(), category: entry.category, summary: `Live page excerpt (truncated; not interpreted): ${excerpt}`, limitations: entry.publisher === 'FSSAI' ? 'Discovery index only. The page and amendment links do not establish the consolidated rule, effective date, product category, authorization or compliance. Open the underlying Gazette and verify all applicable amendments; NutriScan cannot establish current law from this retrieval.' : 'General population guidance. It is not an additive toxicology limit, individual prescription or legal rule. The page excerpt does not independently resolve this package claim.' };
+    const pdfDisclosure = pdf ? ` PDF text extracted from ${pdf.pagesRead} of ${pdf.totalPages} pages${pdf.truncated ? ' (bounded extract)' : ''}; scanned-image content is not OCRed.` : '';
+    const limitations = entry.publisher.includes('Food Safety and Standards Authority') || entry.publisher === 'FSSAI'
+      ? 'This primary-source extract does not establish a consolidated rule, later amendment/order, product category, authorization or package compliance. Verify all applicable Gazette text and effective dates for the relevant product and market.'
+      : 'General population guidance, not an additive toxicology limit, individual prescription or legal rule. The excerpt does not independently resolve this package claim.';
+    return { id: entry.id, title: entry.title, url: entry.url, publisher: entry.publisher, publishedAt: entry.publishedAt, ...(entry.effectiveAt ? { effectiveAt: entry.effectiveAt } : {}), retrievedAt: new Date().toISOString(), category: entry.category, summary: `${pdf ? 'Official Gazette PDF text excerpt' : 'Live page excerpt'} (truncated; not interpreted): ${excerpt}${pdfDisclosure}`, limitations };
   }));
   const items = results.flatMap(r => r.status === 'fulfilled' ? [r.value] : []);
-  return { status: items.length ? 'ok' : 'unavailable', items, message: items.length ? `Retrieved ${items.length} primary-source discovery page(s). Current legal status and package compliance remain unverified.${results.some(r => r.status === 'rejected') ? ' Another source did not return usable text; open its official index directly.' : ''}` : 'Primary sources did not return usable text within the request limits. The FSSAI site may require its interactive browser page. Open the official FSSAI regulations index or WHO publication site directly. No current-law verdict is available.' };
+  return { status: items.length ? 'ok' : 'unavailable', items, message: items.length ? `Retrieved ${items.length} primary-source discovery page(s). Current legal status and package compliance remain unverified.${results.some(r => r.status === 'rejected') ? ' Another source did not return usable text; open its official index directly.' : ''}` : 'Primary sources did not return usable text within the request limits. The official host may block this local fetch or require an interactive browser. Open the linked source directly. No current-law verdict is available.' };
+}
+
+function excerptPlain(text: string, query: string) {
+  const words = [...new Set(query.toLowerCase().split(/\W+/).filter(x => x.length > 3))];
+  const candidates = words.flatMap(word => {
+    const positions: number[] = [];
+    let position = text.toLowerCase().indexOf(word);
+    while (position >= 0) { positions.push(position); position = text.toLowerCase().indexOf(word, position + word.length); }
+    return positions.map(position => Math.max(0, position - 160));
+  });
+  const start = candidates.sort((a, b) => {
+    const score = (offset: number) => { const window = text.slice(offset, offset + 1200).toLowerCase(); return words.filter(word => window.includes(word)).length; };
+    return score(b) - score(a);
+  })[0] ?? 0;
+  return text.slice(start, start + 1200).trim();
 }

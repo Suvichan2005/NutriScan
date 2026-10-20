@@ -29,8 +29,8 @@ export function localGate(request: Request, group: string, limit = 10) {
   return () => { budget!.active = Math.max(0, budget!.active - 1); };
 }
 
-export async function readBounded(stream: ReadableStream<Uint8Array> | null, max: number, signal?: AbortSignal): Promise<string> {
-  if (!stream) return '';
+export async function readBoundedBytes(stream: ReadableStream<Uint8Array> | null, max: number, signal?: AbortSignal): Promise<Uint8Array> {
+  if (!stream) return new Uint8Array();
   const reader = stream.getReader(); const chunks: Uint8Array[] = []; let size = 0;
   const cancel = () => { void reader.cancel(); };
   signal?.addEventListener('abort', cancel, { once: true });
@@ -46,7 +46,11 @@ export async function readBounded(stream: ReadableStream<Uint8Array> | null, max
   } finally { signal?.removeEventListener('abort', cancel); reader.releaseLock(); }
   const result = new Uint8Array(size); let offset = 0;
   for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.length; }
-  return new TextDecoder().decode(result);
+  return result;
+}
+
+export async function readBounded(stream: ReadableStream<Uint8Array> | null, max: number, signal?: AbortSignal): Promise<string> {
+  return new TextDecoder().decode(await readBoundedBytes(stream, max, signal));
 }
 
 export async function input<T extends z.ZodType>(request: Request, schema: T, max = 80_000): Promise<z.infer<T>> {
@@ -59,13 +63,14 @@ export async function input<T extends z.ZodType>(request: Request, schema: T, ma
   return result.data;
 }
 
-export async function fixedFetch(url: URL, type: 'json' | 'html' = 'json', max = 900_000, searchBody?: object) {
+export async function fixedFetch(url: URL, type: 'json' | 'html' | 'pdf' = 'json', max = 900_000, searchBody?: object) {
   const allowed = ['world.openfoodfacts.org', 'search.openfoodfacts.org', 'www.ebi.ac.uk', 'www.who.int', 'fssai.gov.in', 'www.fssai.gov.in', 'api.fda.gov'];
   if (url.protocol !== 'https:' || !allowed.includes(url.hostname) || url.username || url.password || url.port) throw new ApiError(400, 'url_rejected', 'Remote destination is not allowed.');
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 12_000);
   try {
     if (searchBody && (url.hostname !== 'search.openfoodfacts.org' || url.pathname !== '/search')) throw new ApiError(400, 'url_rejected', 'POST is limited to the fixed public search endpoint.');
-    const response = await fetch(url, { method: searchBody ? 'POST' : 'GET', ...(searchBody ? { body: JSON.stringify(searchBody) } : {}), redirect: 'error', signal: controller.signal, headers: { Accept: type === 'json' ? 'application/json' : 'text/html', ...(searchBody ? { 'Content-Type': 'application/json' } : {}), 'User-Agent': 'NutriScan-LocalResearch/0.1 (educational label review)' }, cache: 'no-store' });
+    const accept = type === 'json' ? 'application/json' : type === 'pdf' ? 'application/pdf' : 'text/html';
+    const response = await fetch(url, { method: searchBody ? 'POST' : 'GET', ...(searchBody ? { body: JSON.stringify(searchBody) } : {}), redirect: 'error', signal: controller.signal, headers: { Accept: accept, ...(searchBody ? { 'Content-Type': 'application/json' } : {}), 'User-Agent': 'NutriScan-LocalResearch/0.1 (evidence-based food label research)' }, cache: 'no-store' });
     if (!response.ok) {
       // openFDA documents a NOT_FOUND 404 for a valid search with zero matches.
       // Accept only that exact bounded error shape from this fixed endpoint.
@@ -76,11 +81,17 @@ export async function fixedFetch(url: URL, type: 'json' | 'html' = 'json', max =
       throw new ApiError(502, 'upstream_failure', `The public source returned HTTP ${response.status}. Try its linked page directly.`);
     }
     const ct = response.headers.get('content-type') || '';
-    if (!(type === 'json' ? /json/i : /html/i).test(ct)) throw new ApiError(502, 'unexpected_content', 'The source did not return the expected content type.');
+    const expectedType = type === 'json' ? /json/i : type === 'pdf' ? /application\/pdf/i : /html/i;
+    if (!expectedType.test(ct)) throw new ApiError(502, 'unexpected_content', 'The source did not return the expected content type.');
     if (Number(response.headers.get('content-length') || 0) > max) throw new ApiError(502, 'upstream_too_large', 'The source response exceeded the size limit.');
-    const body = await readBounded(response.body, max, controller.signal);
-    if (type === 'html') return body;
-    try { return JSON.parse(body) as unknown; } catch { throw new ApiError(502, 'upstream_invalid', 'The source returned invalid JSON.'); }
+    const body = await readBoundedBytes(response.body, max, controller.signal);
+    if (type === 'pdf') {
+      if (body.length < 8 || new TextDecoder().decode(body.subarray(0, 5)) !== '%PDF-') throw new ApiError(502, 'unexpected_content', 'The source did not return a valid PDF document.');
+      return body;
+    }
+    const text = new TextDecoder().decode(body);
+    if (type === 'html') return text;
+    try { return JSON.parse(text) as unknown; } catch { throw new ApiError(502, 'upstream_invalid', 'The source returned invalid JSON.'); }
   } catch (error) { if (error instanceof ApiError) throw error; throw new ApiError(502, 'source_unavailable', 'The public source could not be reached within the bounded request. Retry later or open the source directly.'); }
   finally { clearTimeout(timer); }
 }

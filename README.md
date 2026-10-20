@@ -4,7 +4,7 @@ Local-first packaged-food evidence workspace. A standalone Next.js / React / Typ
 
 ## Run on Windows
 
-Requires Node.js 22+ (developed with 24.4.1) and npm.
+Requires Node.js 22.13+ (developed with 24.4.1) and npm. The bounded Gazette-PDF text reader uses the pinned PDF.js Node build.
 
 ```powershell
 npm ci
@@ -36,7 +36,7 @@ An optional French/Spanish model probe is available as `npm run ocr:evaluate:lan
 
 Add up to 10 JPG, PNG or WebP images, use the camera affordance, describe a product, paste label text, or combine these. No image side is required. OCR reads the selected images locally at up to 3,000 px with progress and cancellation; optional per-image hints can guide it. Rotate, improve contrast, invert dark-pack text, or crop a chosen image. Ask a question in your own words before or after reading. The sample label is clearly synthetic. Values with unclear bases, columns or conflicting readings are withheld; manual correction remains available when a photo or record cannot resolve them.
 
-Ask an amount in your first question or in a follow-up to set the portion without rescanning. Product comparisons normalize compatible package and community-record values only when both bases are explicit; missing or conflicting values remain incomparable. Evidence expands to original observations, coordinates, assumptions, formulae and sources. Public product and scientific queries are user initiated. Country filters use an explicitly entered country and community country tags; they never establish local retail stock. FDA records are US historical candidate reports, never a global brand verdict. FSSAI's current interactive pages may be unavailable to server fetches; no present legal clearance is inferred.
+Ask an amount in your first question or in a follow-up to set the portion without rescanning. Product comparisons normalize compatible package and community-record values only when both bases are explicit; missing or conflicting values remain incomparable. Evidence expands to original observations, coordinates, assumptions, formulae and sources. Public product and scientific queries are user initiated. Country filters use an explicitly entered country and community country tags; they never establish local retail stock. FDA records are US historical candidate reports, never a global brand verdict. FSSAI discovery can extract bounded selectable text from allowlisted Gazette PDFs and displays publication and effective dates separately. The official host currently returns HTML instead of PDF to this local research fetch, so no present legal clearance is inferred.
 
 Gemini is off. Copy `.env.example` to `.env.local` and configure an owner-authorized key, selected compatible model and explicit enable flag only when API usage/cost is approved. The UI requires per-investigation consent. Model-requested image handles/crops are resolved by the browser, with a separate visible send action. Provider paths have not been accepted against a real Gemini account. See [integrations](docs/INTEGRATIONS.md).
 

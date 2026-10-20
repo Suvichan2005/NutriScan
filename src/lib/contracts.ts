@@ -18,6 +18,6 @@ export type Profile = z.infer<typeof profileSchema>;
 export const defaultProfile:Profile = {dietaryPattern:'',allergies:'',intolerances:'',healthConsiderations:'',goals:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''};
 export const hasUserContext = (profile:Profile):boolean => Object.values(profile).some(value=>value.trim().length>0);
 export type ProductRecord = {id:string;name:string;brand:string;barcode:string;quantity:string;countries:string[];url:string;retrievedAt:string;lastModified:string|null;nutrients:{key:NutrientKey;value:number;unit:string;basis:{amount:100;unit:'g'|'ml'}|null}[];ingredients:string;allergens:string[];match:'barcode'|'candidate';availability:'local stock unverified';imageUrl?:string;confidence?:string;warnings?:string[]};
-export type ResearchItem = {id:string;title:string;url:string;publisher:string;publishedAt:string|null;retrievedAt:string;category:string;summary:string;limitations:string;doi?:string};
+export type ResearchItem = {id:string;title:string;url:string;publisher:string;publishedAt:string|null;effectiveAt?:string|null;retrievedAt:string;category:string;summary:string;limitations:string;doi?:string};
 export type ImageAsset = {id:string;side:'front'|'back'|'extra';role?:'unknown'|'front'|'nutrition'|'ingredients'|'other';description?:string;rotation?:number;blob:Blob;url:string;width:number;height:number;name:string};
 export const evidenceQuerySchema=z.object({query:z.string().trim().min(2).max(1200),limit:z.number().int().min(1).max(5).optional()}).strict();

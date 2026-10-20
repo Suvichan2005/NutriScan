@@ -49,6 +49,19 @@ describe('bounded server boundary', () => {
     await expect(fixedFetch(new URL('https://www.ebi.ac.uk/europepmc/webservices/rest/search'))).rejects.toMatchObject({ code: 'upstream_invalid' });
     expect(fetcher.mock.calls[0][1].redirect).toBe('error');
   });
+  it('accepts bounded PDF bytes only from a fixed FSSAI source', async () => {
+    const url = new URL('https://www.fssai.gov.in/upload/notifications/test.pdf');
+    const pdf = new Uint8Array([...new TextEncoder().encode('%PDF-1.7\n'), 1, 2, 3]);
+    const fetcher = vi.fn().mockResolvedValue(new Response(pdf, { headers: { 'content-type': 'application/pdf' } })); vi.stubGlobal('fetch', fetcher);
+    const result = await fixedFetch(url, 'pdf', 100);
+    expect(result).toEqual(pdf);
+    expect(fetcher.mock.calls[0][1].headers.Accept).toBe('application/pdf');
+    fetcher.mockResolvedValueOnce(new Response('<html>challenge</html>', { headers: { 'content-type': 'text/html' } }));
+    await expect(fixedFetch(url, 'pdf', 100)).rejects.toMatchObject({ code: 'unexpected_content' });
+    fetcher.mockResolvedValueOnce(new Response('not a PDF', { headers: { 'content-type': 'application/pdf' } }));
+    await expect(fixedFetch(url, 'pdf', 100)).rejects.toMatchObject({ code: 'unexpected_content' });
+    await expect(fixedFetch(new URL('https://evil.example/test.pdf'), 'pdf', 100)).rejects.toMatchObject({ code: 'url_rejected' });
+  });
 });
 
 describe('public source normalization', () => {
