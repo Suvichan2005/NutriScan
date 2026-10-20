@@ -21,6 +21,7 @@ Updated: 2026-10-21. This is a local development application and research worksp
 | Local OCR on genuine packaging | Real browser-tested in earlier and current checkpoints | Current client-side runs covered 4 genuine photos in 3 investigations; none yielded a usable nutrient calculation. The app withheld garbled, conflicting or basis/unit-incomplete readings. A prior Nutella scan required human correction. |
 | Repeatable OCR comparison on genuine packaging | Node diagnostic executed | 5 photos / 37 annotated fields; best 3,000 px pass 2 correct, 0 incorrect, 34 omitted and 1 withheld; not held-out or browser accuracy |
 | Product-label vs community-record nutrition comparison | Unit-tested; real-browser route tested | Explicit bases are normalized to 100 g/ml; missing, conflicted and mismatched values stay incomparable. Browser check used a synthetic label fixture against a live Open Food Facts record; this does not prove package identity or real-package agreement. |
+| Neutral starting amount | Unit-tested; typechecked | Declared serving or readable label basis is preferred; otherwise a 100 g/ml reference is used and labeled as non-personal. Fresh browser review of the changed wording is pending. |
 | Variable image intake and general optional profile | Implemented; typechecked, unit-tested, mobile/desktop browser-tested | One and two-photo flows opened; profile controls empty. Replace/remove, hardware camera and complete keyboard review remain untested. |
 | Public product/science endpoints | Live public-source HTTP tested in earlier checkpoint | Records are candidates; variant/market/currency/freshness constraints remain |
 | Gemini assist and vision | Implemented only; provider explicitly disabled | No credentials, no actual provider invocation, no quality claim |
@@ -32,6 +33,8 @@ Updated: 2026-10-21. This is a local development application and research worksp
 The former profile contained one example-specific meal calculator. That schema, extraction helper, production arithmetic, and associated prompt-like UI have been removed. Context now has empty, separate optional fields for dietary preferences, allergies/intolerances, health considerations, goals, age group, sex/reference group and location. No default user, diagnosis, goal, country or eating pattern is installed.
 
 The scanner now supports up to 10 additive image attachments, per-image removal/replacement, optional role hints and notes, a selectable OCR crop target, product descriptions and an initial natural-language question. Existing per-photo OCR still runs locally. Users can start with details alone, paste text, or add images; an image marked as the front or back is optional.
+
+The calculation control no longer falls back to the sample fixture's 30 g when a real package has no declared serving. It prefers the package's declared serving, then a non-conflicted nutrient basis, and otherwise uses a clearly labeled 100 g/ml comparison reference. This is an amount for transparent arithmetic, not a personal serving recommendation. Regression tests cover each branch; the new visual wording still needs a fresh screenshot review.
 
 ## Owner-dependent items
 

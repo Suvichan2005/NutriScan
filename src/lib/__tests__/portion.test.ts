@@ -1,5 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { resolveQuestionPortion } from '../portion';
+import { defaultPortion, resolveQuestionPortion } from '../portion';
+
+describe('neutral reference amount',()=>{
+  it('uses an explicitly declared package serving first',()=>{
+    expect(defaultPortion({serving:{value:45,unit:'g'},nutrients:[{status:'observed',basis:{amount:100,unit:'g'}}]})).toEqual({value:45,unit:'g'});
+  });
+  it('uses a clear label basis when the package gives no serving',()=>{
+    expect(defaultPortion({nutrients:[{status:'observed',basis:{amount:100,unit:'ml'}}]})).toEqual({value:100,unit:'ml'});
+    expect(defaultPortion({nutrients:[{status:'observed',basis:{amount:25,unit:'g'}}]})).toEqual({value:25,unit:'g'});
+  });
+  it('does not choose a serving amount with the wrong dimension for the label basis',()=>{
+    expect(defaultPortion({serving:{value:200,unit:'ml'},nutrients:[{status:'observed',basis:{amount:100,unit:'g'}}]})).toEqual({value:100,unit:'g'});
+  });
+  it('uses a standardized reference when the label declares neither',()=>{
+    expect(defaultPortion({netWeight:{value:750,unit:'ml'},nutrients:[]})).toEqual({value:100,unit:'ml'});
+    expect(defaultPortion({nutrients:[]})).toEqual({value:100,unit:'g'});
+  });
+  it('does not use a conflicted nutrient basis as the default',()=>{
+    expect(defaultPortion({nutrients:[{status:'conflict',basis:{amount:30,unit:'g'}}]})).toEqual({value:100,unit:'g'});
+  });
+});
 
 describe('question-directed portions',()=>{
   it('uses the amount and unit in a first or follow-up question',()=>{

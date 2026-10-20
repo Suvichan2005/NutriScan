@@ -1,6 +1,6 @@
 # Acceptance record
 
-Updated 2026-10-21 from the current checkout. “Implemented” describes code presence only. The available in-app browser was disabled during the current audit attempt; no current screenshot journey is claimed.
+Updated 2026-10-21 from the current checkout. “Implemented” describes code presence only. The Codex in-app browser is disabled in Work settings; earlier same-day Chrome/Playwright mobile and desktop journeys are documented below. A new screenshot journey for the current reference-amount change is pending browser access.
 
 | Requirement | State | Evidence or remaining check |
 |---|---|---|
@@ -10,7 +10,8 @@ Updated 2026-10-21 from the current checkout. “Implemented” describes code p
 | Product-only or text-only starting path with open question | Implemented | Client route parses supplied details and retains the question; exact product research stays a separate explicit source action |
 | OCR runs locally | Real browser-tested in earlier and current checkpoints | Current app ran four genuine package photos in Chrome with the 3,000 px, quality-98 path; no photo produced a usable nutrient calculation. Saffola yielded two values with unknown basis; conflicts and missing units/bases were withheld. Earlier Nutella values needed human correction. |
 | First question's portion and conversational follow-up | Unit-tested; real browser-tested | A first 50 g question set a 50 g portion and showed 200 mg sodium; a 25 g follow-up updated it to 100 mg without rescanning. |
-| Repeatable real-photo OCR comparison | Node diagnostic executed | 5 photos / 37 human-read nutrient fields; best tested pass 1 correct, 0 incorrect, 34 omitted, 2 withheld; English-only model matched no French or Spanish fields. See [method and limitations](REAL_OCR_EVALUATION.md). This is not browser E2E or a population accuracy estimate. |
+| Neutral starting amount without a package serving | Unit-tested; typechecked | Uses an explicit label serving or unconflicted label basis; otherwise starts at a standardized 100 g/ml reference that is labeled as non-personal. No 30 g runtime fallback remains. Fresh browser visual check pending. |
+| Repeatable real-photo OCR comparison | Node diagnostic executed | 5 photos / 37 human-read nutrient fields; best tested pass 2 correct, 0 incorrect, 34 omitted, 1 withheld; English-only model matched no French or Spanish fields. See [method and limitations](REAL_OCR_EVALUATION.md). This is not browser E2E or a population accuracy estimate. |
 | Nutrition scaling, conflicts and missing values | Unit-tested; synthetic evaluation executed | `npm test`, `npm run evaluate`; not a real-photo accuracy score |
 | Follow-ups preserve package data and use the user's new question | Unit-tested | Deterministic local answers; unsupported open topics still need question-specific research or enabled Gemini |
 | Public-source API boundaries | Live-source HTTP tested in earlier checkpoint | Date, market, identity and inventory caveats documented in `INTEGRATIONS.md` |
