@@ -1,0 +1,47 @@
+{
+  "cases": [
+    {
+      "case": "exact-additive",
+      "status": 200,
+      "mode": "hybrid-local-embedding",
+      "model": "Xenova/all-MiniLM-L6-v2",
+      "firstResult": "fao-955",
+      "latencyMs": 43,
+      "code": null,
+      "requestId": "bc8dc280-bfeb-451a-9c17-863f4edce412"
+    },
+    {
+      "case": "paraphrase",
+      "status": 200,
+      "mode": "hybrid-local-embedding",
+      "model": "Xenova/all-MiniLM-L6-v2",
+      "firstResult": "who-sodium",
+      "latencyMs": 36,
+      "code": null,
+      "requestId": "22b8e221-2a44-4f67-9ba0-73cab33b1ee5"
+    },
+    {
+      "case": "origin-rejected",
+      "status": 403,
+      "mode": null,
+      "model": null,
+      "firstResult": null,
+      "latencyMs": null,
+      "code": "origin_rejected",
+      "requestId": "321045a6-d682-41e3-8da5-53995a310632"
+    },
+    {
+      "case": "invalid-bound",
+      "status": 400,
+      "mode": null,
+      "model": null,
+      "firstResult": null,
+      "latencyMs": null,
+      "code": "invalid_input",
+      "requestId": "6895881f-7afe-428e-a0de-e0196bdcd11d"
+    }
+  ],
+  "checkedAt": "2026-10-20T22:13:06.7035590Z",
+  "endpoint": "http://127.0.0.1:3400/api/evidence",
+  "environment": "real localhost Next.js HTTP requests; not browser screenshot or remote provider proof"
+}

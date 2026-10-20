@@ -1,0 +1,42 @@
+{
+  "name": "nutriscan",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3400",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1 --port 3400",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "assets": "node scripts/prepare-ocr.mjs",
+    "postinstall": "npm run assets",
+    "evaluate": "tsx scripts/evaluate.ts",
+    "embeddings:prepare": "tsx scripts/prepare-embeddings.mts",
+    "embeddings:evaluate": "tsx scripts/semantic-evaluate.mts"
+  },
+  "dependencies": {
+    "@fontsource/dm-sans": "5.3.0",
+    "@fontsource/manrope": "5.3.0",
+    "@google/genai": "2.30.0",
+    "@huggingface/transformers": "4.3.1",
+    "@tesseract.js-data/eng": "1.0.0",
+    "idb-keyval": "6.3.0",
+    "lucide-react": "1.60.0",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "tesseract.js": "7.0.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "sharp": "0.35.5",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}

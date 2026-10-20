@@ -1,0 +1,370 @@
+{
+  "evaluatedAt": "2026-10-20T22:47:31.840Z",
+  "model": "Xenova/all-MiniLM-L6-v2",
+  "revision": "751bff37182d3f1213fa05d7196b954e230abad9",
+  "runtimeVersion": "4.3.1",
+  "dtype": "q8",
+  "pooling": "mean",
+  "normalized": true,
+  "hybridRecipe": "0.9*cosine + 0.1*max-normalized BM25 + 1 for exact additive identity",
+  "corpusVersion": "2026-10-21.1",
+  "corpusSha256": "3d14904a005785e978d22e4b7316939ca36384c02a8cbacc977bb2e171dec1bc",
+  "documents": 7,
+  "queryCount": 12,
+  "scope": "Developer-authored relevance cases; not independent clinical or open-domain evaluation. Queries versioned before measurement. Lexical and semantic rank over the entire corpus; hybrid top five.",
+  "metrics": {
+    "lexical": {
+      "top1": 0.9166666666666666,
+      "recallAt3": 1,
+      "mrrAt5": 0.9583333333333334
+    },
+    "semantic": {
+      "top1": 0.9166666666666666,
+      "recallAt3": 1,
+      "mrrAt5": 0.9583333333333334
+    },
+    "hybrid": {
+      "top1": 1,
+      "recallAt3": 1,
+      "mrrAt5": 1
+    }
+  },
+  "rows": [
+    {
+      "id": "sodium-exact",
+      "query": "sodium salt adult daily intake reference",
+      "relevant": [
+        "who-sodium"
+      ],
+      "lexicalRank": 1,
+      "semanticRank": 1,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "who-sodium",
+          "semanticScore": 0.710979778859988,
+          "lexicalScore": 1
+        },
+        {
+          "id": "fao-621",
+          "semanticScore": 0.2584853662960799,
+          "lexicalScore": 0.2224131756394825
+        },
+        {
+          "id": "who-nss",
+          "semanticScore": 0.24881285170672174,
+          "lexicalScore": 0
+        }
+      ],
+      "latencyMs": 1670
+    },
+    {
+      "id": "sodium-paraphrase",
+      "query": "Should someone with raised blood pressure cut down on salty foods?",
+      "relevant": [
+        "who-sodium"
+      ],
+      "lexicalRank": 2,
+      "semanticRank": 1,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "who-sodium",
+          "semanticScore": 0.4851840686061628,
+          "lexicalScore": 0
+        },
+        {
+          "id": "niddk-meals",
+          "semanticScore": 0.2950307904973001,
+          "lexicalScore": 1
+        },
+        {
+          "id": "who-nss",
+          "semanticScore": 0.17139575567264448,
+          "lexicalScore": 0
+        }
+      ],
+      "latencyMs": 16
+    },
+    {
+      "id": "sodium-conversion",
+      "query": "How much sodium is present in a gram of salt?",
+      "relevant": [
+        "who-sodium"
+      ],
+      "lexicalRank": 1,
+      "semanticRank": 1,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "who-sodium",
+          "semanticScore": 0.6347524539892441,
+          "lexicalScore": 1
+        },
+        {
+          "id": "fao-621",
+          "semanticScore": 0.36916650444779636,
+          "lexicalScore": 0.2224131756394825
+        },
+        {
+          "id": "fao-955",
+          "semanticScore": 0.30562483741811,
+          "lexicalScore": 0
+        }
+      ],
+      "latencyMs": 10
+    },
+    {
+      "id": "diabetes-exact",
+      "query": "diabetes carbohydrate meals glucose medication",
+      "relevant": [
+        "niddk-meals"
+      ],
+      "lexicalRank": 1,
+      "semanticRank": 1,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "niddk-meals",
+          "semanticScore": 0.6896571191972853,
+          "lexicalScore": 1
+        },
+        {
+          "id": "who-nss",
+          "semanticScore": 0.3931341354790219,
+          "lexicalScore": 0.241288718284094
+        },
+        {
+          "id": "fao-415",
+          "semanticScore": 0.21932549573884838,
+          "lexicalScore": 0
+        }
+      ],
+      "latencyMs": 10
+    },
+    {
+      "id": "diabetes-paraphrase",
+      "query": "How should a person whose blood sugar is high decide the amount and timing of food?",
+      "relevant": [
+        "niddk-meals"
+      ],
+      "lexicalRank": 1,
+      "semanticRank": 1,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "niddk-meals",
+          "semanticScore": 0.6616426935934843,
+          "lexicalScore": 1
+        },
+        {
+          "id": "who-nss",
+          "semanticScore": 0.43764934667519806,
+          "lexicalScore": 0.6729360039081582
+        },
+        {
+          "id": "who-sodium",
+          "semanticScore": 0.24384302747409628,
+          "lexicalScore": 0
+        }
+      ],
+      "latencyMs": 13
+    },
+    {
+      "id": "sweetener-exact",
+      "query": "WHO non-sugar sweeteners weight control guideline existing diabetes exclusion",
+      "relevant": [
+        "who-nss"
+      ],
+      "lexicalRank": 1,
+      "semanticRank": 1,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "who-nss",
+          "semanticScore": 0.7750809151987181,
+          "lexicalScore": 1
+        },
+        {
+          "id": "niddk-meals",
+          "semanticScore": 0.5253899582432876,
+          "lexicalScore": 0.07651366426914599
+        },
+        {
+          "id": "who-sodium",
+          "semanticScore": 0.21802749715905775,
+          "lexicalScore": 0.07830428865583106
+        }
+      ],
+      "latencyMs": 11
+    },
+    {
+      "id": "sweetener-paraphrase",
+      "query": "Does replacing sugar with artificial sweet taste help prevent obesity?",
+      "relevant": [
+        "who-nss"
+      ],
+      "lexicalRank": 1,
+      "semanticRank": 1,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "who-nss",
+          "semanticScore": 0.4926480083948027,
+          "lexicalScore": 1
+        },
+        {
+          "id": "niddk-meals",
+          "semanticScore": 0.4198466274188643,
+          "lexicalScore": 0
+        },
+        {
+          "id": "fao-415",
+          "semanticScore": 0.18406665701489144,
+          "lexicalScore": 0
+        }
+      ],
+      "latencyMs": 17
+    },
+    {
+      "id": "sucralose-exact",
+      "query": "INS 955",
+      "relevant": [
+        "fao-955"
+      ],
+      "lexicalRank": 1,
+      "semanticRank": 2,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "fao-955",
+          "semanticScore": 0.24735133636621093,
+          "lexicalScore": 1
+        },
+        {
+          "id": "fao-415",
+          "semanticScore": 0.26169737204466353,
+          "lexicalScore": 0.22282101000612461
+        },
+        {
+          "id": "fao-330",
+          "semanticScore": 0.22364345127990176,
+          "lexicalScore": 0.2164052313816338
+        }
+      ],
+      "latencyMs": 11
+    },
+    {
+      "id": "sucralose-name",
+      "query": "What additive is trichlorogalactosucrose?",
+      "relevant": [
+        "fao-955"
+      ],
+      "lexicalRank": 1,
+      "semanticRank": 1,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "fao-955",
+          "semanticScore": 0.5660140970569856,
+          "lexicalScore": 1
+        },
+        {
+          "id": "fao-330",
+          "semanticScore": 0.438758148027939,
+          "lexicalScore": 0.2705226376672579
+        },
+        {
+          "id": "fao-415",
+          "semanticScore": 0.4015868594506818,
+          "lexicalScore": 0.2785428382192755
+        }
+      ],
+      "latencyMs": 11
+    },
+    {
+      "id": "citric-identity",
+      "query": "INS 330 citric acid identity",
+      "relevant": [
+        "fao-330"
+      ],
+      "lexicalRank": 1,
+      "semanticRank": 1,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "fao-330",
+          "semanticScore": 0.593429041032917,
+          "lexicalScore": 1
+        },
+        {
+          "id": "fao-955",
+          "semanticScore": 0.4344954042575604,
+          "lexicalScore": 0.3203882056767275
+        },
+        {
+          "id": "fao-415",
+          "semanticScore": 0.35602242635111914,
+          "lexicalScore": 0.08924184014117667
+        }
+      ],
+      "latencyMs": 12
+    },
+    {
+      "id": "msg-identity",
+      "query": "MSG monosodium glutamate INS 621",
+      "relevant": [
+        "fao-621"
+      ],
+      "lexicalRank": 1,
+      "semanticRank": 1,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "fao-621",
+          "semanticScore": 0.677340566794454,
+          "lexicalScore": 1
+        },
+        {
+          "id": "fao-415",
+          "semanticScore": 0.4539895464328963,
+          "lexicalScore": 0.08119208381506406
+        },
+        {
+          "id": "fao-955",
+          "semanticScore": 0.43616685043656805,
+          "lexicalScore": 0.07456057826577837
+        }
+      ],
+      "latencyMs": 9
+    },
+    {
+      "id": "xanthan-identity",
+      "query": "What is the number for xanthan gum?",
+      "relevant": [
+        "fao-415"
+      ],
+      "lexicalRank": 1,
+      "semanticRank": 1,
+      "hybridRank": 1,
+      "hybridTop3": [
+        {
+          "id": "fao-415",
+          "semanticScore": 0.6524903784543001,
+          "lexicalScore": 1
+        },
+        {
+          "id": "fao-955",
+          "semanticScore": 0.29748258544269696,
+          "lexicalScore": 0.1346743762317901
+        },
+        {
+          "id": "fao-330",
+          "semanticScore": 0.22825057776553678,
+          "lexicalScore": 0.14242984762356592
+        }
+      ],
+      "latencyMs": 10
+    }
+  ]
+}

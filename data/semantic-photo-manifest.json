@@ -1,0 +1,501 @@
+{
+  "source": "Open Food Facts official API and images host",
+  "licenseUrl": "https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/tutorials/license-be-on-the-legal-side/",
+  "records": [
+    {
+      "productPage": "https://world.openfoodfacts.org/product/5449000000996",
+      "hash": "8a5b6cc6554736a3ef7189b02efacf3ad97b66c1cc88f1e41d2da6e10dec37be",
+      "type": "English nutrition photograph",
+      "url": "https://images.openfoodfacts.org/images/products/544/900/000/0996/nutrition_en.1173.full.jpg",
+      "bytes": 157077,
+      "file": "coca-cola-label-off-5449000000996.jpg",
+      "uploader": "macrofactor",
+      "code": "5449000000996",
+      "note": "100ml and330ml columns; brand on can visible. Database image selection does not establish Indian variant.",
+      "dimensions": {
+        "width": 767,
+        "height": 904
+      },
+      "manualAnnotation": {
+        "basis": {
+          "amount": 100,
+          "unit": "ml"
+        },
+        "nutrients": [
+          {
+            "key": "energy",
+            "value": 42,
+            "unit": "kcal"
+          },
+          {
+            "key": "carbohydrate",
+            "value": 10.6,
+            "unit": "g"
+          },
+          {
+            "key": "sugars",
+            "value": 10.6,
+            "unit": "g"
+          },
+          {
+            "key": "fat",
+            "value": 0,
+            "unit": "g"
+          },
+          {
+            "key": "protein",
+            "value": 0,
+            "unit": "g"
+          },
+          {
+            "key": "salt",
+            "value": 0,
+            "unit": "g"
+          }
+        ],
+        "additionalColumns": [
+          {
+            "amount": 330,
+            "unit": "ml",
+            "energyKcal": 139,
+            "carbohydrateGrams": 35,
+            "sugarsGrams": 35
+          }
+        ],
+        "status": "Human image reading for comparison; not OCR output or laboratory verification. Sodium not printed; salt zero is a rounded printed value."
+      }
+    },
+    {
+      "productPage": "https://world.openfoodfacts.org/product/5449000000996",
+      "hash": "bd25121c1be0d4aebdc975b5bf6d7742d888cbf60d59f8685cf199b7556060e4",
+      "type": "Front can photograph",
+      "url": "https://images.openfoodfacts.org/images/products/544/900/000/0996/front_en.1129.full.jpg",
+      "bytes": 28629,
+      "file": "coca-cola-front-off-5449000000996.jpg",
+      "uploader": "zeynepozturk11",
+      "code": "5449000000996",
+      "note": "Turkish front, different uploader/revision from English table. Not proven same formulation.",
+      "dimensions": {
+        "width": 290,
+        "height": 770
+      },
+      "manualAnnotation": {
+        "basis": null,
+        "nutrients": [],
+        "status": "Visually inspected genuine source photograph; OCR not yet measured."
+      }
+    },
+    {
+      "productPage": "https://world.openfoodfacts.org/product/3017620422003",
+      "hash": "d11697b644b631a42611b8195dd966b25515ed7d7b3edef4622e830313e46b6d",
+      "type": "Front jar photograph",
+      "url": "https://images.openfoodfacts.org/images/products/301/762/042/2003/nutrition_en.822.full.jpg",
+      "bytes": 154645,
+      "file": "nutella-label-off-3017620422003.jpg",
+      "uploader": "openfoodfacts-contributors",
+      "code": "3017620422003",
+      "note": "Official API labels this nutrition_en, but visual inspection shows front jar only. Preserve metadata conflict.",
+      "dimensions": {
+        "width": 1125,
+        "height": 2000
+      },
+      "manualAnnotation": {
+        "basis": null,
+        "nutrients": [],
+        "status": "Visually inspected genuine source photograph; OCR not yet measured."
+      }
+    },
+    {
+      "productPage": "https://world.openfoodfacts.org/product/3017620422003",
+      "hash": "1ad0d429b1f47490a36f11a97715ca33ade7b28aecf15273808d3f0ac258d3ac",
+      "type": "French nutrition photograph",
+      "url": "https://images.openfoodfacts.org/images/products/301/762/042/2003/nutrition_nl.628.full.jpg",
+      "bytes": 168459,
+      "file": "nutella-nutrition-nl-off-3017620422003.jpg",
+      "uploader": "smoothie-app",
+      "code": "3017620422003",
+      "note": "API language selection nl, visible French. 100g/15g columns. Real multilingual failure case; not Indian product.",
+      "dimensions": {
+        "width": 1129,
+        "height": 988
+      },
+      "manualAnnotation": {
+        "basis": {
+          "amount": 100,
+          "unit": "g"
+        },
+        "nutrients": [
+          {
+            "key": "energy",
+            "value": 539,
+            "unit": "kcal"
+          },
+          {
+            "key": "carbohydrate",
+            "value": 57.5,
+            "unit": "g"
+          },
+          {
+            "key": "sugars",
+            "value": 56.3,
+            "unit": "g"
+          },
+          {
+            "key": "fat",
+            "value": 30.9,
+            "unit": "g"
+          },
+          {
+            "key": "saturatedFat",
+            "value": 10.6,
+            "unit": "g"
+          },
+          {
+            "key": "protein",
+            "value": 6.3,
+            "unit": "g"
+          },
+          {
+            "key": "salt",
+            "value": 0.107,
+            "unit": "g"
+          }
+        ],
+        "additionalColumns": [
+          {
+            "amount": 15,
+            "unit": "g",
+            "energyKcal": 80,
+            "carbohydrateGrams": 8.6,
+            "sugarsGrams": 8.4
+          }
+        ],
+        "status": "Human reading of French-language package photo; not OCR output. Keep decimal comma and column ambiguity test."
+      }
+    },
+    {
+      "productPage": "https://world.openfoodfacts.org/product/3017620422003",
+      "hash": "386f20829029db0af9449c4eaf4761f8c386320cde54c9a652dda7d538f7463c",
+      "type": "Spanish nutrition photograph",
+      "url": "https://images.openfoodfacts.org/images/products/301/762/042/2003/nutrition_es.231.full.jpg",
+      "bytes": 546413,
+      "file": "nutella-nutrition-es-off-3017620422003.jpg",
+      "uploader": "openfoodfactsmx",
+      "code": "3017620422003",
+      "note": "18g portion only. Different market/formulation cannot be reconciled as exact match.",
+      "dimensions": {
+        "width": 2403,
+        "height": 1954
+      },
+      "manualAnnotation": {
+        "basis": {
+          "amount": 18,
+          "unit": "g"
+        },
+        "nutrients": [
+          {
+            "key": "energy",
+            "value": 100,
+            "unit": "kcal"
+          },
+          {
+            "key": "protein",
+            "value": 1,
+            "unit": "g"
+          },
+          {
+            "key": "fat",
+            "value": 6,
+            "unit": "g"
+          },
+          {
+            "key": "saturatedFat",
+            "value": 2,
+            "unit": "g"
+          },
+          {
+            "key": "carbohydrate",
+            "value": 10,
+            "unit": "g"
+          },
+          {
+            "key": "sugars",
+            "value": 10,
+            "unit": "g"
+          },
+          {
+            "key": "sodium",
+            "value": 10,
+            "unit": "mg"
+          }
+        ],
+        "status": "Human reading Spanish photograph, explicitly per18g. Fiber printed less than1g; must preserve inequality rather than store as1g or0g."
+      }
+    },
+    {
+      "productPage": "https://world.openfoodfacts.org/product/5000157024671",
+      "hash": "d209a5a0cfc18a51a1cdc220732a9fb3d633f17b567f585a7f6d60ff133999f1",
+      "type": "Multilingual back can photograph",
+      "url": "https://images.openfoodfacts.org/images/products/500/015/702/4671/nutrition_en.410.full.jpg",
+      "bytes": 97552,
+      "file": "heinz-beans-nutrition-off-5000157024671.jpg",
+      "uploader": "municorn-calorie-counter-app",
+      "code": "5000157024671",
+      "note": "API language en does not match visible CZ/HU text. Handheld curved can; distant table.",
+      "dimensions": {
+        "width": 592,
+        "height": 1280
+      },
+      "manualAnnotation": {
+        "basis": null,
+        "nutrients": [],
+        "status": "Visually inspected genuine source photograph; OCR not yet measured."
+      }
+    },
+    {
+      "productPage": "https://world.openfoodfacts.org/product/5000157024671",
+      "hash": "67d4255592ac794612f81860abb82c4870efc6e06b2ad6500ea533b794cc2c96",
+      "type": "English front can photograph",
+      "url": "https://images.openfoodfacts.org/images/products/500/015/702/4671/front_en.433.full.jpg",
+      "bytes": 1611976,
+      "file": "heinz-beans-front-off-5000157024671.jpg",
+      "uploader": "foodless",
+      "code": "5000157024671",
+      "note": "Different uploader/revision from back. Same barcode database record does not prove same package.",
+      "dimensions": {
+        "width": 2036,
+        "height": 3970
+      },
+      "manualAnnotation": {
+        "basis": null,
+        "nutrients": [],
+        "status": "Visually inspected genuine source photograph; OCR not yet measured."
+      }
+    },
+    {
+      "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+      "code": "8901088068758",
+      "productName": "Saffola Masala Veggie Twist Oats",
+      "uploader": "kiliweb",
+      "uploadedUnix": 1661650232,
+      "url": "https://images.openfoodfacts.org/images/products/890/108/806/8758/nutrition_en.25.full.jpg",
+      "type": "Genuine English nutrition photograph of Indian oats package",
+      "note": "Glossy yellow crinkled film with glare. Values in per100g column and38g serving stated. Original selected OFF photo downloaded unchanged; no generated or manually reconstructed image.",
+      "manualAnnotation": {
+        "basis": {
+          "amount": 100,
+          "unit": "g"
+        },
+        "serving": {
+          "amount": 38,
+          "unit": "g"
+        },
+        "nutrients": [
+          {
+            "key": "energy",
+            "value": 376,
+            "unit": "kcal"
+          },
+          {
+            "key": "protein",
+            "value": 8.8,
+            "unit": "g"
+          },
+          {
+            "key": "carbohydrate",
+            "value": 69.2,
+            "unit": "g"
+          },
+          {
+            "key": "sugars",
+            "value": 5.1,
+            "unit": "g"
+          },
+          {
+            "key": "addedSugars",
+            "value": 3.6,
+            "unit": "g"
+          },
+          {
+            "key": "fiber",
+            "value": 12.4,
+            "unit": "g"
+          },
+          {
+            "key": "fat",
+            "value": 9.9,
+            "unit": "g"
+          },
+          {
+            "key": "saturatedFat",
+            "value": 3.4,
+            "unit": "g"
+          },
+          {
+            "key": "sodium",
+            "value": 2283,
+            "unit": "mg"
+          }
+        ],
+        "additionalPrintedFields": [
+          {
+            "name": "soluble dietary fiber",
+            "value": 5,
+            "unit": "g"
+          },
+          {
+            "name": "insoluble dietary fiber",
+            "value": 7.4,
+            "unit": "g"
+          },
+          {
+            "name": "trans fat",
+            "value": 0.1,
+            "unit": "g"
+          },
+          {
+            "name": "cholesterol",
+            "value": 0,
+            "unit": "mg"
+          }
+        ],
+        "status": "Human visual reading before OCR test; not OCR output, laboratory verification or proof of current formulation. Package face is cropped at edges in source image. Salt is not printed in this region."
+      },
+      "hash": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+      "bytes": 104543,
+      "dimensions": {
+        "width": 1026,
+        "height": 699
+      },
+      "retrievedAt": "2026-10-20T22:20:29.165Z",
+      "productPage": "https://world.openfoodfacts.org/product/8901088068758"
+    },
+    {
+      "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+      "code": "8902710100150",
+      "productName": "Bagrrys White Oats",
+      "uploader": "openfoodfacts-contributors",
+      "uploadedUnix": 1592274476,
+      "url": "https://images.openfoodfacts.org/images/products/890/271/010/0150/nutrition_en.10.full.jpg",
+      "type": "Genuine English nutrition photograph of Indian oats package",
+      "note": "Glossy crinkled white film with glare. OFF selected crop of original3024x4032 user photograph; downloaded selected full image unchanged. Per100g and35g columns must remain distinct.",
+      "manualAnnotation": {
+        "basis": {
+          "amount": 100,
+          "unit": "g"
+        },
+        "serving": {
+          "amount": 35,
+          "unit": "g"
+        },
+        "nutrients": [
+          {
+            "key": "energy",
+            "value": 397,
+            "unit": "kcal"
+          },
+          {
+            "key": "protein",
+            "value": 14.2,
+            "unit": "g"
+          },
+          {
+            "key": "carbohydrate",
+            "value": 66,
+            "unit": "g"
+          },
+          {
+            "key": "sugars",
+            "value": 0,
+            "unit": "g"
+          },
+          {
+            "key": "fiber",
+            "value": 10.2,
+            "unit": "g"
+          },
+          {
+            "key": "fat",
+            "value": 8.5,
+            "unit": "g"
+          },
+          {
+            "key": "saturatedFat",
+            "value": 1.3,
+            "unit": "g"
+          },
+          {
+            "key": "sodium",
+            "value": 4.9,
+            "unit": "mg"
+          }
+        ],
+        "additionalColumns": [
+          {
+            "basis": {
+              "amount": 35,
+              "unit": "g"
+            },
+            "energyKcal": 139,
+            "proteinGrams": 5,
+            "carbohydrateGrams": 23.1,
+            "sugarsGrams": 0,
+            "fiberGrams": 3.6,
+            "fatGrams": 3,
+            "saturatedFatGrams": 0.5,
+            "sodiumMg": 1.7
+          }
+        ],
+        "additionalPrintedFields": [
+          {
+            "name": "soluble dietary fiber",
+            "value": 4.4,
+            "unit": "g"
+          },
+          {
+            "name": "insoluble dietary fiber",
+            "value": 5.8,
+            "unit": "g"
+          },
+          {
+            "name": "monounsaturated fatty acids",
+            "value": 3.9,
+            "unit": "g"
+          },
+          {
+            "name": "polyunsaturated fatty acids",
+            "value": 2.9,
+            "unit": "g"
+          },
+          {
+            "name": "trans fatty acids",
+            "value": 0,
+            "unit": "g"
+          },
+          {
+            "name": "cholesterol",
+            "value": 0,
+            "unit": "mg"
+          },
+          {
+            "name": "iron",
+            "value": 4.4,
+            "unit": "mg"
+          }
+        ],
+        "status": "Human visual reading before OCR test; not OCR output, laboratory verification or proof of current formulation. Printed approximate values and rounding retained. Added sugars not separately printed; zero total sugar is a printed rounded declaration."
+      },
+      "hash": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+      "bytes": 671234,
+      "dimensions": {
+        "width": 1942,
+        "height": 2639
+      },
+      "retrievedAt": "2026-10-20T22:20:29.167Z",
+      "productPage": "https://world.openfoodfacts.org/product/8902710100150"
+    }
+  ],
+  "retrievedAt": "2026-10-20T22:10:05.6499194Z",
+  "synthetic": false,
+  "license": "Product images are licensed Creative Commons Attribution ShareAlike according to official OFF documentation; additional packaging or trademark rights may apply. Database ODbL. Images stay ignored and are not redistributed in Git."
+}

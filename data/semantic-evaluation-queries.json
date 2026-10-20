@@ -1,0 +1,14 @@
+[
+  {"id":"sodium-exact","query":"sodium salt adult daily intake reference","relevant":["who-sodium"]},
+  {"id":"sodium-paraphrase","query":"Should someone with raised blood pressure cut down on salty foods?","relevant":["who-sodium"]},
+  {"id":"sodium-conversion","query":"How much sodium is present in a gram of salt?","relevant":["who-sodium"]},
+  {"id":"diabetes-exact","query":"diabetes carbohydrate meals glucose medication","relevant":["niddk-meals"]},
+  {"id":"diabetes-paraphrase","query":"How should a person whose blood sugar is high decide the amount and timing of food?","relevant":["niddk-meals"]},
+  {"id":"sweetener-exact","query":"WHO non-sugar sweeteners weight control guideline existing diabetes exclusion","relevant":["who-nss"]},
+  {"id":"sweetener-paraphrase","query":"Does replacing sugar with artificial sweet taste help prevent obesity?","relevant":["who-nss"]},
+  {"id":"sucralose-exact","query":"INS 955","relevant":["fao-955"]},
+  {"id":"sucralose-name","query":"What additive is trichlorogalactosucrose?","relevant":["fao-955"]},
+  {"id":"citric-identity","query":"INS 330 citric acid identity","relevant":["fao-330"]},
+  {"id":"msg-identity","query":"MSG monosodium glutamate INS 621","relevant":["fao-621"]},
+  {"id":"xanthan-identity","query":"What is the number for xanthan gum?","relevant":["fao-415"]}
+]

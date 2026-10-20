@@ -1,0 +1,709 @@
+{
+  "suiteVersion": "core-synthetic-v1.1",
+  "runAt": "2026-10-20T22:47:30.459Z",
+  "dataClass": "synthetic developer examples; no image OCR or provider requests",
+  "summary": {
+    "cases": 20,
+    "casesPassed": 20,
+    "annotatedFieldsCorrect": 29,
+    "annotatedFieldsTotal": 29,
+    "annotatedAbsencesCorrect": 4,
+    "annotatedAbsencesTotal": 4,
+    "withholdingCorrect": 11,
+    "withholdingTotal": 11,
+    "calculationsCompared": 19,
+    "maxAbsoluteNumericalError": 5.421010862427522e-20,
+    "meanAbsoluteNumericalError": 2.853163611803959e-21
+  },
+  "limitations": [
+    "Small developer-authored synthetic suite, used during implementation; not an independent held-out benchmark.",
+    "Important annotated field matching only; not total OCR character accuracy, label-level accuracy or population generalization.",
+    "No real photos, model/provider acceptance, medical suitability, regulatory conclusions or retrieval-quality metrics are established."
+  ],
+  "results": [
+    {
+      "id": "explicit-zero",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "sugars",
+            "value": 0,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "protein",
+            "value": 12,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "sugars",
+          "expected": 0,
+          "actual": 0,
+          "absoluteError": 0,
+          "pass": true
+        },
+        {
+          "key": "protein",
+          "expected": 3,
+          "actual": 3,
+          "absoluteError": 0,
+          "pass": true
+        }
+      ],
+      "withholding": [],
+      "absence": [
+        {
+          "key": "sodium",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "id": "declared-serving",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "carbohydrate",
+            "value": 10,
+            "unit": "g",
+            "basis": 25
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "carbohydrate",
+          "expected": 20,
+          "actual": 20,
+          "absoluteError": 0,
+          "pass": true
+        }
+      ],
+      "withholding": [],
+      "absence": []
+    },
+    {
+      "id": "volume-basis",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "sugars",
+            "value": 10.6,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "sugars",
+          "expected": 34.98,
+          "actual": 34.98,
+          "absoluteError": 0,
+          "pass": true
+        }
+      ],
+      "withholding": [],
+      "absence": []
+    },
+    {
+      "id": "sodium-grams",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "sodium",
+            "value": 0.8,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "sodium",
+          "expected": 200,
+          "actual": 200,
+          "absoluteError": 0,
+          "pass": true
+        }
+      ],
+      "withholding": [],
+      "absence": []
+    },
+    {
+      "id": "salt-derived-sodium",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "salt",
+            "value": 2,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "salt",
+          "expected": 0.5,
+          "actual": 0.5,
+          "absoluteError": 0,
+          "pass": true
+        },
+        {
+          "key": "sodium",
+          "expected": 200,
+          "actual": 200,
+          "absoluteError": 0,
+          "pass": true
+        }
+      ],
+      "withholding": [],
+      "absence": []
+    },
+    {
+      "id": "dual-column-withheld",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "carbohydrate",
+            "value": 10.6,
+            "unit": "g",
+            "basis": null,
+            "status": "conflict"
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "carbohydrate",
+            "value": 35,
+            "unit": "g",
+            "basis": null,
+            "status": "conflict"
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "sugars",
+            "value": 10.6,
+            "unit": "g",
+            "basis": null,
+            "status": "conflict"
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "sugars",
+            "value": 35,
+            "unit": "g",
+            "basis": null,
+            "status": "conflict"
+          },
+          "match": true
+        }
+      ],
+      "numeric": [],
+      "withholding": [
+        {
+          "key": "carbohydrate",
+          "pass": true
+        },
+        {
+          "key": "sugars",
+          "pass": true
+        }
+      ],
+      "absence": []
+    },
+    {
+      "id": "conflicting-ocr",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "sodium",
+            "value": 850,
+            "unit": "mg",
+            "basis": 100,
+            "status": "conflict"
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "sodium",
+            "value": 85,
+            "unit": "mg",
+            "basis": 100,
+            "status": "conflict"
+          },
+          "match": true
+        }
+      ],
+      "numeric": [],
+      "withholding": [
+        {
+          "key": "sodium",
+          "pass": true
+        }
+      ],
+      "absence": []
+    },
+    {
+      "id": "missing-basis",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "carbohydrate",
+            "value": 60,
+            "unit": "g",
+            "basis": null
+          },
+          "match": true
+        }
+      ],
+      "numeric": [],
+      "withholding": [
+        {
+          "key": "carbohydrate",
+          "pass": true
+        }
+      ],
+      "absence": []
+    },
+    {
+      "id": "bounded-not-exact",
+      "synthetic": true,
+      "pass": true,
+      "fields": [],
+      "numeric": [],
+      "withholding": [
+        {
+          "key": "sugars",
+          "pass": true
+        }
+      ],
+      "absence": [
+        {
+          "key": "sugars",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "id": "negative-withheld",
+      "synthetic": true,
+      "pass": true,
+      "fields": [],
+      "numeric": [],
+      "withholding": [
+        {
+          "key": "protein",
+          "pass": true
+        }
+      ],
+      "absence": [
+        {
+          "key": "protein",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "id": "unit-missing",
+      "synthetic": true,
+      "pass": true,
+      "fields": [],
+      "numeric": [],
+      "withholding": [
+        {
+          "key": "sodium",
+          "pass": true
+        }
+      ],
+      "absence": [
+        {
+          "key": "sodium",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "id": "percentage-column",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "protein",
+            "value": 12,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "protein",
+          "expected": 3.6,
+          "actual": 3.6,
+          "absoluteError": 0,
+          "pass": true
+        }
+      ],
+      "withholding": [],
+      "absence": []
+    },
+    {
+      "id": "mass-volume-incompatible",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "sugars",
+            "value": 10,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [],
+      "withholding": [
+        {
+          "key": "sugars",
+          "pass": true
+        }
+      ],
+      "absence": []
+    },
+    {
+      "id": "equivalent-bases",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "carbohydrate",
+            "value": 60,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "carbohydrate",
+            "value": 15,
+            "unit": "g",
+            "basis": 25
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "carbohydrate",
+          "expected": 30,
+          "actual": 30,
+          "absoluteError": 0,
+          "pass": true
+        }
+      ],
+      "withholding": [],
+      "absence": []
+    },
+    {
+      "id": "inverted-sugar-totals",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "carbohydrate",
+            "value": 10,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "sugars",
+            "value": 20,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [],
+      "withholding": [
+        {
+          "key": "carbohydrate",
+          "pass": true
+        },
+        {
+          "key": "sugars",
+          "pass": true
+        }
+      ],
+      "absence": []
+    },
+    {
+      "id": "french-alias-decimal",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "carbohydrate",
+            "value": 57.5,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "sugars",
+            "value": 56.3,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "protein",
+            "value": 6.3,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "carbohydrate",
+          "expected": 8.625,
+          "actual": 8.625,
+          "absoluteError": 0,
+          "pass": true
+        },
+        {
+          "key": "sugars",
+          "expected": 8.445,
+          "actual": 8.445,
+          "absoluteError": 0,
+          "pass": true
+        },
+        {
+          "key": "protein",
+          "expected": 0.945,
+          "actual": 0.945,
+          "absoluteError": 0,
+          "pass": true
+        }
+      ],
+      "withholding": [],
+      "absence": []
+    },
+    {
+      "id": "spanish-alias-decimal",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "fat",
+            "value": 30.9,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "salt",
+            "value": 0.1,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "fat",
+          "expected": 6.18,
+          "actual": 6.18,
+          "absoluteError": 0,
+          "pass": true
+        },
+        {
+          "key": "salt",
+          "expected": 0.02,
+          "actual": 0.02,
+          "absoluteError": 0,
+          "pass": true
+        },
+        {
+          "key": "sodium",
+          "expected": 8,
+          "actual": 8,
+          "absoluteError": 0,
+          "pass": true
+        }
+      ],
+      "withholding": [],
+      "absence": []
+    },
+    {
+      "id": "energy-unit-header",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "energy",
+            "value": 180,
+            "unit": "kJ",
+            "basis": null,
+            "status": "conflict"
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "energy",
+            "value": 42,
+            "unit": "kcal",
+            "basis": null,
+            "status": "conflict"
+          },
+          "match": true
+        },
+        {
+          "expected": {
+            "key": "sugars",
+            "value": 10.6,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "sugars",
+          "expected": 10.6,
+          "actual": 10.6,
+          "absoluteError": 0,
+          "pass": true
+        }
+      ],
+      "withholding": [
+        {
+          "key": "energy",
+          "pass": true
+        }
+      ],
+      "absence": []
+    },
+    {
+      "id": "split-per-header",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "sugars",
+            "value": 10,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "sugars",
+          "expected": 20,
+          "actual": 20,
+          "absoluteError": 0,
+          "pass": true
+        }
+      ],
+      "withholding": [],
+      "absence": []
+    },
+    {
+      "id": "tiny-salt-no-intermediate-rounding",
+      "synthetic": true,
+      "pass": true,
+      "fields": [
+        {
+          "expected": {
+            "key": "salt",
+            "value": 0.0001,
+            "unit": "g",
+            "basis": 100
+          },
+          "match": true
+        }
+      ],
+      "numeric": [
+        {
+          "key": "salt",
+          "expected": 0.000001,
+          "actual": 0.000001,
+          "absoluteError": 0,
+          "pass": true
+        },
+        {
+          "key": "sodium",
+          "expected": 0.0004,
+          "actual": 0.00039999999999999996,
+          "absoluteError": 5.421010862427522e-20,
+          "pass": true
+        }
+      ],
+      "withholding": [],
+      "absence": []
+    }
+  ]
+}

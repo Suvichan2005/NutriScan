@@ -1,0 +1,16 @@
+NutriScan_Autonomous_Codex_ChatGPT_Handoff_2026-10-21/
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+*.tsbuildinfo
+coverage/
+.data/
+test-results/
+playwright-report/
+docs/evidence/private/
+public/ocr/
+*.log
+
+*.traineddata
