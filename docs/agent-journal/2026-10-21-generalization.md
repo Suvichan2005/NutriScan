@@ -6,7 +6,7 @@ Continued the existing local NutriScan implementation. No source history or remo
 
 ## Changes
 
-- Replaced the profile contract with empty, optional, separate dietary preference, allergy/intolerance, health consideration, goal, age/reference and location fields. Removed the example-specific meal-count extractor and production calculator. Public search remains independent of the private profile.
+- Replaced the profile contract with empty, optional, separate dietary preference, allergy, intolerance, health consideration, goal, age/reference and location fields. Removed the example-specific meal-count extractor and production calculator. Public search remains independent of the private profile.
 - Changed the front/back pair into a variable image collection (up to 10) with add, camera capture, preview, removal, replacement, optional per-photo hint/note and a per-image OCR crop target.
 - Added product detail and free-form question fields; product-only investigation can start without a photo. Removed the three canned follow-up chips.
 - Updated local follow-up handling to consider only user-declared context when a personal suitability question makes it relevant. The package arithmetic remains deterministic and independent of profile defaults.
@@ -44,6 +44,7 @@ Continued the existing local NutriScan implementation. No source history or remo
 - Hardened optional-context assembly: the Gemini request now omits `profile` when all user-entered context fields are blank. The shared predicate treats whitespace as empty; tests cover empty, whitespace-only and populated context. Live Gemini transport remains unverified because no credentials are configured.
 - Completed candidate discovery without requiring a profile country. A user-entered country optionally filters community country tags, and the current product barcode is excluded from the candidates when available. Removed the unreachable `alternatives` branch from `/api/research`; candidate discovery lives in the product catalog route. Live localhost Open Food Facts query `oats` returned four canonically enriched records with explicit `100 g` bases and varied country tags; no stock or “better” claim is made. Request receipt: `b0fb9041-fa6e-4821-8cdc-02ee4cd35656`.
 - Extracted candidate request construction and tested exact barcode lookup, global search without inferred country, trimming an actually supplied country, using the scanned package name when the field still contains its barcode, and excluding that current barcode. Current verification: 74 tests pass across 8 files; TypeScript and optimized Next production build pass. No current screenshot is claimed for this updated candidate-search wording because the in-app browser is disabled.
+- Split optional food-allergy and food-intolerance fields in the session profile, prompt representation and follow-up prompts. The UI says these are distinct user-declared details and that a label cannot establish medical safety or rule out cross-contact. Tests verify independent context handling. The first-visit profile dialog now has a revised field count/layout; a new visual and accessibility pass is pending browser access.
 
 ## Limits
 

@@ -5,7 +5,7 @@ const display:Record<NutrientKey,string>={energy:'Energy',carbohydrate:'Carbohyd
 const rounded=(n:number)=>Math.round((n+Number.EPSILON)*10000)/10000;
 const amountText=(n:number)=>n!==0&&Math.abs(n)<.0001?'<0.0001':String(rounded(n));
 const unique=<T,>(values:T[])=>[...new Set(values)];
-const profileText=(p:Profile)=>[p.dietaryPattern&&`Dietary pattern: ${p.dietaryPattern}`,p.allergiesIntolerances&&`Allergies or intolerances: ${p.allergiesIntolerances}`,p.healthConsiderations&&`User-declared health considerations: ${p.healthConsiderations}`,p.goals&&`User goals: ${p.goals}`,p.ageGroup&&`Age group: ${p.ageGroup}`,p.sexOrReferenceGroup&&`Reference group: ${p.sexOrReferenceGroup}`,p.country&&`Country: ${p.country}`,p.locality&&`Locality: ${p.locality}`].filter(Boolean).join('\n');
+const profileText=(p:Profile)=>[p.dietaryPattern&&`Dietary pattern: ${p.dietaryPattern}`,p.allergies&&`User-declared food allergies: ${p.allergies}`,p.intolerances&&`User-declared food intolerances: ${p.intolerances}`,p.healthConsiderations&&`User-declared health considerations: ${p.healthConsiderations}`,p.goals&&`User goals: ${p.goals}`,p.ageGroup&&`Age group: ${p.ageGroup}`,p.sexOrReferenceGroup&&`Reference group: ${p.sexOrReferenceGroup}`,p.country&&`Country: ${p.country}`,p.locality&&`Locality: ${p.locality}`].filter(Boolean).join('\n');
 function normalized(n:Nutrient):{value:number;unit:string} {
   if(n.key==='energy')return {value:n.unit==='kJ'?n.value/4.184:n.value,unit:'kcal'};
   if(n.key==='sodium')return {value:n.unit==='g'?n.value*1000:n.value,unit:'mg'};
@@ -99,7 +99,8 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const personalSuitability=/\b(safe|suitable|can i eat|should i eat|fit for me|for my|my diet|allerg|intoler|daily)\b/i.test(question);
   const dietRelevant=personalSuitability&&!!userContext;
   if(personalSuitability&&userContext){
-    if(profile.allergiesIntolerances)nextQuestions.push('Which exact ingredient or intolerance should I check against the complete ingredient list?');
+    if(profile.allergies)nextQuestions.push('Which exact allergen should I check against the label and its cross-contact wording?');
+    if(profile.intolerances)nextQuestions.push('Which ingredient or declared amount should I compare with your stated intolerance?');
     limitations.push('Personal suitability is not established by a label calculation; only the context you chose to provide was considered.');
   }
   if(/\bORS\b|oral rehydration|legal|regulat|recall|banned|fssai|licen[cs]e|current/i.test(`${question} ${pkg.claims.join(' ')}`)){

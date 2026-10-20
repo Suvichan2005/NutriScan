@@ -97,7 +97,7 @@ describe('nutrition numerical invariants',()=>{
     expect(()=>buildAudit(dangling,30,'g',defaultProfile)).toThrow(/existing package observations/);
   });
   it('keeps an empty profile empty and rejects old example-specific runtime fields',()=>{
-    expect(defaultProfile).toEqual({dietaryPattern:'',allergiesIntolerances:'',healthConsiderations:'',goals:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''});
+    expect(defaultProfile).toEqual({dietaryPattern:'',allergies:'',intolerances:'',healthConsiderations:'',goals:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''});
     expect(profileSchema.safeParse({...defaultProfile,chapatis:8}).success).toBe(false);
     const audit=buildAudit(label('Per 100 g\nCarbohydrate 60 g'),30,'g',defaultProfile,'Can I eat this daily?');
     expect(audit.findings.some(f=>f.title==='Personal context to consider')).toBe(false);
@@ -105,10 +105,12 @@ describe('nutrition numerical invariants',()=>{
   });
   it('uses only declared general context in relevant follow-ups without changing package arithmetic',()=>{
     const pkg=label('Per 100 g\nCarbohydrate 60 g');
-    const profile={...defaultProfile,allergiesIntolerances:'Avoids peanuts',goals:'Check the ingredient list'};
+    const profile={...defaultProfile,allergies:'Peanuts',intolerances:'Lactose',goals:'Check the ingredient list'};
     const audit=buildAudit(pkg,20,'g',profile,'Is this suitable for me?');
     expect(audit.answer).toMatch(/considered the context you chose to share/i);
     expect(audit.nextQuestions.join(' ')).toMatch(/ingredient/i);
+    expect(audit.nextQuestions).toContain('Which exact allergen should I check against the label and its cross-contact wording?');
+    expect(audit.nextQuestions).toContain('Which ingredient or declared amount should I compare with your stated intolerance?');
     expect(audit.calculations.find(c=>c.nutrient==='carbohydrate')?.result).toBe(12);
     expect(pkg.nutrients[0].value).toBe(60);expect(pkg.observations.length).toBeGreaterThan(0);
   });  it('keeps ORS current legal questions explicitly unresolved',()=>{

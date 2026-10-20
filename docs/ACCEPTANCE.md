@@ -4,7 +4,8 @@ Updated 2026-10-21 from the current checkout. “Implemented” describes code p
 
 | Requirement | State | Evidence or remaining check |
 |---|---|---|
-| First visit has no inferred health, age, dietary, location or goal profile | Implemented; unit-tested; browser-tested | Empty `defaultProfile`, strict schema, and current browser inspection showed all eight optional context controls blank |
+| First visit has no inferred health, age, dietary, location or goal profile | Implemented; unit-tested; browser-tested before latest profile-field split | Empty `defaultProfile` and strict schema are tested. Earlier browser inspection showed the optional controls blank; a fresh screenshot is still needed for the revised separate allergy and intolerance controls. |
+| Food allergies remain distinct from food intolerances | Implemented; unit-tested | Separate schema fields, UI labels and model-context labels; no diagnosis or individual-safety conclusion is implied. Fresh visual/accessibility check pending. |
 | No example-specific meal/condition workflow in production context | Implemented; unit-tested | Legacy profile fields rejected; source scan and static tests; sample label remains a clearly marked user-selected fixture |
 | Variable photos and no mandatory front/back pair | Implemented; browser-tested | Current browser ran one-photo and two-photo input; remove/replace, camera hardware and full interaction review remain pending |
 | Product-only or text-only starting path with open question | Implemented | Client route parses supplied details and retains the question; exact product research stays a separate explicit source action |
