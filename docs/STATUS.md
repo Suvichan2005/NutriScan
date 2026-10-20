@@ -41,4 +41,4 @@ User-declared allergies and intolerances are separate in the profile contract, U
 
 ## Owner-dependent items
 
-See [owner actions](OWNER_ACTIONS.md) for the consolidated list: authorized Gemini project/key and cost decision; paired, real-market product labels for OCR evaluation; current official regulatory documents or an authorized live source; an approved private Git remote if sharing is wanted; and hosting plus real-device decisions.
+See [owner actions](OWNER_ACTIONS.md) for the consolidated list: authorized Gemini project/key and cost decision; paired, real-market product labels for OCR evaluation; an authorized live route for product-specific, current legal verification; an approved private Git remote if sharing is wanted; and hosting plus real-device decisions. A dated FSSAI amendment snapshot is recorded in [REGULATORY_SNAPSHOT.md](REGULATORY_SNAPSHOT.md).
