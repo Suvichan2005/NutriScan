@@ -6,7 +6,7 @@ Updated: 2026-10-21. This is a local development application and research worksp
 
 - Repository root: this directory; branch: `main`.
 - Remote: none configured. No authorized private remote was supplied.
-- First local milestone commit: `d34609bd8503c3f54750fb42fa4cf4e5b299e416` (`Build generalized NutriScan product investigation`). No earlier history or remote was present.
+- First local milestone commit: `6f7b375` (`Build generalized NutriScan product investigation`). No earlier history or remote was present.
 - Provider credentials: none configured; Gemini remains disabled and no provider request has been made.
 - Deployment: none. Loopback-only API origin checks remain intended for local development.
 - Product Design browser: current CUA inventory returned no browser and reported “Local browser use is disabled in Work settings.” This turn cannot produce a fresh screenshot audit; see [UX audit](UX_AUDIT.md).

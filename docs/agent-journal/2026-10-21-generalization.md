@@ -21,7 +21,7 @@ Continued the existing local NutriScan implementation. No source history or remo
 - Optimized Next production build: passed.
 - Current browser screenshot audit: blocked by Codex Work settings, which returned “Local browser use is disabled in Work settings.” No fresh interaction/screenshot acceptance is claimed.
 - Provider: Gemini disabled; no key configured and no live call.
-- Git: local branch `main`, no configured remote. Checkpoint commit: `d34609bd8503c3f54750fb42fa4cf4e5b299e416`.
+- Git: local branch `main`, no configured remote. Implementation checkpoint commit: `6f7b375`.
 
 ## Limits
 
