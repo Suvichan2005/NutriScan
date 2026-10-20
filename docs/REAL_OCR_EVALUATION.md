@@ -19,3 +19,16 @@ The low yield is useful evidence: preprocessing alone did not make these five ph
 - Results do not establish label truth, current formulation, overall OCR accuracy, clinical suitability, or general product performance. Do not treat this set as held-out acceptance data.
 
 See the machine-readable [field-level results](evidence/real-ocr-evaluation.json) and the broader [status](STATUS.md), [acceptance record](ACCEPTANCE.md), and [data provenance](DATA_PROVENANCE.md).
+
+## Optional French/Spanish model probe
+
+The baseline uses English data only. To test whether model-language mismatch explained the two non-English failures, I installed French and Spanish Tesseract.js data packages locally with `--no-save`, then ran `npm run ocr:evaluate:languages`. The optional script verifies photo hashes and compares French-only, Spanish-only, and English-plus-matching-language workers in automatic and single-block modes. It writes [a field-level summary](evidence/real-ocr-language-probe.json) without adding raw OCR text or image bytes.
+
+Across the eight runs, all 56 per-run field comparisons were omitted and the production parser returned zero nutrient rows. Neither language-specific recognition nor its English-plus-language combination detected an unambiguous basis on these source photos. This probe does not show that the language models are generally ineffective; on this selected pair, language support alone did not resolve image geometry, column, or text-recognition problems. The French/Spanish model packages are intentionally not project dependencies and are not copied into the browser bundle.
+
+Reproduce on a checkout with the ignored source photographs by running:
+
+```powershell
+npm install --no-save --package-lock=false --ignore-scripts '@tesseract.js-data/fra@1.0.0' '@tesseract.js-data/spa@1.0.0'
+npm run ocr:evaluate:languages
+```

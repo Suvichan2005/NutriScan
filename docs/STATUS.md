@@ -10,7 +10,7 @@ Updated: 2026-10-21. This is a local development application and research worksp
 - Provider credentials: none configured; Gemini remains disabled and no provider request has been made.
 - Deployment: none. Loopback-only API origin checks remain intended for local development.
 - Product Design browser: Codex in-app browser remains disabled, but the current local app was exercised through Playwright in installed Chrome. Fresh 390 px mobile and 1440 px desktop screenshots and axe results are recorded in the [UX audit](UX_AUDIT.md).
-- Real OCR diagnostic: five source-manifest photos / 37 annotated fields. Best Node pass matched 1, omitted 34 and withheld 2; English-only OCR matched no French or Spanish fields. Full method and limits: [real OCR evaluation](REAL_OCR_EVALUATION.md). This diagnostic is not browser acceptance.
+- Real OCR diagnostics: five source-manifest photos / 37 annotated fields. Best English Node pass matched 1, omitted 34 and withheld 2. French, Spanish and combined language-specific Node probes parsed no fields on the selected pair; current browser runs also produced no usable calculation. Full method and limits: [real OCR evaluation](REAL_OCR_EVALUATION.md).
 
 ## Verification matrix
 

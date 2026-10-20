@@ -37,6 +37,7 @@ Continued the existing local NutriScan implementation. No source history or remo
 - The mobile screenshot exposed wrapping in the workspace navigation. Updated mobile flex/nowrap and small-text styles; current 390 px screenshot shows the navigation on one line.
 - Re-ran local browser OCR on four genuine photos across Saffola, Bagrrys and Coca-Cola investigations. No image set yielded a usable nutrient calculation; noisy, conflicting, or basis/unit-incomplete readings remained unknown. This agrees with the low Node diagnostic yield and strengthens the case for targeted crop/language-mode experiments while preserving fail-closed behavior.
 - Gemini remains disabled; browser camera hardware and full image editing interaction are not verified.
+- An optional offline French/Spanish OCR probe compared language-specific and English-plus-language data with automatic and single-block segmentation on the two non-English annotated images. All 56 per-run field comparisons were omitted and the parser produced no nutrient rows. The optional packages remain out of normal dependencies and browser assets; see [REAL_OCR_EVALUATION.md](../REAL_OCR_EVALUATION.md) and the machine-readable [probe result](../evidence/real-ocr-language-probe.json).
 
 ## Limits
 

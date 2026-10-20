@@ -12,6 +12,7 @@
     "postinstall": "npm run assets",
     "evaluate": "tsx scripts/evaluate.ts",
     "ocr:evaluate": "tsx scripts/evaluate-real-ocr.mts",
+    "ocr:evaluate:languages": "tsx scripts/evaluate-ocr-languages.mts",
     "embeddings:prepare": "tsx scripts/prepare-embeddings.mts",
     "embeddings:evaluate": "tsx scripts/semantic-evaluate.mts"
   },

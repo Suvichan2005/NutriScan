@@ -1,0 +1,483 @@
+{
+  "schemaVersion": 1,
+  "kind": "optional-node-language-model-probe",
+  "generatedAt": "2026-10-20T23:04:46.903Z",
+  "photos": 2,
+  "annotatedFields": 14,
+  "languageDataPackageVersion": "1.0.0",
+  "trainedData": "4.0.0_best_int",
+  "source": "Hash-verified public photos in the Open Food Facts manifest; local bytes are ignored by Git.",
+  "runs": [
+    {
+      "file": "nutella-nutrition-nl-off-3017620422003.jpg",
+      "language": "fra",
+      "mode": "auto",
+      "confidence": 66,
+      "characters": 375,
+      "numericTokens": 18,
+      "basisSignal": false,
+      "parsedNutrientRows": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 539,
+          "unit": "kcal",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 57.5,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 56.3,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 30.9,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 10.6,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 6.3,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "salt",
+          "expected": 0.107,
+          "unit": "g",
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "file": "nutella-nutrition-nl-off-3017620422003.jpg",
+      "language": "fra",
+      "mode": "single-block",
+      "confidence": 54,
+      "characters": 359,
+      "numericTokens": 31,
+      "basisSignal": false,
+      "parsedNutrientRows": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 539,
+          "unit": "kcal",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 57.5,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 56.3,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 30.9,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 10.6,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 6.3,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "salt",
+          "expected": 0.107,
+          "unit": "g",
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "file": "nutella-nutrition-nl-off-3017620422003.jpg",
+      "language": "eng+fra",
+      "mode": "auto",
+      "confidence": 68,
+      "characters": 365,
+      "numericTokens": 17,
+      "basisSignal": false,
+      "parsedNutrientRows": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 539,
+          "unit": "kcal",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 57.5,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 56.3,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 30.9,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 10.6,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 6.3,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "salt",
+          "expected": 0.107,
+          "unit": "g",
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "file": "nutella-nutrition-nl-off-3017620422003.jpg",
+      "language": "eng+fra",
+      "mode": "single-block",
+      "confidence": 61,
+      "characters": 346,
+      "numericTokens": 26,
+      "basisSignal": false,
+      "parsedNutrientRows": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 539,
+          "unit": "kcal",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 57.5,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 56.3,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 30.9,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 10.6,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 6.3,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "salt",
+          "expected": 0.107,
+          "unit": "g",
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "file": "nutella-nutrition-es-off-3017620422003.jpg",
+      "language": "spa",
+      "mode": "auto",
+      "confidence": 58,
+      "characters": 113,
+      "numericTokens": 4,
+      "basisSignal": false,
+      "parsedNutrientRows": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 100,
+          "unit": "kcal",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 1,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 6,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 2,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 10,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 10,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sodium",
+          "expected": 10,
+          "unit": "mg",
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "file": "nutella-nutrition-es-off-3017620422003.jpg",
+      "language": "spa",
+      "mode": "single-block",
+      "confidence": 77,
+      "characters": 144,
+      "numericTokens": 5,
+      "basisSignal": false,
+      "parsedNutrientRows": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 100,
+          "unit": "kcal",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 1,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 6,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 2,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 10,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 10,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sodium",
+          "expected": 10,
+          "unit": "mg",
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "file": "nutella-nutrition-es-off-3017620422003.jpg",
+      "language": "eng+spa",
+      "mode": "auto",
+      "confidence": 62,
+      "characters": 105,
+      "numericTokens": 4,
+      "basisSignal": false,
+      "parsedNutrientRows": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 100,
+          "unit": "kcal",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 1,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 6,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 2,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 10,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 10,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sodium",
+          "expected": 10,
+          "unit": "mg",
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "file": "nutella-nutrition-es-off-3017620422003.jpg",
+      "language": "eng+spa",
+      "mode": "single-block",
+      "confidence": 81,
+      "characters": 144,
+      "numericTokens": 5,
+      "basisSignal": false,
+      "parsedNutrientRows": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "expected": 100,
+          "unit": "kcal",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "expected": 1,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "expected": 6,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "expected": 2,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "expected": 10,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "expected": 10,
+          "unit": "g",
+          "result": "omitted"
+        },
+        {
+          "key": "sodium",
+          "expected": 10,
+          "unit": "mg",
+          "result": "omitted"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Node diagnostic only; not a browser test.",
+    "Two selected labels, visually annotated and not independently blinded.",
+    "Language-specific and English-plus-language passes use source bytes without crop or photo correction.",
+    "Only annotated nutrient values at their explicit basis are scored; OCR text quality and ingredients are outside scope.",
+    "An exact match does not verify product variant, current formulation or label truth."
+  ]
+}

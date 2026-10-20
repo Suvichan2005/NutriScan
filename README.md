@@ -28,6 +28,8 @@ Stop the dev server before `npm start` because both bind port 3400. `npm start` 
 
 `npm run ocr:evaluate` reruns a local diagnostic on five real packaging photos provisioned under ignored `docs/evidence/private/`. It verifies their manifest hashes and writes field-level results without storing photo bytes or raw OCR text. See [the evaluation report](docs/REAL_OCR_EVALUATION.md) for the measured limits; this Node diagnostic is not browser acceptance.
 
+An optional French/Spanish model probe is available as `npm run ocr:evaluate:languages`. It requires separately installing the two language packages with the command in the evaluation report. They are not normal project dependencies and are not included in the browser app.
+
 ## Use
 
 Add up to 10 JPG, PNG or WebP images, use the camera affordance, describe a product, paste label text, or combine these. No image side is required. OCR reads the selected images locally with progress and cancellation; optional per-image hints can guide it. Rotate, improve contrast, invert dark-pack text, or crop a chosen image. Ask a question in your own words before or after reading. The sample label is clearly synthetic. Values with unclear bases, columns or conflicting readings are withheld; manual correction remains available when a photo or record cannot resolve them.
