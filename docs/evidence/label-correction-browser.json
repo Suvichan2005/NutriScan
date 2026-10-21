@@ -1,16 +1,18 @@
 {
   "schemaVersion": 1,
   "kind": "genuine-photo-user-correction-browser-acceptance",
-  "generatedAt": "2026-10-21T03:46:26.230Z",
+  "generatedAt": "2026-10-21T18:21:50.431Z",
   "origin": "local loopback",
   "photoFile": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
   "outcomes": [
     {
       "viewport": "390x844",
       "cropCoordinatesAccepted": true,
-      "genuineOcrObservationCount": 23,
+      "genuineOcrLineCount": 16,
       "originalOcrObservationsRetained": true,
       "userCorrectionApplied": true,
+      "userCorrectionVisibleAndLinked": true,
+      "userCorrectionLinkedEvidenceCount": 4,
       "portionRetained": true,
       "calculationVerified": true,
       "axeViolationIds": [],
@@ -19,9 +21,11 @@
     {
       "viewport": "1440x900",
       "cropCoordinatesAccepted": true,
-      "genuineOcrObservationCount": 23,
+      "genuineOcrLineCount": 16,
       "originalOcrObservationsRetained": true,
       "userCorrectionApplied": true,
+      "userCorrectionVisibleAndLinked": true,
+      "userCorrectionLinkedEvidenceCount": 4,
       "portionRetained": true,
       "calculationVerified": true,
       "axeViolationIds": [],

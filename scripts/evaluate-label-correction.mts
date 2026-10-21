@@ -44,7 +44,7 @@ try {
 
     await page.getByRole('button', { name: /Read these photos/ }).click();
     await page.locator('.results-section').waitFor({ state: 'visible', timeout: 120_000 });
-    const initialOcrObservationCount = await page.locator('.observations-list p').count();
+    const initialOcrObservationCount = await page.locator('.observations-list .observation-entry:not(.correction-observation)').count();
     await page.locator('#portion').fill('50');
     await page.getByRole('button', { name: 'Correct a value' }).click();
     await page.locator('.dialog-body select').nth(0).selectOption({ label: 'Saturated fat' });
@@ -52,17 +52,25 @@ try {
     await page.getByRole('button', { name: 'Recalculate with correction' }).click();
     await page.getByText('Correction applied. Original OCR observations remain in the evidence ledger.').waitFor({ state: 'visible' });
     await page.getByText('See the label & calculation maths').click();
+    await page.getByText('Original label observations').click();
     const correctedRow = page.locator('.details-block table tbody tr').filter({ hasText: 'Saturated fat' });
     const correctedRowText = await correctedRow.innerText();
     const calculationCell = await correctedRow.locator('td').nth(2).innerText();
-    const currentOcrObservationCount = await page.locator('.observations-list p').count();
+    const currentOcrObservationCount = await page.locator('.observations-list .observation-entry:not(.correction-observation)').count();
+    const correctionLedger = page.locator('.correction-observation');
+    const correctionLedgerText = await correctionLedger.innerText();
+    const linkedEvidenceCount = Number(await correctionLedger.getAttribute('data-supersedes-count') ?? 0);
+    const linkedReadingSummaryCount = await correctionLedger.locator('small').count();
+    const userCorrectionVisibleAndLinked = await correctionLedger.count() === 1 && /user correction/i.test(correctionLedgerText) && linkedReadingSummaryCount === 1 && linkedEvidenceCount > 0;
     const axe = await new AxeBuilder({ page }).analyze();
     const outcome = {
       viewport: `${viewport.width}x${viewport.height}`,
       cropCoordinatesAccepted: true,
-      genuineOcrObservationCount: initialOcrObservationCount,
+      genuineOcrLineCount: initialOcrObservationCount,
       originalOcrObservationsRetained: initialOcrObservationCount > 0 && currentOcrObservationCount === initialOcrObservationCount,
       userCorrectionApplied: correctedRowText.toLowerCase().includes('corrected'),
+      userCorrectionVisibleAndLinked,
+      userCorrectionLinkedEvidenceCount: linkedEvidenceCount,
       portionRetained: await page.locator('#portion').inputValue() === '50',
       calculationVerified: /1\.7/.test(calculationCell),
       axeViolationIds: axe.violations.map((violation) => violation.id).sort(),
@@ -70,10 +78,10 @@ try {
     };
     outcomes.push(outcome);
     console.log(JSON.stringify(outcome));
-    if (!outcome.originalOcrObservationsRetained || !outcome.userCorrectionApplied || !outcome.portionRetained || !outcome.calculationVerified || outcome.axeViolationIds.length || pageErrors.length) process.exitCode = 1;
+    if (!outcome.originalOcrObservationsRetained || !outcome.userCorrectionApplied || !outcome.userCorrectionVisibleAndLinked || !outcome.portionRetained || !outcome.calculationVerified || outcome.axeViolationIds.length || pageErrors.length) process.exitCode = 1;
     await context.close();
   }
-  const allViewportsPassed = outcomes.length === 2 && outcomes.every((item) => item.originalOcrObservationsRetained && item.userCorrectionApplied && item.portionRetained && item.calculationVerified && Array.isArray(item.axeViolationIds) && item.axeViolationIds.length === 0 && Array.isArray(item.pageErrors) && item.pageErrors.length === 0);
+  const allViewportsPassed = outcomes.length === 2 && outcomes.every((item) => item.originalOcrObservationsRetained && item.userCorrectionApplied && item.userCorrectionVisibleAndLinked && item.portionRetained && item.calculationVerified && Array.isArray(item.axeViolationIds) && item.axeViolationIds.length === 0 && Array.isArray(item.pageErrors) && item.pageErrors.length === 0);
   const receipt = { schemaVersion: 1, kind: 'genuine-photo-user-correction-browser-acceptance', generatedAt: new Date().toISOString(), origin: 'local loopback', photoFile, outcomes, allViewportsPassed };
   await writeFile('docs/evidence/label-correction-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ output: 'docs/evidence/label-correction-browser.json', allViewportsPassed }));

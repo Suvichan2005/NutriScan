@@ -25,7 +25,10 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
     if (existing) { idMap.set(observation.id, existing.id); continue; }
     let id = observation.id;
     if (observations.some(o => o.id === id)) id = `merged-${crypto.randomUUID()}`;
-    observations.push({ ...observation, id, ...(observation.derivedFromObservationIds?{derivedFromObservationIds:observation.derivedFromObservationIds.map(sourceId=>idMap.get(sourceId)??sourceId)}:{}) });
+    observations.push({ ...observation, id,
+      ...(observation.derivedFromObservationIds?{derivedFromObservationIds:observation.derivedFromObservationIds.map(sourceId=>idMap.get(sourceId)??sourceId)}:{}),
+      ...(observation.supersedesObservationIds?{supersedesObservationIds:observation.supersedesObservationIds.map(sourceId=>idMap.get(sourceId)??sourceId)}:{}),
+    });
     idMap.set(observation.id, id);
   }
   const mergedNutrients = [...current.nutrients];

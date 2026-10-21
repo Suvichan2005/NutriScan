@@ -3,6 +3,7 @@ import packageInfo from '../../../package.json';
 import { assistEvidenceContext, packageForAssist } from '../assist-evidence';
 import { BROWSER_OCR_ENGINE_VERSION } from '../browser';
 import { calculationEvidenceText, defaultProfile, packageSchema, type PackageData } from '../contracts';
+import { applyNutrientCorrection } from '../correction';
 import { retrieveEvidence } from '../knowledge';
 import { mergePackageEvidence } from '../merge-evidence';
 import { parseLabel } from '../parser';
@@ -46,6 +47,17 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(packageSchema.safeParse(unlinked).success).toBe(true);
     expect(assistInput.safeParse({consent:true,question:'What did the label say?',package:unlinked}).success).toBe(false);
     expect(assistInput.safeParse({consent:true,question:'What did the label say?',package:pkg}).success).toBe(true);
+  });
+
+  it('preserves user correction provenance and superseded OCR evidence across the assist boundary',()=>{
+    const corrected=applyNutrientCorrection(makePackage(),{key:'protein',value:8.8,unit:'g',basisAmount:100,basisUnit:'g'});
+    const data=assistInput.parse({consent:true,question:'What did I correct?',package:corrected});
+    const correction=data.package.observations.find(observation=>observation.origin==='user'&&observation.supersedesObservationIds);
+
+    expect(correction).toMatchObject({origin:'user',field:'protein',value:8.8,unit:'g'});
+    expect(correction?.supersedesObservationIds).toContain('line-2');
+    expect(data.package.observations.find(observation=>observation.id==='line-2')?.text).toBe('Protein approx 8.8 g');
+    expect(data.package.nutrients.find(nutrient=>nutrient.key==='protein')).toMatchObject({value:8.8,status:'corrected',observationIds:[correction?.id]});
   });
 
   it('matches live browser image handles to OCR capture side and original dimensions',()=>{
