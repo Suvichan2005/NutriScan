@@ -1,5 +1,11 @@
 # Chronological decisions
 
+## 21 October 2026 — route whole-diet carbohydrate guidance without changing package quantities
+
+- Route only clear guidance questions about fibre/fiber quality, whole grains, pulses/legumes or carbohydrate quality to the existing WHO source. Keep direct package/portion amount questions on the local nutrient calculation path.
+- Answer from the curated source summary: recommend carbohydrate sources from whole grains, vegetables, fruits and pulses; for fibre questions state the adult naturally occurring-fibre recommendation and that child guidance is age-specific. Keep a package calculation such as 2.4 g in 30 g from 8 g/100 g explicitly conditional on the label reading and separate from whole-day intake. Do not invent a pulse serving amount or individual prescription.
+- No new corpus source is introduced. The 308-test suite, production build and Chrome/Playwright synthetic text flow pass at phone and desktop sizes; the source card is visible and no provider or off-origin call occurs. This is not photographed-label or model evidence.
+
 ## 21 October 2026 — surface noisy additive readings as tentative evidence
 
 - Use a bounded multi-token OCR typo match only to produce a tentative additive-identity candidate when at least two exact token anchors and a source-backed registry identity support it. In the local audit, inspect at most 32 complete raw OCR lines of at most 160 characters and require at least 80% line-token coverage.

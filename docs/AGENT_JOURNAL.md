@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — route existing WHO carbohydrate-quality guidance into local audits
+
+- Connected explicit whole-diet fibre/fiber, whole-grain, pulse/legume and carbohydrate-quality questions to the existing WHO guideline. Local replies summarize carbohydrate sources and, for fibre questions, distinguish adult guidance from age-specific child guidance. A 30 g package calculation stays 2.4 g from an 8 g/100 g observation and is separate from the whole-day recommendation; simple amount questions remain on the deterministic path.
+- Re-audited the existing OCR-to-assist boundary against current client request construction, schemas and validator tests. Raw lines, ordered word evidence/geometry/confidence, parser rejection/conflicts and session image provenance remain available; tentative candidates remain span-linked and separate from package facts. Evidence-linked, profile-aware synthesis is supported with safety filters. No schema change was needed.
+- Full offline suite: 308 tests across 33 files; typecheck and optimized production build passed. Installed Chrome/Playwright verified the synthetic text flow at 390×844 and 1440×900, including the WHO answer and reference card, with zero Axe violations, page errors, provider calls or off-origin requests. This is local knowledge-flow evidence, not OCR or provider evidence. Gemini remains disabled.
+
 ## 2026-10-21 — connect tentative entity matching to OCR observations
 
 - Reviewed the existing observation-to-assist contract: it already carries ordered raw OCR lines and word geometry/confidence, capture settings and session image provenance, plus parser-rejected/conflicting numeric and basis candidates. Tentative provider candidates must cite original OCR lines and word indexes. Image bytes remain behind a separate explicit inspection action.
