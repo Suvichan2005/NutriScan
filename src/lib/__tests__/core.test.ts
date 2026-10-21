@@ -529,8 +529,24 @@ describe('genuine local evidence retrieval',()=>{
     expect(reference?.detail).toMatch(/not a package-specific threshold|cannot be directly equated with a packaged-food fibre declaration/i);
     expect(audit.sources.some(source=>source.id==='who-carbohydrate-2023')).toBe(true);
     expect(audit.calculations.find(calculation=>calculation.nutrient==='fiber')?.result).toBe(2.4);
-    expect(audit.answer).toMatch(/2\.4 g fibre/i);
-    expect(audit.answer).not.toMatch(/25 g/i);
+    expect(audit.answer).toMatch(/WHO’s 2023 guideline recommends that carbohydrates come primarily from whole grains, vegetables, fruits and pulses/i);
+    expect(audit.answer).toMatch(/not a product-specific threshold or individual prescription/i);
+    if(/fib(?:er|re)/i.test(question)){
+      expect(audit.answer).toMatch(/adults.*25 g\/day of naturally occurring dietary fibre/i);
+      expect(audit.answer).toMatch(/2\.4 g fibre/i);
+      expect(audit.answer).toMatch(/not a measure of whole-day intake/i);
+    }else{
+      expect(audit.answer).not.toMatch(/\b(?:25|2\.4) g\b/i);
+      expect(audit.answer).not.toMatch(/No personal context was provided/i);
+    }
+  });
+  it('answers whole-grain guidance without inventing a package or pulse serving amount',()=>{
+    const audit=buildAudit(label('Per 100 g\nEnergy 180 kcal'),30,'g',defaultProfile,'What guidance does WHO give about whole grains in the diet?');
+    expect(audit.answer).toMatch(/carbohydrates come primarily from whole grains, vegetables, fruits and pulses/i);
+    expect(audit.answer).toMatch(/population guidance for the whole diet/i);
+    expect(audit.answer).not.toMatch(/\b\d+\s*g\b/i);
+    expect(audit.sources.some(source=>source.id==='who-carbohydrate-2023')).toBe(true);
+    expect(audit.calculations.some(calculation=>calculation.nutrient==='fiber')).toBe(false);
   });
   it('does not attach whole-diet guidance to a simple package fibre-amount question',()=>{
     const audit=buildAudit(label('Per 100 g\nFibre 8 g'),30,'g',defaultProfile,'How much fibre is in 30 g?');

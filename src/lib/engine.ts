@@ -188,7 +188,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   if(pkg.additives.length)trace.push({tool:'lookup_additive',reason:'Resolve exact INS codes and aliases before considering evidence applicability.',status:`${pkg.additives.length} declarations examined locally`});
   if(pkg.additives.includes('955')||/sweetener|sucralose/i.test(question))finding({title:'Sweetener guidance has a defined scope',detail:'WHO’s conditional 2023 recommendation concerns weight control and prevention of noncommunicable disease. It excludes people with existing diabetes and is not a toxicological safety assessment. Ingredient presence provides no dose for an exposure calculation.',status:'context',observationIds:pkg.observations.filter(o=>o.field==='additive:955').map(o=>o.id),sourceIds:['who-nss'],calculationIds:[]});
   if(/sugar[ -]free|no added sugar|sugar claim/i.test(question))finding({title:'Sugar-free does not establish zero carbohydrate',detail:carbs?`The selected portion still has ${amountText(carbs.result)} g total carbohydrate in the label reading. Evaluate that total separately from sugar claims.`:'Total carbohydrate is not established for this portion. A sugar claim alone cannot fill that missing value.',status:carbs?'calculated':'context',observationIds:unique([...pkg.observations.filter(o=>o.field==='claim').map(o=>o.id),...(carbs?.observationIds??[])]),sourceIds:['niddk-meals'],calculationIds:carbs?[carbs.id]:[]});
-  const personalSuitability=/\b(safe|suitable|can i eat|should i eat|fit for me|for my|my diet|allerg|intoler|daily)\b/i.test(question);
+  const personalSuitability=/\b(safe|suitable|can i eat|should i eat|fit for me|for my|my diet|allerg|intoler)\b/i.test(question);
   const dietRelevant=personalSuitability&&!!userContext;
   if(personalSuitability&&userContext){
     if(profile.allergies)nextQuestions.push('Which exact allergen should I check against the label and its cross-contact wording?');
@@ -236,6 +236,16 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     answerIntent='current regulatory question';answer='Current legal or regulatory status is unresolved. The next evidence is a dated official notice for the exact product and jurisdiction, checked for later amendments or orders.';
   }else if(/alternativ|stock|available|reviews?|brand|controvers/i.test(question)){
     answerIntent='current product context';answer='This local audit has not checked current alternatives, stock, reviews or brand events. A current source matching the product and your location is the decisive next evidence.';
+  }else if(wholeDietCarbohydrateGuidance){
+    answerIntent='whole-diet carbohydrate guidance';
+    const fibreGuidance=/\bfib(?:er|re)\b/i.test(question);
+    const recommendation='WHO’s 2023 guideline recommends that carbohydrates come primarily from whole grains, vegetables, fruits and pulses.';
+    const fibreRecommendation=fibreGuidance?' For adults, it recommends at least 25 g/day of naturally occurring dietary fibre; the guidance for children is age-specific.':'';
+    const fibreCalculation=calculations.find(calculation=>calculation.nutrient==='fiber');
+    const packageContext=fibreGuidance
+      ?fibreCalculation?` The recorded package reading calculates to ${amountText(fibreCalculation.result)} ${fibreCalculation.unit} fibre in ${amountText(portion)} ${portionUnit}, if the printed value was read correctly. This is one package portion, not a measure of whole-day intake.`:' No usable package fibre reading with a matching basis is available here, so the portion amount remains unknown.'
+      :'';
+    answer=`${recommendation}${fibreRecommendation} This is population guidance for the whole diet, not a product-specific threshold or individual prescription.${packageContext}`;
   }else if(asksDiabetesCarbohydrateAmount){
     answerIntent='diabetes carbohydrate context';
     const labelCarbs=calculations.find(c=>c.nutrient==='carbohydrate');
