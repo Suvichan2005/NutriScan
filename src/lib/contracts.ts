@@ -21,3 +21,273 @@ export type ProductRecord = {id:string;name:string;brand:string;barcode:string;q
 export type ResearchItem = {id:string;title:string;url:string;publisher:string;publishedAt:string|null;effectiveAt?:string|null;retrievedAt:string;category:string;summary:string;limitations:string;doi?:string};
 export type ImageAsset = {id:string;side:'front'|'back'|'extra';role?:'unknown'|'front'|'nutrition'|'ingredients'|'other';description?:string;rotation?:number;blob:Blob;url:string;width:number;height:number;name:string};
 export const evidenceQuerySchema=z.object({query:z.string().trim().min(2).max(1200),limit:z.number().int().min(1).max(5).optional()}).strict();
+
+// OCR research contracts are separate from the product's package schema. They
+// describe observations and measurements; they never make a package reading
+// authoritative. Raw recognized text is permitted only in the short-lived
+// engine result and must be removed before a tracked evaluation receipt is made.
+export const ocrEvaluationSplitSchema = z.enum(['development','held-out','not-assigned']);
+export const ocrEngineModeSchema = z.enum(['browser','local','server','remote','hybrid']);
+export const ocrBasisKindSchema = z.enum(['per-100g','per-100ml','per-serving','per-package','per-unit','other','unknown']);
+export const ocrBasisSchema = z.object({
+  kind:ocrBasisKindSchema,
+  amount:z.number().positive().max(10000).nullable(),
+  unit:z.enum(['g','ml','piece']).nullable()
+}).strict();
+export type OcrBasis = z.infer<typeof ocrBasisSchema>;
+
+export const ocrPolygonSchema = z.array(z.tuple([z.number().min(0).max(1),z.number().min(0).max(1)])).min(4).max(32);
+export const ocrRegionRoleSchema = z.enum(['table','row','label','value','unit','basis','other-text']);
+export const ocrAnnotatedRegionSchema = z.object({
+  regionId:z.string().min(1).max(100),
+  role:ocrRegionRoleSchema,
+  columnId:z.string().min(1).max(100).nullable().optional(),
+  polygon:ocrPolygonSchema
+}).strict();
+export const ocrReferenceStatusSchema = z.enum(['human-verified','model-assisted','single-reader']);
+export const ocrDatasetFieldSchema = z.object({
+  fieldId:z.string().min(1).max(120),
+  key:z.string().min(1).max(80),
+  labelText:z.string().min(1).max(120),
+  numericValue:z.number().finite().nonnegative().nullable(),
+  numericOperator:z.enum(['eq','lt','lte','gt','gte']).nullable().default('eq'),
+  unit:z.string().min(1).max(24).nullable(),
+  basis:ocrBasisSchema.nullable(),
+  basisText:z.string().min(1).max(160).nullable(),
+  labelRegionId:z.string().min(1).max(100).nullable(),
+  valueRegionId:z.string().min(1).max(100).nullable(),
+  rowRegionId:z.string().min(1).max(100).nullable(),
+  unitRegionId:z.string().min(1).max(100).nullable(),
+  basisRegionId:z.string().min(1).max(100).nullable(),
+  columnId:z.string().min(1).max(100).nullable(),
+  status:z.enum(['clear','ambiguous','not-visible'])
+}).strict();
+export type OcrDatasetField = z.infer<typeof ocrDatasetFieldSchema>;
+export const ocrDatasetRecordSchema = z.object({
+  imageId:z.string().min(1).max(160),
+  productGroupId:z.string().min(1).max(160),
+  split:ocrEvaluationSplitSchema,
+  image:z.object({
+    sha256:z.string().regex(/^[a-fA-F0-9]{64}$/),
+    width:z.number().int().positive(),
+    height:z.number().int().positive(),
+    byteLength:z.number().int().nonnegative()
+  }).strict(),
+  source:z.object({
+    url:z.string().url(),
+    publisher:z.string().min(1).max(160),
+    uploader:z.string().min(1).max(160),
+    licenseId:z.string().min(1).max(80),
+    licenseUrl:z.string().url(),
+    retrievedAt:z.iso.date(),
+    redistributionReview:z.enum(['pending','approved','not-approved','unknown'])
+  }).strict(),
+  annotations:z.object({
+    language:z.string().min(2).max(80),
+    tableRegions:z.array(ocrAnnotatedRegionSchema),
+    nutrients:z.array(ocrDatasetFieldSchema),
+    review:z.object({
+      annotatorCount:z.number().int().positive(),
+      adjudicated:z.boolean(),
+      agreementMetric:z.number().min(0).max(1).nullable(),
+      referenceStatus:ocrReferenceStatusSchema,
+      method:z.string().min(1).max(1000)
+    }).strict()
+  }).strict()
+}).strict();
+export type OcrDatasetRecord = z.infer<typeof ocrDatasetRecordSchema>;
+export const ocrAnnotatedDatasetSchema = z.object({
+  schemaVersion:z.literal(2),
+  datasetVersion:z.string().min(1).max(80),
+  records:z.array(ocrDatasetRecordSchema)
+}).strict();
+export type OcrAnnotatedDataset = z.infer<typeof ocrAnnotatedDatasetSchema>;
+
+export const ocrStageSchema = z.object({
+  textRegionDetected:z.boolean().nullable(),
+  labelRecognized:z.boolean().nullable(),
+  valueRecognized:z.boolean().nullable(),
+  rowColumnAssociated:z.boolean().nullable(),
+  unitRecognized:z.boolean().nullable(),
+  basisRecognized:z.boolean().nullable(),
+  parserAccepted:z.boolean().nullable()
+}).strict();
+export type OcrStage = z.infer<typeof ocrStageSchema>;
+export const ocrParserRejectionCodeSchema = z.enum(['low-confidence','unparsed-format','unsupported-nutrient','missing-value','missing-unit','missing-basis','conflicting-candidates','invalid-number','other']);
+export const ocrEngineConfigurationSchema = z.record(
+  z.string().min(1).max(120).regex(/^(?!.*(?:api[-_]?key|auth|credential|cookie|access[-_]?token|secret|password|prompt|raw[-_]?(?:text|ocr)|recognized[-_]?text|image[-_]?(?:bytes|data)|request[-_]?body|conversation)).*$/i),
+  z.union([z.string().max(200),z.number().finite(),z.boolean(),z.null()])
+);
+export const ocrModelProvenanceSchema = z.object({
+  name:z.string().min(1).max(160),
+  version:z.string().min(1).max(120),
+  artifactUrls:z.array(z.string().url()).max(32),
+  artifactSha256:z.array(z.string().regex(/^[a-fA-F0-9]{64}$/)).max(32),
+  licenseId:z.string().max(120).nullable(),
+  licenseUrl:z.string().url().nullable(),
+  sizeBytes:z.number().int().nonnegative().nullable()
+}).strict();
+export const ocrRecognizedRegionSchema = z.object({
+  regionId:z.string().min(1).max(100),
+  role:ocrRegionRoleSchema,
+  polygon:ocrPolygonSchema,
+  confidence:z.number().min(0).max(1).nullable(),
+  text:z.string().max(2000)
+}).strict();
+export const ocrExtractionCandidateSchema = z.object({
+  candidateId:z.string().min(1).max(120),
+  key:z.string().min(1).max(80),
+  numericValue:z.number().finite().nonnegative().nullable(),
+  numericOperator:z.enum(['eq','lt','lte','gt','gte']).nullable(),
+  unit:z.string().min(1).max(24).nullable(),
+  basis:ocrBasisSchema.nullable(),
+  sourceRegionIds:z.array(z.string().min(1).max(100)).max(100),
+  confidence:z.number().min(0).max(1).nullable()
+}).strict();
+export type OcrExtractionCandidate = z.infer<typeof ocrExtractionCandidateSchema>;
+export const ocrExtractionSchema = z.object({
+  schemaVersion:z.literal(1),
+  input:z.object({
+    imageId:z.string().min(1).max(160),
+    productGroupId:z.string().min(1).max(160).optional(),
+    sha256:z.string().regex(/^[a-fA-F0-9]{64}$/),
+    width:z.number().int().positive(),
+    height:z.number().int().positive()
+  }).strict(),
+  engine:z.object({
+    name:z.string().min(1).max(120),
+    version:z.string().min(1).max(120),
+    mode:ocrEngineModeSchema,
+    codeRevision:z.string().min(1).max(120),
+    configuration:ocrEngineConfigurationSchema,
+    model:ocrModelProvenanceSchema.nullable()
+  }).strict(),
+  recognizedRegions:z.array(ocrRecognizedRegionSchema).max(10000),
+  candidates:z.array(ocrExtractionCandidateSchema).max(1000),
+  abstentions:z.array(z.object({key:z.string().min(1).max(80),basis:ocrBasisSchema.nullable(),reason:z.string().min(1).max(240)}).strict()).max(1000),
+  fieldDiagnostics:z.array(z.object({key:z.string().min(1).max(80),basis:ocrBasisSchema.nullable(),parserRejectionCode:ocrParserRejectionCodeSchema.nullable()}).strict()).max(1000),
+  measurements:z.object({
+    coldStartMs:z.number().nonnegative().nullable(),
+    inferenceMs:z.number().nonnegative().nullable(),
+    warmRunCount:z.number().int().nonnegative().nullable(),
+    warmMedianMs:z.number().nonnegative().nullable(),
+    warmP95Ms:z.number().nonnegative().nullable(),
+    networkBytes:z.number().int().nonnegative().nullable(),
+    imageTransferBytes:z.number().int().nonnegative().nullable(),
+    modelBytes:z.number().int().nonnegative().nullable(),
+    memory:z.object({valueBytes:z.number().int().nonnegative().nullable(),scope:z.enum(['browser-js-heap','browser-process-rss','wasm-linear-memory','process-rss','unavailable']),measurement:z.enum(['peak','sample','unavailable'])}).strict(),
+    estimatedCostPer1000Images:z.number().nonnegative().nullable(),
+    costCurrency:z.string().length(3).nullable(),
+    costAssumptions:z.string().max(2000).nullable(),
+    costSourceUrl:z.string().url().nullable(),
+    costAssumptionDate:z.iso.date().nullable()
+  }).strict(),
+  environment:z.object({
+    runtime:z.string().max(160).nullable(),
+    browser:z.string().max(160).nullable(),
+    operatingSystem:z.string().max(160).nullable(),
+    architecture:z.string().max(80).nullable(),
+    cpu:z.string().max(160).nullable(),
+    gpu:z.string().max(160).nullable(),
+    deviceClass:z.string().max(120).nullable(),
+    threadCount:z.number().int().positive().nullable(),
+    networkProfile:z.string().max(120).nullable(),
+    cacheState:z.enum(['cold','warm','mixed','unknown']),
+    powerProfile:z.string().max(120).nullable(),
+    thermalState:z.string().max(120).nullable()
+  }).strict()
+}).strict();
+export type OcrExtraction = z.infer<typeof ocrExtractionSchema>;
+
+export const ocrEvaluationReceiptSchema = z.object({
+  schemaVersion:z.literal(2),
+  experimentId:z.string().min(1).max(160),
+  datasetVersion:z.string().min(1).max(80),
+  runAt:z.iso.datetime(),
+  split:ocrEvaluationSplitSchema,
+  referenceStatus:ocrReferenceStatusSchema,
+  input:z.object({
+    imageId:z.string().min(1).max(160),
+    productGroupId:z.string().min(1).max(160),
+    sha256:z.string().regex(/^[a-fA-F0-9]{64}$/),
+    width:z.number().int().positive(),
+    height:z.number().int().positive(),
+    preprocessing:z.string().max(300)
+  }).strict(),
+  engine:z.object({
+    name:z.string().min(1).max(120),
+    version:z.string().min(1).max(120),
+    mode:ocrEngineModeSchema,
+    codeRevision:z.string().min(1).max(120),
+    configuration:ocrEngineConfigurationSchema,
+    model:ocrModelProvenanceSchema.nullable()
+  }).strict(),
+  environment:z.object({
+    runtime:z.string().max(160).nullable(),
+    browser:z.string().max(160).nullable(),
+    operatingSystem:z.string().max(160).nullable(),
+    architecture:z.string().max(80).nullable(),
+    cpu:z.string().max(160).nullable(),
+    gpu:z.string().max(160).nullable(),
+    deviceClass:z.string().max(120).nullable(),
+    threadCount:z.number().int().positive().nullable(),
+    networkProfile:z.string().max(120).nullable(),
+    cacheState:z.enum(['cold','warm','mixed','unknown']),
+    powerProfile:z.string().max(120).nullable(),
+    thermalState:z.string().max(120).nullable()
+  }).strict(),
+  metrics:z.object({
+    coldStartMs:z.number().nonnegative().nullable(),
+    inferenceMs:z.number().nonnegative().nullable(),
+    warmRunCount:z.number().int().nonnegative().nullable(),
+    warmMedianMs:z.number().nonnegative().nullable(),
+    warmP95Ms:z.number().nonnegative().nullable(),
+    networkBytes:z.number().int().nonnegative().nullable(),
+    imageTransferBytes:z.number().int().nonnegative().nullable(),
+    modelBytes:z.number().int().nonnegative().nullable(),
+    memory:z.object({valueBytes:z.number().int().nonnegative().nullable(),scope:z.enum(['browser-js-heap','browser-process-rss','wasm-linear-memory','process-rss','unavailable']),measurement:z.enum(['peak','sample','unavailable'])}).strict(),
+    estimatedCostPer1000Images:z.number().nonnegative().nullable(),
+    costCurrency:z.string().length(3).nullable(),
+    costAssumptions:z.string().max(2000).nullable(),
+    costSourceUrl:z.string().url().nullable(),
+    costAssumptionDate:z.iso.date().nullable(),
+    fieldScoring:z.object({
+      expected:z.number().int().nonnegative(),
+      expectedClear:z.number().int().nonnegative(),
+      emitted:z.number().int().nonnegative(),
+      scoredEmitted:z.number().int().nonnegative(),
+      matched:z.number().int().nonnegative(),
+      exact:z.number().int().nonnegative(),
+      incorrect:z.number().int().nonnegative(),
+      omitted:z.number().int().nonnegative(),
+      abstained:z.number().int().nonnegative(),
+      unscorable:z.number().int().nonnegative(),
+      unscorableEmitted:z.number().int().nonnegative(),
+      falsePositives:z.number().int().nonnegative(),
+      exactFieldPrecision:z.number().min(0).max(1).nullable(),
+      exactFieldRecall:z.number().min(0).max(1).nullable(),
+      fieldCoverage:z.number().min(0).max(1).nullable(),
+      numericCorrect:z.number().int().nonnegative(),
+      numericScored:z.number().int().nonnegative(),
+      numericAccuracy:z.number().min(0).max(1).nullable(),
+      unitCorrect:z.number().int().nonnegative(),
+      unitScored:z.number().int().nonnegative(),
+      unitAccuracy:z.number().min(0).max(1).nullable(),
+      basisCorrect:z.number().int().nonnegative(),
+      basisScored:z.number().int().nonnegative(),
+      basisAccuracy:z.number().min(0).max(1).nullable()
+    }).strict()
+  }).strict(),
+  fields:z.array(z.object({
+    fieldId:z.string().min(1).max(120).nullable(),
+    candidateId:z.string().min(1).max(120).nullable(),
+    emitted:z.object({key:z.string().min(1).max(80),numericValue:z.number().finite().nonnegative().nullable(),numericOperator:z.enum(['eq','lt','lte','gt','gte']).nullable(),unit:z.string().min(1).max(24).nullable(),basis:ocrBasisSchema.nullable()}).strict().nullable(),
+    outcome:z.enum(['exact','incorrect','omitted','abstained','unscorable','false-positive']),
+    numericExact:z.boolean().nullable(),
+    unitExact:z.boolean().nullable(),
+    basisExact:z.boolean().nullable(),
+    stage:ocrStageSchema,
+    parserRejectionCode:ocrParserRejectionCodeSchema.nullable()
+  }).strict()).max(2000)
+}).strict();
+export type OcrEvaluationReceipt = z.infer<typeof ocrEvaluationReceiptSchema>;

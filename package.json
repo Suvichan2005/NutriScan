@@ -14,6 +14,7 @@
     "assets": "node scripts/prepare-ocr.mjs",
     "postinstall": "npm run assets",
     "evaluate": "tsx scripts/evaluate.ts",
+    "ocr:contracts:export": "tsx scripts/export-ocr-contract-schemas.mts",
     "ocr:evaluate": "tsx scripts/evaluate-real-ocr.mts",
     "ocr:evaluate:languages": "tsx scripts/evaluate-ocr-languages.mts",
     "ocr:evaluate:preprocessing": "tsx scripts/evaluate-ocr-preprocessing.mts",

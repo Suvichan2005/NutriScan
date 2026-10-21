@@ -1,0 +1,82 @@
+{
+  "registryVersion": 1,
+  "retrievedAt": "2026-10-21",
+  "sourcePublisher": "Open Food Facts",
+  "licenseGuidanceUrl": "https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/tutorials/license-be-on-the-legal-side/",
+  "statusDefinition": "Candidates are not assigned to a research split and no OCR engine has been run against these bytes. Independent human annotation and review are pending.",
+  "candidates": [
+    {
+      "imageId": "off-0066721028426-nutrition-rev25",
+      "productGroupId": "gtin-0066721028426",
+      "productName": "Wheat Thins Original",
+      "productPageUrl": "https://world.openfoodfacts.org/product/0066721028426",
+      "sourceImageUrl": "https://images.openfoodfacts.org/images/products/006/672/102/8426/nutrition_en.25.full.jpg",
+      "uploader": "municorn-calorie-counter-app",
+      "licenseId": "CC BY-SA (Open Food Facts product image); image-specific review pending",
+      "image": {
+        "sha256": "3914197e981456cd52432b99eef7c7b2f2f51f3fef912ca3b7e9cb019956c3e1",
+        "width": 592,
+        "height": 1280,
+        "byteLength": 102725
+      },
+      "privateLocalFile": "docs/evidence/private/ocr-heldout-2026-10-pilot/wheat-thins-nutrition.jpg",
+      "status": "pending-independent-human-annotation",
+      "redistributionReview": "pending"
+    },
+    {
+      "imageId": "off-0718604978174-nutrition-rev14",
+      "productGroupId": "gtin-0718604978174",
+      "productName": "Nonni's Limoncello Biscotti Bites",
+      "productPageUrl": "https://world.openfoodfacts.org/product/0718604978174",
+      "sourceImageUrl": "https://images.openfoodfacts.org/images/products/071/860/497/8174/nutrition_en.14.full.jpg",
+      "uploader": "anonymous-s7co2zv64u",
+      "licenseId": "CC BY-SA (Open Food Facts product image); image-specific review pending",
+      "image": {
+        "sha256": "c1a0b27c730f0ad897bfb5b7f7b2f361c7652f933c58bf975d5e88b2e89171f4",
+        "width": 2091,
+        "height": 2939,
+        "byteLength": 593611
+      },
+      "privateLocalFile": "docs/evidence/private/ocr-heldout-2026-10-pilot/nonnis-biscotti-nutrition.jpg",
+      "status": "pending-independent-human-annotation",
+      "redistributionReview": "pending"
+    },
+    {
+      "imageId": "off-0028400079143-nutrition-rev12",
+      "productGroupId": "gtin-0028400079143",
+      "productName": "Grandma's Chocolate Brownie",
+      "productPageUrl": "https://world.openfoodfacts.org/product/0028400079143",
+      "sourceImageUrl": "https://images.openfoodfacts.org/images/products/002/840/007/9143/nutrition_en.12.full.jpg",
+      "uploader": "michaelrostom",
+      "licenseId": "CC BY-SA (Open Food Facts product image); image-specific review pending",
+      "image": {
+        "sha256": "f9a6b8199271fb97d7c8ccd4bd484c22b1c9fb9e09677e8e4fa39c6dba9f1b34",
+        "width": 1387,
+        "height": 2297,
+        "byteLength": 438537
+      },
+      "privateLocalFile": "docs/evidence/private/ocr-heldout-2026-10-pilot/grandmas-brownie-nutrition.jpg",
+      "status": "pending-independent-human-annotation",
+      "redistributionReview": "pending"
+    },
+    {
+      "imageId": "off-9300652010794-img28",
+      "productGroupId": "gtin-9300652010794",
+      "productName": "Weet-Bix",
+      "productPageUrl": "https://world.openfoodfacts.org/product/9300652010794",
+      "sourceImageUrl": "https://images.openfoodfacts.org/images/products/930/065/201/0794/28.jpg",
+      "uploader": "municorn-calorie-counter-app",
+      "licenseId": "CC BY-SA (Open Food Facts product image); image-specific review pending",
+      "image": {
+        "sha256": "2dadd5a740747d95e3d781c741a31964633abde75150933586168dedf7f3270a",
+        "width": 592,
+        "height": 1280,
+        "byteLength": 175116
+      },
+      "privateLocalFile": "docs/evidence/private/ocr-heldout-2026-10-pilot/weet-bix-original-imgid-28.jpg",
+      "status": "excluded-low-legibility",
+      "exclusionReason": "The nutrition panel remains difficult to read at original source resolution; do not use as a clear numeric reference without better source pixels or independent adjudication.",
+      "redistributionReview": "pending"
+    }
+  ]
+}
