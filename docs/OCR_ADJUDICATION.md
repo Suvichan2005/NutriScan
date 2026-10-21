@@ -25,7 +25,7 @@ An `ambiguous` or `not-visible` decision must supply a field with `printedNumeri
 The complete input follows `data/ocr-adjudication.schema.json`. It includes `schemaVersion: 1`, a dataset version, a pseudonymous adjudicator code, an ISO timestamp, a method description, and a `decisions` array. Then run:
 
 ```powershell
-npm run ocr:adjudicate-annotations -- <reader-a.json> <reader-b.json> <decisions.json> > adjudicated-dataset.json
+npx tsx scripts/adjudicate-ocr-annotation-passes.mts <reader-a.json> <reader-b.json> <decisions.json> > adjudicated-dataset.json
 ```
 
 The command validates exact image identity, image size, product group, split, source/license metadata and language. It hashes the original pass files byte-for-byte, requires distinct reader codes and pass hashes, rejects reused or unmapped source fields, remaps both readers' region IDs without collision, and emits one strict dataset record. Keep the inputs and output local unless redistribution terms and image-specific rights have been reviewed. The output has source-pass hashes, field-level source links and rationale, region-ID mappings, an inter-reader score, and field-linked region-overlap measurements. It contains no image bytes, filenames or local paths.
