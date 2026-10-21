@@ -191,7 +191,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     }
     const n=candidate.nutrient;
     const result=candidate.value*portion/n.basis!.amount;
-    const calc:Calculation={id:`calc-${key}`,label:`${display[key]} in ${portion} ${portionUnit}`,nutrient:key,input:candidate.value,inputUnit:candidate.unit,basisAmount:n.basis!.amount,portion,portionUnit,result,unit:candidate.unit,formula:`${candidate.value} ${candidate.unit} × ${portion} ${portionUnit} ÷ ${n.basis!.amount} ${n.basis!.unit}`,observationIds:candidate.observations,assumptions:['The label reading and its stated basis are correct.','The portion has the same composition as the labelled product.']};
+    const calc:Calculation={id:`calc-${key}`,label:`${display[key]} in ${portion} ${portionUnit}`,nutrient:key,input:candidate.value,inputUnit:candidate.unit,basisAmount:n.basis!.amount,portion,portionUnit,result,unit:candidate.unit,formula:`${candidate.value} ${candidate.unit} × ${portion} ${portionUnit} ÷ ${n.basis!.amount} ${n.basis!.unit}`,observationIds:candidate.observations,assumptions:['This calculation assumes the displayed reading and basis are accurate; NutriScan has not independently verified either.','The portion is assumed to have the same composition as the labelled product.']};
     calculations.push(calc);
     finding({title:calc.label,detail:`${rounded(result)} ${candidate.unit}, calculated from the printed ${n.basis!.description}.`,status:'calculated',observationIds:calc.observationIds,sourceIds:[],calculationIds:[calc.id]});
   }

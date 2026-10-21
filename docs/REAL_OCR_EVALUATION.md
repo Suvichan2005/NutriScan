@@ -1,6 +1,6 @@
 # Real package OCR diagnostic
 
-Updated: 2026-10-21. Reproduce with `npm run ocr:evaluate` after the private evaluation photographs have been provisioned locally. The command verifies every photograph against the SHA-256 in `data/semantic-photo-manifest.json`, runs the installed Tesseract.js English model, compares parsed values with the manifest's human visual annotations, and writes `docs/evidence/real-ocr-evaluation.json`. It does not write source images or raw OCR text into the result.
+Updated: 2026-10-22. Reproduce with `npm run ocr:evaluate` after the private evaluation photographs have been provisioned locally. The command verifies every photograph against the SHA-256 in `data/semantic-photo-manifest.json`, runs the installed Tesseract.js English model, compares parsed values with the manifest's human visual annotations, and writes `docs/evidence/real-ocr-evaluation.json`. It does not write source images or raw OCR text into the result.
 
 ## Current result
 
@@ -11,6 +11,17 @@ Reproduced from the current checkout on 21 October 2026 with `npm run ocr:evalua
 The benchmark also covers the browser-prepared image in automatic, single-column and single-block segmentation. Prepared AUTO matched 0, incorrectly matched 0, omitted 36 and withheld 1; its parser emitted no unconflicted nutrient with an explicit basis across these photos. Prepared SINGLE_COLUMN omitted all 37. Prepared SINGLE_BLOCK matched the 2 fields above and produced two unconflicted, explicit-basis nutrient rows, both on one photo. AUTO did not produce a usable-basis row that could be recovered by switching modes; the one photo where SINGLE_BLOCK recovered usable rows is not enough evidence to add a second OCR pass to every ambiguous image. It remains a candidate for broader evaluation, with the existing fail-closed behavior retained.
 
 The low yield is useful evidence: preprocessing alone did not make these five photos reliably machine-readable, and false numeric readings remain a material risk. The segmentation comparison is exploratory and does not support a population accuracy estimate or a claim that one image mode is generally better. Keep uncertain values withheld and ask for a closer, flatter, well-lit photo or exact-product corroboration where warranted.
+
+## Same-photo browser-stage diagnosis
+
+On 22 October, the installed-Chrome intake-to-audit journey replayed the same hash-verified development Saffola photo at 390×844 and 1440×900. Both viewport runs produced the same single-reader result: **1/9 exact fields, 0 incorrect, 5 omitted and 3 withheld**. They are repeated views of one photo, not independent samples. The sanitized stage summary is in [core-journey-audit.json](evidence/core-journey-audit.json); screenshots and raw OCR remain in ignored private storage.
+
+- **Text detection:** 16 line boxes and 95 word boxes were retained with in-bounds geometry. There are no independently annotated text-region boxes, so detector precision/recall and missed-region counts cannot be calculated. Visual overlap between neighboring rows was observed, but was not independently scored.
+- **Recognition and candidate extraction:** among nine human-read nutrient fields, production parser candidates contained an exact numeric value for 2, expected units for 2, and the expected `per 100 g` basis for 4. A private side-by-side read showed clear numeric recognition errors (including energy and sodium) and garbling near other rows. These are parser-visible field candidates, not character-level OCR accuracy: absent gold line/word spans prevent cleanly separating OCR recognition from parser candidate generation.
+- **Table structure and association:** one field retained multiple numeric candidates. Row/column association has no gold geometry and therefore remains unscored; five annotated fields had no parser diagnostic, which does not identify whether the failure was missed detection, recognition, nutrient-name matching or parser coverage. The available geometry supports later annotation, but is not itself table reconstruction evidence.
+- **Basis, unit and parser:** candidate basis detection was better than numeric/unit extraction, but only one field had the correct numeric value, unit and basis together. Four fields had parser diagnostics: one accepted row and three rejected fields. Rejection reasons occurred twice for `missing-unit`, once for `multiple-values` and once for `invalid-value` (the fat field has two reasons). The three rejections are safe abstentions, not successful extraction.
+
+This diagnosis localizes likely recognition/candidate loss and parser abstention on one image; it does not estimate stage accuracy or justify an OCR-engine change. Keep the browser reader in place while the independently adjudicated set grows. A future stage benchmark needs independently marked text/word boxes and nutrient label/value/unit/basis/row/column regions on the same held-out products before comparing detector, recognition and table-association performance separately.
 
 ## User-directed crop experiments
 

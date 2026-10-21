@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "core-intake-to-audit-design-review",
-  "generatedAt": "2026-10-21T20:07:57.295Z",
+  "generatedAt": "2026-10-21T20:41:36.857Z",
   "captureTool": "Playwright using installed Chrome",
   "appOrigin": "http://127.0.0.1:3400",
   "acceptanceMode": "loopback local application",
@@ -224,6 +224,36 @@
           }
         ]
       },
+      "stageDiagnostics": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "textDetection": {
+          "observedLineBoxes": 16,
+          "observedWordBoxes": 95,
+          "precisionRecall": null,
+          "limitation": "No independently annotated text-region boxes are available; observed boxes are not detection precision or recall."
+        },
+        "recognition": {
+          "annotatedFieldsWithExactNumericCandidate": 2,
+          "annotatedFieldsWithExactUnitCandidate": 2,
+          "annotatedFieldsWithExactBasisCandidate": 4,
+          "expectedFields": 9
+        },
+        "tableStructure": {
+          "annotatedFieldsWithMultipleNumericCandidates": 1,
+          "annotatedFieldsWithoutParserDiagnostic": 5,
+          "rowColumnAssociationScored": false,
+          "limitation": "Line and word geometry are retained, but no gold row or column regions exist for independent association scoring."
+        },
+        "parser": {
+          "annotatedFieldsWithDiagnostic": 4,
+          "rejectedFieldCount": 3,
+          "rejectionReasonOccurrences": {
+            "missing-unit": 2,
+            "multiple-values": 1,
+            "invalid-value": 1
+          }
+        }
+      },
       "annotatedFieldScoreConserved": true,
       "noIncorrectAnnotatedFields": true,
       "addPhotoActionVisible": true,
@@ -243,6 +273,8 @@
       "originalObservationsRetained": true,
       "portion": "50",
       "fiftyGramCalculation": true,
+      "ocrReadingMarkedUnverified": true,
+      "correctionMarkedUnverified": true,
       "syntheticProfileOnly": true,
       "personalizedQuestionRetained": true,
       "personalCarbohydrateTargetWithheld": true,
@@ -475,6 +507,36 @@
           }
         ]
       },
+      "stageDiagnostics": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "textDetection": {
+          "observedLineBoxes": 16,
+          "observedWordBoxes": 95,
+          "precisionRecall": null,
+          "limitation": "No independently annotated text-region boxes are available; observed boxes are not detection precision or recall."
+        },
+        "recognition": {
+          "annotatedFieldsWithExactNumericCandidate": 2,
+          "annotatedFieldsWithExactUnitCandidate": 2,
+          "annotatedFieldsWithExactBasisCandidate": 4,
+          "expectedFields": 9
+        },
+        "tableStructure": {
+          "annotatedFieldsWithMultipleNumericCandidates": 1,
+          "annotatedFieldsWithoutParserDiagnostic": 5,
+          "rowColumnAssociationScored": false,
+          "limitation": "Line and word geometry are retained, but no gold row or column regions exist for independent association scoring."
+        },
+        "parser": {
+          "annotatedFieldsWithDiagnostic": 4,
+          "rejectedFieldCount": 3,
+          "rejectionReasonOccurrences": {
+            "missing-unit": 2,
+            "multiple-values": 1,
+            "invalid-value": 1
+          }
+        }
+      },
       "annotatedFieldScoreConserved": true,
       "noIncorrectAnnotatedFields": true,
       "addPhotoActionVisible": true,
@@ -494,6 +556,8 @@
       "originalObservationsRetained": true,
       "portion": "50",
       "fiftyGramCalculation": true,
+      "ocrReadingMarkedUnverified": true,
+      "correctionMarkedUnverified": true,
       "syntheticProfileOnly": true,
       "personalizedQuestionRetained": true,
       "personalCarbohydrateTargetWithheld": true,

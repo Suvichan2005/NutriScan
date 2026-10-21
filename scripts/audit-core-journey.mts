@@ -114,6 +114,8 @@ try {
     await inspectionDialog.waitFor({state:'hidden'});
     const mathsDetails = page.locator('.nutrition-card .details-block');
     if (!(await mathsDetails.evaluate((details) => (details as HTMLDetailsElement).open))) await page.getByText('See the label & calculation maths').click();
+    const ocrReadingAssumption = await mathsDetails.locator('p.formula small').first().innerText();
+    const ocrReadingMarkedUnverified = /not independently verified/i.test(ocrReadingAssumption);
     const calculated = await mathsDetails.locator('table tbody tr').evaluateAll((rows) => rows.filter((row) => !!row.cells[2]?.textContent?.trim() && !/withheld/i.test(row.cells[2].textContent ?? '')).length);
     const satFatCells = await mathsDetails.locator('table tbody tr').filter({ hasText: 'Saturated fat' }).locator('td').allInnerTexts();
     const labelValue = Number.parseFloat(satFatCells[0] ?? '');
@@ -180,6 +182,37 @@ try {
       const capture = line.imageId ? captures.get(line.imageId) : undefined;
       return !line.ocrWords?.length || !!capture && line.ocrWords.every((word) => word.bbox.x1 <= capture.preparedImage.width && word.bbox.y1 <= capture.preparedImage.height);
     });
+    const annotatedFieldsWithDiagnostics = annotatedFields.filter((field) => field.parserDiagnostics.length > 0);
+    const rejectionReasonOccurrences: Record<string, number> = {};
+    for (const diagnostic of annotatedFields.flatMap((field) => field.parserDiagnostics).filter((item) => item.decision === 'rejected')) {
+      for (const reason of diagnostic.reasonCodes) rejectionReasonOccurrences[reason] = (rejectionReasonOccurrences[reason] ?? 0) + 1;
+    }
+    const stageDiagnostics = {
+      referenceStatus: 'single human visual read; not independently adjudicated',
+      textDetection: {
+        observedLineBoxes: exportedOcrLines.length,
+        observedWordBoxes: exportedOcrWords.length,
+        precisionRecall: null,
+        limitation: 'No independently annotated text-region boxes are available; observed boxes are not detection precision or recall.',
+      },
+      recognition: {
+        annotatedFieldsWithExactNumericCandidate: annotatedFields.filter((field) => field.ocrNumericCandidateExact).length,
+        annotatedFieldsWithExactUnitCandidate: annotatedFields.filter((field) => field.ocrUnitCandidateExact).length,
+        annotatedFieldsWithExactBasisCandidate: annotatedFields.filter((field) => field.ocrBasisCandidateExact).length,
+        expectedFields: annotatedFields.length,
+      },
+      tableStructure: {
+        annotatedFieldsWithMultipleNumericCandidates: annotatedFields.filter((field) => field.ocrNumericCandidateCount > 1).length,
+        annotatedFieldsWithoutParserDiagnostic: annotatedFields.filter((field) => field.parserDiagnostics.length === 0).length,
+        rowColumnAssociationScored: false,
+        limitation: 'Line and word geometry are retained, but no gold row or column regions exist for independent association scoring.',
+      },
+      parser: {
+        annotatedFieldsWithDiagnostic: annotatedFieldsWithDiagnostics.length,
+        rejectedFieldCount: annotatedFieldsWithDiagnostics.filter((field) => field.parserDiagnostics.some((diagnostic) => diagnostic.decision === 'rejected')).length,
+        rejectionReasonOccurrences,
+      },
+    };
 
     const initialUserMessages = await page.locator('.conversation .user-message').allTextContents();
     const initialQuestionRetained = initialUserMessages.some((message) => message.trim() === 'What does this package show for saturated fat?');
@@ -202,6 +235,8 @@ try {
     const corrected = page.locator('.details-block table tbody tr').filter({ hasText: 'Saturated fat' });
     const correctedText = await corrected.innerText();
     const calculation = await corrected.locator('td').nth(2).innerText();
+    const correctedReadingAssumption = await mathsDetails.locator('p.formula small').first().innerText();
+    const correctionMarkedUnverified = /not independently verified/i.test(correctedReadingAssumption);
     if (!(await originalObservations.evaluate((details) => (details as HTMLDetailsElement).open))) await originalObservations.locator('summary').click();
     const renderedOriginalOcrIds = await originalObservations.locator('.observations-list .observation-entry:not(.correction-observation)').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-observation-id')).filter((id): id is string => id !== null));
     const originalOcrIds = exported.package.observations.filter((item) => item.field === 'ocr-line').map((item) => item.id);
@@ -240,6 +275,7 @@ try {
       ocrWordGeometryWithinCapture,
       parsedNutrientRows: parsedRows,
       annotatedFieldCounts,
+      stageDiagnostics,
       annotatedFieldScoreConserved,
       noIncorrectAnnotatedFields,
       addPhotoActionVisible,
@@ -259,6 +295,8 @@ try {
       originalObservationsRetained: retainedObservations,
       portion: await page.locator('#portion').inputValue(),
       fiftyGramCalculation: /1\.7/.test(calculation),
+      ocrReadingMarkedUnverified,
+      correctionMarkedUnverified,
       syntheticProfileOnly: true,
       personalizedQuestionRetained: (await personalizedUserMessage.innerText()).includes(personalizedQuestion),
       personalCarbohydrateTargetWithheld: /does not establish total carbohydrate/i.test(personalizedAnswer) && /cannot calculate a package amount or a daily target/i.test(personalizedAnswer) && !/\b\d+(?:\.\d+)?\s*g\s*\/\s*day/i.test(personalizedAnswer),
@@ -277,7 +315,7 @@ try {
   const receipt = { schemaVersion: 1, kind: 'core-intake-to-audit-design-review', generatedAt: new Date().toISOString(), captureTool: 'Playwright using installed Chrome', appOrigin: origin.origin, acceptanceMode: process.env.NUTRISCAN_ACCEPTANCE_MODE ?? 'loopback local application', photoFile, limitations: ['OCR field measurements use one source image and a single human visual read, not independent adjudication or a held-out accuracy estimate.', 'Axe results are automated checks, not full accessibility conformance.', 'The browser receipt counts Gemini route invocations, not downstream provider calls or provider cost.'], screenshots: 'docs/evidence/private/core-journey-audit', outcomes: results };
   await writeFile('docs/evidence/core-journey-audit.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/core-journey-audit.json', screenshotDirectory: 'docs/evidence/private/core-journey-audit', outcomes: results }, null, 2));
-  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.annotatedFieldScoreConserved || !item.noIncorrectAnnotatedFields || !item.localOcrRegionInspectionWorks || !item.localOcrRegionInspectionMadeNoHttpRequest || !item.uncertaintyFollowUpUsesPackageEvidence || !item.ocrWordGeometryWithinCapture || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || !item.noGeminiRouteRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
+  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.annotatedFieldScoreConserved || !item.noIncorrectAnnotatedFields || !item.localOcrRegionInspectionWorks || !item.localOcrRegionInspectionMadeNoHttpRequest || !item.uncertaintyFollowUpUsesPackageEvidence || !item.ocrWordGeometryWithinCapture || !item.fiftyGramCalculation || !item.ocrReadingMarkedUnverified || !item.correctionMarkedUnverified || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || !item.noGeminiRouteRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
 } finally {
   await browser.close();
 }

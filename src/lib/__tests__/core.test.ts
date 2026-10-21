@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseLabel } from '../parser';
 import { buildAudit } from '../engine';
+import { applyNutrientCorrection } from '../correction';
 import { defaultProfile, packageSchema, profileSchema, sourceSchema } from '../contracts';
 import { detectAdditives, evidenceSources, lookupAdditive, resolveTentativeAdditiveIdentity, retrieveEvidence } from '../knowledge';
 
@@ -122,6 +123,16 @@ describe('conservative package extraction',()=>{
     const audit=buildAudit(pkg,50,'g',defaultProfile,'How much carbohydrate?');
     expect(audit.calculations.find(c=>c.nutrient==='carbohydrate')?.result).toBe(20);
     expect(audit.calculations.find(c=>c.nutrient==='carbohydrate')?.observationIds).toContain(basis?.id);
+  });
+  it('keeps OCR readings and user corrections explicitly unverified in calculation assumptions',()=>{
+    const ocrPackage=parseLabel('Nutrition information per 100 g\nSodium 500 mg',{origin:'ocr'});
+    const correctedPackage=applyNutrientCorrection(ocrPackage,{key:'sodium',value:450,unit:'mg',basisAmount:100,basisUnit:'g'});
+    for(const pkg of [ocrPackage,correctedPackage]){
+      const assumption=buildAudit(pkg,30,'g',defaultProfile).calculations.find(calculation=>calculation.nutrient==='sodium')?.assumptions[0];
+      expect(assumption).toMatch(/assumes the displayed reading and basis are accurate/i);
+      expect(assumption).toMatch(/has not independently verified either/i);
+      expect(assumption).not.toMatch(/are correct/i);
+    }
   });
   it('retains multiple columns and withholds ambiguous values',()=>{
     const pkg=label('Nutrition per 100 g | per serving (25 g)\nCarbohydrate 60 g | 15 g');

@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 22 October 2026 — diagnose the real-photo OCR pipeline without promoting an engine
+
+- Retain browser-first OCR and the current production reader. On the same hash-verified development photo, Chrome retained 16 line boxes / 95 word boxes and produced 1/9 exact fields, 0 incorrect, 5 omitted and 3 withheld in both viewports. Viewport repeats are not new samples.
+- Report detector and table-structure performance as unmeasured until independent region/row/column annotations exist. Available field candidates show exact numeric/unit/basis values for 2/9, 2/9 and 4/9 fields; three of four diagnosed parser fields were rejected, with missing unit, multiple values and invalid value reasons. Five omissions have no parser diagnostic and remain stage-ambiguous.
+- Do not interpret candidate counts as isolated OCR recognition accuracy or use this one image to select a replacement. Extend the existing annotation set before comparing stage-level accuracy. The current receipt stays sanitized; raw OCR and screenshots remain ignored/private.
+- Make calculation assumptions explicit that label readings and bases are unverified, including corrected readings. Keep the calculation available with its source lineage; a user correction does not become independent package verification.
+
 ## 22 October 2026 — keep the private remote empty pending image-rights review
 
 - The authenticated GitHub account matched the requested owner and the target repository did not exist. Under the owner's explicit authorization, create one private repository and add it as `origin`; verify GitHub reports private visibility. Leave it empty until the reachable project history clears review.

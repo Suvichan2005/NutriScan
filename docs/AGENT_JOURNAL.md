@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-22 — localize the current photo bottleneck and qualify calculated readings
+
+- Replayed the same SHA-verified development Saffola label through the current browser journey at 390×844 and 1440×900. Each run retained 16 OCR lines and 95 word boxes; field score remained 1 exact / 0 incorrect / 5 omitted / 3 withheld out of nine, based on one unadjudicated visual read.
+- Added a sanitized stage summary to the existing acceptance receipt. It records exact parser-side numeric/unit/basis candidates for 2/9, 2/9 and 4/9 fields, one accepted and three rejected diagnostics (two missing-unit reasons, one multiple-values, one invalid-value), one multi-number field and five fields without diagnostics. Detector precision/recall and row/column association remain unscored because no gold regions exist; the five undiagnosed omissions remain stage-ambiguous.
+- Did not change or promote an OCR engine. The calculation disclosure now states that both the displayed reading and its basis are unverified; an offline regression covers OCR and user-corrected readings. Chrome verified the same disclosure, source retention, 1.7 g/50 g calculation, uncertainty follow-up and optional synthetic-profile evidence path. Axe violations, page errors, non-loopback requests and Gemini routes were zero.
+- This does not establish population OCR accuracy, independent annotation, held-out retrieval, Gemini/provider behavior or clinical validity. Photos, raw OCR and screenshots remain in ignored private storage; Gemini stayed disabled.
+
 ## 2026-10-22 — create an empty private GitHub remote and gate history upload
 
 - Authenticated GitHub identity matched the owner-authorized target. The target was absent, so one private repository was created and configured as `origin`; its actual visibility is `PRIVATE`, and `git ls-remote --heads origin` returned no branches. No project commit or source image was uploaded.
