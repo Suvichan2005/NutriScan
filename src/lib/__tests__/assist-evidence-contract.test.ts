@@ -29,6 +29,16 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(BROWSER_OCR_ENGINE_VERSION).toBe(packageInfo.dependencies['tesseract.js']);
   });
 
+  it('preserves a bounded alternate reader identifier without implying reader integration',()=>{
+    const pkg=makePackage();
+    const captureWithAlternateReader={...capture,engine:{...capture.engine,name:'rapidocr'}};
+    const alternatePackage=parseLabel(lines.join('\n'),{origin:'ocr',observations,ocrCaptures:[captureWithAlternateReader]});
+    const assistData=assistInput.parse({consent:true,question:'What does the noisy row appear to say?',package:alternatePackage});
+
+    expect(assistData.package.ocrCaptures?.[0].engine.name).toBe('rapidocr');
+    expect(packageSchema.safeParse({...alternatePackage,ocrCaptures:[{...captureWithAlternateReader,engine:{...captureWithAlternateReader.engine,name:'x'.repeat(81)}}]}).success).toBe(false);
+  });
+
   it('requires raw OCR lines to retain their source image and reading order before assist',()=>{
     const pkg=makePackage();
     const unlinked={...pkg,observations:pkg.observations.map(item=>item.id==='line-0'?{...item,imageId:undefined,readingOrder:undefined}:item)};

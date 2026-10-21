@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — verify alternatives flow and keep OCR capture provenance extensible
+
+- Re-ran the product alternatives journey in installed Chrome at 390×844 and 1440×900. The synthetic typed label reached live Open Food Facts exact-record lookup, normalized comparison and four candidate products; nine rows were comparable and one was withheld. Identity, community-data and stock caveats stayed visible, the current barcode was excluded from alternatives, and Axe, page errors and browser off-origin requests were clear. This does not validate a real photographed product or recommend an alternative.
+- Audited the consented OCR-to-assist boundary. Ordered raw text, word recognition metadata and geometry, capture/image linkage, parser rejection/conflict candidates, retrieval sources and deterministic calculations already survive validation. The output already supports labeled synthesis with exact spans and profile-specific context; its citations provide traceability, not entailment. Original image inspection remains separate and explicitly consented.
+- Changed the capture schema to accept a bounded reader identifier so a future reader can preserve its identity through the existing contract. Added an offline pass-through/length test; no alternate engine was run or integrated. The five-photo OCR evidence and production reader are unchanged. Gemini remains disabled.
+- Fourteen focused assist-contract tests and the full suite (296 tests across 33 files) passed; TypeScript typecheck and `git diff --check` passed. The browser comparison evidence remains synthetic-label workflow validation only.
+
 ## 2026-10-21 — inspect OCR regions from the evidence ledger
 
 - The evidence ledger exposed OCR words, confidence and prepared-image coordinates, but users had to leave the result and manually find the corresponding line in a photo.

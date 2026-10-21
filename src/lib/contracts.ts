@@ -12,7 +12,7 @@ export const ocrCaptureSchema=z.object({
   sourceImage:z.object({width:z.number().int().positive().max(40000),height:z.number().int().positive().max(40000)}).strict(),
   preparedImage:z.object({width:z.number().int().positive().max(40000),height:z.number().int().positive().max(40000)}).strict(),
   bboxCoordinateSpace:z.literal('prepared-image-pixels'),
-  engine:z.object({name:z.literal('tesseract.js'),version:z.string().min(1).max(40),language:z.string().min(2).max(20),confidenceScale:z.literal('0-100'),segmentationMode:z.enum(['auto','single-block'])}).strict(),
+  engine:z.object({name:z.string().min(1).max(80),version:z.string().min(1).max(40),language:z.string().min(2).max(20),confidenceScale:z.literal('0-100'),segmentationMode:z.enum(['auto','single-block'])}).strict(),
   processing:z.object({rotation:z.union([z.literal(0),z.literal(90),z.literal(180),z.literal(270)]),contrast:z.boolean(),invert:z.boolean(),cropPercent:z.object({x:z.number().min(0).max(100),y:z.number().min(0).max(100),width:z.number().positive().max(100),height:z.number().positive().max(100)}).strict().nullable()}).strict()
 }).strict();
 export type OcrCapture=z.infer<typeof ocrCaptureSchema>;

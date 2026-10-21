@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "product-alternatives-browser-acceptance",
-  "generatedAt": "2026-10-21T05:37:08.880Z",
+  "generatedAt": "2026-10-21T16:03:32.408Z",
   "browser": "Chrome via Playwright, headless",
   "origin": "loopback; product records fetched server-side from Open Food Facts",
   "fixture": "Synthetic Nutella label text and barcode; nutrient readings are rounded values derived from the live community record for deterministic basis-normalization testing.",

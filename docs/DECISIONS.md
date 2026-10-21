@@ -1,5 +1,11 @@
 # Chronological decisions
 
+## 21 October 2026 — keep OCR capture identity open to bounded reader names
+
+- Let the existing capture record carry a bounded reader identifier rather than requiring the production `tesseract.js` literal. Keep the current browser reader, normalized `0-100` confidence contract and processing fields unchanged.
+- This is a provenance-contract allowance for future reader comparisons and assist requests; it does not integrate or benchmark another OCR engine, select a replacement, or change production OCR.
+- Offline validation confirms an alternate identifier survives the package-to-assist boundary and rejects an overlong identifier. No live Gemini request or OCR-accuracy claim is made.
+
 ## 21 October 2026 — let users inspect OCR lines in the local source image
 
 - Add an explicit **Inspect photo region** action beside a raw OCR line only when its image, capture run and geometry are linked and the image remains in the current browser session.
