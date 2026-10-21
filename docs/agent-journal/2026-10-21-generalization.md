@@ -76,6 +76,7 @@ Continued the existing local NutriScan implementation. No source history or remo
 - When every matched FSSAI source fails, the local research response now adds an official Government of India eGazette search link marked navigation-only. The portal is not fetched, excerpted, or treated as law evidence; `status: unavailable` and the no-current-law-verdict message remain unchanged.
 - Focused regression tests verify the card, limitations, and that the eGazette host is not fetched. Full suite: 107 passing; TypeScript and optimized build pass.
 - Optimized loopback API acceptance on port 3413 returned two FSSAI links plus the eGazette card with the unavailable status and no-verdict message. This validates the fallback response only; actual Gazette PDF retrieval remains unresolved. See [INTEGRATIONS.md](../INTEGRATIONS.md).
+- Checkpoint: `b8b2f0a9c5e5f30a4f833faa5cf484f5fe946c7d` (`Add official Gazette navigation fallback`).
 - Local evidence checkpoint: `8c05d488550d644d0243dcc882b55c866f25644e` (`Add reproducible browser OCR crop evaluation`). Typecheck, all 107 tests, optimized build, the repeatable browser command and `git diff --check` passed; private screenshots remain ignored.
 
 ## Continuation checkpoint — research source-selection guard
