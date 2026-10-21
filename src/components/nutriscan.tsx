@@ -6,7 +6,7 @@ import { buildAudit } from '@/lib/engine';
 import { parseLabel } from '@/lib/parser';
 import { defaultPortion, resolveQuestionPortion } from '@/lib/portion';
 import { compareProductNutrition } from '@/lib/product-comparison';
-import { buildProductLookupRequest } from '@/lib/product-query';
+import { buildProductLookupRequest, defaultProductLookup } from '@/lib/product-query';
 import { reconcileVision } from '@/lib/reconcile';
 import { mergePackageEvidence } from '@/lib/merge-evidence';
 import { applyBarcodeReadings } from '@/lib/barcode';
@@ -17,7 +17,7 @@ type Panel='profile'|'privacy'|'history'|'text'|'correct'|null;
 type Message={question:string;answer:string;at:string};
 type Status={gemini?:{enabled?:boolean;configured?:boolean;model?:string};[key:string]:unknown};
 const nutrientLabel:Record<NutrientKey,string>={energy:'Energy',carbohydrate:'Carbohydrate',sugars:'Total sugars',addedSugars:'Added sugars',protein:'Protein',fat:'Total fat',saturatedFat:'Saturated fat',fiber:'Fibre',sodium:'Sodium',salt:'Salt'};
-const defaultLookup=(data:PackageData)=>data.barcode??(data.name==='Unidentified package'?(data.userDescription??''):data.name);
+const defaultLookup=defaultProductLookup;
 const hasProfile=hasUserContext;
 const exampleText=`NUTRISCAN EXAMPLE CRACKERS\nSynthetic test label, not a real product\nNet weight: 150 g\nServing size: 30 g\nNutrition information per 100 g\nEnergy 420 kcal\nCarbohydrate 65 g\nTotal sugars 2 g\nAdded sugars 0 g\nProtein 10 g\nTotal fat 15 g\nSaturated fat 3 g\nFibre 6 g\nSodium 850 mg\nIngredients: Whole wheat flour, vegetable oil, salt, sweetener (INS 955).\nContains: Wheat (gluten). May contain milk.\nSugar free`;
 

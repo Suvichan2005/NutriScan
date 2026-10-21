@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildProductLookupRequest } from '../product-query';
+import { buildProductLookupRequest, defaultProductLookup } from '../product-query';
 
 describe('product catalog request construction', () => {
   it('keeps exact barcode lookup separate from candidate search', () => {
@@ -14,5 +14,8 @@ describe('product catalog request construction', () => {
   });
   it('does not replace an unresolved package name with an identifier', () => {
     expect(buildProductLookupRequest({ text: '3017620422003', alternatives: true, productBarcode: '3017620422003', productName: 'Unidentified package' })).toMatchObject({ query: '3017620422003', alternatives: true });
+  });
+  it('leaves catalog search blank when merged package identity is disputed', () => {
+    expect(defaultProductLookup({ barcode: undefined, identityConflict: true, name: 'Original product', userDescription: undefined })).toBe('');
   });
 });

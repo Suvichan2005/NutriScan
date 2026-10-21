@@ -46,8 +46,8 @@ export function applyBarcodeReadings<T extends { barcode?: string; observations:
     observations.push({id:`barcode-${crypto.randomUUID()}`,field:'barcode',text:reading.code,side:reading.side,confidence:null,origin:'barcode',imageId:reading.imageId});
   }
   const warnings=[...packageData.warnings];
-  if(detectedCodes.length>1){warnings.push('More than one distinct product barcode was detected across these photos. No single product record was selected; check which package each photo shows.');return {...packageData,barcode:undefined,observations,warnings:[...new Set(warnings)]};}
+  if(detectedCodes.length>1){warnings.push('More than one distinct product barcode was detected across these photos. No single product record was selected; check which package each photo shows.');return {...packageData,barcode:undefined,identityConflict:true,observations,warnings:[...new Set(warnings)]};}
   const detected=detectedCodes[0];
-  if(packageData.barcode&&packageData.barcode!==detected){warnings.push('The decoded barcode and printed/OCR barcode disagree. No product record was selected; verify the code on the package.');return {...packageData,barcode:undefined,observations,warnings:[...new Set(warnings)]};}
+  if(packageData.barcode&&packageData.barcode!==detected){warnings.push('The decoded barcode and printed/OCR barcode disagree. No product record was selected; verify the code on the package.');return {...packageData,barcode:undefined,identityConflict:true,observations,warnings:[...new Set(warnings)]};}
   return {...packageData,barcode:detected,observations,warnings:[...new Set(warnings)]};
 }

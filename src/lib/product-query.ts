@@ -1,3 +1,5 @@
+import type { PackageData } from './contracts';
+
 export type ProductLookupOptions = {
   text: string;
   alternatives?: boolean;
@@ -5,6 +7,12 @@ export type ProductLookupOptions = {
   productName?: string;
   productBarcode?: string;
 };
+
+/** Avoid preselecting a catalog search while the package identity is disputed. */
+export function defaultProductLookup(data: Pick<PackageData, 'barcode' | 'identityConflict' | 'name' | 'userDescription'>): string {
+  if (data.identityConflict) return '';
+  return data.barcode ?? (data.name === 'Unidentified package' ? (data.userDescription ?? '') : data.name);
+}
 
 /** Build a bounded catalog request without inferring location or losing an exact current identifier. */
 export function buildProductLookupRequest(options: ProductLookupOptions) {

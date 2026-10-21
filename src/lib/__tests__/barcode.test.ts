@@ -55,11 +55,13 @@ describe('local retail barcode reading',()=>{
       {code:'036000291452',imageId:'photo-b',side:'extra'},
     ]);
     expect(multiple.barcode).toBeUndefined();
+    expect(multiple.identityConflict).toBe(true);
     expect(multiple.warnings.join(' ')).toMatch(/more than one distinct product barcode/i);
     const disagreement=applyBarcodeReadings(parseLabel('Barcode: 4006381333931'),[
       {code:'036000291452',imageId:'photo-a',side:'extra'},
     ]);
     expect(disagreement.barcode).toBeUndefined();
+    expect(disagreement.identityConflict).toBe(true);
     expect(disagreement.warnings.join(' ')).toMatch(/decoded barcode and printed\/OCR barcode disagree/i);
     expect(packageSchema.safeParse(disagreement).success).toBe(true);
   });

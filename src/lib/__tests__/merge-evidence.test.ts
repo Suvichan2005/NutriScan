@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mergePackageEvidence } from '../merge-evidence';
+import { defaultProductLookup } from '../product-query';
 import { parseLabel } from '../parser';
 
 describe('incremental package evidence', () => {
@@ -32,11 +33,13 @@ describe('incremental package evidence', () => {
     expect(mergePackageEvidence(first, second).nutrients.every(n => n.status === 'observed')).toBe(true);
   });
 
-  it('retains the original barcode and warns when later evidence identifies another product', () => {
+  it('withholds the catalog identity and warns when later evidence has another barcode', () => {
     const first = parseLabel('Brand: A\nBarcode: 12345678\nNutrition per 100 g\nProtein 1 g', { origin: 'ocr' });
-    const second = parseLabel('Brand: B\nBarcode: 87654321\nNutrition per 100 g\nProtein 2 g', { origin: 'ocr' });
+    const second = parseLabel('Brand: A\nBarcode: 87654321\nNutrition per 100 g\nProtein 2 g', { origin: 'ocr' });
     const merged = mergePackageEvidence(first, second);
-    expect(merged.barcode).toBe('12345678');
+    expect(merged.barcode).toBeUndefined();
+    expect(merged.identityConflict).toBe(true);
+    expect(defaultProductLookup(merged)).toBe('');
     expect(merged.warnings.join(' ')).toMatch(/barcode differs/i);
   });
 
@@ -46,6 +49,8 @@ describe('incremental package evidence', () => {
     const merged = mergePackageEvidence(first, second);
     expect(merged.brand).toBe('North Mill');
     expect(merged.license).toBe('12345678901234');
+    expect(merged.identityConflict).toBe(true);
+    expect(defaultProductLookup(merged)).toBe('');
     expect(merged.warnings.join(' ')).toMatch(/brand and license number/i);
   });
 

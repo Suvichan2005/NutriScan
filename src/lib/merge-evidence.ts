@@ -15,6 +15,7 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
     current.license && incoming.license && current.license !== incoming.license ? 'license number' : '',
   ].filter(Boolean);
   if (identityMismatches.length) warnings.push(`New photo evidence disagrees with the original ${identityMismatches.join(' and ')}. The photos may show different products; verify identity before combining evidence.`);
+  const identityConflict = !!current.identityConflict || !!incoming.identityConflict || barcodeMismatch || identityMismatches.length > 0;
 
   const observations = [...current.observations];
   const idMap = new Map<string, string>();
@@ -56,7 +57,8 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
     ...current,
     name: current.name === 'Unidentified package' && incoming.name !== 'Unidentified package' ? incoming.name : current.name,
     brand: current.brand || incoming.brand,
-    barcode: current.barcode || incoming.barcode,
+    barcode: identityConflict ? undefined : current.barcode || incoming.barcode,
+    identityConflict,
     userDescription: [...new Set([current.userDescription, incoming.userDescription].filter((value): value is string => !!value))].join('\n').slice(0, 4000) || undefined,
     license: current.license || incoming.license,
     serving: current.serving || incoming.serving,
