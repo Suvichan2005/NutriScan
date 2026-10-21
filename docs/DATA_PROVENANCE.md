@@ -3,6 +3,7 @@
 NutriScan distinguishes package observations, user corrections, deterministic calculations, source metadata, product-database records and research abstracts. A value is not promoted from one category into another without preserving the original provenance.
 
 - **OCR text:** produced in the browser with pinned Tesseract.js and bundled English trained data. Confidence is an OCR score, not factual certainty. Original selected images are not part of repository data.
+- **Nutrition calculations:** each parsed nutrient links to its value row and, when scaling relies on a separate header, the observed basis and declared serving-size lines. Identical readings from different photos may be deduplicated numerically while retaining the observations from both images. A calculation is not stronger than these underlying readings.
 - **Nutrition source corpus:** small curated set of linked WHO, FAO/Codex and NIDDK pages in `src/lib/knowledge.ts`. Each entry records publication scope and limitations in code. Verify each source and its current status before a consequential use.
 - **Food records:** explicit Open Food Facts lookup; returned records retain source URL, record date and market/variant limitations. Public records may be incomplete or stale and are not proof of local stock.
 - **Scientific search:** Europe PMC results provide candidate article/abstract metadata. Search results are not automatically quality assessments or consensus.

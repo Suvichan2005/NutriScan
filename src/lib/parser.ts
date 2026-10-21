@@ -58,10 +58,10 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   const serving=servingMatch?mass(servingMatch[1],servingMatch[2]):undefined;
   const weightMatch=text.match(/(?:net\s*(?:weight|wt\.?|quantity|qty\.?)|pack\s*size)\s*[:\-]?\s*(\d+(?:\.\d+)?)\s*(kg|ml|g|l)\b/i);
   const netWeight=weightMatch?mass(weightMatch[1],weightMatch[2]):undefined;
-  if(servingMatch) observe('serving',servingMatch[0]);
+  const servingObservationId=servingMatch?observe('serving',servingMatch[0]):undefined;
   if(weightMatch) observe('netWeight',weightMatch[0]);
   const ingredients:string[]=[]; const allergens:string[]=[]; const claims:string[]=[];
-  let ingredientsOpen=false; let basis:Basis|null=null; let ambiguousBasis=false;
+  let ingredientsOpen=false; let basis:Basis|null=null; let basisObservationIds:string[]=[]; let ambiguousBasis=false;
   const nutrients:Nutrient[]=[];
   for(let lineIndex=0;lineIndex<lines.length;lineIndex++) {
     const line=lines[lineIndex];
@@ -77,7 +77,8 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
       ingredientsOpen=false;
       ambiguousBasis=foundBases.length>1;
       basis=foundBases.length===1?foundBases[0]:null;
-      observe('basis',line);
+      const basisObservationId=observe('basis',line);
+      basisObservationIds=[basisObservationId,...(foundBases.some(item=>item.description==='per declared serving')&&servingObservationId?[servingObservationId]:[])];
       if(ambiguousBasis) warnings.push('Multiple nutrition columns detected. Their values and bases need visual confirmation before scaling.');
       else if(!basis) warnings.push('Serving basis is stated but its mass or volume is missing.');
       continue;
@@ -110,7 +111,8 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
       if(!unit){warnings.push(`${nutrientRow.key}: unit missing; no unit was guessed.`);continue;}
       const validUnit=unit==='kj'?'kJ':unit as Nutrient['unit'];
       if((nutrientRow.key==='energy'&&!['kcal','kJ'].includes(validUnit))||(nutrientRow.key!=='energy'&&!['g','mg'].includes(validUnit))){warnings.push(`${nutrientRow.key}: incompatible unit withheld.`);continue;}
-      nutrients.push({key:nutrientRow.key,value:n,unit:validUnit,basis:conflicting?null:(foundBases[0]??basis),observationIds:[obsId],status:conflicting?'conflict':'observed'});
+      const usedHeaderBasis=foundBases.length===0?basisObservationIds:[];
+      nutrients.push({key:nutrientRow.key,value:n,unit:validUnit,basis:conflicting?null:(foundBases[0]??basis),observationIds:[obsId,...usedHeaderBasis],status:conflicting?'conflict':'observed'});
     }
   }
   // Preserve duplicate readings. Mark disagreement on the same explicit basis.

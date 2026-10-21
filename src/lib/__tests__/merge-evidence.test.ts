@@ -75,4 +75,15 @@ describe('incremental package evidence', () => {
     expect(merged.nutrients).toHaveLength(1);
     expect(merged.nutrients[0].observationIds.every(id => merged.observations.some(o => o.id === id))).toBe(true);
   });
+
+  it('keeps both image sources when identical nutrient readings are merged', () => {
+    const read = (imageId: string) => parseLabel('Nutrition per 100 g\nProtein 12 g', { origin: 'ocr', observations: [
+      { id: `${imageId}-header`, field: 'ocr-line', text: 'Nutrition per 100 g', side: 'back', origin: 'ocr', confidence: 90, imageId },
+      { id: `${imageId}-protein`, field: 'ocr-line', text: 'Protein 12 g', side: 'back', origin: 'ocr', confidence: 90, imageId },
+    ] });
+    const merged = mergePackageEvidence(read('photo-a'), read('photo-b'));
+    expect(merged.nutrients).toHaveLength(1);
+    const sources = merged.nutrients[0].observationIds.map(id => merged.observations.find(o => o.id === id)?.imageId).filter(Boolean);
+    expect(new Set(sources)).toEqual(new Set(['photo-a', 'photo-b']));
+  });
 });

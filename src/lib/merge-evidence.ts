@@ -31,7 +31,8 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
   for (const n of incoming.nutrients) {
     const candidate = { ...n, observationIds: n.observationIds.map(id => idMap.get(id) ?? id) };
     const duplicate = mergedNutrients.find(old => old.key === candidate.key && old.unit === candidate.unit && old.value === candidate.value && old.basis?.amount === candidate.basis?.amount && old.basis?.unit === candidate.basis?.unit && old.status === candidate.status);
-    if (!duplicate) mergedNutrients.push(candidate);
+    if (duplicate) duplicate.observationIds = [...new Set([...duplicate.observationIds, ...candidate.observationIds])];
+    else mergedNutrients.push(candidate);
   }
   for (const n of mergedNutrients) {
     const comparable = mergedNutrients.filter(other => other !== n && other.key === n.key && other.basis && n.basis && other.basis.unit === n.basis.unit && Math.abs(other.value / other.basis.amount - n.value / n.basis.amount) > 1e-6);

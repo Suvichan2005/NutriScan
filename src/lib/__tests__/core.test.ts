@@ -30,8 +30,14 @@ describe('conservative package extraction',()=>{
     expect(audit.limitations.join(' ')).toMatch(/unit missing/);
   });
   it('scales a declared serving without treating it as 100 g',()=>{
-    const audit=calc('Serving size: 25 g\nPer serving\nCarbohydrate 10 g',50);
+    const pkg=label('Serving size: 25 g\nPer serving\nCarbohydrate 10 g');
+    const basis=pkg.observations.find(o=>o.field==='basis');
+    const nutrient=pkg.nutrients.find(n=>n.key==='carbohydrate');
+    expect(nutrient?.observationIds).toContain(basis?.id);
+    expect(nutrient?.observationIds).toContain(pkg.observations.find(o=>o.field==='serving')?.id);
+    const audit=buildAudit(pkg,50,'g',defaultProfile,'How much carbohydrate?');
     expect(audit.calculations.find(c=>c.nutrient==='carbohydrate')?.result).toBe(20);
+    expect(audit.calculations.find(c=>c.nutrient==='carbohydrate')?.observationIds).toContain(basis?.id);
   });
   it('retains multiple columns and withholds ambiguous values',()=>{
     const pkg=label('Nutrition per 100 g | per serving (25 g)\nCarbohydrate 60 g | 15 g');
