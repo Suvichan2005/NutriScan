@@ -6,6 +6,13 @@ const display:Record<NutrientKey,string>={energy:'Energy',carbohydrate:'Carbohyd
 const rounded=(n:number)=>Math.round((n+Number.EPSILON)*10000)/10000;
 const amountText=(n:number)=>n!==0&&Math.abs(n)<.0001?'<0.0001':String(rounded(n));
 const unique=<T,>(values:T[])=>[...new Set(values)];
+function isExplicitlyUnder18(ageGroup:string){
+  if(/\b(child(?:ren)?|adolescent|teen(?:ager)?s?|pediatric|paediatric|minor|under\s*18)\b/i.test(ageGroup))return true;
+  const range=ageGroup.match(/^\s*(?:age\s*)?(\d{1,2})\s*[-–]\s*(\d{1,2})(?:\s*(?:years?|y\/o|old))?\s*$/i);
+  if(range)return Number(range[1])<18;
+  const single=ageGroup.match(/^\s*(?:age\s*)?(\d{1,2})(?:\s*(?:years?|y\/o|old))?\s*$/i);
+  return !!single&&Number(single[1])<18;
+}
 const profileText=(p:Profile)=>[p.dietaryPattern&&`Dietary pattern: ${p.dietaryPattern}`,p.allergies&&`User-declared food allergies: ${p.allergies}`,p.intolerances&&`User-declared food intolerances: ${p.intolerances}`,p.healthConsiderations&&`User-declared health considerations: ${p.healthConsiderations}`,p.goals&&`User goals: ${p.goals}`,p.ageGroup&&`Age group: ${p.ageGroup}`,p.sexOrReferenceGroup&&`Reference group: ${p.sexOrReferenceGroup}`,p.country&&`Country: ${p.country}`,p.locality&&`Locality: ${p.locality}`].filter(Boolean).join('\n');
 function normalized(n:Nutrient):{value:number;unit:string} {
   if(n.key==='energy')return {value:n.unit==='kJ'?n.value/4.184:n.value,unit:'kcal'};
@@ -36,6 +43,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const limitations=unique([...pkg.warnings,'Package readings are observations and can contain OCR errors.','This answer uses local rules and calculations; it is not a general conversational model.','No live product, regulator or clinical source was contacted by this local audit.']);
   const nextQuestions:string[]=[];
   const userContext=profileText(profile);
+  const explicitlyUnder18=isExplicitlyUnder18(profile.ageGroup);
   const askedAdditives=detectAdditives(question);
   const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|ICMR|\bNIN\b/i.test(question)||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
   const trace:Audit['trace']=[{tool:'reuse_package_observations',reason:'Use the current label evidence for this question; no rescan required.',status:`${pkg.observations.length} observations`},{tool:'calculate_portions',reason:'Scale only unambiguous values with compatible explicit bases.',status:'local deterministic calculation'}];
@@ -101,7 +109,11 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     finding({title:converted.label,detail:`Approximately ${amountText(converted.result)} mg sodium for this portion. Derived from salt, not a separate measured sodium value.`,status:'calculated',observationIds:converted.observationIds,sourceIds:['who-sodium'],calculationIds:[saltCalc.id,converted.id]});
   }
   const sodiumCalc=calculations.find(c=>c.nutrient==='sodium');
-  if(sodiumCalc&&deep){
+  if(sodiumCalc&&deep&&explicitlyUnder18){
+    finding({title:'Adult sodium reference not applied',detail:'The profile identifies an under-18 age group, so this audit does not apply a general-adult sodium reference. The package-derived amount remains available; age-appropriate guidance requires a source for the relevant age and jurisdiction.',status:'context',observationIds:sodiumCalc.observationIds,sourceIds:['who-sodium'],calculationIds:[sodiumCalc.id]});
+    limitations.push('A general-adult population reference was withheld because the declared age group is under 18; no pediatric sodium target was inferred.');
+    nextQuestions.push('Which age-specific official guidance or clinician-provided target should be used for this context?');
+  }else if(sodiumCalc&&deep){
     finding({title:'Put sodium in a whole-day context',detail:`This portion supplies ${amountText(sodiumCalc.result)} mg sodium, approximately ${amountText(sodiumCalc.result/2000*100)}% of the WHO general adult reference of 2,000 mg/day. WHO recommends less than that amount. This is not a personal sodium allowance or a product safety cutoff.`,status:'context',observationIds:sodiumCalc.observationIds,sourceIds:['who-sodium'],calculationIds:[sodiumCalc.id]});
   }
   const sugars=calculations.find(c=>c.nutrient==='sugars'); const carbs=calculations.find(c=>c.nutrient==='carbohydrate');

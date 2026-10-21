@@ -217,4 +217,13 @@ describe('genuine local evidence retrieval',()=>{
     expect(icmrReference?.detail).toMatch(/bibliographic metadata only|does not reproduce/i);
     expect(metadata.sources.some(source=>source.id==='icmrnin-dgi-2024')).toBe(true);
   });
+  it('withholds a general-adult sodium reference for a declared under-18 age group',()=>{
+    const pkg=label('Per 100 g\nSodium 500 mg');
+    const audit=buildAudit(pkg,30,'g',{...defaultProfile,ageGroup:'16 years'},'How does this compare for blood pressure?');
+    expect(audit.calculations.find(c=>c.nutrient==='sodium')?.result).toBe(150);
+    expect(audit.findings.some(f=>f.title==='Put sodium in a whole-day context')).toBe(false);
+    expect(audit.findings.find(f=>f.title==='Adult sodium reference not applied')?.detail).toMatch(/under-18 age group/);
+    expect(audit.limitations.join(' ')).toMatch(/no pediatric sodium target was inferred/);
+    expect(audit.nextQuestions.join(' ')).toMatch(/age-specific official guidance/);
+  });
 });
