@@ -16,7 +16,7 @@ type ManifestRecord = {
 type Manifest = { records: ManifestRecord[] };
 type Crop = { x: number; y: number; width: number; height: number };
 type SourceSpec = { id: string; file: string; crop: Crop };
-type CaseSpec = { id: string; sourceId: SourceSpec['id']; role: 'unknown' | 'nutrition'; crop?: Crop; initialQuestion?: string };
+type CaseSpec = { id: string; sourceId: SourceSpec['id']; role: 'unknown' | 'nutrition'; crop?: Crop; contrast?: boolean; initialQuestion?: string };
 type Outcome = 'correct' | 'incorrect' | 'omitted' | 'withheld';
 
 const root = process.cwd();
@@ -39,6 +39,10 @@ const cases: CaseSpec[] = [
   { id: 'bagrrys-nutrition-role-full-image', sourceId: 'bagrrys', role: 'nutrition' },
   { id: 'bagrrys-nutrition-role-user-crop', sourceId: 'bagrrys', role: 'nutrition', crop: sources[1].crop },
   { id: 'bagrrys-nutrition-role-user-crop-repeat', sourceId: 'bagrrys', role: 'nutrition', crop: sources[1].crop },
+  { id: 'saffola-nutrition-role-full-image-contrast', sourceId: 'saffola', role: 'nutrition', contrast: true },
+  { id: 'saffola-nutrition-role-user-crop-contrast', sourceId: 'saffola', role: 'nutrition', crop: sources[0].crop, contrast: true },
+  { id: 'bagrrys-nutrition-role-full-image-contrast', sourceId: 'bagrrys', role: 'nutrition', contrast: true },
+  { id: 'bagrrys-nutrition-role-user-crop-contrast', sourceId: 'bagrrys', role: 'nutrition', crop: sources[1].crop, contrast: true },
 ];
 
 function assertLoopbackOrigin(value: string) {
@@ -138,6 +142,7 @@ async function main() {
         : null;
       await page.getByLabel('Add one or more product photos').setInputFiles(photoPath);
       if (spec.role === 'nutrition') await page.getByLabel('Optional photo hint').selectOption('nutrition');
+      if (spec.contrast) await page.getByLabel('Improve contrast on all photos').check();
       if (spec.crop) {
         await page.getByText('Focus OCR on one photo region').click();
         await page.getByLabel('Use a crop on a selected photo').check();
@@ -169,6 +174,7 @@ async function main() {
         sourceId: spec.sourceId,
         role: spec.role,
         crop: spec.crop,
+        contrast: spec.contrast ?? false,
         cropSelection: spec.crop ? 'pointer-drag' : null,
         initialQuestionJourney: spec.initialQuestion ? {
           enteredBeforePhoto: true,
@@ -196,7 +202,7 @@ async function main() {
       const record = records.get(source.id)!;
       return { id: source.id, file: record.file, sha256: actualHashes.get(source.id), annotationBasis: record.manualAnnotation.basis, expectedFields: record.manualAnnotation.nutrients.length };
     }),
-    method: 'Actual upload, role selection, optional crop selected by dragging over the displayed image, and in-browser OCR on two hash-verified English package photos. Crop percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching the human-annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.',
+    method: 'Actual upload, role selection, optional contrast setting, optional crop selected by dragging over the displayed image, and in-browser OCR on two hash-verified English package photos. Crop percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching the human-annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.',
     results,
   };
   await writeFile(resultPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
