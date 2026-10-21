@@ -517,6 +517,28 @@ describe('genuine local evidence retrieval',()=>{
     expect(audit.findings.some(finding=>finding.sourceIds.includes('who-sugars-2015'))).toBe(true);
     expect(audit.answer).not.toMatch(/3\.6 g.*free sugars/i);
   });
+  it.each([
+    'What does WHO recommend about dietary fibre?',
+    'What guidance does WHO give about whole grains in the diet?',
+    'What are the daily recommendations for pulses and legumes?',
+    'What does dietary carbohydrate quality guidance say?',
+  ])('surfaces whole-diet WHO carbohydrate guidance for "%s" while preserving the package amount',question=>{
+    const audit=buildAudit(label('Per 100 g\nFibre 8 g'),30,'g',defaultProfile,question);
+    const reference=audit.findings.find(finding=>finding.sourceIds.includes('who-carbohydrate-2023'));
+    expect(reference?.title).toMatch(/^Reference to inspect:/);
+    expect(reference?.detail).toMatch(/not a package-specific threshold|cannot be directly equated with a packaged-food fibre declaration/i);
+    expect(audit.sources.some(source=>source.id==='who-carbohydrate-2023')).toBe(true);
+    expect(audit.calculations.find(calculation=>calculation.nutrient==='fiber')?.result).toBe(2.4);
+    expect(audit.answer).toMatch(/2\.4 g fibre/i);
+    expect(audit.answer).not.toMatch(/25 g/i);
+  });
+  it('does not attach whole-diet guidance to a simple package fibre-amount question',()=>{
+    const audit=buildAudit(label('Per 100 g\nFibre 8 g'),30,'g',defaultProfile,'How much fibre is in 30 g?');
+    expect(audit.calculations.find(calculation=>calculation.nutrient==='fiber')?.result).toBe(2.4);
+    expect(audit.answer).toMatch(/2\.4 g fibre/i);
+    expect(audit.sources.some(source=>source.id==='who-carbohydrate-2023')).toBe(false);
+    expect(audit.findings.some(finding=>finding.sourceIds.includes('who-carbohydrate-2023'))).toBe(false);
+  });
   it('does not apply WHO prevention recommendation as existing-diabetes advice',()=>{
     const audit=buildAudit(label('Ingredients: sucralose (INS 955)\nPer 100 g\nSugars 0 g'),30,'g',{...defaultProfile,healthConsiderations:'User-supplied health context'},'Is sucralose safe?');
     expect(audit.findings.find(f=>f.title==='Sweetener guidance has a defined scope')?.detail).toMatch(/excludes people with existing diabetes/);

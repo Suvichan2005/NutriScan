@@ -71,7 +71,9 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const explicitlyUnder18=isExplicitlyUnder18(profile.ageGroup);
   const askedAdditives=detectAdditives(question);
   const asksUncertainty=uncertaintyQuestionPattern.test(question);
-  const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|\bfree sugars?\b|\badded sugars?\b|ICMR|\bNIN\b/i.test(question)||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
+  const wholeDietCarbohydrateTopic=/\b(?:fib(?:er|re)|whole[- ]grains?|pulses?|legumes?|carbohydrate quality|quality of carbohydrates?)\b/i.test(question);
+  const wholeDietCarbohydrateGuidance=wholeDietCarbohydrateTopic&&/\b(?:recommend\w*|guidelines?|guidance|whole[- ]diet|daily|per day|intake|quality)\b/i.test(question);
+  const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|\bfree sugars?\b|\badded sugars?\b|ICMR|\bNIN\b/i.test(question)||wholeDietCarbohydrateGuidance||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
   const trace:Audit['trace']=[{tool:'reuse_package_observations',reason:'Use the current label evidence for this question; no rescan required.',status:`${pkg.observations.length} observations`},{tool:'calculate_portions',reason:'Scale only unambiguous values with compatible explicit bases.',status:'local deterministic calculation'}];
   const finding=(data:Omit<Finding,'id'>)=> {data.sourceIds.forEach(s=>sourceIds.add(s));findings.push({...data,id:`finding-${findings.length+1}`});};
   let examinedRawOcrLines=0;let tentativeAdditiveCount=0;
@@ -208,6 +210,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       {id:'who-sodium',matches:/\b(sodium|salt|salty|hypertension|blood pressure)\b/i.test(question)},
       {id:'who-nss',matches:/\b(sweeteners?|sucralose|aspartame|non[- ]sugar|nss)\b/i.test(question)},
       {id:'who-sugars-2015',matches:/\b(?:free|added) sugars?\b|\bsugars?\b.{0,30}\bfree\b|\b(?:honey|syrups?|fruit juice|fruit juice concentrate)\b|\bWHO\b.{0,40}\bsugars?\b/i.test(question)},
+      {id:'who-carbohydrate-2023',matches:wholeDietCarbohydrateGuidance},
       {id:'niddk-meals',matches:/\b(diabetes|diabetic|blood[- ]glucose)\b/i.test(question)},
       {id:'icmrnin-dgi-2024',matches:/\b(icmr|nin|indian dietary guidelines?|dietary guidelines? for india)\b/i.test(question)},
     ];
@@ -267,7 +270,8 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
         answer=`No readable ${textIntent.label} is recorded for this package. That does not establish that the package has none; add or check a clear photo of the relevant panel.`;
       }
     }else{
-      const requested=nutrientKeys.filter(key=>nutrientQuestionPatterns[key].test(question));
+      const asksPackageCarbohydrateAmount=/\b(?:how much|how many|amount|quantity|content)\b/i.test(question)&&(/\b(?:package|label|portion|serving|product|bar|snack)\b/i.test(question)||/\bper\s+\d+(?:\.\d+)?\s*(?:g|ml)\b/i.test(question));
+      const requested=nutrientKeys.filter(key=>nutrientQuestionPatterns[key].test(question)&&!(key==='carbohydrate'&&wholeDietCarbohydrateGuidance&&!asksPackageCarbohydrateAmount));
       if(requested.length&&!dietRelevant){
         answerIntent='specific nutrient quantity';
         const requestedAmounts=requested.map(key=>{
