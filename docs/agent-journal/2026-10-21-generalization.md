@@ -134,3 +134,8 @@ Additional browser acceptance is still required for photo removal/replacement, k
 - Scoped Axe scans reported zero violations on mobile first visit, optional-context dialog, and the text-only results/follow-up state. No page errors or horizontal overflow occurred. Captures inspected and recorded in `docs/evidence/19-24-*.png`; full keyboard traversal, camera hardware and phone performance remain untested.
 - Codex in-app browser is disabled in Work settings; the audit used locally installed Chrome through Playwright. Gemini remains disabled, no external provider was invoked, and no network retrieval was needed for this milestone.
 - Verification completed: 108 tests across 13 files, TypeScript check, optimized build in an isolated validation copy so the existing local app stayed available, and `git diff --check`.
+
+## eGazette search retry
+
+- The official eGazette home page returned HTTP 200 in ordinary Chrome with its anonymous session-bound route. A credentialed same-origin request to `SearchMenu.aspx` timed out after 8 seconds. Official-domain search did not return the target First Amendment PDF; the surfaced `272858.pdf` is an unrelated draft amendment and was excluded.
+- No session-state inspection, authentication bypass, TLS exception, or new source URL was used. NutriScan continues to return `unavailable` and only presents the eGazette navigation fallback. This route is blocked on the government search page responsiveness or a verifiable exact official document URL; other application work can continue.

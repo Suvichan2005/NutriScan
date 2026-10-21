@@ -100,3 +100,7 @@ The official FSSAI amendment index and notification are visible in public search
 ## Official eGazette navigation fallback — 21 October 2026
 
 After an optimized local build, `POST http://127.0.0.1:3413/api/research` with the same-origin `Origin` header and query `FSSAI labelling` returned `status: unavailable`, the two failed FSSAI source cards plus a third card linking to `https://egazette.gov.in/`, and the explicit no-source-text/no-current-law-verdict message. The eGazette card says to locate the notice by Gazette ID or date and is marked navigation only; implementation tests confirm the eGazette homepage is never fetched as evidence. This is loopback API acceptance of a user navigation aid, not browser rendering, Gazette retrieval or a legal conclusion. The temporary server on port 3413 was stopped after the probe.
+
+## eGazette session-bound search retry — 21 October 2026
+
+A fresh ordinary Chrome session loaded the official eGazette home page (`https://egazette.gov.in/`) with HTTP 200 and received the site's anonymous session-bound path. A credentialed same-origin `fetch` of `SearchMenu.aspx` in that session timed out after 8 seconds. No session token, hidden form state, authentication bypass or TLS exception was used. Official-domain search did not return the target First Amendment PDF; the visible 2026 result `272858.pdf` is a different draft Food Products Standards amendment and was excluded. No exact Gazette download URL was established, so the integration remains `unavailable` and the navigation-only fallback stays in place.
