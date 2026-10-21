@@ -71,6 +71,16 @@ try {
     const parsedRows = await page.locator('.details-block table tbody tr').count();
     const packageName = (await page.locator('.results-section h2').innerText()).trim();
     const unknownSummary = await page.locator('.unknown-card .unknown-summary').innerText();
+    const addPhotoAction = page.getByRole('button', { name: 'Add a front, ingredients, or barcode photo' });
+    const addPhotoActionVisible = await addPhotoAction.isVisible();
+    let addPhotoPickerOpened = false;
+    if (addPhotoActionVisible) {
+      const picker = page.waitForEvent('filechooser');
+      await addPhotoAction.click();
+      const chooser = await picker;
+      addPhotoPickerOpened = chooser.isMultiple();
+      await chooser.setFiles([]);
+    }
     const labelNotes = page.locator('.unknown-card details').first();
     const labelNotesCollapsed = await labelNotes.evaluate((details) => !(details as HTMLDetailsElement).open);
     const labelNotesDisclosure = await labelNotes.locator('summary').innerText();
@@ -139,6 +149,8 @@ try {
       packageName,
       ocrObservations: observations,
       parsedNutrientRows: parsedRows,
+      addPhotoActionVisible,
+      addPhotoPickerOpened,
       calculatedNutrients: calculated,
       plainLanguageUnknownSummary: unknownSummary,
       summaryHidesParserJargon: !/unit missing|invalid value withheld|multiple numeric values retained/i.test(unknownSummary),
@@ -167,7 +179,7 @@ try {
   const receipt = { schemaVersion: 1, kind: 'core-intake-to-audit-design-review', generatedAt: new Date().toISOString(), captureTool: 'Playwright using installed Chrome', appOrigin: origin.origin, acceptanceMode: process.env.NUTRISCAN_ACCEPTANCE_MODE ?? 'loopback local application', photoFile, screenshots: 'docs/evidence/private/core-journey-audit', outcomes: results };
   await writeFile('docs/evidence/core-journey-audit.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/core-journey-audit.json', screenshotDirectory: 'docs/evidence/private/core-journey-audit', outcomes: results }, null, 2));
-  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
+  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
 } finally {
   await browser.close();
 }

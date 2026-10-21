@@ -114,3 +114,9 @@
 - Kept the existing OCR evidence path: raw lines, confidence, order, geometry, engine/capture settings, and parser rejections/conflicts accompany the consented text request. Matching live handles now have to agree with the capture side and original dimensions; text-only/restored scans do not need a live photo.
 - Confirmed cautious synthesis was already supported with exact source spans, profile context, tentative structured candidates and a non-entailment disclosure. No candidate is promoted into package facts. Original/cropped image transfer remains a separate explicit choice.
 - The focused contract suite (10 tests), full suite (284 tests across 31 files), and TypeScript typecheck passed. Gemini was not called; no real-photo OCR measurement changed.
+
+## 2026-10-21 — continue capture from an unresolved label result
+
+- Added a conditional result-side action for an unidentified package or missing ingredients. It scrolls to the existing local photo input and opens the multi-file picker; it does not submit or send an image.
+- Chrome on the same hash-verified Saffola photo confirmed the action at 390×844 and 1440×900. We canceled the picker, so no added-photo OCR result is claimed. The core run still yielded 22 line observations and one usable nutrient row, with zero Axe violations, page errors, off-loopback requests or provider calls.
+- The full test suite (284 tests across 31 files) and typecheck passed. No OCR accuracy score changed.

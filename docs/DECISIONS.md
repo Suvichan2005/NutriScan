@@ -266,3 +266,9 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - Keep image bytes out of this request. A model-requested image inspection still requires the separate explicit user action. Do not add a persistent image digest while original photos are not retained; the session image ID and capture metadata are the available provenance.
 - Review confirmed that synthesis mode already supports concise profile-specific paraphrases, with exact evidence spans and an explicit non-entailment disclosure. Citation matching establishes traceability, not that a claim follows from its evidence. No synthesis or safety behavior changed; Gemini remains disabled.
 - The focused assist contract test passed (10 tests), the full suite passed 284 tests across 31 files, and TypeScript typecheck passed. No provider call or live model claim was made.
+
+## 21 October 2026 — let users add package evidence from unresolved results
+
+- When the package name is unidentified or no ingredients were read, show a direct action to add a front, ingredients, or barcode photo. It reuses the existing local multi-photo input, returns attention to capture, and stays hidden at the ten-photo limit; it does not infer a missing fact or invoke a remote service.
+- Installed Chrome verified the action and native picker opening at 390×844 and 1440×900 on the hash-verified Saffola nutrition photo. The picker was canceled without adding another image, so this confirms UI routing, not the value of a complementary photo. OCR remained 22 lines / one parsed nutrient row; no accuracy result changed.
+- Axe violations, page errors, off-loopback browser requests and provider calls were zero. Full offline tests remain 284/31 files; typecheck passes.
