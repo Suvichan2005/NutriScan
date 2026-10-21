@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 21 October 2026 — keep local conversation memory explicit
+
+- Add a separate opt-in for saving up to 30 recent local question-and-answer turns with a saved package investigation. Saving turns also retains the package evidence and current amount needed to reopen the exchange.
+- Keep profile fields, original images and Gemini answers out of the saved conversation. Questions may contain personal details, so the UI says that shared browser profiles can expose saved turns. Turning the option off removes stored turns; clearing history removes saved investigations.
+- Validate both older package-only records and new conversation records through a bounded strict schema. On reopening, restore the saved turns and amount but start with an empty profile; a reopened saved scan reflects its saved state in the controls.
+- Chrome/Playwright verified opt-in, reload and restoration of two synthetic turns, profile non-persistence and turn removal at 390×844 and 1440×900. No Gemini assist or vision route was called. This is local persistence/UI evidence only, not LLM or OCR evidence.
+
 ## 21 October 2026 — make independent OCR annotation executable
 
 - Add a local-only browser route for independent source-pixel transcription and region geometry. Keep image bytes in tab memory, hash locally, and export only a strict single-reader pass with provenance metadata. Never include OCR output, image bytes, file names or local paths.

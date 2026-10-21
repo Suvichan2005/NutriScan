@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — opt-in local conversation continuity
+
+- Added a strict saved-scan contract that remains compatible with package-only history and can hold up to 30 recent local turns. Saved turns reopen with their package evidence and calculation amount; the optional profile returns empty.
+- Conversation persistence is a separate explicit choice. Its disclosure says questions can include personal details and that photos, profile fields and Gemini answers are excluded. Opting out strips turns from the saved record; clearing history removes both scans and turns.
+- Full suite passed (269 tests / 30 files), TypeScript passed, and an isolated optimized Webpack build passed without changing the owner-managed `.next` directory. Chrome/Playwright verified two-turn restore, blank profile and opt-out removal at 390×844 and 1440×900; Axe, page errors, Gemini assist/vision calls and off-loopback requests were zero. Receipt: `docs/evidence/package-text-conversation-browser.json`.
+- The browser exercise used synthetic label text and profile text. It is evidence of local storage and UI behavior only, not OCR accuracy, model reasoning or health-context personalization.
+
 ## 2026-10-21 — independent OCR annotation workflow
 
 - Added a local browser route for blinded human transcription of real package photographs. Image bytes stay in tab memory; the export contains hash/dimensions, attribution, normalized table/row/field polygons, exact printed numeric text, normalized value/operator, unit, and serving basis. It excludes bytes, file names, paths and OCR output.

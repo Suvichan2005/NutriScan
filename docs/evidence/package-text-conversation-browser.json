@@ -1,10 +1,11 @@
 {
   "schemaVersion": 1,
   "kind": "synthetic-package-text-conversation-browser-acceptance",
-  "generatedAt": "2026-10-21T08:16:03.250Z",
+  "generatedAt": "2026-10-21T09:27:50.282Z",
   "appOrigin": "http://127.0.0.1:3400",
   "captureTool": "Playwright using installed Chrome",
   "evaluationInput": "synthetic label text; not real-photo OCR evidence",
+  "persistence": "explicit local opt-in restores 2 recent turns; opt-out removes saved turns; optional profile remains session-only",
   "screenshots": "docs/evidence/private/package-text-conversation",
   "outcomes": [
     {
@@ -12,11 +13,16 @@
       "syntheticLabelInput": true,
       "observedIngredientQuestionAnswered": true,
       "allergenFollowUpAnsweredFromRecordedText": true,
+      "localConversationOptInRestored": true,
+      "savedConversationTurnCount": 2,
+      "profileRemainedSessionOnly": true,
+      "conversationOptOutRemovedSavedTurns": true,
       "observationDisclosureVisible": true,
       "missingTextRemainedUnknown": true,
       "missingTextProducedNoObservationFinding": true,
       "axeViolationIds": [],
       "pageErrors": [],
+      "providerCalls": [],
       "nonLoopbackRequestOrigins": []
     },
     {
@@ -24,11 +30,16 @@
       "syntheticLabelInput": true,
       "observedIngredientQuestionAnswered": true,
       "allergenFollowUpAnsweredFromRecordedText": true,
+      "localConversationOptInRestored": true,
+      "savedConversationTurnCount": 2,
+      "profileRemainedSessionOnly": true,
+      "conversationOptOutRemovedSavedTurns": true,
       "observationDisclosureVisible": true,
       "missingTextRemainedUnknown": true,
       "missingTextProducedNoObservationFinding": true,
       "axeViolationIds": [],
       "pageErrors": [],
+      "providerCalls": [],
       "nonLoopbackRequestOrigins": []
     }
   ],

@@ -17,6 +17,10 @@ export const profileSchema = z.object({dietaryPattern:z.string().max(500),allerg
 export type Profile = z.infer<typeof profileSchema>;
 export const defaultProfile:Profile = {dietaryPattern:'',allergies:'',intolerances:'',healthConsiderations:'',goals:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''};
 export const hasUserContext = (profile:Profile):boolean => Object.values(profile).some(value=>value.trim().length>0);
+export const savedConversationTurnSchema=z.object({question:z.string().trim().min(1).max(1000),answer:z.string().max(8000),at:z.iso.datetime()}).strict();
+export type SavedConversationTurn=z.infer<typeof savedConversationTurnSchema>;
+export const savedScanSchema=z.object({id:z.string().min(1).max(160),name:z.string().max(200),createdAt:z.string().min(1).max(80),package:packageSchema,portion:z.number().finite().positive().max(10000),unit:z.enum(['g','ml']),conversation:z.array(savedConversationTurnSchema).max(30).optional()}).strict();
+export type SavedScanRecord=z.infer<typeof savedScanSchema>;
 export type ProductRecord = {id:string;name:string;brand:string;barcode:string;quantity:string;countries:string[];url:string;retrievedAt:string;lastModified:string|null;nutrients:{key:NutrientKey;value:number;unit:string;basis:{amount:100;unit:'g'|'ml'}|null}[];ingredients:string;allergens:string[];match:'barcode'|'candidate';availability:'local stock unverified';imageUrl?:string;confidence?:string;warnings?:string[]};
 export type ResearchItem = {id:string;title:string;url:string;publisher:string;publishedAt:string|null;effectiveAt?:string|null;retrievedAt:string;category:string;summary:string;limitations:string;doi?:string};
 export type ImageAsset = {id:string;side:'front'|'back'|'extra';role?:'unknown'|'front'|'nutrition'|'ingredients'|'other';description?:string;rotation?:number;blob:Blob;url:string;width:number;height:number;name:string};

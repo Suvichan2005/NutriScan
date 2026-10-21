@@ -1,11 +1,12 @@
 import { get, set, del } from 'idb-keyval';
-import type { ImageAsset, Observation, PackageData } from './contracts';
+import { savedScanSchema, type ImageAsset, type Observation, type SavedScanRecord } from './contracts';
 import { detectRetailBarcodes } from './barcode';
 
-export type SavedScan = {id:string;name:string;createdAt:string;package:PackageData;portion:number;unit:'g'|'ml'};
+export type SavedScan = SavedScanRecord;
 const historyKey='nutriscan.history.v1';
-export async function readHistory():Promise<SavedScan[]> { const data=await get(historyKey); return Array.isArray(data)?data.slice(0,20):[]; }
-export async function saveScan(scan:SavedScan) { const history=await readHistory(); await set(historyKey,[scan,...history.filter(x=>x.id!==scan.id)].slice(0,20)); }
+export async function readHistory():Promise<SavedScan[]> { const data:unknown=await get(historyKey); return Array.isArray(data)?data.flatMap(item=>{const parsed=savedScanSchema.safeParse(item);return parsed.success?[parsed.data]:[];}).slice(0,20):[]; }
+export async function saveScan(input:SavedScan) { const scan=savedScanSchema.parse(input);const history=await readHistory();await set(historyKey,[scan,...history.filter(x=>x.id!==scan.id)].slice(0,20)); }
+export async function removeSavedScan(id:string) { const history=await readHistory();await set(historyKey,history.filter(scan=>scan.id!==id)); }
 export async function clearHistory(){ await del(historyKey); }
 
 export async function loadImage(file:Blob,side:ImageAsset['side'],name='Package photograph'):Promise<ImageAsset>{
