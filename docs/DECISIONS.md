@@ -6,6 +6,7 @@
 - Report detector and table-structure performance as unmeasured until independent region/row/column annotations exist. Available field candidates show exact numeric/unit/basis values for 2/9, 2/9 and 4/9 fields; three of four diagnosed parser fields were rejected, with missing unit, multiple values and invalid value reasons. Five omissions have no parser diagnostic and remain stage-ambiguous.
 - Do not interpret candidate counts as isolated OCR recognition accuracy or use this one image to select a replacement. Extend the existing annotation set before comparing stage-level accuracy. The current receipt stays sanitized; raw OCR and screenshots remain ignored/private.
 - Make calculation assumptions explicit that label readings and bases are unverified, including corrected readings. Keep the calculation available with its source lineage; a user correction does not become independent package verification.
+- Surface that same unverified status in the prominent “What matters” summary so users do not need to expand calculation details to see the evidence limitation.
 
 ## 22 October 2026 — keep the private remote empty pending image-rights review
 

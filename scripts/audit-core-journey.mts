@@ -76,6 +76,8 @@ try {
     const parsedRows = await page.locator('.details-block table tbody tr').count();
     const packageName = (await page.locator('.results-section h2').innerText()).trim();
     const unknownSummary = await page.locator('.unknown-card .unknown-summary').innerText();
+    const answerDisclosure = await page.locator('.answer-card p').innerText();
+    const answerDisclosureMarkedUnverified = /label readings and their stated bases are not independently verified/i.test(answerDisclosure);
     const addPhotoAction = page.getByRole('button', { name: 'Add a front, ingredients, or barcode photo' });
     const addPhotoActionVisible = await addPhotoAction.isVisible();
     let addPhotoPickerOpened = false;
@@ -276,6 +278,7 @@ try {
       parsedNutrientRows: parsedRows,
       annotatedFieldCounts,
       stageDiagnostics,
+      answerDisclosureMarkedUnverified,
       annotatedFieldScoreConserved,
       noIncorrectAnnotatedFields,
       addPhotoActionVisible,
@@ -315,7 +318,7 @@ try {
   const receipt = { schemaVersion: 1, kind: 'core-intake-to-audit-design-review', generatedAt: new Date().toISOString(), captureTool: 'Playwright using installed Chrome', appOrigin: origin.origin, acceptanceMode: process.env.NUTRISCAN_ACCEPTANCE_MODE ?? 'loopback local application', photoFile, limitations: ['OCR field measurements use one source image and a single human visual read, not independent adjudication or a held-out accuracy estimate.', 'Axe results are automated checks, not full accessibility conformance.', 'The browser receipt counts Gemini route invocations, not downstream provider calls or provider cost.'], screenshots: 'docs/evidence/private/core-journey-audit', outcomes: results };
   await writeFile('docs/evidence/core-journey-audit.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/core-journey-audit.json', screenshotDirectory: 'docs/evidence/private/core-journey-audit', outcomes: results }, null, 2));
-  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.annotatedFieldScoreConserved || !item.noIncorrectAnnotatedFields || !item.localOcrRegionInspectionWorks || !item.localOcrRegionInspectionMadeNoHttpRequest || !item.uncertaintyFollowUpUsesPackageEvidence || !item.ocrWordGeometryWithinCapture || !item.fiftyGramCalculation || !item.ocrReadingMarkedUnverified || !item.correctionMarkedUnverified || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || !item.noGeminiRouteRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
+  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.answerDisclosureMarkedUnverified || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.annotatedFieldScoreConserved || !item.noIncorrectAnnotatedFields || !item.localOcrRegionInspectionWorks || !item.localOcrRegionInspectionMadeNoHttpRequest || !item.uncertaintyFollowUpUsesPackageEvidence || !item.ocrWordGeometryWithinCapture || !item.fiftyGramCalculation || !item.ocrReadingMarkedUnverified || !item.correctionMarkedUnverified || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || !item.noGeminiRouteRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
 } finally {
   await browser.close();
 }
