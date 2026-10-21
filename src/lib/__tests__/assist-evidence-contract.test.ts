@@ -112,18 +112,23 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(data.package.observations.find(item=>item.id==='line-2')).toMatchObject({origin:'ocr',imageId,readingOrder:{runId,lineIndex:2},bbox:{x0:12,y0:80},confidence:51,ocrWords:[{wordIndex:0,text:'Protein'},{wordIndex:1,text:'approx'},{wordIndex:2,text:'8.8'},{wordIndex:3,text:'g'}]});
     expect(data.images?.[0].handle).toBe(data.package.ocrCaptures?.[0].imageId);
     const span={kind:'observation' as const,id:'line-2',quote:'Protein approx 8.8 g'};
-    const result=validateClaims({
+    const candidate={candidateId:'candidate-protein-1',kind:'nutrient' as const,field:'protein',proposedValue:'8.8',numericValue:8.8,unit:'g',basis:null,normalizedEntity:'protein',status:'tentative' as const,observationIds:['line-2'],sourceIds:[],supportingSpans:[span],ocrWordEvidence:[{observationId:'line-2',role:'label' as const,wordIndexes:[0]},{observationId:'line-2',role:'value' as const,wordIndexes:[2]},{observationId:'line-2',role:'unit' as const,wordIndexes:[3]}],uncertainty:'The printed row is approximate and no basis is tied to this candidate.'};
+    const output={
       answer:'ignored free-form answer',
       claims:[{mode:'synthesis',text:'The protein row appears to contain an approximate 8.8 g reading, but its serving basis is not established.',observationIds:['line-2'],sourceIds:[],supportingSpans:[span]}],
-      tentativeCandidates:[{candidateId:'candidate-protein-1',kind:'nutrient',field:'protein',proposedValue:'8.8',numericValue:8.8,unit:'g',basis:null,normalizedEntity:'protein',status:'tentative',observationIds:['line-2'],sourceIds:[],supportingSpans:[span],uncertainty:'The printed row is approximate and no basis is tied to this candidate.'}],
+      tentativeCandidates:[candidate],
       limitations:[],inspectImage:null
-    },data);
+    };
+    const result=validateClaims(output,data);
     expect(result.answer).toContain('AI-generated paraphrase');
     expect(result.answer).toContain('The protein row appears to contain');
     expect(result.answer).toContain('Protein approx 8.8 g');
     expect(result.tentativeCandidates).toHaveLength(1);
-    expect(result.tentativeCandidates[0]).toMatchObject({status:'tentative',numericValue:8.8,basis:null,observationIds:['line-2']});
+    expect(result.tentativeCandidates[0]).toMatchObject({status:'tentative',numericValue:8.8,basis:null,observationIds:['line-2'],ocrWordEvidence:candidate.ocrWordEvidence});
     expect(data.package.nutrients.some(item=>item.key==='protein')).toBe(false);
+    expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[]}]},data).tentativeCandidates).toEqual([]);
+    expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-2',role:'value',wordIndexes:[99]}]}]},data).tentativeCandidates).toEqual([]);
+    expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-1',role:'value',wordIndexes:[0]}]}]},data).tentativeCandidates).toEqual([]);
   });
 
   it('supports careful profile-aware paraphrases with exact user-context and OCR spans',()=>{

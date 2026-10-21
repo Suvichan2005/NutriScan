@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — link tentative candidates to recognized OCR words
+
+- The audit found that text assist already carries ordered OCR lines, line/word geometry and uncalibrated recognition scores, capture settings and session image IDs, plus parser rejected/conflicting candidates and retrieved evidence. It omits image bytes; the package has no durable image digest. Image inspection remains a separate action.
+- Added role-tagged OCR word references to the tentative-candidate contract. For every tokenized OCR line cited by a candidate, validation now requires an in-range word-index reference on that exact original line and rejects repeats within a role reference. Line text spans remain required, and candidates without word metadata retain legacy compatibility. Suggestions still remain tentative and cannot alter package facts.
+- Confirmed the response boundary already allows both direct quotes and labeled synthesis, with exact citation spans and separate user-context handling; those structural checks do not prove entailment. No Gemini request was made.
+- Offline assist tests passed (13), full suite passed (292 tests across 33 files), and typecheck passed. No browser/API route or OCR accuracy run was performed.
+
 ## 2026-10-21 — connect retrieved research records to future synthesis
 
 - Inspection found that the consented assist request contained the deterministic audit sources but omitted local semantic-search results and source-search cards already visible in the same investigation.

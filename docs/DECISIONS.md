@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 21 October 2026 — link tentative interpretation to OCR tokens
+
+- Keep the complete raw OCR line, capture provenance, geometry, confidence metadata and parser candidates as the authoritative observations. Add optional role-tagged word-index references to tentative structured candidates so an inferred label, value, unit, basis or identity can point to the recognized tokens without duplicating or promoting them.
+- When a cited OCR line has word metadata, require the tentative candidate to reference words from that line. Validate referenced line membership, image/order linkage through the package contract, in-range indexes without repeats inside a role reference, and the existing exact source-line quote. Invalid token links withhold the candidate.
+- Preserve text-only/legacy OCR candidate compatibility. Do not make word scores calibrated confidence, infer missing basis, add image bytes or a durable image hash, change parsing, or alter the confirmed package record.
+- Existing synthesis behavior is the intended conversational boundary: direct quotation or labeled evidence-linked interpretation with exact spans, citations and separate profile context. Structural checks do not prove entailment. Gemini remains disabled.
+
 ## 21 October 2026 — include shown search results in consented synthesis context
 
 - Compose the existing deterministic audit references, local semantic-search references and user-requested research results already shown in the investigation into one source-ID namespace for future assist. Deduplicate by ID, keep the total at 15, bound each summary, and retain the search classification alongside the excerpt.
