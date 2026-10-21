@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "local-semantic-retrieval-boundary-diagnostic",
-  "generatedAt": "2026-10-21T18:59:20.765Z",
+  "generatedAt": "2026-10-21T21:25:56.482Z",
   "queryCount": 13,
   "modelMode": "pinned local MiniLM embeddings plus lexical ranking",
   "results": [
@@ -62,9 +62,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-carbohydrate-2023",
-      "semanticScore": 0.5212,
+      "semanticScore": 0.53324,
       "lexicalScore": 1,
-      "hybridScore": 0.56908,
+      "hybridScore": 0.57992,
       "expectedBehaviorMet": true
     },
     {
@@ -74,9 +74,9 @@
       ],
       "status": "ok",
       "topSourceId": "fao-955",
-      "semanticScore": 0.35099,
+      "semanticScore": 0.35858,
       "lexicalScore": 1,
-      "hybridScore": 0.41589,
+      "hybridScore": 0.42273,
       "expectedBehaviorMet": true
     },
     {
@@ -86,9 +86,9 @@
       ],
       "status": "ok",
       "topSourceId": "fssai-labelling-allergen-faq-2023",
-      "semanticScore": 0.68692,
+      "semanticScore": 0.67724,
       "lexicalScore": 1,
-      "hybridScore": 0.71823,
+      "hybridScore": 0.70952,
       "expectedBehaviorMet": true
     },
     {
@@ -99,9 +99,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-carbohydrate-2023",
-      "semanticScore": 0.67133,
+      "semanticScore": 0.66562,
       "lexicalScore": 1,
-      "hybridScore": 0.70419,
+      "hybridScore": 0.69906,
       "expectedBehaviorMet": true
     },
     {
@@ -111,9 +111,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-sodium",
-      "semanticScore": 0.56768,
-      "lexicalScore": 0.91222,
-      "hybridScore": 0.60213,
+      "semanticScore": 0.56146,
+      "lexicalScore": 0.9295,
+      "hybridScore": 0.59826,
       "expectedBehaviorMet": true
     },
     {
@@ -123,9 +123,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-sugars-2015",
-      "semanticScore": 0.59811,
+      "semanticScore": 0.60549,
       "lexicalScore": 1,
-      "hybridScore": 0.63829,
+      "hybridScore": 0.64495,
       "expectedBehaviorMet": true
     },
     {

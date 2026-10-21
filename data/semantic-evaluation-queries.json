@@ -17,5 +17,7 @@
   {"id":"sucralose-name","query":"What additive is trichlorogalactosucrose?","relevant":["fao-955"]},
   {"id":"citric-identity","query":"INS 330 citric acid identity","relevant":["fao-330"]},
   {"id":"msg-identity","query":"MSG monosodium glutamate INS 621","relevant":["fao-621"]},
-  {"id":"xanthan-identity","query":"What is the number for xanthan gum?","relevant":["fao-415"]}
+  {"id":"xanthan-identity","query":"What is the number for xanthan gum?","relevant":["fao-415"]},
+  {"id":"lecithin-family-identity","query":"INS 322","relevant":["fao-322"]},
+  {"id":"silica-identity","query":"What additive identity does INS 551 or silica refer to?","relevant":["fao-551"]}
 ]

@@ -29,6 +29,15 @@ describe('knowledge module offline contract', () => {
     expect(candidate?.sourceIds).toContain('fao-385');
   });
 
+  it('resolves lecithin family codes and silica while retaining source limits', () => {
+    expect(lookupAdditive('INS 322')).toMatchObject({ code: '322', name: 'Lecithins', sourceIds: ['fao-322'] });
+    expect(lookupAdditive('E322(ii)')?.note).toMatch(/does not establish subtype/i);
+    expect(lookupAdditive('phospholipids')?.code).toBe('322');
+    expect(lookupAdditive('INS 551')).toMatchObject({ code: '551', name: 'Silicon dioxide, amorphous', sourceIds: ['fao-551'] });
+    expect(lookupAdditive('silica')?.code).toBe('551');
+    expect(detectAdditives('Ingredients: soy lecithin, INS 322(ii), silica, E551')).toEqual(['322', '551']);
+  });
+
   it('extracts additive codes from label text without inferring a nutrient value or dose', () => {
     expect(detectAdditives('Ingredients: water, preservative (202), INS 955')).toEqual(['955', '202']);
     expect(additives.length).toBeGreaterThan(0);
@@ -38,6 +47,8 @@ describe('knowledge module offline contract', () => {
     const hit = retrieveEvidence('INS 955', 4)[0];
     expect(hit.source.id).toBe('fao-955');
     expect(hit.source.publisher).toMatch(/FAO/i);
+    expect(retrieveEvidence('INS 322', 4).some((item) => item.source.id === 'fao-322')).toBe(true);
+    expect(retrieveEvidence('INS 551', 4).some((item) => item.source.id === 'fao-551')).toBe(true);
     expect(findNutrientContentClaimGuidance('high protein snack').map((item) => item.key)).toContain('high-protein');
   });
 

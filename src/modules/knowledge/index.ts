@@ -1,7 +1,7 @@
 import type { EvidenceSource } from '../../lib/contracts';
 
 /** Curated summaries, not redistributed source documents. Recheck current law live. */
-export const corpusVersion = '2026-10-22.2';
+export const corpusVersion = '2026-10-22.3';
 // Time the official pages were checked for this seed, not a runtime freshness claim.
 const retrievedAt = '2026-10-20T22:07:03.000Z';
 const carbohydrateGuidelineRetrievedAt = '2026-10-21T17:14:59.000Z';
@@ -28,6 +28,8 @@ export const evidenceSources: EvidenceSource[] = [
   source({id:'fao-202',title:'JECFA additive identity: Potassium Sorbate (202)',publisher:'Food and Agriculture Organization / Joint FAO/WHO Expert Committee on Food Additives',url:'https://www.fao.org/food/food-safety-quality/scientific-advice/jecfa/jecfa-additives/details-simple/en/?ins_id=202',category:'registry',jurisdiction:'International JECFA specifications; not national authorization',publishedAt:null,retrievedAt:'2026-10-21T16:12:12.000Z',summary:'The FAO JECFA entry identifies Potassium Sorbate and links Codex GSFA INS number 202.',limitations:'Identity/specification lookup only. It does not establish ingredient presence, amount, food-category permission in a jurisdiction, current national status or an individual safety conclusion.',license:'FAO/WHO source page; original brief metadata summary only, with no source text reproduced.'}),
   source({id:'fao-211',title:'JECFA additive identity: Sodium Benzoate (211)',publisher:'Food and Agriculture Organization / Joint FAO/WHO Expert Committee on Food Additives',url:'https://www.fao.org/food/food-safety-quality/scientific-advice/jecfa/jecfa-additives/details-simple/en/?ins_id=211',category:'registry',jurisdiction:'International JECFA specifications; not national authorization',publishedAt:null,retrievedAt:'2026-10-21T16:12:12.000Z',summary:'The FAO JECFA entry identifies Sodium Benzoate and links Codex GSFA INS number 211.',limitations:'Identity/specification lookup only. It does not establish ingredient presence, amount, food-category permission in a jurisdiction, current national status or an individual safety conclusion.',license:'FAO/WHO source page; original brief metadata summary only, with no source text reproduced.'}),
   source({id:'fao-385',title:'JECFA additive identity: Calcium Disodium EDTA (385)',publisher:'Food and Agriculture Organization / Joint FAO/WHO Expert Committee on Food Additives',url:'https://www.fao.org/food/food-safety-quality/scientific-advice/jecfa/jecfa-additives/details-simple/en/?ins_id=385',category:'registry',jurisdiction:'International JECFA specifications; not national authorization',publishedAt:null,retrievedAt:'2026-10-21T16:12:12.000Z',summary:'The FAO JECFA entry identifies Calcium Disodium Ethylenediaminetetraacetate and lists calcium disodium edetate and calcium disodium EDTA as synonyms; it links Codex GSFA INS number 385.',limitations:'Identity/specification lookup only. It does not establish ingredient presence, amount, food-category permission in a jurisdiction, current national status or an individual safety conclusion.',license:'FAO/WHO source page; original brief metadata summary only, with no source text reproduced.'}),
+  source({id:'fao-322',title:'Codex GSFA additive identity: Lecithins (322)',publisher:'FAO/WHO Codex Alimentarius',url:'https://www.fao.org/gsfaonline/additives/results.html?ins=322&searchBy=ins',category:'registry',jurisdiction:'International Codex GSFA identity reference; not national authorization',publishedAt:null,retrievedAt:'2026-10-22',summary:'The Codex GSFA search lists Lecithin (INS 322(i)) and Lecithin, partially hydrolysed (INS 322(ii)). It also lists phosphatides and phospholipids as synonyms for Lecithin (322(i)).',limitations:'Identity and synonym lookup only. A generic “lecithin” ingredient or INS 322 does not establish which subtype is present. This record does not establish a product dose, food-category permission in a jurisdiction, current national status or an individual safety conclusion.',license:'Official Codex GSFA database; downstream reuse terms were not independently reviewed. NutriScan stores an original brief identity summary and source link only.'}),
+  source({id:'fao-551',title:'Codex GSFA additive identity: Silicon dioxide, amorphous (551)',publisher:'FAO/WHO Codex Alimentarius',url:'https://www.fao.org/gsfaonline/additives/details.html?id=284',category:'registry',jurisdiction:'International Codex GSFA identity reference; not national authorization',publishedAt:null,retrievedAt:'2026-10-22',summary:'The Codex GSFA entry identifies silicon dioxide, amorphous as INS 551 and lists silica as a synonym.',limitations:'Identity lookup only. It does not establish that a product contains the additive, its amount, food-category permission in a jurisdiction, current national status or an individual safety conclusion.',license:'Official Codex GSFA database; downstream reuse terms were not independently reviewed. NutriScan stores an original brief identity summary and source link only.'}),
 ];
 
 export const nutrientContentClaimSourceIds=['fssai-advertising-claims-compendium-2022','fssai-advertising-claims-amendment-index'] as const;
@@ -51,12 +53,18 @@ export const additives: AdditiveRecord[] = [
   {code:'202',name:'Potassium Sorbate',aliases:['potassium sorbate'],sourceIds:['fao-202'],note:'Identity resolved; amount and current national permissions are unverified.'},
   {code:'211',name:'Sodium Benzoate',aliases:['sodium benzoate'],sourceIds:['fao-211'],note:'Identity resolved; amount and current national permissions are unverified.'},
   {code:'385',name:'Calcium Disodium EDTA',aliases:['calcium disodium edta','calcium disodium edetate'],sourceIds:['fao-385'],note:'Identity and synonyms resolved; amount and current national permissions are unverified.'},
+  {code:'322',name:'Lecithins',aliases:['lecithin','lecithins','soy lecithin','phosphatides','phospholipids','322(i)','322(ii)'],sourceIds:['fao-322'],note:'Family identity resolved. Codex distinguishes lecithin (322(i)) and partially hydrolysed lecithin (322(ii)); a generic label does not establish subtype.'},
+  {code:'551',name:'Silicon dioxide, amorphous',aliases:['silicon dioxide','amorphous silica','silica'],sourceIds:['fao-551'],note:'Identity resolved; amount and current national permissions are unverified.'},
 ];
 const normal = (s:string) => s.toLowerCase().trim().replace(/[‐–—]/g,'-').replace(/\s+/g,' ');
+function canonicalAdditiveCode(value:string):string {
+  const code=value.toLowerCase();
+  return /^322\((?:i|ii)\)$/.test(code)?'322':code;
+}
 export function lookupAdditive(query:string): AdditiveRecord | undefined {
   const q = normal(query);
   const code = q.match(/^(?:(?:ins|e)\s*[-:]?\s*)?(\d{3,4}(?:[a-z]|\([ivx]+\))?)$/i)?.[1];
-  return additives.find(a => (code && a.code === code) || a.aliases.some(alias=> normal(alias) === q));
+  return additives.find(a => (code && a.code === canonicalAdditiveCode(code)) || a.aliases.some(alias=> normal(alias) === q));
 }
 
 export type TentativeAdditiveIdentityCandidate = {
@@ -155,14 +163,14 @@ export function resolveTentativeAdditiveIdentity(query:string):TentativeAdditive
 
 export function detectAdditives(text:string): string[] {
   const found = new Set<string>();
-  for (const m of text.matchAll(/\b(?:INS\s*[-:]?\s*|E\s*[-:]?\s*)(\d{3,4}(?:[a-z]|\([ivx]+\))?)(?![\w])/gi)) found.add(m[1].toLowerCase());
+  for (const m of text.matchAll(/\b(?:INS\s*[-:]?\s*|E\s*[-:]?\s*)(\d{3,4}(?:[a-z]|\([ivx]+\))?)(?![\w])/gi)) found.add(canonicalAdditiveCode(m[1]));
   for (const a of additives) for (const alias of a.aliases) {
     const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
     if (new RegExp(`\\b${escaped}\\b`,'i').test(text)) found.add(a.code);
   }
   // Bare bracketed codes are accepted only in a declared ingredient section.
   const ingredients = text.match(/ingredients?\s*[:：]([^\n]*(?:\n(?!.*(?:nutrition|allergen|contains|per\s+100|net\s+weight)).*)*)/i)?.[1] ?? '';
-  for (const m of ingredients.matchAll(/\((\d{3,4}(?:[a-z]|\([ivx]+\))?)\)/gi)) found.add(m[1].toLowerCase());
+  for (const m of ingredients.matchAll(/\((\d{3,4}(?:[a-z]|\([ivx]+\))?)\)/gi)) found.add(canonicalAdditiveCode(m[1]));
   return [...found];
 }
 

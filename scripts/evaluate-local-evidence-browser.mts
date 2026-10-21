@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { chromium } from '@playwright/test';
+import { chromium, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -8,6 +8,17 @@ const origin = new URL(baseUrl);
 if (!['127.0.0.1', 'localhost', '[::1]'].includes(origin.hostname)) throw new Error('Local-evidence acceptance accepts loopback origins only.');
 const response = await fetch(baseUrl, { signal: AbortSignal.timeout(5000) });
 if (!response.ok) throw new Error(`NutriScan is unavailable: HTTP ${response.status}.`);
+
+async function searchEvidence(page: Page, query: string) {
+  await page.getByLabel('Public search terms').fill(query);
+  const responsePromise = page.waitForResponse((candidate) => new URL(candidate.url()).pathname === '/api/evidence');
+  await page.getByRole('button', { name: 'Local evidence search' }).click();
+  const result = await responsePromise;
+  if (!result.ok()) {
+    const body = await result.json().catch(() => ({})) as { code?: string };
+    throw new Error(`Evidence search ${JSON.stringify(query)} returned HTTP ${result.status()}${body.code ? ` (${body.code})` : ''}.`);
+  }
+}
 
 const screenshotDirectory = path.resolve('docs/evidence/private/local-evidence');
 await mkdir(screenshotDirectory, { recursive: true });
@@ -43,9 +54,8 @@ try {
     const additiveQuestionDoesNotAssertPresence = /does not establish that this package contains it/i.test(additiveFollowupText);
     const additiveAnswerSourceVisible = await page.locator('.sources-section').getByText('JECFA additive identity: Potassium Sorbate (202)').count() > 0;
 
-    await page.getByLabel('Public search terms').fill('INS 211');
+    await searchEvidence(page, 'INS 211');
     const exactIdentifierQuery = await page.getByLabel('Public search terms').inputValue() === 'INS 211';
-    await page.getByRole('button', { name: 'Local evidence search' }).click();
     const sodiumBenzoateCard = page.locator('.research-results article').filter({ hasText: 'Sodium Benzoate (211)' }).first();
     await sodiumBenzoateCard.waitFor({ state: 'visible', timeout: 30_000 });
     const sodiumBenzoateText = await sodiumBenzoateCard.innerText();
@@ -53,18 +63,16 @@ try {
     const sodiumBenzoateLimitVisible = /does not establish ingredient presence, amount, food-category permission/i.test(sodiumBenzoateText);
     const sodiumBenzoatePublisherAndJurisdictionVisible = /Joint FAO\/WHO Expert Committee on Food Additives/.test(sodiumBenzoateText) && /International JECFA specifications; not national authorization/.test(sodiumBenzoateText);
 
-    await page.getByLabel('Public search terms').fill('WHO adult naturally occurring dietary fibre 25 g daily');
+    await searchEvidence(page, 'WHO adult naturally occurring dietary fibre 25 g daily');
     const whoFibreQuery = await page.getByLabel('Public search terms').inputValue() === 'WHO adult naturally occurring dietary fibre 25 g daily';
-    await page.getByRole('button', { name: 'Local evidence search' }).click();
     const whoEvidenceCard = page.locator('.research-results article').filter({ hasText: 'Carbohydrate intake for adults and children: WHO guideline' }).first();
     await whoEvidenceCard.waitFor({ state: 'visible', timeout: 30_000 });
     const whoSourceText = await whoEvidenceCard.innerText();
     const whoSourceLink = whoEvidenceCard.getByRole('link').first();
     const whoHref = await whoSourceLink.getAttribute('href');
 
-    await page.getByLabel('Public search terms').fill('What does WHO mean by free sugars?');
+    await searchEvidence(page, 'What does WHO mean by free sugars?');
     const whoSugarQuery = await page.getByLabel('Public search terms').inputValue() === 'What does WHO mean by free sugars?';
-    await page.getByRole('button', { name: 'Local evidence search' }).click();
     const whoSugarCard = page.locator('.research-results article').filter({ hasText: 'Guideline: sugars intake for adults and children' }).first();
     await whoSugarCard.waitFor({ state: 'visible', timeout: 30_000 });
     const whoSugarText = await whoSugarCard.innerText();
@@ -72,20 +80,31 @@ try {
     const whoSugarScreenshot = `docs/evidence/private/local-evidence/${viewport.width === 390 ? 'mobile' : 'desktop'}-who-free-sugars.png`;
     await whoSugarCard.screenshot({ path: path.resolve(whoSugarScreenshot) });
 
-    await page.getByLabel('Public search terms').fill('What is the weather forecast for Delhi tomorrow?');
-    await page.getByRole('button', { name: 'Local evidence search' }).click();
+    await searchEvidence(page, 'INS 322');
+    const lecithinCard = page.locator('.research-results article').filter({ hasText: 'Lecithins (322)' }).first();
+    await lecithinCard.waitFor({ state: 'visible', timeout: 30_000 });
+    const lecithinText = await lecithinCard.innerText();
+    const lecithinHref = await lecithinCard.getByRole('link').first().getAttribute('href');
+    const lecithinSubtypeLimitVisible = /generic.*does not establish which subtype/i.test(lecithinText);
+
+    await searchEvidence(page, 'INS 551');
+    const silicaCard = page.locator('.research-results article').filter({ hasText: 'Silicon dioxide, amorphous (551)' }).first();
+    await silicaCard.waitFor({ state: 'visible', timeout: 30_000 });
+    const silicaText = await silicaCard.innerText();
+    const silicaHref = await silicaCard.getByRole('link').first().getAttribute('href');
+    const silicaLimitsVisible = /does not establish that a product contains the additive, its amount/i.test(silicaText);
+
+    await searchEvidence(page, 'What is the weather forecast for Delhi tomorrow?');
     const outOfDomainNotice = page.locator('.remote-status').filter({ hasText: 'No local source candidate cleared the conservative relevance floor' });
     await outOfDomainNotice.waitFor({ state: 'visible', timeout: 30_000 });
     const unrelatedQueryAbstained = await page.locator('.research-results article').count() === 0;
 
-    await page.getByLabel('Public search terms').fill('Is an ORS food product name currently allowed in India?');
-    await page.getByRole('button', { name: 'Local evidence search' }).click();
+    await searchEvidence(page, 'Is an ORS food product name currently allowed in India?');
     const regulatoryNotice = page.locator('.remote-status').filter({ hasText: 'not a current-law source' });
     await regulatoryNotice.waitFor({ state: 'visible', timeout: 30_000 });
     const currentLawQueryAbstained = await page.locator('.research-results article').count() === 0;
 
-    await page.getByLabel('Public search terms').fill('What is the current FSSAI labelling rule for nutrition declarations?');
-    await page.getByRole('button', { name: 'Local evidence search' }).click();
+    await searchEvidence(page, 'What is the current FSSAI labelling rule for nutrition declarations?');
     const fssaiNotice = page.locator('.remote-status').filter({ hasText: 'not a current-law source' });
     await fssaiNotice.waitFor({ state: 'visible', timeout: 30_000 });
     const fssaiQueryAbstained = await page.locator('.research-results article').count() === 0;
@@ -112,6 +131,14 @@ try {
       whoSugarOfficialSourceLink: whoSugarHref === 'https://www.who.int/publications/i/item/9789241549028',
       whoSugarPackageScopeLimitVisible: /not a product threshold, per-serving target or individualized prescription/i.test(whoSugarText),
       whoSugarScreenshot,
+      lecithinIdentifierQuery: true,
+      lecithinSourceVisible: /Lecithins \(322\)/.test(lecithinText),
+      lecithinOfficialSourceLink: lecithinHref === 'https://www.fao.org/gsfaonline/additives/results.html?ins=322&searchBy=ins',
+      lecithinSubtypeLimitVisible,
+      silicaIdentifierQuery: true,
+      silicaSourceVisible: /Silicon dioxide, amorphous \(551\)/.test(silicaText),
+      silicaOfficialSourceLink: silicaHref === 'https://www.fao.org/gsfaonline/additives/details.html?id=284',
+      silicaLimitsVisible,
       unrelatedQueryAbstained,
       currentLawQueryAbstained,
       fssaiQueryAbstained,
@@ -123,6 +150,8 @@ try {
     };
     outcomes.push(outcome);
     await context.close();
+    // The evidence route permits 12 requests per minute; each viewport makes eight.
+    if (viewport.width === 390) await new Promise((resolve) => setTimeout(resolve, 61_000));
   }
 } finally {
   await browser.close();
@@ -134,11 +163,11 @@ const receipt = {
   generatedAt: new Date().toISOString(),
   browser: 'Chrome via Playwright, headless',
   origin: 'loopback',
-  query: 'Potassium sorbate conversational follow-up; INS 211; WHO free-sugars guidance; WHO dietary-fibre guidance',
-  sourceExpected: 'FAO/WHO JECFA additive identity record, WHO carbohydrate-quality guidance and WHO free-sugars guideline.',
+  query: 'Potassium sorbate conversational follow-up; INS 211; WHO free-sugars and dietary-fibre guidance; INS 322 and INS 551 registry identities',
+  sourceExpected: 'FAO/WHO additive identity records, WHO carbohydrate-quality guidance and WHO free-sugars guideline.',
   limitations: ['Uses explicitly typed queries and a small curated source corpus.', 'The development relevance floor and query-intent guard are not calibrated on independent user queries.', 'Source retrieval is not proof of product ingredients, dose, exposure, safety for an individual or current Indian permission.'],
   outcomes,
 };
 await writeFile('docs/evidence/local-evidence-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
 console.log(JSON.stringify({ receipt: 'docs/evidence/local-evidence-browser.json', outcomes }, null, 2));
-if (outcomes.length !== 2 || outcomes.some((outcome) => !outcome.exactIdentifierQuery || !outcome.officialJecfaSourceVisible || !outcome.officialSourceLink || !outcome.publisherAndJurisdictionVisible || !outcome.sourceLimitationsVisible || !outcome.additiveNameFollowupGrounded || !outcome.additiveQuestionDoesNotAssertPresence || !outcome.additiveAnswerSourceVisible || !outcome.whoFibreQuery || !outcome.whoGuidelineVisible || !outcome.whoOfficialSourceLink || !outcome.whoPackageScopeLimitVisible || !outcome.whoSugarQuery || !outcome.whoFreeSugarGuidelineVisible || !outcome.whoSugarOfficialSourceLink || !outcome.whoSugarPackageScopeLimitVisible || !outcome.unrelatedQueryAbstained || !outcome.currentLawQueryAbstained || !outcome.fssaiQueryAbstained || outcome.evidenceRouteStatuses.length !== 6 || outcome.evidenceRouteStatuses.some((status) => status !== 200) || !outcome.noNonLoopbackRequests || outcome.axeViolationIds.length || outcome.pageErrors.length)) process.exitCode = 1;
+if (outcomes.length !== 2 || outcomes.some((outcome) => !outcome.exactIdentifierQuery || !outcome.officialJecfaSourceVisible || !outcome.officialSourceLink || !outcome.publisherAndJurisdictionVisible || !outcome.sourceLimitationsVisible || !outcome.additiveNameFollowupGrounded || !outcome.additiveQuestionDoesNotAssertPresence || !outcome.additiveAnswerSourceVisible || !outcome.whoFibreQuery || !outcome.whoGuidelineVisible || !outcome.whoOfficialSourceLink || !outcome.whoPackageScopeLimitVisible || !outcome.whoSugarQuery || !outcome.whoFreeSugarGuidelineVisible || !outcome.whoSugarOfficialSourceLink || !outcome.whoSugarPackageScopeLimitVisible || !outcome.lecithinIdentifierQuery || !outcome.lecithinSourceVisible || !outcome.lecithinOfficialSourceLink || !outcome.lecithinSubtypeLimitVisible || !outcome.silicaIdentifierQuery || !outcome.silicaSourceVisible || !outcome.silicaOfficialSourceLink || !outcome.silicaLimitsVisible || !outcome.unrelatedQueryAbstained || !outcome.currentLawQueryAbstained || !outcome.fssaiQueryAbstained || outcome.evidenceRouteStatuses.length !== 8 || outcome.evidenceRouteStatuses.some((status) => status !== 200) || !outcome.noNonLoopbackRequests || outcome.axeViolationIds.length || outcome.pageErrors.length)) process.exitCode = 1;
