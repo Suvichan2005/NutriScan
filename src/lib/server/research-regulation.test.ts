@@ -51,5 +51,16 @@ describe('official regulation PDF discovery', () => {
     const notice = result.items.find(item => item.id === 'fssai-label-amendment-2026');
     expect(notice?.url).toBe('https://www.fssai.gov.in/upload/notifications/2026/04/69cca2b3f3ce9Notification%20dt%2024.03.2026_NRC.pdf');
   });
+
+  it('keeps primary-source links visible when only a client-rendered shell is retrieved', async () => {
+    fixedFetchMock.mockResolvedValue('<html><title>FSSAI</title><div id="root"></div><script src="app.js"></script></html>');
+    const result = await research({ query: 'FSSAI labelling', topic: 'regulation' });
+    expect(result.status).toBe('unavailable');
+    expect(result.items.length).toBeGreaterThan(0);
+    expect(result.items.every(item => /^https:\/\/(www\.)?fssai\.gov\.in\//.test(item.url))).toBe(true);
+    expect(result.items.every(item => /could not retrieve usable source text/i.test(item.summary))).toBe(true);
+    expect(result.items.every(item => /navigation only/i.test(item.limitations))).toBe(true);
+    expect(result.message).toMatch(/no source text or current-law verdict is available/i);
+  });
 });
 

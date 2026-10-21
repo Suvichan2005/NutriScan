@@ -107,7 +107,11 @@ describe('public source normalization', () => {
   it('rejects a thin client-rendered regulatory shell as evidence', async () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => new Response('<html><title>FSSAI</title><div id="root"></div><script src="app.js"></script></html>', { headers: { 'content-type': 'text/html' } })));
     const result = await research({ query: 'FSSAI label regulations India', topic: 'regulation' });
-    expect(result.status).toBe('unavailable'); expect(result.items).toEqual([]); expect(result.message).toContain('No current-law verdict');
+    expect(result.status).toBe('unavailable');
+    expect(result.items.length).toBeGreaterThan(0);
+    expect(result.items.every(item => /could not retrieve usable source text/i.test(item.summary))).toBe(true);
+    expect(result.items.every(item => /navigation only/i.test(item.limitations))).toBe(true);
+    expect(result.message).toMatch(/no source text.*current-law verdict/i);
   });
 });
 
