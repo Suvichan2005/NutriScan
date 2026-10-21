@@ -115,8 +115,17 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   for(const mention of findDeclaredFoodMentions(pkg,profile)){
     const labelTextPresent=pkg.ingredients.length>0||pkg.allergens.length>0;
     const kind=mention.kind==='allergy'?'Food allergy':'Food intolerance';
+    const evidenceLabels={
+      'ingredient-list':'ingredient-list wording',
+      'contains-declaration':'a Contains declaration',
+      'precautionary-cross-contact':'May-contain precautionary wording',
+      'other-allergen-statement':'other allergen-statement wording',
+    } as const;
+    const matchingEvidence=mention.evidence.map(item=>`${evidenceLabels[item.type]}: ${JSON.stringify(item.text)}`);
+    const categories=unique(mention.evidence.map(item=>evidenceLabels[item.type]));
+    const hasPrecautionaryWording=mention.evidence.some(item=>item.type==='precautionary-cross-contact');
     const detail=mention.matched
-      ?`The extracted ingredient/allergen wording contains a literal text match for “${mention.term}”. This is not a medical determination or individual-safety assessment; the label may not show derivatives or cross-contact. Inspect the original package.`
+      ?`A literal match for “${mention.term}” appears in ${categories.join(' and ')}. Exact recorded line${matchingEvidence.length===1?'':'s'}: ${matchingEvidence.join('; ')}. ${hasPrecautionaryWording?'The “May contain” category describes precautionary cross-contact wording only; it does not confirm that an allergen is present.':'No matching “May contain” line for this term appears among these retained observations, which does not rule out cross-contact.'} These are unverified package-reading observations, not verified composition. This is not a medical determination or individual-safety assessment and does not establish actual allergen presence, amount or exposure, individual risk or safety; inspect the original label.`
       :labelTextPresent
         ?`No direct text match for “${mention.term}” was found in the extracted ingredient/allergen wording. Synonyms, derivatives, OCR omissions and cross-contact are not checked; this is not a safety clearance.`
         :'No readable ingredient/allergen wording is available to compare with “'+mention.term+'”. Its absence from the extraction is not evidence that it is absent from the product.';

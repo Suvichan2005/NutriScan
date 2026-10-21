@@ -49,6 +49,7 @@ try {
 
     await page.getByRole('button', { name: 'Optional context', exact: true }).click();
     await page.getByLabel('What are you trying to understand?').fill('Synthetic profile text must remain session-only');
+    await page.getByLabel('Food allergies').fill('peanuts');
     await page.getByRole('button', { name: 'Use for this session' }).click();
 
     await page.getByLabel('What would you like to find out?').fill('What ingredients are listed?');
@@ -59,6 +60,10 @@ try {
     await page.locator('.assistant-message').filter({ hasText: /Ingredients: Oats, milk powder, salt/ }).first().waitFor({ state: 'visible' });
     await page.getByText('Recorded ingredient text').waitFor({ state: 'visible' });
     const observationDisclosure = await page.locator('.assistant-message').filter({ hasText: /observations, not independently verified product facts/ }).first().isVisible();
+    const allergyFinding = page.locator('.finding').filter({ hasText: /Food allergy: literal mention/ }).first();
+    await allergyFinding.waitFor({ state: 'visible' });
+    const allergyFindingText = await allergyFinding.innerText();
+    const precautionaryAllergyDistinguished = /May-contain precautionary wording: "May contain traces of peanuts"/.test(allergyFindingText) && /does not confirm that an allergen is present/i.test(allergyFindingText) && /does not establish actual allergen presence, amount or exposure, individual risk or safety/i.test(allergyFindingText);
     await page.locator('.provider-details > summary').click();
     const geminiHistoryOptIn = page.getByRole('checkbox', { name: /Include up to four recent local question-and-answer turns/ });
     const geminiHistoryStartsUnchecked = !(await geminiHistoryOptIn.isChecked());
@@ -127,7 +132,7 @@ try {
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Optional context', exact: true }).click();
     const rememberContext = page.getByRole('checkbox', { name: /Remember this context on this device/ });
-    const profileStartedEmpty = await page.getByLabel('What are you trying to understand?').inputValue() === '' && !(await rememberContext.isChecked());
+    const profileStartedEmpty = await page.getByLabel('What are you trying to understand?').inputValue() === '' && await page.getByLabel('Food allergies').inputValue() === '' && !(await rememberContext.isChecked());
     await page.getByLabel('What are you trying to understand?').fill('Synthetic profile persistence acceptance fixture');
     await rememberContext.check();
     await page.getByText('Your context is saved separately on this device.').waitFor({ state: 'visible' });
@@ -185,6 +190,7 @@ try {
       syntheticLabelInput: true,
       observedIngredientQuestionAnswered: true,
       allergenFollowUpAnsweredFromRecordedText: true,
+      profileAllergyMatchedPrecautionaryWording: precautionaryAllergyDistinguished,
       crossContactGuidanceAnswered,
       crossContactSourceVisible,
       multiNutrientQuestionAnswered,
@@ -213,11 +219,11 @@ try {
     };
     outcomes.push(outcome);
     console.log(JSON.stringify(outcome));
-    if (!observationDisclosure || !geminiHistoryStartsUnchecked || !geminiHistoryCanBeExplicitlyIncluded || !multiNutrientQuestionAnswered || !whoGuidanceAnswered || !whoSourceVisible || !childGuidanceAnswered || !crossContactGuidanceAnswered || !crossContactSourceVisible || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
+    if (!observationDisclosure || !precautionaryAllergyDistinguished || !geminiHistoryStartsUnchecked || !geminiHistoryCanBeExplicitlyIncluded || !multiNutrientQuestionAnswered || !whoGuidanceAnswered || !whoSourceVisible || !childGuidanceAnswered || !crossContactGuidanceAnswered || !crossContactSourceVisible || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
     await context.close();
   }
 
-  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.crossContactGuidanceAnswered === true && outcome.crossContactSourceVisible === true && outcome.multiNutrientQuestionAnswered === true && outcome.whoGuidanceAnswered === true && outcome.whoSourceVisible === true && outcome.childGuidanceAnswered === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.geminiHistoryStartsUnchecked === true && outcome.geminiHistoryCanBeExplicitlyIncluded === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
+  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.profileAllergyMatchedPrecautionaryWording === true && outcome.crossContactGuidanceAnswered === true && outcome.crossContactSourceVisible === true && outcome.multiNutrientQuestionAnswered === true && outcome.whoGuidanceAnswered === true && outcome.whoSourceVisible === true && outcome.childGuidanceAnswered === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.geminiHistoryStartsUnchecked === true && outcome.geminiHistoryCanBeExplicitlyIncluded === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
   const receipt = { schemaVersion: 1, kind: 'synthetic-package-text-conversation-browser-acceptance', generatedAt: new Date().toISOString(), appOrigin: origin.origin, captureTool: 'Playwright using installed Chrome', evaluationInput: 'synthetic label text; not real-photo OCR evidence', persistence: 'explicit local opt-in restores 6 recent turns; opt-out removes saved turns; optional profile is remembered only after separate opt-in and is excluded from scan records', screenshots: 'docs/evidence/private/package-text-conversation', outcomes, passed };
   await writeFile('docs/evidence/package-text-conversation-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/package-text-conversation-browser.json', passed }));

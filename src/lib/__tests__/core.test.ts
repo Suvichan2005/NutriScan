@@ -295,6 +295,20 @@ describe('nutrition numerical invariants',()=>{
     expect(intolerance?.detail).toMatch(/No direct text match/);
     expect(intolerance?.detail).toMatch(/not a safety clearance/);
   });
+  it('describes a matched May-contain line as precautionary wording without implying cross-contact is absent',()=>{
+    const pkg=label('Ingredients: oats\nMay contain traces of peanuts');
+    const profile={...defaultProfile,allergies:'peanuts'};
+    const audit=buildAudit(pkg,30,'g',profile,'Is this suitable for me?');
+    const allergy=audit.findings.find(finding=>finding.title==='Food allergy: literal mention');
+    const warning=pkg.observations.find(observation=>observation.field==='allergens'&&/may contain/i.test(observation.text));
+    expect(allergy?.observationIds).toContain(warning?.id);
+    expect(allergy?.detail).toContain('May-contain precautionary wording');
+    expect(allergy?.detail).toContain('"May contain traces of peanuts"');
+    expect(allergy?.detail).toMatch(/does not confirm that an allergen is present/i);
+    expect(allergy?.detail).toMatch(/does not establish actual allergen presence, amount or exposure, individual risk or safety/i);
+    expect(allergy?.detail).not.toMatch(/No matching “May contain” line|label may not show cross-contact/i);
+    expect(allergy?.status).toBe('uncertain');
+  });
   it('keeps ORS current legal questions explicitly unresolved',()=>{
     const audit=buildAudit(label('ORS drink\nPer 100 ml\nSugars 10 g'),100,'ml',defaultProfile,'Is this ORS legal in India today?');
     expect(audit.trace.find(t=>t.tool==='check_regulatory_updates')?.status).toMatch(/not performed/);

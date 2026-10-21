@@ -1,12 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fixedFetch, input, localGate, readBounded, route } from './http';
 import { lookupProducts, normalizeProduct, productInput } from './products';
-import { assistInput, assistOutput, providerStatus, validateClaims, validateImage, visionInput } from './gemini';
+import { assistInput, assistOutput, linkVisionResponseToCapture, providerStatus, validateClaims, validateImage, vision, visionInput } from './gemini';
 import { research, researchInput, researchRecalls } from './research';
 import { z } from 'zod';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 const request = (body: unknown, origin = 'http://127.0.0.1:3400') => new Request('http://127.0.0.1:3400/api/test', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+const visionTestImage={imageId:'package-photo-1',mimeType:'image/png' as const,base64:'a'.repeat(20),side:'back' as const,sourceImage:{width:1600,height:2400},preprocessing:{rotation:90 as const,contrast:true,invert:false,crop:{x:0.1,y:0.15,width:0.8,height:0.7}}};
 
 describe('bounded server boundary', () => {
   it('rejects other origins before executing work', async () => {
@@ -20,7 +21,43 @@ describe('bounded server boundary', () => {
     expect(() => localGate(hostile, 'evil-host-test')).toThrow('local NutriScan hostname');
   });
   it('requires consent even when a caller supplies valid image metadata', () => {
-    expect(visionInput.safeParse({ consent: false, image: { mimeType: 'image/png', base64: 'a'.repeat(20), side: 'back' } }).success).toBe(false);
+    expect(visionInput.safeParse({ consent: false, image: visionTestImage }).success).toBe(false);
+  });
+  it('requires bounded source-image dimensions and preprocessing provenance', () => {
+    expect(visionInput.safeParse({consent:true,image:visionTestImage}).success).toBe(true);
+    expect(visionInput.safeParse({consent:true,image:{...visionTestImage,sourceImage:{width:40000,height:1}}}).success).toBe(true);
+    const {imageId,...missingImageId}=visionTestImage;
+    expect(visionInput.safeParse({consent:true,image:missingImageId}).success).toBe(false);
+    expect(visionInput.safeParse({consent:true,image:{...visionTestImage,sourceImage:{width:0,height:2400}}}).success).toBe(false);
+    expect(visionInput.safeParse({consent:true,image:{...visionTestImage,sourceImage:{width:40001,height:2400}}}).success).toBe(false);
+    expect(visionInput.safeParse({consent:true,image:{...visionTestImage,preprocessing:{...visionTestImage.preprocessing,rotation:45}}}).success).toBe(false);
+    expect(visionInput.safeParse({consent:true,image:{...visionTestImage,preprocessing:{...visionTestImage.preprocessing,crop:{x:0.8,y:0,width:0.3,height:0.5}}}}).success).toBe(false);
+  });
+  it('links an offline vision response to its source image and capture without provider calls', () => {
+    const fetcher=vi.fn();vi.stubGlobal('fetch',fetcher);
+    const linked=linkVisionResponseToCapture({observations:[{field:'nutrition-row',text:'Fibre 8 g',confidence:62}],limitations:['Transcription is uncertain.']},visionTestImage,'gemini-test','vision-run-1');
+    expect(linked.visionCapture).toEqual({runId:'vision-run-1',imageId:'package-photo-1',side:'back',sourceImage:{width:1600,height:2400},processing:visionTestImage.preprocessing,model:'gemini-test'});
+    expect(linked.observations).toHaveLength(1);
+    expect(linked.observations[0]).toMatchObject({field:'nutrition-row',text:'Fibre 8 g',side:'back',origin:'vision',imageId:'package-photo-1',visionRunId:'vision-run-1'});
+    expect(linked.observations[0].id).toMatch(/^vision-/);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+  it('retains vision image lineage at the later text-assist boundary and checks any live handle', () => {
+    const linked=linkVisionResponseToCapture({observations:[{field:'nutrition-row',text:'Fibre 8 g',confidence:62}],limitations:[]},visionTestImage,'gemini-test','vision-run-2');
+    const pkg={id:'package-1',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:linked.observations,visionCaptures:[linked.visionCapture],rawText:'Fibre 8 g',warnings:[],synthetic:false,createdAt:new Date().toISOString()};
+    const request={consent:true as const,question:'What was read?',package:pkg,images:[{handle:'package-photo-1',side:'back' as const,width:1600,height:2400}]};
+    const parsed=assistInput.parse(request);
+    expect(parsed.package.visionCaptures?.[0]).toEqual(linked.visionCapture);
+    expect(parsed.package.observations[0]).toMatchObject({imageId:'package-photo-1',visionRunId:'vision-run-2',origin:'vision'});
+    expect(assistInput.safeParse({...request,images:[{...request.images[0],width:1500}]}).success).toBe(false);
+    expect(assistInput.safeParse({...request,images:[{...request.images[0],side:'front'}]}).success).toBe(false);
+  });
+  it('keeps remote image analysis disabled until explicitly enabled', async () => {
+    vi.stubEnv('ENABLE_GEMINI','false');vi.stubEnv('GEMINI_API_KEY','test-only-placeholder');vi.stubEnv('GEMINI_MODEL','gemini-test');
+    const fetcher=vi.fn();vi.stubGlobal('fetch',fetcher);
+    const input=visionInput.parse({consent:true,image:visionTestImage});
+    await expect(vision(input)).rejects.toMatchObject({code:'provider_disabled'});
+    expect(fetcher).not.toHaveBeenCalled();
   });
   it('rejects untrusted URL destinations without fetching', async () => {
     const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher);
@@ -210,7 +247,8 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.answer).not.toContain('added sugar 0g');
   });
   it('rejects spoofed MIME and malformed image bytes before transmitting', async () => {
-    await expect(validateImage({ mimeType: 'image/png', base64: Buffer.from('not an image bytes').toString('base64'), side: 'back' })).rejects.toMatchObject({ code: 'invalid_image' });
-    await expect(validateImage({ mimeType: 'image/jpeg', base64: Buffer.from([255, 216, 255, 1, 2, 3]).toString('base64'), side: 'front' })).rejects.toMatchObject({ code: 'invalid_image' });
+    const provenance={imageId:'package-photo-1',sourceImage:{width:1,height:1},preprocessing:{rotation:0 as const,contrast:false,invert:false,crop:null}};
+    await expect(validateImage({ ...provenance,mimeType: 'image/png', base64: Buffer.from('not an image bytes').toString('base64'), side: 'back' })).rejects.toMatchObject({ code: 'invalid_image' });
+    await expect(validateImage({ ...provenance,mimeType: 'image/jpeg', base64: Buffer.from([255, 216, 255, 1, 2, 3]).toString('base64'), side: 'front' })).rejects.toMatchObject({ code: 'invalid_image' });
   });
 });

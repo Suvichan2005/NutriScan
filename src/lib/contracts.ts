@@ -3,9 +3,10 @@ export const nutrientKeys = ['energy','carbohydrate','sugars','addedSugars','pro
 export type NutrientKey = typeof nutrientKeys[number];
 export const basisSchema = z.object({amount:z.number().positive().max(10000),unit:z.enum(['g','ml']),description:z.string().max(150)});
 export const imageBboxSchema=z.object({x0:z.number().finite().nonnegative(),y0:z.number().finite().nonnegative(),x1:z.number().finite().nonnegative(),y1:z.number().finite().nonnegative()}).strict().refine(box=>box.x1>=box.x0&&box.y1>=box.y0);
+export const normalizedCropSchema=z.object({x:z.number().min(0).max(1),y:z.number().min(0).max(1),width:z.number().positive().max(1),height:z.number().positive().max(1)}).strict().refine(crop=>crop.x+crop.width<=1.000001&&crop.y+crop.height<=1.000001);
 export const ocrWordSchema=z.object({wordIndex:z.number().int().nonnegative(),text:z.string().max(500),confidence:z.number().finite().min(0).max(100).nullable(),bbox:imageBboxSchema}).strict();
 export const readingOrderSchema=z.object({runId:z.string().min(1).max(100),blockIndex:z.number().int().nonnegative(),paragraphIndex:z.number().int().nonnegative(),lineIndex:z.number().int().nonnegative()}).strict();
-export const observationSchema = z.object({id:z.string().min(1).max(160),field:z.string().min(1).max(80),text:z.string().max(40000),side:z.enum(['front','back','extra','text']),confidence:z.number().finite().min(0).max(100).nullable(),bbox:imageBboxSchema.optional(),ocrWords:z.array(ocrWordSchema).max(1000).optional(),origin:z.enum(['ocr','barcode','user','vision','fixture']),imageId:z.string().min(1).max(160).optional(),readingOrder:readingOrderSchema.optional(),derivedFromObservationIds:z.array(z.string().min(1).max(160)).max(20).optional(),value:z.number().finite().optional(),unit:z.string().max(24).optional()}).strict();
+export const observationSchema = z.object({id:z.string().min(1).max(160),field:z.string().min(1).max(80),text:z.string().max(40000),side:z.enum(['front','back','extra','text']),confidence:z.number().finite().min(0).max(100).nullable(),bbox:imageBboxSchema.optional(),ocrWords:z.array(ocrWordSchema).max(1000).optional(),origin:z.enum(['ocr','barcode','user','vision','fixture']),imageId:z.string().min(1).max(160).optional(),readingOrder:readingOrderSchema.optional(),visionRunId:z.string().min(1).max(100).optional(),derivedFromObservationIds:z.array(z.string().min(1).max(160)).max(20).optional(),value:z.number().finite().optional(),unit:z.string().max(24).optional()}).strict();
 export type Observation = z.infer<typeof observationSchema>;
 export const ocrCaptureSchema=z.object({
   runId:z.string().min(1).max(100),imageId:z.string().min(1).max(160),side:z.enum(['front','back','extra']),
@@ -16,6 +17,13 @@ export const ocrCaptureSchema=z.object({
   processing:z.object({rotation:z.union([z.literal(0),z.literal(90),z.literal(180),z.literal(270)]),contrast:z.boolean(),invert:z.boolean(),cropPercent:z.object({x:z.number().min(0).max(100),y:z.number().min(0).max(100),width:z.number().positive().max(100),height:z.number().positive().max(100)}).strict().nullable()}).strict()
 }).strict();
 export type OcrCapture=z.infer<typeof ocrCaptureSchema>;
+export const visionCaptureSchema=z.object({
+  runId:z.string().min(1).max(100),imageId:z.string().min(1).max(160),side:z.enum(['front','back','extra']),
+  sourceImage:z.object({width:z.number().int().positive().max(40000),height:z.number().int().positive().max(40000)}).strict(),
+  processing:z.object({rotation:z.union([z.literal(0),z.literal(90),z.literal(180),z.literal(270)]),contrast:z.boolean(),invert:z.boolean(),crop:normalizedCropSchema.nullable()}).strict(),
+  model:z.string().min(1).max(120)
+}).strict();
+export type VisionCapture=z.infer<typeof visionCaptureSchema>;
 export const parserDiagnosticSchema=z.object({
   field:z.enum(nutrientKeys),decision:z.enum(['accepted','conflict','rejected']),
   reasonCodes:z.array(z.enum(['approximate-or-bounded','signed-or-ambiguous','no-numeric-value','multiple-values','ambiguous-basis','invalid-value','missing-unit','incompatible-unit','missing-basis','cross-reading-conflict'])).max(10),
@@ -28,15 +36,21 @@ export const parserDiagnosticSchema=z.object({
 export type ParserDiagnostic=z.infer<typeof parserDiagnosticSchema>;
 export const nutrientSchema = z.object({key:z.enum(nutrientKeys),value:z.number().finite().nonnegative().max(100000),unit:z.enum(['g','mg','kcal','kJ']),basis:basisSchema.nullable(),observationIds:z.array(z.string()),status:z.enum(['observed','corrected','conflict'])});
 export type Nutrient = z.infer<typeof nutrientSchema>;
-const packageBaseSchema=z.object({id:z.string().min(1).max(160),name:z.string().max(200),brand:z.string().max(120).optional(),barcode:z.string().max(32).optional(),identityConflict:z.boolean().optional(),userDescription:z.string().max(4000).optional(),netWeight:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),serving:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),ingredients:z.array(z.string().max(4000)).max(1000),additives:z.array(z.string().max(120)).max(300),allergens:z.array(z.string().max(1000)).max(100),claims:z.array(z.string().max(1000)).max(100),license:z.string().max(40).optional(),nutrients:z.array(nutrientSchema).max(1000),observations:z.array(observationSchema).max(4000),ocrCaptures:z.array(ocrCaptureSchema).max(50).optional(),parserDiagnostics:z.array(parserDiagnosticSchema).max(2000).optional(),rawText:z.string().max(40000),warnings:z.array(z.string().max(500)).max(1000),synthetic:z.boolean(),createdAt:z.string().max(80)}).strict();
+const packageBaseSchema=z.object({id:z.string().min(1).max(160),name:z.string().max(200),brand:z.string().max(120).optional(),barcode:z.string().max(32).optional(),identityConflict:z.boolean().optional(),userDescription:z.string().max(4000).optional(),netWeight:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),serving:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),ingredients:z.array(z.string().max(4000)).max(1000),additives:z.array(z.string().max(120)).max(300),allergens:z.array(z.string().max(1000)).max(100),claims:z.array(z.string().max(1000)).max(100),license:z.string().max(40).optional(),nutrients:z.array(nutrientSchema).max(1000),observations:z.array(observationSchema).max(4000),ocrCaptures:z.array(ocrCaptureSchema).max(50).optional(),visionCaptures:z.array(visionCaptureSchema).max(50).optional(),parserDiagnostics:z.array(parserDiagnosticSchema).max(2000).optional(),rawText:z.string().max(40000),warnings:z.array(z.string().max(500)).max(1000),synthetic:z.boolean(),createdAt:z.string().max(80)}).strict();
 export const packageSchema=packageBaseSchema.superRefine((pkg,context)=>{
   const observationIds=new Set(pkg.observations.map(observation=>observation.id));
   if(observationIds.size!==pkg.observations.length)context.addIssue({code:'custom',path:['observations'],message:'Observation identifiers must be unique.'});
   const captureRunIds=new Set(pkg.ocrCaptures?.map(capture=>capture.runId)??[]);
   if(captureRunIds.size!==(pkg.ocrCaptures?.length??0))context.addIssue({code:'custom',path:['ocrCaptures'],message:'Each OCR capture run identifier must be unique.'});
+  const visionRunIds=new Set(pkg.visionCaptures?.map(capture=>capture.runId)??[]);
+  if(visionRunIds.size!==(pkg.visionCaptures?.length??0))context.addIssue({code:'custom',path:['visionCaptures'],message:'Each vision capture run identifier must be unique.'});
   for(const [index,nutrient] of pkg.nutrients.entries())for(const id of nutrient.observationIds)if(!observationIds.has(id))context.addIssue({code:'custom',path:['nutrients',index,'observationIds'],message:'Nutrient readings must point to existing package observations.'});
   for(const [index,observation] of pkg.observations.entries()){
     for(const sourceId of observation.derivedFromObservationIds??[])if(sourceId===observation.id||!observationIds.has(sourceId))context.addIssue({code:'custom',path:['observations',index,'derivedFromObservationIds'],message:'Derived observations must point to a different existing source observation.'});
+    if(observation.visionRunId){
+      const capture=pkg.visionCaptures?.find(item=>item.runId===observation.visionRunId);
+      if(!capture||observation.origin!=='vision'||observation.imageId!==capture.imageId||observation.side!==capture.side)context.addIssue({code:'custom',path:['observations',index,'visionRunId'],message:'Vision observations must link to the matching selected-image capture.'});
+    }
     if(observation.readingOrder){
       const capture=pkg.ocrCaptures?.find(item=>item.runId===observation.readingOrder!.runId&&item.imageId===observation.imageId);
       if(!capture||observation.origin!=='ocr')context.addIssue({code:'custom',path:['observations',index,'readingOrder'],message:'OCR reading order must link to an OCR capture for the same image.'});
