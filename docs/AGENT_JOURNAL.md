@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — connect tentative entity matching to OCR observations
+
+- Reviewed the existing observation-to-assist contract: it already carries ordered raw OCR lines and word geometry/confidence, capture settings and session image provenance, plus parser-rejected/conflicting numeric and basis candidates. Tentative provider candidates must cite original OCR lines and word indexes. Image bytes remain behind a separate explicit inspection action.
+- Confirmed the response validator already supports direct quotes and evidence-linked synthesis, including declared profile context, with exact source-span checks, separate evidence IDs and a disclosure that citation matching does not prove entailment. No citation-policy change or provider call was warranted; Gemini remains disabled.
+- Added bounded, source-backed fuzzy additive identity matching in the existing local audit. A controlled `Calciurn disodium edetate` OCR string now yields one uncertain INS 385 candidate linked to the original observation and FAO registry source; confirmed additives and nutrients are unchanged, and the existing 50 g calculation remains 1.7 g from 3.4 g/100 g saturated fat. The source was already the top retrieval result, so only candidate surfacing changed.
+- Full offline suite: 302 tests across 33 files; TypeScript typecheck and `git diff --check` passed. This synthetic case does not establish real-photo accuracy, candidate precision, browser integration or provider behavior.
+
 ## 2026-10-21 — verify alternatives flow and keep OCR capture provenance extensible
 
 - Re-ran the product alternatives journey in installed Chrome at 390×844 and 1440×900. The synthetic typed label reached live Open Food Facts exact-record lookup, normalized comparison and four candidate products; nine rows were comparable and one was withheld. Identity, community-data and stock caveats stayed visible, the current barcode was excluded from alternatives, and Axe, page errors and browser off-origin requests were clear. This does not validate a real photographed product or recommend an alternative.

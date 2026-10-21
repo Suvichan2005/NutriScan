@@ -1,5 +1,11 @@
 # Chronological decisions
 
+## 21 October 2026 — surface noisy additive readings as tentative evidence
+
+- Use a bounded multi-token OCR typo match only to produce a tentative additive-identity candidate when at least two exact token anchors and a source-backed registry identity support it. In the local audit, inspect at most 32 complete raw OCR lines of at most 160 characters and require at least 80% line-token coverage.
+- Preserve the original OCR observation and source link in an `uncertain` finding. Never add the candidate to confirmed package additives, nutrient values or calculations. Keep the existing assist candidate schema and exact citation spans; no schema rewrite is needed.
+- This improves one controlled noisy-name path only. It does not improve numeric OCR, parse a nutrient table, verify ingredient presence, establish model quality or change the production OCR reader. Gemini remains disabled.
+
 ## 21 October 2026 — keep OCR capture identity open to bounded reader names
 
 - Let the existing capture record carry a bounded reader identifier rather than requiring the production `tesseract.js` literal. Keep the current browser reader, normalized `0-100` confidence contract and processing fields unchanged.
