@@ -29,6 +29,7 @@
     "acceptance:keyboard-dialog": "tsx scripts/evaluate-keyboard-dialog.mts",
     "acceptance:core-journey": "tsx scripts/audit-core-journey.mts",
     "acceptance:package-text-conversation": "tsx scripts/acceptance-package-text-conversation.mts",
+    "acceptance:trans-fat": "tsx scripts/acceptance-trans-fat.mts",
     "acceptance:ocr-annotation": "tsx scripts/acceptance-ocr-annotation.mts",
     "acceptance:salt-equivalent": "tsx scripts/acceptance-salt-equivalent.mts",
     "acceptance:front-photo-guard": "tsx scripts/diagnose-front-photo-runtime.mts",

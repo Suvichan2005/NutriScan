@@ -72,12 +72,14 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const askedAdditives=detectAdditives(question);
   const asksUncertainty=uncertaintyQuestionPattern.test(question);
   const asksAllergenLabelMeaning=/\b(?:may\s+contain|cross[- ]?(?:contamination|contact)|precautionary allergen)\b/i.test(question)&&/\b(?:mean|meaning|explain|interpret|why|difference|different|according|FSSAI|label|warning)\b/i.test(question);
+  const transFatTopic=/\btrans[\s-]?fats?(?:ty)?(?:[\s-]+acids?)?\b|\bTFAs?\b|\bpartially[\s-]+hydrogenated\b/i.test(question);
   const asksCurrentRegulatoryStatus=/\b(?:today|current(?:ly)?|compliance|compliant|legally required|mandatory|must|enforc|is it legal|legal to|lawful|permitted|allowed)\b/i.test(question);
   const mentionsCurrentRegulatoryTopic=/\bORS\b|oral rehydration|legal|regulat|recall|banned|licen[cs]e|current/i.test(question);
-  const currentRegulatoryQuestion=(mentionsCurrentRegulatoryTopic||/\bfssai\b/i.test(question))&&(!asksAllergenLabelMeaning||asksCurrentRegulatoryStatus);
+  const asksCurrentTransFatLaw=/\bcurrent(?:ly)?\s+(?:(?:fssai|indian|food)\s+)?(?:law|rules?|regulations?|legal|compliance|applicability|limits?)\b|\b(?:fssai|law|rules?|regulations?|compliance|applicab\w*|permitted|allowed)\b.{0,80}\b(?:current|currently|today|now|still)\b|\b(?:current|currently|today|now|still)\b.{0,100}\b(?:law|rules?|regulations?|legal|lawful|compliant|comply|compliance|applicab\w*|permitted|allowed|limit)\b|\b(?:is|are|does|do|can)\b.{0,100}\b(?:legal|lawful|compliant|comply|permitted|allowed|applicable|applies?)\b/i.test(question);
+  const currentRegulatoryQuestion=transFatTopic?asksCurrentTransFatLaw:(mentionsCurrentRegulatoryTopic||/\bfssai\b/i.test(question))&&(!asksAllergenLabelMeaning||asksCurrentRegulatoryStatus);
   const wholeDietCarbohydrateTopic=/\b(?:fib(?:er|re)|whole[- ]grains?|pulses?|legumes?|carbohydrate quality|quality of carbohydrates?)\b/i.test(question);
   const wholeDietCarbohydrateGuidance=wholeDietCarbohydrateTopic&&/\b(?:recommend\w*|guidelines?|guidance|whole[- ]diet|daily|per day|intake|quality)\b/i.test(question);
-  const deep=/diet|allerg|intoler|may\s+contain|cross[- ]?(?:contamination|contact)|precautionary|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|\bfree sugars?\b|\badded sugars?\b|ICMR|\bNIN\b/i.test(question)||wholeDietCarbohydrateGuidance||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
+  const deep=/diet|allerg|intoler|may\s+contain|cross[- ]?(?:contamination|contact)|precautionary|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|\bfree sugars?\b|\badded sugars?\b|ICMR|\bNIN\b/i.test(question)||transFatTopic||wholeDietCarbohydrateGuidance||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
   const trace:Audit['trace']=[{tool:'reuse_package_observations',reason:'Use the current label evidence for this question; no rescan required.',status:`${pkg.observations.length} observations`},{tool:'calculate_portions',reason:'Scale only unambiguous values with compatible explicit bases.',status:'local deterministic calculation'}];
   const finding=(data:Omit<Finding,'id'>)=> {data.sourceIds.forEach(s=>sourceIds.add(s));findings.push({...data,id:`finding-${findings.length+1}`});};
   let examinedRawOcrLines=0;let tentativeAdditiveCount=0;
@@ -228,11 +230,14 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       {id:'icmrnin-dgi-2024',matches:/\b(icmr|nin|indian dietary guidelines?|dietary guidelines? for india)\b/i.test(question)},
       {id:'fssai-labelling-display-2020',matches:asksAllergenLabelMeaning||(/\bfssai\b/i.test(question)&&/allerg|may\s+contain|cross[- ]?(?:contamination|contact)/i.test(question))},
       {id:'fssai-labelling-allergen-faq-2023',matches:asksAllergenLabelMeaning||(/\bfssai\b/i.test(question)&&/allerg|may\s+contain|cross[- ]?(?:contamination|contact)/i.test(question))},
+      {id:'who-trans-fat-2024',matches:transFatTopic},
+      {id:'fssai-industrial-trans-fat-2021',matches:transFatTopic},
     ];
     const candidateIds=new Set(intentSources.filter(x=>x.matches).map(x=>x.id));
     for(const code of askedAdditives){const additive=lookupAdditive(code);for(const id of additive?.sourceIds??[])candidateIds.add(id);}
     const candidates=hits.filter(hit=>candidateIds.has(hit.source.id)).slice(0,3);
     for(const {source} of candidates){
+      if(transFatTopic&&(source.id==='who-trans-fat-2024'||source.id==='fssai-industrial-trans-fat-2021'))continue;
       if(sourceIds.has(source.id))continue;
       finding({title:`Reference to inspect: ${source.title}`,detail:`${source.summary} The local match is a navigation aid, not proof that this source applies to your question. ${source.limitations}`,status:'context',observationIds:[],sourceIds:[source.id],calculationIds:[]});
     }
@@ -249,6 +254,25 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   let answerIntent='label overview';
   if(currentRegulatoryQuestion){
     answerIntent='current regulatory question';answer='Current legal or regulatory status is unresolved. The next evidence is a dated official notice for the exact product and jurisdiction, checked for later amendments or orders.';
+  }else if(transFatTopic){
+    answerIntent='trans-fat evidence and label observation';
+    const transFatLinePattern=/\btrans[\s-]?fats?(?:ty)?(?:[\s-]+acids?)?\b|\bTFAs?\b|\bpartially[\s-]+hydrogenated\b|\bhydrogenated[\s-]+(?:vegetable[\s-]+)?oils?\b/i;
+    const labelRows=pkg.observations.filter(observation=>(observation.origin==='ocr'||observation.origin==='user')&&transFatLinePattern.test(observation.text));
+    const shownRows=labelRows.slice(0,3);
+    const recordedText=shownRows.map(observation=>{
+      const provenance=observation.origin==='user'?'user-entered observation':`OCR observation${observation.confidence===null?'':` (${amountText(observation.confidence)}% recognition confidence)`}`;
+      return `“${observation.text.slice(0,240)}${observation.text.length>240?'…':''}” (${provenance})`;
+    });
+    const omittedLabelRows=labelRows.length>shownRows.length;
+    const observationContext=recordedText.length
+      ?` Recorded label text: ${recordedText.join('; ')}.${omittedLabelRows?' Additional matching observations are linked in the finding.':''} These are literal package-reading observations, not verified facts. Trans fat is not a supported structured nutrient in this local parser, so the text does not establish a numeric amount, zero, or a portion calculation.`
+      :' No literal trans-fat-related line is retained in this scan’s OCR or user observations. That does not establish absence or zero. Trans fat is not a supported structured nutrient in this local parser, so no numeric amount or portion calculation is available.';
+    const historicalContext='WHO describes trans-fatty acids as coming from industrial or natural sources, including naturally occurring trans fat in ruminant meat and dairy. Its recommendation that adults keep total trans fat below 1% of total energy is population guidance, not a personal target; its policy options include a limit of 2 g industrial trans fat per 100 g total fat or a ban on partially hydrogenated oils. FSSAI’s 2021 Gazette amendment addressed products using edible oils or fats as ingredients: no more than 2% industrial trans fat by mass of total oils/fats for products manufactured on or after 1 January 2022, with dairy, meat, fish and their products excluded from its industrial-TFA definition. This dated rule summary does not determine current law or this product’s compliance.';
+    answer=`${historicalContext}${observationContext}`;
+    const sourceIdsForTopic=['who-trans-fat-2024','fssai-industrial-trans-fat-2021'];
+    finding({title:'Trans-fat context and recorded label text',detail:`${historicalContext}${observationContext}`,status:labelRows.length?'uncertain':'context',observationIds:unique(labelRows.map(observation=>observation.id)),sourceIds:sourceIdsForTopic,calculationIds:[]});
+    limitations.push('Trans fat is not a supported structured nutrient in this local parser; a literal OCR or user-entered line remains an unverified observation and is not converted into an amount or portion calculation.');
+    limitations.push('The FSSAI summary is the dated 2021 Gazette amendment, not a determination of current law, exact product applicability, or compliance.');
   }else if(/alternativ|stock|available|reviews?|brand|controvers/i.test(question)){
     answerIntent='current product context';answer='This local audit has not checked current alternatives, stock, reviews or brand events. A current source matching the product and your location is the decisive next evidence.';
   }else if(asksAllergenLabelMeaning){
@@ -316,7 +340,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       }
     }
   }
-  if(asksUncertainty){
+  if(asksUncertainty&&!transFatTopic){
     answerIntent='package uncertainty review';
     const unresolved=findings.filter(item=>item.status==='uncertain'||item.status==='conflict');
     const summaryLines:string[]=[];

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "local-semantic-retrieval-boundary-diagnostic",
-  "generatedAt": "2026-10-21T17:33:34.036Z",
+  "generatedAt": "2026-10-21T18:32:50.202Z",
   "queryCount": 13,
   "modelMode": "pinned local MiniLM embeddings plus lexical ranking",
   "results": [
@@ -62,9 +62,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-carbohydrate-2023",
-      "semanticScore": 0.53513,
+      "semanticScore": 0.53136,
       "lexicalScore": 1,
-      "hybridScore": 0.58162,
+      "hybridScore": 0.57823,
       "expectedBehaviorMet": true
     },
     {
@@ -74,9 +74,9 @@
       ],
       "status": "ok",
       "topSourceId": "fao-955",
-      "semanticScore": 0.36656,
+      "semanticScore": 0.35889,
       "lexicalScore": 1,
-      "hybridScore": 0.4299,
+      "hybridScore": 0.423,
       "expectedBehaviorMet": true
     },
     {
@@ -86,9 +86,9 @@
       ],
       "status": "ok",
       "topSourceId": "fssai-labelling-allergen-faq-2023",
-      "semanticScore": 0.66732,
+      "semanticScore": 0.6935,
       "lexicalScore": 1,
-      "hybridScore": 0.70058,
+      "hybridScore": 0.72415,
       "expectedBehaviorMet": true
     },
     {
@@ -99,9 +99,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-carbohydrate-2023",
-      "semanticScore": 0.66793,
+      "semanticScore": 0.67046,
       "lexicalScore": 1,
-      "hybridScore": 0.70114,
+      "hybridScore": 0.70341,
       "expectedBehaviorMet": true
     },
     {
@@ -111,9 +111,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-sodium",
-      "semanticScore": 0.56054,
+      "semanticScore": 0.56637,
       "lexicalScore": 1,
-      "hybridScore": 0.60449,
+      "hybridScore": 0.60974,
       "expectedBehaviorMet": true
     },
     {
@@ -123,9 +123,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-sugars-2015",
-      "semanticScore": 0.59402,
+      "semanticScore": 0.59598,
       "lexicalScore": 1,
-      "hybridScore": 0.63461,
+      "hybridScore": 0.63638,
       "expectedBehaviorMet": true
     },
     {

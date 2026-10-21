@@ -65,14 +65,30 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   const lines=text.replace(/\r/g,'').split('\n').map(line=>line.trim()).filter(Boolean);
   const id=crypto.randomUUID();
   const observations:Observation[]=(options.observations??[]).map(o=>({...o}));
+  const suppliedObservationCounts=new Map<string,number>();
+  const parserObservationCounts=new Map<string,number>();
   const inputObservations=new Map<string,Observation[]>();
-  for(const observation of options.observations??[]){const key=observation.text.trim();inputObservations.set(key,[...(inputObservations.get(key)??[]),observation]);}
+  for(const observation of options.observations??[]){const key=observation.text.trim();inputObservations.set(key,[...(inputObservations.get(key)??[]),observation]);suppliedObservationCounts.set(key,(suppliedObservationCounts.get(key)??0)+1);}
   const warnings:string[]=[];
+  const nameResult=labelName(lines,options.observations??[],options.origin);
+  const selectedNameLineIndex=nameResult.name==='Unidentified package'?-1:lines.findIndex(line=>line===nameResult.name);
+  // Leave room for the bounded set of observations added after the line pass
+  // (name, optional user description/metadata, and ingredient-code identities).
+  const tailObservationReserve=5+detectAdditives(text).length;
+  const preserveUserTextLine=(line:string,lineIndex:number,occurrenceIndex:number)=>{
+    const key=line.trim();
+    const representedOccurrenceCount=(suppliedObservationCounts.get(key)??0)+(parserObservationCounts.get(key)??0);
+    if(options.origin!=='user'||!key||lineIndex===selectedNameLineIndex||occurrenceIndex<representedOccurrenceCount)return;
+    if(observations.length>=4000-tailObservationReserve)return;
+    observations.push({id:`${id}-raw${lineIndex}`,field:'raw-text-line',text:line,side:'text',origin:'user',confidence:null});
+  };
   const observe=(field:string,line:string,value?:number,unit?:string)=> {
     const originals=inputObservations.get(line.trim());
     const original=originals?.shift();
     const obs:Observation={id:`${id}-o${observations.length}`,field,text:line,side:original?.side??options.side??'text',origin:original?.origin??options.origin??'user',confidence:original?.confidence??options.confidence??null,...(original?.bbox?{bbox:original.bbox}:{}),...(original?.imageId?{imageId:original.imageId}:{}),...(original?.readingOrder?{readingOrder:original.readingOrder}:{}),...(original?{derivedFromObservationIds:[original.id]}:{}),...(value!==undefined?{value}:{}),...(unit?{unit}:{})};
-    observations.push(obs); return obs.id;
+    observations.push(obs);
+    if(!original){const key=obs.text.trim();parserObservationCounts.set(key,(parserObservationCounts.get(key)??0)+1);}
+    return obs.id;
   };
   const servingMatch=text.match(/(?:serving\s+size|serve\s+size|portion\s+size)\s*[:\-]?\s*(?:[^\n\d]{0,20})?(\d+(?:\.\d+)?)\s*(g|ml)\b/i);
   const serving=servingMatch?mass(servingMatch[1],servingMatch[2]):undefined;
@@ -84,11 +100,14 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   let ingredientsOpen=false; let basis:Basis|null=null; let basisObservationIds:string[]=[]; let ambiguousBasis=false;
   const nutrients:Nutrient[]=[];
   const parserDiagnostics:ParserDiagnostic[]=[];
+  const lineOccurrenceCounts=new Map<string,number>();
   for(let lineIndex=0;lineIndex<lines.length;lineIndex++) {
     const line=lines[lineIndex];
+    const occurrenceIndex=lineOccurrenceCounts.get(line)??0;
+    lineOccurrenceCounts.set(line,occurrenceIndex+1);
     const ingredientLine=line.match(/^ingredients?\s*[:：]\s*(.*)/i);
-    if(ingredientLine){ingredientsOpen=true;ingredients.push(ingredientLine[1]);observe('ingredients',line);continue;}
-    if(/^(?:contains|may contain|allergen)/i.test(line)){ingredientsOpen=false;allergens.push(line);observe('allergens',line);continue;}
+    if(ingredientLine){ingredientsOpen=true;ingredients.push(ingredientLine[1]);observe('ingredients',line);preserveUserTextLine(line,lineIndex,occurrenceIndex);continue;}
+    if(/^(?:contains|may contain|allergen)/i.test(line)){ingredientsOpen=false;allergens.push(line);observe('allergens',line);preserveUserTextLine(line,lineIndex,occurrenceIndex);continue;}
     if(/\b(?:sugar[ -]free|no added sugar|high protein|organic|ORS|oral rehydration)\b/i.test(line)){claims.push(line);observe('claim',line);}
     // OCR frequently glues an all-caps column heading to a title-cased basis,
     // e.g. "NUTRIENTSPer 100g". Normalize only the parser view; keep the
@@ -106,11 +125,13 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
       basisObservationIds=[basisObservationId,...(foundBases.some(item=>item.description==='per declared serving')&&servingObservationId?[servingObservationId]:[])];
       if(ambiguousBasis) warnings.push('Multiple nutrition columns detected. Their values and bases need visual confirmation before scaling.');
       else if(!basis) warnings.push('Serving basis is stated but its mass or volume is missing.');
+      preserveUserTextLine(line,lineIndex,occurrenceIndex);
       continue;
     }
     if(!nutrientRow){
       if(/^(?:nutrition|nutritional|serving|net|storage|manufactur|best before|fssai|licen[cs]e|barcode)/i.test(line)) ingredientsOpen=false;
       if(ingredientsOpen){ingredients.push(line);observe('ingredients',line);}
+      preserveUserTextLine(line,lineIndex,occurrenceIndex);
       continue;
     }
     ingredientsOpen=false;
@@ -158,6 +179,7 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
       emitted++;
     }
     diagnose(emitted===0?'rejected':conflicting?'conflict':'accepted',reasonCodes);
+    preserveUserTextLine(line,lineIndex,occurrenceIndex);
   }
   // Preserve duplicate readings. Mark disagreement on the same explicit basis.
   for(const nutrient of nutrients){
@@ -179,7 +201,6 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   // a barcode or nutrition table) must not become a product ingredient.
   const additiveCodes=detectAdditives(ingredients.join('\n'));
   for(const code of additiveCodes){const line=ingredients.find(l=>detectAdditives(`Ingredients: ${l}`).includes(code));observe(`additive:${code}`,line??code);}
-  const nameResult=labelName(lines,options.observations??[],options.origin);
   if(nameResult.withheld)warnings.push('Product name was not established from readable label text; enter a name or check a verified product identifier.');
   if(nameResult.name!=='Unidentified package')observe('name',nameResult.name);
   const userDescription=options.userDescription?.trim().slice(0,4000);
