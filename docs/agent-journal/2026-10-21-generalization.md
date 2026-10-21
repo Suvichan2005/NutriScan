@@ -70,6 +70,12 @@ Continued the existing local NutriScan implementation. No source history or remo
 - The live local `/api/research` route on the existing port 3400 returned `unavailable`, two official FSSAI navigation-only cards and no current-law verdict for a same-origin `FSSAI labelling` request. An Origin-less request was rejected with 403 before source work.
 - Direct local retrieval of the official FSSAI PDF still returns an HTML challenge; a guessed eGazette PDF URL returned 404. The official eGazette homepage and interactive search form load, but the exact PDF download path has not been captured. No TLS validation was bypassed and no law text was inferred from search indexing.
 - Recorded in [INTEGRATIONS.md](../INTEGRATIONS.md). The next independent source-path task is a session-bound eGazette UI lookup followed by direct TLS/content-type verification of its exact returned URL.
+
+## Continuation checkpoint — official eGazette navigation fallback
+
+- When every matched FSSAI source fails, the local research response now adds an official Government of India eGazette search link marked navigation-only. The portal is not fetched, excerpted, or treated as law evidence; `status: unavailable` and the no-current-law-verdict message remain unchanged.
+- Focused regression tests verify the card, limitations, and that the eGazette host is not fetched. Full suite: 107 passing; TypeScript and optimized build pass.
+- Optimized loopback API acceptance on port 3413 returned two FSSAI links plus the eGazette card with the unavailable status and no-verdict message. This validates the fallback response only; actual Gazette PDF retrieval remains unresolved. See [INTEGRATIONS.md](../INTEGRATIONS.md).
 - Local evidence checkpoint: `8c05d488550d644d0243dcc882b55c866f25644e` (`Add reproducible browser OCR crop evaluation`). Typecheck, all 107 tests, optimized build, the repeatable browser command and `git diff --check` passed; private screenshots remain ignored.
 
 ## Continuation checkpoint — research source-selection guard

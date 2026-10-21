@@ -93,7 +93,7 @@ export async function research(data: z.infer<typeof researchInput>) {
   }));
   const retrievedAt = new Date().toISOString();
   const succeeded = results.filter(result => result.ok).length;
-  const items = results.map(result => result.ok ? result.item : (() => {
+  const items: ResearchItem[] = results.map(result => result.ok ? result.item : (() => {
     const { entry } = result;
     return {
       id: entry.id,
@@ -108,6 +108,18 @@ export async function research(data: z.infer<typeof researchInput>) {
       limitations: 'This link card is source navigation only, not retrieved legal evidence. Verify the exact instrument, publication and effective dates, later amendments or orders, product category and jurisdiction before drawing conclusions.',
     } satisfies ResearchItem;
   })());
+  const failedFssaiLookup = succeeded === 0 && results.some(result => result.entry.publisher === 'FSSAI' || result.entry.publisher.includes('Food Safety and Standards Authority'));
+  if (failedFssaiLookup) items.push({
+    id: 'egazette-search-navigation',
+    title: 'Government of India eGazette search',
+    url: 'https://egazette.gov.in/',
+    publisher: 'Government of India, Department of Publication',
+    publishedAt: null,
+    retrievedAt,
+    category: 'official Gazette search; navigation only',
+    summary: 'Use the official eGazette search to locate the relevant notification by Gazette ID or date. No document text was fetched or excerpted by this request.',
+    limitations: 'Navigation only, not legal evidence. Confirm the Gazette number, part and section, exact document, commencement date and later amendments or orders before applying any rule to a product.',
+  });
   return {
     status: succeeded ? 'ok' : 'unavailable',
     items,

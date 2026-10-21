@@ -57,9 +57,19 @@ describe('official regulation PDF discovery', () => {
     const result = await research({ query: 'FSSAI labelling', topic: 'regulation' });
     expect(result.status).toBe('unavailable');
     expect(result.items.length).toBeGreaterThan(0);
-    expect(result.items.every(item => /^https:\/\/(www\.)?fssai\.gov\.in\//.test(item.url))).toBe(true);
-    expect(result.items.every(item => /could not retrieve usable source text/i.test(item.summary))).toBe(true);
-    expect(result.items.every(item => /navigation only/i.test(item.limitations))).toBe(true);
+    const fssaiLinks = result.items.filter(item => item.publisher === 'FSSAI');
+    const gazetteSearch = result.items.find(item => item.id === 'egazette-search-navigation');
+    expect(fssaiLinks.length).toBeGreaterThan(0);
+    expect(fssaiLinks.every(item => /^https:\/\/(www\.)?fssai\.gov\.in\//.test(item.url))).toBe(true);
+    expect(fssaiLinks.every(item => /could not retrieve usable source text/i.test(item.summary))).toBe(true);
+    expect(fssaiLinks.every(item => /navigation only/i.test(item.limitations))).toBe(true);
+    expect(gazetteSearch).toMatchObject({
+      url: 'https://egazette.gov.in/',
+      category: 'official Gazette search; navigation only',
+    });
+    expect(gazetteSearch?.summary).toMatch(/No document text was fetched or excerpted/i);
+    expect(gazetteSearch?.limitations).toMatch(/not legal evidence/i);
+    expect(fixedFetchMock.mock.calls.every(([url]) => new URL(String(url)).hostname !== 'egazette.gov.in')).toBe(true);
     expect(result.message).toMatch(/no source text or current-law verdict is available/i);
   });
 

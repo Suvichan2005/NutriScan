@@ -109,8 +109,13 @@ describe('public source normalization', () => {
     const result = await research({ query: 'FSSAI label regulations India', topic: 'regulation' });
     expect(result.status).toBe('unavailable');
     expect(result.items.length).toBeGreaterThan(0);
-    expect(result.items.every(item => /could not retrieve usable source text/i.test(item.summary))).toBe(true);
-    expect(result.items.every(item => /navigation only/i.test(item.limitations))).toBe(true);
+    const fssaiLinks = result.items.filter(item => item.publisher === 'FSSAI');
+    const gazetteSearch = result.items.find(item => item.id === 'egazette-search-navigation');
+    expect(fssaiLinks.length).toBeGreaterThan(0);
+    expect(fssaiLinks.every(item => /could not retrieve usable source text/i.test(item.summary))).toBe(true);
+    expect(fssaiLinks.every(item => /navigation only/i.test(item.limitations))).toBe(true);
+    expect(gazetteSearch?.summary).toMatch(/No document text was fetched/i);
+    expect(gazetteSearch?.limitations).toMatch(/not legal evidence/i);
     expect(result.message).toMatch(/no source text.*current-law verdict/i);
   });
 });
