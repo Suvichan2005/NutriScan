@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "kind": "live-fssai-regulatory-research-browser-acceptance",
-  "generatedAt": "2026-10-21T06:07:13.841Z",
+  "generatedAt": "2026-10-21T07:12:17.298Z",
   "browser": "Chrome via Playwright, headless",
   "origin": "loopback; public FSSAI and court sources retrieved server-side",
   "query": "Is this ORS legal in India today?",
   "limitations": [
     "The extractable 2024 FSSAI order is superseded historical context, not current permission.",
-    "The 2025 scanned FSSAI PDFs did not yield usable text; court-PDF extraction can vary across route attempts.",
+    "The two 2025 scanned FSSAI PDFs use bounded local OCR and are labeled unverified observations; court-PDF extraction can vary across route attempts.",
     "The 2022 direction is historical evidence, and the 2024 order is superseded; neither establishes current legal status.",
     "This journey does not establish current law, exact product category or package compliance."
   ],
@@ -19,33 +19,38 @@
       "historicalExcerptVisible": true,
       "historicalDirectionRetrieved": true,
       "supersededLimitVisible": true,
-      "failedSourcesRemainExplicit": true,
-      "unavailableScanned2025Count": 2,
-      "directOnlyCount": 3,
+      "scannedOcrSourcesLabeledUnverified": true,
+      "scannedOcrSourceCount": 2,
+      "directOnlyCount": 1,
       "sourceOutcomes": [
         {
           "title": "FSSAI order on ORS use with brand names (historical; later withdrawn)",
           "textRetrieved": true,
+          "machineOcrDisclosure": false,
           "sourceTextUnavailable": false
         },
         {
           "title": "FSSAI withdrawal of prior ORS brand-name permissions",
-          "textRetrieved": false,
-          "sourceTextUnavailable": true
+          "textRetrieved": true,
+          "machineOcrDisclosure": true,
+          "sourceTextUnavailable": false
         },
         {
           "title": "FSSAI clarification on ORS in food-product names",
-          "textRetrieved": false,
-          "sourceTextUnavailable": true
+          "textRetrieved": true,
+          "machineOcrDisclosure": true,
+          "sourceTextUnavailable": false
         },
         {
           "title": "Delhi High Court: Dr Reddy’s Laboratories v Union of India, W.P.(C) 16303/2025",
           "textRetrieved": false,
+          "machineOcrDisclosure": false,
           "sourceTextUnavailable": true
         },
         {
           "title": "FSSAI direction on ORS-substitute advertising and marketing",
           "textRetrieved": true,
+          "machineOcrDisclosure": false,
           "sourceTextUnavailable": false
         }
       ],
@@ -67,33 +72,38 @@
       "historicalExcerptVisible": true,
       "historicalDirectionRetrieved": true,
       "supersededLimitVisible": true,
-      "failedSourcesRemainExplicit": true,
-      "unavailableScanned2025Count": 2,
-      "directOnlyCount": 3,
+      "scannedOcrSourcesLabeledUnverified": true,
+      "scannedOcrSourceCount": 2,
+      "directOnlyCount": 1,
       "sourceOutcomes": [
         {
           "title": "FSSAI order on ORS use with brand names (historical; later withdrawn)",
           "textRetrieved": true,
+          "machineOcrDisclosure": false,
           "sourceTextUnavailable": false
         },
         {
           "title": "FSSAI withdrawal of prior ORS brand-name permissions",
-          "textRetrieved": false,
-          "sourceTextUnavailable": true
+          "textRetrieved": true,
+          "machineOcrDisclosure": true,
+          "sourceTextUnavailable": false
         },
         {
           "title": "FSSAI clarification on ORS in food-product names",
-          "textRetrieved": false,
-          "sourceTextUnavailable": true
+          "textRetrieved": true,
+          "machineOcrDisclosure": true,
+          "sourceTextUnavailable": false
         },
         {
           "title": "Delhi High Court: Dr Reddy’s Laboratories v Union of India, W.P.(C) 16303/2025",
           "textRetrieved": false,
+          "machineOcrDisclosure": false,
           "sourceTextUnavailable": true
         },
         {
           "title": "FSSAI direction on ORS-substitute advertising and marketing",
           "textRetrieved": true,
+          "machineOcrDisclosure": false,
           "sourceTextUnavailable": false
         }
       ],

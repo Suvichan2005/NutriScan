@@ -1,18 +1,19 @@
 import { z } from 'zod';
 import type { ResearchItem } from '../contracts';
 import { ApiError, fixedFetch, plain } from './http';
-import { extractPdfText } from './pdf-text';
+import { extractPdfText, type PdfText } from './pdf-text';
 
 export const researchInput = z.object({ query: z.string().trim().min(3).max(250), topic: z.enum(['science', 'regulation', 'claims', 'brand', 'recalls']) }).strict();
-type Entry = { id: string; title: string; url: string; publisher: string; terms: string[]; publishedAt: string | null; category: string; effectiveAt?: string | null; format?: 'html' | 'pdf' };
+type Entry = { id: string; title: string; url: string; publisher: string; terms: string[]; publishedAt: string | null; category: string; effectiveAt?: string | null; format?: 'html' | 'pdf'; allowOcr?: boolean };
+export type ResearchPdfExtractor = (bytes: Uint8Array, options: {sourceId:string;allowOcr:boolean}) => Promise<PdfText>;
 export const primaryRegistry: Entry[] = [
   { id: 'fssai-regulations-live', title: 'FSSAI food safety and standards regulations index', url: 'https://www.fssai.gov.in/cms/food-safety-and-standards-regulations.php', publisher: 'FSSAI', terms: ['regulation', 'label', 'claim', 'additive', 'india', 'fssai', 'ins'], publishedAt: null, category: 'regulation index' },
   { id: 'fssai-label-amendments-live', title: 'FSSAI labelling and display amendments', url: 'https://fssai.gov.in/food-law/regulations/amendments/labelling-display', publisher: 'FSSAI', terms: ['regulation', 'label', 'display', 'india', 'fssai'], publishedAt: null, category: 'amendment index' },
   { id: 'fssai-label-amendment-2026', title: 'FSSAI Labelling and Display First Amendment Regulations, 2026', url: 'https://www.fssai.gov.in/upload/notifications/2026/04/69cca2b3f3ce9Notification%20dt%2024.03.2026_NRC.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['infant', 'nutrition', 'rda', 'servings', 'non-retail', 'small package', '100 cm', 'logos', 'label', 'labelling', 'display', 'amendment', '2026'], publishedAt: '2026-03-24', effectiveAt: '2027-07-01', category: 'final Gazette notification; future commencement', format: 'pdf' },
   { id: 'fssai-ors-2022-direction', title: 'FSSAI direction on ORS-substitute advertising and marketing', url: 'https://www.fssai.gov.in/upload/advisories/2022/04/6253ddfde2161Direction_advertisement_ORS_11_04_2022.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['ors', 'oral rehydration', 'substitute', 'beverage', 'drug', 'direction', 'brand', 'india'], publishedAt: '2022-04-08', category: 'historical Section 16(5) direction; referenced as remaining in effect in 2025', format: 'pdf' },
   { id: 'fssai-ors-2024-order', title: 'FSSAI order on ORS use with brand names (historical; later withdrawn)', url: 'https://www.fssai.gov.in/upload/advisories/2024/02/65c0d35e786e4Order%20dated%2002nd%20Feb%202024_Use%20of%20term%20ORS.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['ors', 'oral rehydration', 'trademark', 'brand', 'permission', 'legal', 'india', '2024'], publishedAt: '2024-02-02', category: 'superseded historical order; prior permissions withdrawn 14 October 2025', format: 'pdf' },
-  { id: 'fssai-ors-2025-withdrawal', title: 'FSSAI withdrawal of prior ORS brand-name permissions', url: 'https://www.fssai.gov.in/upload/advisories/2025/10/68ee3ba06bb7eWithdrawal%20of%20Orders%20regarding%20Usage%20of%20the%20term%20ORS%20along%20with%20brand%20names%20dt%2014.10.2025.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['ors', 'oral rehydration', 'withdrawal', 'brand', 'orders', 'legal', 'india', '2025'], publishedAt: '2025-10-14', category: 'regulatory withdrawal of prior permissions', format: 'pdf' },
-  { id: 'fssai-ors-2025-clarification', title: 'FSSAI clarification on ORS in food-product names', url: 'https://fssai.gov.in/upload/advisories/2025/10/68ef8cea74223clarification_151025.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['ors', 'oral rehydration', 'clarification', 'brand', 'names', 'legal', 'india', '2025', 'remove'], publishedAt: '2025-10-15', category: 'regulatory clarification and removal direction', format: 'pdf' },
+  { id: 'fssai-ors-2025-withdrawal', title: 'FSSAI withdrawal of prior ORS brand-name permissions', url: 'https://www.fssai.gov.in/upload/advisories/2025/10/68ee3ba06bb7eWithdrawal%20of%20Orders%20regarding%20Usage%20of%20the%20term%20ORS%20along%20with%20brand%20names%20dt%2014.10.2025.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['ors', 'oral rehydration', 'withdrawal', 'brand', 'orders', 'legal', 'india', '2025'], publishedAt: '2025-10-14', category: 'regulatory withdrawal of prior permissions', format: 'pdf', allowOcr: true },
+  { id: 'fssai-ors-2025-clarification', title: 'FSSAI clarification on ORS in food-product names', url: 'https://fssai.gov.in/upload/advisories/2025/10/68ef8cea74223clarification_151025.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['ors', 'oral rehydration', 'clarification', 'brand', 'names', 'legal', 'india', '2025', 'remove'], publishedAt: '2025-10-15', category: 'regulatory clarification and removal direction', format: 'pdf', allowOcr: true },
   { id: 'delhi-hc-ors-2025-dr-reddys', title: 'Delhi High Court: Dr Reddy’s Laboratories v Union of India, W.P.(C) 16303/2025', url: 'https://delhihighcourt.nic.in/app/showFileJudgment/58731102025CW163032025_193432.pdf', publisher: 'High Court of Delhi', terms: ['ors', 'oral rehydration', 'legal', 'india', 'court', 'judgment', 'fssai', 'brand', 'dismissed', '2025'], publishedAt: '2025-10-31', category: 'High Court judgment; case-specific disposition', format: 'pdf' },
   { id: 'who-sugars-live', title: 'WHO guideline: sugars intake for adults and children', url: 'https://www.who.int/publications/i/item/9789241549028', publisher: 'World Health Organization', terms: ['sugar', 'sugars', 'sweet', 'carbohydrate'], publishedAt: '2015-03-04', category: 'population guideline' },
   { id: 'who-sweeteners-live', title: 'WHO guideline: use of non-sugar sweeteners', url: 'https://www.who.int/publications/i/item/9789240073616', publisher: 'World Health Organization', terms: ['sweetener', 'sweeteners', 'aspartame', 'sucralose', 'weight'], publishedAt: '2023-05-15', category: 'population guideline' },
@@ -38,8 +39,9 @@ function sourceLimitations(entry: Entry) {
         ? ' This is a dated agency instrument, not a product-specific adjudication. Check subsequent court orders, exact product category and current applicability.'
         : '';
   const primary = entry.publisher.includes('Food Safety and Standards Authority') || entry.publisher === 'FSSAI' || entry.publisher === 'High Court of Delhi';
+  const ocrLimit = entry.allowOcr ? ' If a machine-OCR excerpt is shown, it is unverified and may contain recognition errors; compare it with the linked original before relying on any wording.' : '';
   return primary
-    ? `This primary-source extract does not establish a consolidated rule, later amendment/order, product category, authorization or package compliance. Verify all applicable Gazette text and effective dates for the relevant product and market.${orsCaseLimit}`
+    ? `This primary-source extract does not establish a consolidated rule, later amendment/order, product category, authorization or package compliance. Verify all applicable Gazette text and effective dates for the relevant product and market.${orsCaseLimit}${ocrLimit}`
     : 'General population guidance, not an additive toxicology limit, individual prescription or legal rule. The excerpt does not independently resolve this package claim.';
 }
 
@@ -87,7 +89,7 @@ export async function researchRecalls(query: string) {
   return { status: items.length ? 'ok' : 'empty', items, message: items.length ? 'Historical US FDA food-enforcement candidates only. Match the precise product, firm, market and lot. This cannot determine brand-wide safety, current recall status or Indian regulatory compliance.' : 'No matching reports were returned by this bounded US FDA search. This does not prove absence of recalls, product safety, brand credibility or Indian compliance.' };
 }
 
-export async function research(data: z.infer<typeof researchInput>) {
+export async function research(data: z.infer<typeof researchInput>, pdfExtractor: ResearchPdfExtractor = (bytes) => extractPdfText(bytes)) {
   if (data.topic === 'science') {
     const url = new URL('https://www.ebi.ac.uk/europepmc/webservices/rest/search');
     const query = europePmcScienceQuery(data.query);
@@ -112,14 +114,14 @@ export async function research(data: z.infer<typeof researchInput>) {
   };
   const results = await Promise.all(candidates.map(async ({ entry }) => {
     let failureReason = 'source request failed';
-    let stage: 'fetch' | 'pdf-extraction' | 'excerpt' = 'fetch';
+    let stage: 'fetch' | 'pdf-extraction' | 'pdf-ocr' | 'excerpt' = 'fetch';
     try {
       const source = await fixedFetch(new URL(entry.url), entry.format ?? 'html', 2_000_000);
-      stage = entry.format === 'pdf' ? 'pdf-extraction' : 'excerpt';
-      const pdf = entry.format === 'pdf' ? await extractPdfText(source as Uint8Array) : null;
+      stage = entry.format === 'pdf' ? entry.allowOcr ? 'pdf-ocr' : 'pdf-extraction' : 'excerpt';
+      const pdf = entry.format === 'pdf' ? await pdfExtractor(source as Uint8Array, { sourceId: entry.id, allowOcr: !!entry.allowOcr }) : null;
       stage = 'excerpt';
       if (pdf && !pdf.text.trim()) {
-        failureReason = 'the PDF has no selectable text; image-only pages are not OCRed';
+        failureReason = 'the PDF has no extractable text, including any permitted local OCR';
         throw new Error('No selectable PDF text');
       }
       const excerpt = pdf ? excerptPlain(pdf.text, data.query) : excerptHtml(source as string, data.query);
@@ -127,9 +129,14 @@ export async function research(data: z.infer<typeof researchInput>) {
         failureReason = 'the source text was too short or blocked for a reliable excerpt';
         throw new Error('Unusable source page');
       }
-      const pdfDisclosure = pdf ? ` PDF text extracted from ${pdf.pagesRead} of ${pdf.totalPages} pages${pdf.truncated ? ' (bounded extract)' : ''}; scanned-image content is not OCRed.` : '';
-      const sourceKind = pdf ? entry.category.includes('Gazette') ? 'Official Gazette PDF text excerpt' : 'Official PDF text excerpt' : 'Live page excerpt';
-      return { ok: true as const, entry, item: { id: entry.id, title: entry.title, url: entry.url, publisher: entry.publisher, publishedAt: entry.publishedAt, ...(entry.effectiveAt ? { effectiveAt: entry.effectiveAt } : {}), retrievedAt: new Date().toISOString(), category: entry.category, summary: `${sourceKind} (truncated; not interpreted): ${excerpt}${pdfDisclosure}`, limitations: sourceLimitations(entry) } satisfies ResearchItem };
+      const pdfDisclosure = pdf ? pdf.ocrPages
+        ? ` Machine OCR was used on ${pdf.ocrPages} page${pdf.ocrPages === 1 ? '' : 's'}; the text is unverified and may contain recognition errors.`
+        : ` Selectable PDF text extracted from ${pdf.pagesRead} of ${pdf.totalPages} pages${pdf.truncated ? ' (bounded extract)' : ''}; image-only page content was not OCRed.` : '';
+      const sourceKind = pdf
+        ? pdf.ocrPages ? 'Official PDF OCR excerpt (machine-extracted; unverified; not interpreted)' : entry.category.includes('Gazette') ? 'Official Gazette PDF text excerpt' : 'Official PDF text excerpt'
+        : 'Live page excerpt';
+      const category = entry.allowOcr && pdf?.ocrPages ? `${entry.category}; machine OCR excerpt` : entry.category;
+      return { ok: true as const, entry, item: { id: entry.id, title: entry.title, url: entry.url, publisher: entry.publisher, publishedAt: entry.publishedAt, ...(entry.effectiveAt ? { effectiveAt: entry.effectiveAt } : {}), retrievedAt: new Date().toISOString(), category, summary: `${sourceKind} (truncated; not interpreted): ${excerpt}${pdfDisclosure}`, limitations: sourceLimitations(entry) } satisfies ResearchItem };
     } catch (error) {
       if (error instanceof ApiError) {
         failureReason = error.code === 'upstream_too_large' ? 'the PDF exceeded the 2 MB retrieval limit'
@@ -138,6 +145,8 @@ export async function research(data: z.infer<typeof researchInput>) {
               : 'the source could not be reached within the request limits';
       } else if (stage === 'pdf-extraction') {
         failureReason = 'the downloaded PDF could not be parsed';
+      } else if (stage === 'pdf-ocr') {
+        failureReason = 'the bounded local OCR process could not extract usable text';
       } else if (stage === 'excerpt') {
         failureReason = 'the source text could not produce a sufficiently clear excerpt';
       }

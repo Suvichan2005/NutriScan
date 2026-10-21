@@ -97,6 +97,34 @@ describe('official regulation PDF discovery', () => {
     expect(fixedFetchMock).toHaveBeenCalledTimes(5);
   });
 
+  it('labels allowlisted scanned FSSAI pages as unverified local OCR excerpts', async () => {
+    fixedFetchMock.mockImplementation(async (_url: URL, format: string) => format === 'pdf'
+      ? textPdf('')
+      : '<html><body>Official FSSAI regulations index for food labeling and claims.</body></html>');
+    const ocrSources: string[] = [];
+    const result = await research({ query: 'Is this ORS legal in India today?', topic: 'regulation' }, async (_bytes, options) => {
+      if (options.allowOcr) {
+        ocrSources.push(options.sourceId);
+        return {
+          text: 'Food Safety and Standards Authority of India. This is official regulatory notice text concerning ORS product naming and withdrawal of prior permissions. Verify all wording against the linked original document before relying on it.',
+          pagesRead: 2,
+          totalPages: 2,
+          truncated: false,
+          extraction: 'ocr',
+          ocrPages: 2,
+        };
+      }
+      return { text: '', pagesRead: 1, totalPages: 1, truncated: false, extraction: 'empty', ocrPages: 0 };
+    });
+    const clarification = result.items.find(item => item.id === 'fssai-ors-2025-clarification');
+    expect(ocrSources).toEqual(expect.arrayContaining(['fssai-ors-2025-withdrawal', 'fssai-ors-2025-clarification']));
+    expect(clarification?.category).toMatch(/machine OCR excerpt/i);
+    expect(clarification?.summary).toMatch(/Official PDF OCR excerpt \(machine-extracted; unverified; not interpreted\)/i);
+    expect(clarification?.summary).toMatch(/Machine OCR was used on 2 pages/i);
+    expect(clarification?.limitations).toMatch(/unverified and may contain recognition errors/i);
+    expect(result.message).toMatch(/Current legal status and package compliance remain unverified/i);
+  });
+
   it('keeps primary-source links visible when only a client-rendered shell is retrieved', async () => {
     fixedFetchMock.mockResolvedValue('<html><title>FSSAI</title><div id="root"></div><script src="app.js"></script></html>');
     const result = await research({ query: 'FSSAI labelling', topic: 'regulation' });

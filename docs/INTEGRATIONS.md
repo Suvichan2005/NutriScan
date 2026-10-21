@@ -122,6 +122,12 @@ Follow-up on 21 October 2026: the official FSSAI notification index identifies t
 
 `npm run acceptance:product-alternatives` used a synthetic typed Nutella label and live Open Food Facts responses. At both sizes, nine values normalized to a common basis, a missing package value remained not comparable, the alternative request excluded barcode `3017620422003`, and four candidate records were returned with stock and identity caveats. Receipt: `docs/evidence/product-alternatives-browser.json`. This does not establish a real package, regional formulation, local stock or suitability.
 
+## Scanned official PDF OCR — 21 October 2026
+
+The local `/api/research` route uses PDF.js for selectable text and an opt-in Tesseract.js fallback for the two fixed 2025 FSSAI ORS PDFs. PDF pages render locally through `@napi-rs/canvas`; neither OCR text nor page images are logged. OCR is bounded to two pages per source, 4 million pixels per page, and a 30-second shared OCR deadline. Returned excerpts are visibly identified as machine OCR, unverified and not interpreted. This route does not accept user-uploaded images and does not establish current law.
+
+Next.js 16 externalizes `pdfjs-dist`, `@napi-rs/canvas` and `tesseract.js` through `serverExternalPackages`. Chrome/Playwright acceptance on the owner-managed loopback dev instance returned HTTP 200 in about 18 seconds, displayed five source cards, exposed OCR disclosures when the two scanned-source details were expanded, and kept the current-law warning visible at 390×844 and 1440×900. An isolated optimized Webpack build and Chrome run also passed those OCR checks. The court judgment was direct-link-only on some live retrieval attempts, so availability of its excerpt is not guaranteed; this failure remains safely represented in the card. Axe, page errors, off-loopback browser requests and horizontal overflow were zero. Aggregate receipt: `docs/evidence/regulatory-research-browser.json`; full-page screenshots are in ignored `docs/evidence/private/regulatory-research/`.
+
 ## ORS historical-source extraction — 21 October 2026
 
 Next.js bundled `pdfjs-dist` in a way that made PDF parsing fail only inside the route, even though a direct Node diagnostic could read the same official 2024 PDF. Adding `pdfjs-dist` to the documented Next.js 16 `serverExternalPackages` setting restored the server route. A live same-origin request now extracts the 2 February 2024 FSSAI ORS order, while its card and limitation text clearly say it was superseded by the 14 October 2025 withdrawal.

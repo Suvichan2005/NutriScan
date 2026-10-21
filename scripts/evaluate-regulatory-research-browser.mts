@@ -38,7 +38,7 @@ try {
     await page.getByLabel('Research topic').selectOption('regulation');
     await page.getByRole('button', { name: 'Research sources' }).click();
     const results = page.locator('.research-results article');
-    await results.first().waitFor({ state: 'visible', timeout: 30_000 });
+    await results.first().waitFor({ state: 'visible', timeout: 60_000 });
     const first = results.first();
     const firstCategory = await first.locator('.eyebrow').innerText();
     const firstSummary = await first.locator('p').first().innerText();
@@ -49,16 +49,25 @@ try {
     const firstLimitations = await first.locator('.fine-print').innerText();
     const allText = await page.locator('.research-results').innerText();
     const directOnlyCount = await page.locator('.research-results article').filter({ hasText: 'could not retrieve usable source text' }).count();
-    const sourceOutcomes = await Promise.all(await results.all().then(cards => cards.map(async card => ({
-      title: (await card.locator('h3').innerText()).replace(/\s*↗\s*$/, ''),
-      textRetrieved: (await card.locator('p').first().innerText()).startsWith('Official PDF text excerpt'),
-      sourceTextUnavailable: /could not retrieve usable source text/.test(await card.locator('p').first().innerText()),
-    }))));
+    const sourceOutcomes = await Promise.all(await results.all().then(cards => cards.map(async card => {
+      const title = (await card.locator('h3').innerText()).replace(/\s*↗\s*$/, '');
+      if (title.startsWith('FSSAI withdrawal of prior ORS') || title.startsWith('FSSAI clarification on ORS')) {
+        const details = card.getByText('Read full abstract or source excerpt', { exact: true });
+        if (await details.count() === 1) await details.click();
+      }
+      const cardText = await card.innerText();
+      return {
+        title,
+        textRetrieved: /Official PDF (?:text|OCR) excerpt/.test(cardText),
+        machineOcrDisclosure: /Machine OCR was used/.test(cardText),
+        sourceTextUnavailable: /could not retrieve usable source text/.test(cardText),
+      };
+    })));
     const scanned2025Titles = new Set([
       'FSSAI withdrawal of prior ORS brand-name permissions',
       'FSSAI clarification on ORS in food-product names',
     ]);
-    const unavailableScanned2025Count = sourceOutcomes.filter(source => scanned2025Titles.has(source.title) && source.sourceTextUnavailable).length;
+    const scannedOcrSourceCount = sourceOutcomes.filter(source => scanned2025Titles.has(source.title) && source.textRetrieved && source.machineOcrDisclosure && !source.sourceTextUnavailable).length;
     const historicalDirectionRetrieved = sourceOutcomes.some(source => source.title === 'FSSAI direction on ORS-substitute advertising and marketing' && source.textRetrieved);
     const remoteStatus = await page.locator('.remote-status').innerText();
     const axe = await new AxeBuilder({ page }).analyze();
@@ -72,8 +81,8 @@ try {
       historicalExcerptVisible: /02nd February, 2024/i.test(fullFirstSummary) && /ORS/i.test(fullFirstSummary),
       historicalDirectionRetrieved,
       supersededLimitVisible: /historical context only.*14 October 2025 withdrawal.*Do not apply/i.test(firstLimitations),
-      failedSourcesRemainExplicit: unavailableScanned2025Count === scanned2025Titles.size,
-      unavailableScanned2025Count,
+      scannedOcrSourcesLabeledUnverified: scannedOcrSourceCount === scanned2025Titles.size,
+      scannedOcrSourceCount,
       directOnlyCount,
       sourceOutcomes,
       currentLawAndProductComplianceUnverified: /Current legal status and package compliance remain unverified/i.test(remoteStatus),
@@ -98,7 +107,7 @@ const receipt = {
   query,
   limitations: [
     'The extractable 2024 FSSAI order is superseded historical context, not current permission.',
-    'The 2025 scanned FSSAI PDFs did not yield usable text; court-PDF extraction can vary across route attempts.',
+    'The two 2025 scanned FSSAI PDFs use bounded local OCR and are labeled unverified observations; court-PDF extraction can vary across route attempts.',
     'The 2022 direction is historical evidence, and the 2024 order is superseded; neither establishes current legal status.',
     'This journey does not establish current law, exact product category or package compliance.',
   ],
@@ -106,4 +115,4 @@ const receipt = {
 };
 await writeFile('docs/evidence/regulatory-research-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
 console.log(JSON.stringify({ receipt: 'docs/evidence/regulatory-research-browser.json', outcomes }, null, 2));
-if (outcomes.length !== 2 || outcomes.some(outcome => outcome.candidateCount !== 5 || !outcome.historicalExcerptVisible || !outcome.historicalDirectionRetrieved || !outcome.supersededLimitVisible || !outcome.failedSourcesRemainExplicit || !outcome.currentLawAndProductComplianceUnverified || !outcome.directSourcesNotRenderedAsHtml || !(outcome.researchRouteStatuses as number[]).includes(200) || !outcome.noNonLoopbackBrowserRequests || outcome.horizontalOverflow || (outcome.axeViolationIds as string[]).length || (outcome.pageErrors as string[]).length)) process.exitCode = 1;
+if (outcomes.length !== 2 || outcomes.some(outcome => outcome.candidateCount !== 5 || !outcome.historicalExcerptVisible || !outcome.historicalDirectionRetrieved || !outcome.supersededLimitVisible || !outcome.scannedOcrSourcesLabeledUnverified || !outcome.currentLawAndProductComplianceUnverified || !outcome.directSourcesNotRenderedAsHtml || !(outcome.researchRouteStatuses as number[]).includes(200) || !outcome.noNonLoopbackBrowserRequests || outcome.horizontalOverflow || (outcome.axeViolationIds as string[]).length || (outcome.pageErrors as string[]).length)) process.exitCode = 1;

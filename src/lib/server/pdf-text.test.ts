@@ -40,4 +40,12 @@ describe('bounded PDF text extraction', () => {
     expect(result).toMatchObject({ pagesRead: 1, totalPages: 2, truncated: true });
     expect(result.text.length).toBeLessThanOrEqual(12);
   });
+
+  it('runs one bounded local OCR pass only when explicitly enabled', async () => {
+    const disabled = await extractPdfText(textPdf(['']), { pages: 1, characters: 100 });
+    expect(disabled).toMatchObject({ extraction: 'empty', ocrPages: 0, text: '' });
+    const enabled = await extractPdfText(textPdf(['']), { pages: 1, characters: 100 }, { ocr: true, maxOcrPages: 1, maxOcrPixels: 1_000_000, ocrTimeoutMs: 10_000 });
+    expect(enabled).toMatchObject({ extraction: 'ocr', ocrPages: 1, pagesRead: 1, totalPages: 1 });
+    expect(enabled.text.length).toBeLessThanOrEqual(100);
+  });
 });
