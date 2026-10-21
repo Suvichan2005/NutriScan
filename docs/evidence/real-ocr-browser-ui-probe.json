@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T01:05:24.160Z",
+  "generatedAt": "2026-10-21T01:11:57.694Z",
   "baseUrl": "http://127.0.0.1:3413",
   "browser": "Chrome via Playwright, headless; viewport 390x844",
   "source": {
@@ -16,6 +16,12 @@
     {
       "id": "unknown-role-full-image",
       "role": "unknown",
+      "initialQuestionJourney": {
+        "enteredBeforePhoto": true,
+        "preservedAfterRead": true,
+        "axeViolationIds": [],
+        "intakeScreenshot": "docs/evidence/private/browser-question-first-intake-mobile.png"
+      },
       "expected": 9,
       "correct": 0,
       "incorrect": 0,
@@ -67,6 +73,7 @@
     {
       "id": "nutrition-role-full-image",
       "role": "nutrition",
+      "initialQuestionJourney": null,
       "expected": 9,
       "correct": 0,
       "incorrect": 0,
@@ -124,6 +131,7 @@
         "width": 93,
         "height": 99
       },
+      "initialQuestionJourney": null,
       "expected": 9,
       "correct": 1,
       "incorrect": 0,
@@ -181,6 +189,7 @@
         "width": 93,
         "height": 99
       },
+      "initialQuestionJourney": null,
       "expected": 9,
       "correct": 1,
       "incorrect": 0,

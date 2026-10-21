@@ -15,7 +15,7 @@ type ManifestRecord = {
 
 type Manifest = { records: ManifestRecord[] };
 type Crop = { x: number; y: number; width: number; height: number };
-type CaseSpec = { id: string; role: 'unknown' | 'nutrition'; crop?: Crop };
+type CaseSpec = { id: string; role: 'unknown' | 'nutrition'; crop?: Crop; initialQuestion?: string };
 type Outcome = 'correct' | 'incorrect' | 'omitted' | 'withheld';
 
 const root = process.cwd();
@@ -28,7 +28,7 @@ const labels: Record<string, string> = {
 };
 const crop: Crop = { x: 3, y: 0, width: 93, height: 99 };
 const cases: CaseSpec[] = [
-  { id: 'unknown-role-full-image', role: 'unknown' },
+  { id: 'unknown-role-full-image', role: 'unknown', initialQuestion: 'What can you read from this label?' },
   { id: 'nutrition-role-full-image', role: 'nutrition' },
   { id: 'nutrition-role-user-crop', role: 'nutrition', crop },
   { id: 'nutrition-role-user-crop-repeat', role: 'nutrition', crop },
@@ -114,6 +114,12 @@ async function main() {
       let pageErrorCount = 0;
       page.on('pageerror', () => { pageErrorCount += 1; });
       await page.goto(baseUrl, { waitUntil: 'networkidle' });
+      if (spec.initialQuestion) await page.getByLabel('What would you like to find out?').fill(spec.initialQuestion);
+      const intakeScreenshot = spec.initialQuestion ? path.join(photoDirectory, 'browser-question-first-intake-mobile.png') : undefined;
+      if (intakeScreenshot) await page.screenshot({ path: intakeScreenshot, fullPage: true });
+      const intakeAxeViolationIds = intakeScreenshot
+        ? (await new AxeBuilder({ page }).analyze()).violations.map((violation) => violation.id).sort()
+        : null;
       await page.getByLabel('Add one or more product photos').setInputFiles(photoPath);
       if (spec.role === 'nutrition') await page.getByLabel('Optional photo hint').selectOption('nutrition');
       if (spec.crop) {
@@ -126,6 +132,9 @@ async function main() {
       }
       await page.getByRole('button', { name: /Read these photos/ }).click();
       await page.locator('.results-section').waitFor({ state: 'visible', timeout: 120_000 });
+      const initialQuestionPreserved = spec.initialQuestion
+        ? await page.locator('.conversation .user-message').filter({ hasText: spec.initialQuestion }).count() === 1
+        : null;
       await page.getByText('See the label & calculation maths').click();
       await page.locator('.details-block table').waitFor({ state: 'visible' });
       const scored = await scorePage(page, record);
@@ -136,6 +145,12 @@ async function main() {
         id: spec.id,
         role: spec.role,
         crop: spec.crop,
+        initialQuestionJourney: spec.initialQuestion ? {
+          enteredBeforePhoto: true,
+          preservedAfterRead: initialQuestionPreserved,
+          axeViolationIds: intakeAxeViolationIds,
+          intakeScreenshot: intakeScreenshot ? path.relative(root, intakeScreenshot).replaceAll('\\', '/') : undefined,
+        } : null,
         ...scored,
         parsedNutrientRows: await page.locator('.details-block table tbody tr').count(),
         axeViolationIds: axe.violations.map((violation) => violation.id).sort(),
@@ -157,7 +172,7 @@ async function main() {
     results,
   };
   await writeFile(resultPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
-  console.log(JSON.stringify({ resultPath: path.relative(root, resultPath), results: results.map(({ id, correct, incorrect, omitted, withheld, parsedNutrientRows, axeViolationIds, pageErrorCount }) => ({ id, correct, incorrect, omitted, withheld, parsedNutrientRows, axeViolationIds, pageErrorCount })) }, null, 2));
+  console.log(JSON.stringify({ resultPath: path.relative(root, resultPath), results: results.map(({ id, correct, incorrect, omitted, withheld, parsedNutrientRows, initialQuestionJourney, axeViolationIds, pageErrorCount }) => ({ id, correct, incorrect, omitted, withheld, parsedNutrientRows, initialQuestionJourney, axeViolationIds, pageErrorCount })) }, null, 2));
 }
 
 main().catch((error: unknown) => {
