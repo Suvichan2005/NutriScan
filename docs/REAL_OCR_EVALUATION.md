@@ -22,7 +22,7 @@ On the Saffola photograph / nine annotated fields, the unknown-role run produced
 
 This differs from the earlier Node crop proxy, where the same bounds removed both recovered Saffola values. The Node `sharp` proxy and browser canvas path are distinct processing paths; this observation does not establish that browser cropping generally improves OCR. It does not justify an automatic crop, retry, or default-role change. The successful field remains one human-annotated package observation, not laboratory or formulation verification.
 
-The command requires the ignored source photo and an already-running local production server; set `NUTRISCAN_BASE_URL` to select another loopback origin. The script rejects non-loopback origins. It writes only aggregate field outcomes, hashes, accessibility IDs, error counts and screenshot paths to the tracked receipt—never OCR text or image bytes.
+The command requires the ignored source photo and an already-running local production server; for example, run `npm run build` then `npx next start --hostname 127.0.0.1 --port 3413`. Set `NUTRISCAN_BASE_URL` to select another loopback origin. The script rejects non-loopback origins. It writes only aggregate field outcomes, hashes, accessibility IDs, error counts and screenshot paths to the tracked receipt—never OCR text or image bytes.
 
 ### Earlier Node proxy result
 

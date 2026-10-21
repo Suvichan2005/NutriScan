@@ -5,7 +5,7 @@ Updated: 2026-10-21. This is a local development application and research worksp
 ## Repository checkpoint
 
 - Repository root: this directory; branch: `main`.
-- Latest implementation checkpoint: `e06c1a831719adbd801c2e47280264dc13c6b5b7` (`Audit mobile flows and clarify catalog identity`); crop-evaluation checkpoint: `284d3e0644900830a688804a716b3929f0fba265`.
+- Latest feature implementation checkpoint: `cc4910d337058303cc5488b7dfd9dc7c2a06c27c` (`Audit mobile flows and clarify catalog identity`); latest OCR browser-evaluation checkpoint: `8c05d488550d644d0243dcc882b55c866f25644e` (`Add reproducible browser OCR crop evaluation`); prior Node crop-evaluation checkpoint: `284d3e0644900830a688804a716b3929f0fba265`.
 - Remote: none configured. No authorized private remote was supplied.
 - First local milestone commit: `6f7b375` (`Build generalized NutriScan product investigation`). No earlier history or remote was present.
 - Provider credentials: none configured; Gemini remains disabled and no provider request has been made.
