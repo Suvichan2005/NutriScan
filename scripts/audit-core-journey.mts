@@ -133,21 +133,34 @@ try {
       observations: Array<{ field: string; imageId?: string; ocrWords?: Array<{ bbox: { x0: number; y0: number; x1: number; y1: number } }> }>;
       ocrCaptures?: Array<{ imageId: string; preparedImage: { width: number; height: number } }>;
       nutrients: Array<{ key: string; value: number; unit: string; basis: { amount: number; unit: string } | null; status: 'observed'|'corrected'|'conflict' }>;
-      parserDiagnostics?: Array<{ field: string; decision: 'accepted'|'conflict'|'rejected' }>;
+      parserDiagnostics?: Array<{
+        field: string;
+        decision: 'accepted'|'conflict'|'rejected';
+        reasonCodes?: string[];
+        numericCandidates?: Array<{ rawValueText: string; value: number|null; unit: string|null }>;
+        basisCandidates?: Array<{ amount: number; unit: string; description?: string }>;
+      }>;
     } };
     const annotatedFields = record.manualAnnotation.nutrients.map((expected) => {
       const candidates = exported.package.nutrients.filter((nutrient) => nutrient.key === expected.key);
       const diagnostics = (exported.package.parserDiagnostics ?? []).filter((diagnostic) => diagnostic.field === expected.key);
       const candidate = candidates[0] ?? null;
+      const numericCandidates = diagnostics.flatMap((diagnostic) => diagnostic.numericCandidates ?? []);
+      const uniqueNumericCandidates = [...new Map(numericCandidates.map((item) => [`${item.rawValueText}|${item.value}|${item.unit}`, item])).values()];
+      const basisCandidates = diagnostics.flatMap((diagnostic) => diagnostic.basisCandidates ?? []);
+      const uniqueBasisCandidates = [...new Map(basisCandidates.map((item) => [`${item.amount}|${item.unit}|${item.description ?? ''}`, item])).values()];
       const numericExact = !!candidate && Math.abs(candidate.value - expected.value) <= Math.max(.015, Math.abs(expected.value) * .005);
       const unitExact = !!candidate && candidate.unit === expected.unit;
       const basisExact = !!candidate && candidate.basis?.amount === record.manualAnnotation!.basis!.amount && candidate.basis?.unit === record.manualAnnotation!.basis!.unit;
+      const ocrNumericCandidateExact = uniqueNumericCandidates.some((item) => item.value !== null && Math.abs(item.value - expected.value) <= Math.max(.015, Math.abs(expected.value) * .005));
+      const ocrUnitCandidateExact = uniqueNumericCandidates.some((item) => item.unit === expected.unit);
+      const ocrBasisCandidateExact = uniqueBasisCandidates.some((item) => item.amount === record.manualAnnotation!.basis!.amount && item.unit === record.manualAnnotation!.basis!.unit);
       let outcome: 'exact'|'incorrect'|'omitted'|'withheld';
       if (candidates.some((nutrient) => nutrient.status === 'conflict') || candidates.length > 1) outcome = 'withheld';
       else if (candidate) outcome = numericExact && unitExact && basisExact ? 'exact' : 'incorrect';
       else if (diagnostics.some((diagnostic) => diagnostic.decision === 'rejected' || diagnostic.decision === 'conflict')) outcome = 'withheld';
       else outcome = 'omitted';
-      return { key: expected.key, expectedValue: expected.value, expectedUnit: expected.unit, emittedValue: candidate?.value ?? null, emittedUnit: candidate?.unit ?? null, emittedBasis: candidate?.basis ?? null, numericExact, unitExact, basisExact, outcome };
+      return { key: expected.key, expectedValue: expected.value, expectedUnit: expected.unit, emittedValue: candidate?.value ?? null, emittedUnit: candidate?.unit ?? null, emittedBasis: candidate?.basis ?? null, numericExact, unitExact, basisExact, ocrNumericCandidateCount: uniqueNumericCandidates.length, ocrNumericCandidateExact, ocrUnitCandidateExact, ocrBasisCandidateExact, outcome, parserDiagnostics: diagnostics.map(({ decision, reasonCodes }) => ({ decision, reasonCodes: reasonCodes ?? [] })) };
     });
     const annotatedFieldCounts = {
       referenceStatus: 'single human visual read; not independently adjudicated',
