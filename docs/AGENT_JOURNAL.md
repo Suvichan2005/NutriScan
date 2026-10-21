@@ -1,5 +1,13 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — separate on-device profile context from scan history
+
+- Added a distinct opt-in for remembering user-entered context in local IndexedDB. Default profile remains empty; scan and conversation contracts and JSON exports continue to omit profile fields. Clearing or unchecking the option removes only the remembered copy while session context is preserved for uncheck.
+- Updated the profile and privacy disclosures for browser-profile visibility, lack of encryption/sync, selected-country lookup behavior and separate Gemini consent. Reopening saved scans preserves only a separately opted-in profile; it never hydrates profile from scan data.
+- Chrome/Playwright acceptance passed at 390×844 and 1440×900 using synthetic profile text. It verified reload restore, scan-history record exclusion, opt-out deletion, blank default, and zero axe violations, page errors, provider calls or off-origin requests. The initial run revealed that disabling the checkbox during a pending save prevented its state from settling; the control now updates immediately and reverts if persistence fails.
+- Full tests passed (270 tests / 30 files), typecheck passed, and an isolated optimized Next build passed. Gemini remained disabled; no real-photo accuracy or provider claim is made.
+- No personal profile values, source images, provider secrets, raw request bodies or private chat text were added to the repository.
+
 ## 2026-10-21 — real-photo structural diagnostic and annotation correction
 
 - Corrected the local annotation workflow so a clear numeric row can state that no separate unit is printed, without inventing one or requiring nonexistent unit geometry. Chrome/Playwright round-tripped both an explicit unit and `unit: null` at 390×844 and 1440×900. It also verified that only the two unexposed candidates are selectable; the OCR-exposed Grandma's image and low-legibility Weet-Bix are excluded. No Axe issues, POSTs, off-origin requests, page errors or horizontal overflow were observed.

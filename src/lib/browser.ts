@@ -1,13 +1,29 @@
 import { get, set, del } from 'idb-keyval';
-import { savedScanSchema, type ImageAsset, type Observation, type SavedScanRecord } from './contracts';
+import { hasUserContext, profileSchema, savedScanSchema, type ImageAsset, type Observation, type Profile, type SavedScanRecord } from './contracts';
 import { detectRetailBarcodes } from './barcode';
 
 export type SavedScan = SavedScanRecord;
 const historyKey='nutriscan.history.v1';
+const rememberedProfileKey='nutriscan.user-context.v1';
 export async function readHistory():Promise<SavedScan[]> { const data:unknown=await get(historyKey); return Array.isArray(data)?data.flatMap(item=>{const parsed=savedScanSchema.safeParse(item);return parsed.success?[parsed.data]:[];}).slice(0,20):[]; }
 export async function saveScan(input:SavedScan) { const scan=savedScanSchema.parse(input);const history=await readHistory();await set(historyKey,[scan,...history.filter(x=>x.id!==scan.id)].slice(0,20)); }
 export async function removeSavedScan(id:string) { const history=await readHistory();await set(historyKey,history.filter(scan=>scan.id!==id)); }
 export async function clearHistory(){ await del(historyKey); }
+
+/** Optional user context is stored separately from scan and conversation history. */
+export async function readRememberedProfile():Promise<Profile|null>{
+ const value:unknown=await get(rememberedProfileKey);
+ if(value===undefined)return null;
+ const parsed=profileSchema.safeParse(value);
+ if(!parsed.success){await del(rememberedProfileKey);return null;}
+ return hasUserContext(parsed.data)?parsed.data:null;
+}
+export async function saveRememberedProfile(input:Profile):Promise<void>{
+ const profile=profileSchema.parse(input);
+ if(!hasUserContext(profile)){await del(rememberedProfileKey);return;}
+ await set(rememberedProfileKey,profile);
+}
+export async function deleteRememberedProfile():Promise<void>{await del(rememberedProfileKey);}
 
 export async function loadImage(file:Blob,side:ImageAsset['side'],name='Package photograph'):Promise<ImageAsset>{
  if (!['image/jpeg','image/png','image/webp'].includes(file.type)) throw new Error('Choose a JPG, PNG or WebP photo. HEIC needs conversion first.');

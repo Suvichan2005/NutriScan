@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 21 October 2026 — keep remembered user context separate and opt-in
+
+- Keep user-declared context distinct from package observations, saved conversations, public evidence and exports. Default to an empty session profile; persist fields only after a separate user action in a dedicated versioned IndexedDB key.
+- Reopening a saved scan may reuse the separately remembered user profile, but never reads profile fields from the scan record. Unchecking removes the local copy while retaining the current session values; clearing context removes both. Disclose that browser-profile access exposes the plaintext local record and that it is not encrypted or synced.
+- Public product lookup may receive the selected country only. Other profile fields remain local in the current product flow; Gemini is disabled and still requires a separate consent flow before any future provider use.
+- Chrome/Playwright verified empty default, opt-in reload, history reopen, record exclusion, uncheck/delete and session retention on mobile and desktop. This is synthetic UI/storage evidence, not real-photo accuracy or provider acceptance.
+
 ## 21 October 2026 — keep absent printed units annotatable and expose the real-photo bottleneck
 
 - A readable nutrient value with a known basis may be annotated with `unit: null` when the package prints no separate unit. Require unit geometry only when a unit is actually transcribed; never infer a unit from convention.

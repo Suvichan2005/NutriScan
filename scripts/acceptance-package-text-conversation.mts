@@ -39,6 +39,7 @@ try {
     const prefix = viewport.width === 390 ? 'mobile' : 'desktop';
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
+    await page.waitForFunction(() => { const button = [...document.querySelectorAll('button')].find(item => item.textContent?.includes('Optional context')); return !!button && !button.disabled; });
     const intakeAxe = await new AxeBuilder({ page }).analyze();
     await page.screenshot({ path: path.join(captureDir, `${prefix}-01-intake.png`) });
 
@@ -83,6 +84,50 @@ try {
     const conversationRemovalConfirmed = !(await packageOnlyHistory.innerText()).includes('local turns');
 
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Optional context', exact: true }).click();
+    const rememberContext = page.getByRole('checkbox', { name: /Remember this context on this device/ });
+    const profileStartedEmpty = await page.getByLabel('What are you trying to understand?').inputValue() === '' && !(await rememberContext.isChecked());
+    await page.getByLabel('What are you trying to understand?').fill('Synthetic profile persistence acceptance fixture');
+    await rememberContext.check();
+    await page.getByText('Your context is saved separately on this device.').waitFor({ state: 'visible' });
+    await page.screenshot({ path: path.join(captureDir, `${prefix}-03-optional-context.png`), fullPage: true });
+    const profileAxe = await new AxeBuilder({ page }).analyze();
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Optional context', exact: true }).click();
+    const restoredRememberedValue = await page.getByLabel('What are you trying to understand?').inputValue();
+    const rememberedProfileRestored = restoredRememberedValue === 'Synthetic profile persistence acceptance fixture' && await page.getByRole('checkbox', { name: /Remember this context on this device/ }).isChecked();
+    await page.getByRole('button', { name: 'Use for this session' }).click();
+    await page.getByRole('button', { name: /Recent scans/ }).click();
+    const priorSavedLabel = page.getByRole('button', { name: /saved label/ }).first();
+    await priorSavedLabel.waitFor({ state: 'visible' });
+    await priorSavedLabel.click();
+    await page.getByRole('button', { name: 'Optional context', exact: true }).click();
+    const rememberedProfileSurvivedScanReopen = await page.getByLabel('What are you trying to understand?').inputValue() === 'Synthetic profile persistence acceptance fixture';
+    const scanRecordExcludesProfile = await page.evaluate(async () => await new Promise<boolean>((resolve, reject) => {
+      const request = indexedDB.open('keyval-store');
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction('keyval', 'readonly');
+        const history = transaction.objectStore('keyval').get('nutriscan.history.v1');
+        history.onerror = () => reject(history.error);
+        history.onsuccess = () => {
+          const serialized = JSON.stringify(history.result ?? []);
+          resolve(!serialized.includes('Synthetic profile persistence acceptance fixture') && !serialized.includes('healthConsiderations') && !serialized.includes('allergies'));
+          db.close();
+        };
+      };
+    }));
+    const uncheckRememberContext = page.getByRole('checkbox', { name: /Remember this context on this device/ });
+    await uncheckRememberContext.uncheck();
+    await page.getByText('The remembered copy was removed. Your context remains in this session.').waitFor({ state: 'visible' });
+    const uncheckingPreservesSessionContext = await page.getByLabel('What are you trying to understand?').inputValue() === 'Synthetic profile persistence acceptance fixture';
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Optional context', exact: true }).click();
+    const uncheckingRemovedRememberedContext = await page.getByLabel('What are you trying to understand?').inputValue() === '' && !(await page.getByRole('checkbox', { name: /Remember this context on this device/ }).isChecked());
+    await page.getByRole('button', { name: 'Use for this session' }).click();
+
+    await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.getByLabel('What would you like to find out?').fill('What ingredients are listed?');
     await page.getByRole('button', { name: 'Paste label text' }).click();
     await page.getByLabel('Label text').fill('Synthetic evaluation label\nNutrition information per 100 g\nEnergy 380 kcal');
@@ -93,7 +138,7 @@ try {
     const missingTextHasNoFinding = await page.getByText('Recorded ingredient text').count() === 0;
     const missingTextAxe = await new AxeBuilder({ page }).analyze();
 
-    const axeViolationIds = [intakeAxe, firstAnswerAxe, conversationAxe, restoredAxe, missingTextAxe].flatMap(result => result.violations.map(violation => violation.id));
+    const axeViolationIds = [intakeAxe, firstAnswerAxe, conversationAxe, restoredAxe, profileAxe, missingTextAxe].flatMap(result => result.violations.map(violation => violation.id));
     const outcome = {
       viewport: `${viewport.width}x${viewport.height}`,
       syntheticLabelInput: true,
@@ -102,6 +147,12 @@ try {
       localConversationOptInRestored: restoredTurnCount === 2,
       savedConversationTurnCount: restoredTurnCount,
       profileRemainedSessionOnly: restoredProfileRemainedBlank,
+      profileStartedEmpty,
+      rememberedProfileRestored,
+      rememberedProfileSurvivedScanReopen,
+      scanRecordExcludesProfile,
+      uncheckingPreservesSessionContext,
+      uncheckingRemovedRememberedContext,
       conversationOptOutRemovedSavedTurns: conversationRemovalConfirmed,
       observationDisclosureVisible: observationDisclosure,
       missingTextRemainedUnknown: missingTextUnknown,
@@ -113,12 +164,12 @@ try {
     };
     outcomes.push(outcome);
     console.log(JSON.stringify(outcome));
-    if (!observationDisclosure || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
+    if (!observationDisclosure || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
     await context.close();
   }
 
-  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
-  const receipt = { schemaVersion: 1, kind: 'synthetic-package-text-conversation-browser-acceptance', generatedAt: new Date().toISOString(), appOrigin: origin.origin, captureTool: 'Playwright using installed Chrome', evaluationInput: 'synthetic label text; not real-photo OCR evidence', persistence: 'explicit local opt-in restores 2 recent turns; opt-out removes saved turns; optional profile remains session-only', screenshots: 'docs/evidence/private/package-text-conversation', outcomes, passed };
+  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
+  const receipt = { schemaVersion: 1, kind: 'synthetic-package-text-conversation-browser-acceptance', generatedAt: new Date().toISOString(), appOrigin: origin.origin, captureTool: 'Playwright using installed Chrome', evaluationInput: 'synthetic label text; not real-photo OCR evidence', persistence: 'explicit local opt-in restores 2 recent turns; opt-out removes saved turns; optional profile is remembered only after separate opt-in and is excluded from scan records', screenshots: 'docs/evidence/private/package-text-conversation', outcomes, passed };
   await writeFile('docs/evidence/package-text-conversation-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/package-text-conversation-browser.json', passed }));
   if (!passed) process.exitCode = 1;
