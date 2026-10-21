@@ -28,6 +28,7 @@ Updated: 2026-10-21. This is a local development application and research worksp
 | Add photos to an active investigation | Implemented; typechecked; unit-tested | New/changed photos are OCRed without rerunning unchanged attachments; observations keep image provenance. Evidence merges into the same package and preserves chat, portion and package identity. Comparable disagreements are marked conflict; barcode mismatch warns. Fresh browser verification is pending. |
 | Public product/science endpoints | Live public-source HTTP tested in earlier checkpoint | Records are candidates; variant/market/currency/freshness constraints remain |
 | Optimized local app startup | Production build and localhost HTTP-tested | Built app returned HTTP 200 and the local status endpoint returned `ok`; Gemini was disabled. No browser interaction is implied by this route check. |
+| Dependency advisory audit | `npm audit` and `npm audit --omit=dev` passed | Both reported zero known vulnerabilities at the time of this checkpoint; this is not a substitute for ongoing updates or a full security assessment. |
 | Gemini assist and vision | Implemented only; provider explicitly disabled | No credentials, no actual provider invocation, no quality claim |
 | Local phone camera and performance | Untested | Requires a real phone on a trusted origin |
 | Production deployment/security | Not implemented or verified | Authentication, production rate limits, hosting and operational controls are absent |
