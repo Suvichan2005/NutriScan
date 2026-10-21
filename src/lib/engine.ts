@@ -1,5 +1,5 @@
 import { packageSchema, profileSchema, nutrientKeys, type Audit, type Calculation, type Finding, type Nutrient, type NutrientKey, type PackageData, type Profile } from './contracts';
-import { detectAdditives, evidenceSources, lookupAdditive, resolveTentativeAdditiveIdentity, retrieveEvidence } from './knowledge';
+import { detectAdditives, evidenceSources, findNutrientContentClaimGuidance, lookupAdditive, nutrientContentClaimSourceIds, resolveTentativeAdditiveIdentity, retrieveEvidence } from './knowledge';
 import { findDeclaredFoodMentions } from './ingredient-context';
 
 const display:Record<NutrientKey,string>={energy:'Energy',carbohydrate:'Carbohydrate',sugars:'Total sugars',addedSugars:'Added sugars',protein:'Protein',fat:'Fat',saturatedFat:'Saturated fat',fiber:'Fibre',sodium:'Sodium',salt:'Salt'};
@@ -72,16 +72,41 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const askedAdditives=detectAdditives(question);
   const asksUncertainty=uncertaintyQuestionPattern.test(question);
   const asksAllergenLabelMeaning=/\b(?:may\s+contain|cross[- ]?(?:contamination|contact)|precautionary allergen)\b/i.test(question)&&/\b(?:mean|meaning|explain|interpret|why|difference|different|according|FSSAI|label|warning)\b/i.test(question);
+  const questionClaimGuidance=findNutrientContentClaimGuidance(question);
+  const recordedClaimObservations=pkg.observations.filter(observation=>['claim','raw-text-line','ocr-line'].includes(observation.field)&&findNutrientContentClaimGuidance(observation.text).length>0);
+  const recordedClaimGuidance=[...new Map(recordedClaimObservations.flatMap(observation=>findNutrientContentClaimGuidance(observation.text)).map(guidance=>[guidance.key,guidance])).values()];
+  const genericClaimQuestion=/\b(?:this|shown|package|label|food|nutrient[- ]content)\s+claim\b|\bclaim\b.{0,50}\b(?:mean|meaning|explain|interpret)\b/i.test(question);
+  const asksClaimDefinition=/\b(?:mean(?:ing)?|explain|interpret|threshold|criteria|require(?:ment|ments)?|definition|defined)\b|\bwhat\s+(?:is|are)\b/i.test(question);
+  const asksNutrientContentClaimMeaning=asksClaimDefinition&&(questionClaimGuidance.length>0||(genericClaimQuestion&&recordedClaimGuidance.length>0));
+  const relevantClaimGuidance=[...new Map([...(questionClaimGuidance.length?questionClaimGuidance:[]),...(genericClaimQuestion?recordedClaimGuidance:[])].map(guidance=>[guidance.key,guidance])).values()];
+  const asksNutrientClaimCompliance=relevantClaimGuidance.length>0&&/\b(?:compliance|compliant|meet|meets|satisfy|satisfies|pass|passes|comply|complies|legal|permitted|allowed)\b/i.test(question);
   const transFatTopic=/\btrans[\s-]?fats?(?:ty)?(?:[\s-]+acids?)?\b|\bTFAs?\b|\bpartially[\s-]+hydrogenated\b/i.test(question);
   const asksCurrentRegulatoryStatus=/\b(?:today|current(?:ly)?|compliance|compliant|legally required|mandatory|must|enforc|is it legal|legal to|lawful|permitted|allowed)\b/i.test(question);
   const mentionsCurrentRegulatoryTopic=/\bORS\b|oral rehydration|legal|regulat|recall|banned|licen[cs]e|current/i.test(question);
   const asksCurrentTransFatLaw=/\bcurrent(?:ly)?\s+(?:(?:fssai|indian|food)\s+)?(?:law|rules?|regulations?|legal|compliance|applicability|limits?)\b|\b(?:fssai|law|rules?|regulations?|compliance|applicab\w*|permitted|allowed)\b.{0,80}\b(?:current|currently|today|now|still)\b|\b(?:current|currently|today|now|still)\b.{0,100}\b(?:law|rules?|regulations?|legal|lawful|compliant|comply|compliance|applicab\w*|permitted|allowed|limit)\b|\b(?:is|are|does|do|can)\b.{0,100}\b(?:legal|lawful|compliant|comply|permitted|allowed|applicable|applies?)\b/i.test(question);
-  const currentRegulatoryQuestion=transFatTopic?asksCurrentTransFatLaw:(mentionsCurrentRegulatoryTopic||/\bfssai\b/i.test(question))&&(!asksAllergenLabelMeaning||asksCurrentRegulatoryStatus);
+  const currentClaimQuestion=asksCurrentRegulatoryStatus||(relevantClaimGuidance.length>0&&/\b(?:current(?:ly)?|today|now|still)\b/i.test(question));
+  const currentRegulatoryQuestion=transFatTopic?asksCurrentTransFatLaw:(mentionsCurrentRegulatoryTopic||/\bfssai\b/i.test(question))&&(!asksAllergenLabelMeaning||asksCurrentRegulatoryStatus)&&(!asksNutrientContentClaimMeaning||currentClaimQuestion);
   const wholeDietCarbohydrateTopic=/\b(?:fib(?:er|re)|whole[- ]grains?|pulses?|legumes?|carbohydrate quality|quality of carbohydrates?)\b/i.test(question);
   const wholeDietCarbohydrateGuidance=wholeDietCarbohydrateTopic&&/\b(?:recommend\w*|guidelines?|guidance|whole[- ]diet|daily|per day|intake|quality)\b/i.test(question);
   const deep=/diet|allerg|intoler|may\s+contain|cross[- ]?(?:contamination|contact)|precautionary|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|\bfree sugars?\b|\badded sugars?\b|ICMR|\bNIN\b/i.test(question)||transFatTopic||wholeDietCarbohydrateGuidance||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
   const trace:Audit['trace']=[{tool:'reuse_package_observations',reason:'Use the current label evidence for this question; no rescan required.',status:`${pkg.observations.length} observations`},{tool:'calculate_portions',reason:'Scale only unambiguous values with compatible explicit bases.',status:'local deterministic calculation'}];
   const finding=(data:Omit<Finding,'id'>)=> {data.sourceIds.forEach(s=>sourceIds.add(s));findings.push({...data,id:`finding-${findings.length+1}`});};
+  const nutrientClaimEvidence=(topics:typeof questionClaimGuidance)=>{
+    const keys=new Set(topics.map(topic=>topic.key));
+    const rows=recordedClaimObservations.filter(observation=>findNutrientContentClaimGuidance(observation.text).some(topic=>keys.has(topic.key)));
+    const literalContext=rows.length
+      ?` The package record contains ${unique(rows.slice(0,4).map(observation=>`“${observation.text.slice(0,200)}${observation.text.length>200?'…':''}” (${observation.origin==='ocr'?'OCR observation':observation.origin==='user'?'user-entered observation':'recorded observation'})`)).join('; ')}. These are unverified observations and may be misread or transcribed incorrectly.`
+      :' No matching claim wording is retained in the package observations; this is a general explanation and does not establish that this package makes the claim.';
+    const criteria=topics.map(topic=>`${topic.label}: ${topic.criteria}.`).join(' ');
+    const rdaContext=topics.some(topic=>topic.key==='high-protein')?' The protein criteria use RDA percentages; this audit does not infer an applicable RDA or reference group.':'';
+    const detail=`FSSAI’s Version IV Advertising and Claims compendium, dated 14 December 2022, lists these generic nutrient-content claim criteria: ${criteria}${literalContext}${rdaContext} The FSSAI amendment index checked on 22 October 2026 lists three amendments, with the latest dated 13 December 2022. This dated reference does not establish current legal status. It also does not determine which product basis applies, classify the food, verify OCR accuracy, or establish whether the product makes or meets the claim.`;
+    return {rows,detail};
+  };
+  const addNutrientClaimFinding=(topics:typeof questionClaimGuidance,title='FSSAI nutrient-content claim wording (dated reference)')=>{
+    const evidence=nutrientClaimEvidence(topics);
+    finding({title,detail:evidence.detail,status:evidence.rows.length?'uncertain':'context',observationIds:unique(evidence.rows.map(observation=>observation.id)),sourceIds:[...nutrientContentClaimSourceIds],calculationIds:[]});
+    return evidence;
+  };
   let examinedRawOcrLines=0;let tentativeAdditiveCount=0;
   for(const observation of pkg.observations){
     if(observation.field!=='ocr-line'||observation.origin!=='ocr')continue;
@@ -254,6 +279,11 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   let answerIntent='label overview';
   if(currentRegulatoryQuestion){
     answerIntent='current regulatory question';answer='Current legal or regulatory status is unresolved. The next evidence is a dated official notice for the exact product and jurisdiction, checked for later amendments or orders.';
+    if(relevantClaimGuidance.length){
+      addNutrientClaimFinding(relevantClaimGuidance);
+      answer+=' A dated FSSAI claim reference is linked below, but it does not establish current applicability or compliance.';
+      trace.push({tool:'explain_nutrient_content_claim',reason:'Attach dated FSSAI claim context without treating the local corpus as current law.',status:'current applicability unresolved; live official research required'});
+    }
   }else if(transFatTopic){
     answerIntent='trans-fat evidence and label observation';
     const transFatLinePattern=/\btrans[\s-]?fats?(?:ty)?(?:[\s-]+acids?)?\b|\bTFAs?\b|\bpartially[\s-]+hydrogenated\b|\bhydrogenated[\s-]+(?:vegetable[\s-]+)?oils?\b/i;
@@ -277,6 +307,20 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     answerIntent='current product context';answer='This local audit has not checked current alternatives, stock, reviews or brand events. A current source matching the product and your location is the decisive next evidence.';
   }else if(asksAllergenLabelMeaning){
     answerIntent='precautionary allergen label wording';answer='FSSAI distinguishes a separate “Contains [allergen]” declaration for specified allergenic ingredients from a separate “May Contains [allergen]” declaration for allergen presence due to cross-contamination. Its FAQ says similar-meaning wording may also be used, such as “May contain traces of [allergen]” or a statement that the product is made in a facility that processes it. This explains label wording only: it does not establish actual allergen presence, amount or exposure, individual risk or safety, or package compliance. Current applicability to an exact package requires live checking of official regulations and later directions.';
+  }else if(asksNutrientClaimCompliance){
+    answerIntent='nutrient-content claim applicability';
+    const evidence=addNutrientClaimFinding(relevantClaimGuidance);
+    answer=`This local audit does not determine whether the package qualifies for or complies with the claim. ${relevantClaimGuidance.map(topic=>`${topic.label}: ${topic.criteria}.`).join(' ')}${evidence.rows.length?' The linked package text is an unverified reading, not a verified nutrient value or compliance result.':' No matching claim line is retained in this package record.'} The applicable basis, product facts and current regulatory status require independent official review.`;
+    limitations.push('Nutrient-content claim explanations do not determine whether a package meets claim criteria or current legal requirements.');
+    trace.push({tool:'explain_nutrient_content_claim',reason:'Provide generic criteria while withholding a package-compliance decision.',status:'no product-compliance classification'});
+  }else if(asksNutrientContentClaimMeaning){
+    answerIntent='nutrient-content claim wording';
+    const evidence=addNutrientClaimFinding(relevantClaimGuidance);
+    const criteria=relevantClaimGuidance.map(topic=>`${topic.label}: ${topic.criteria}.`).join(' ');
+    const rdaContext=relevantClaimGuidance.some(topic=>topic.key==='high-protein')?' The protein criteria use RDA percentages; no RDA or reference group is inferred here.':'';
+    answer=`FSSAI’s Version IV Advertising and Claims compendium (14 December 2022) lists these generic criteria: ${criteria}${evidence.rows.length?` The recorded package line is ${evidence.rows.slice(0,3).map(observation=>`“${observation.text.slice(0,200)}${observation.text.length>200?'…':''}” (${observation.origin==='ocr'?'OCR observation':observation.origin==='user'?'user-entered observation':'recorded observation'})`).join('; ')}; it may be misread or transcribed incorrectly.`:' No matching claim wording is retained in this package record, so this is a general explanation.'}${rdaContext} The FSSAI amendment index checked on 22 October 2026 lists three amendments, latest dated 13 December 2022. This dated explanation does not determine which product basis applies, classify the food, verify any OCR value, or establish whether the product makes or meets the claim. It does not establish current legal status.`;
+    limitations.push('Dated FSSAI nutrient-content claim criteria explain wording only; they do not validate package values, infer an RDA or determine current compliance.');
+    trace.push({tool:'explain_nutrient_content_claim',reason:'Match supported claim wording to dated FSSAI criteria; retain any package line as unverified evidence.',status:'source-backed deterministic explanation; no compliance classifier'});
   }else if(wholeDietCarbohydrateGuidance){
     answerIntent='whole-diet carbohydrate guidance';
     const fibreGuidance=/\bfib(?:er|re)\b/i.test(question);

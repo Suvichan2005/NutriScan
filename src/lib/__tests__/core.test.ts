@@ -439,6 +439,46 @@ describe('nutrition numerical invariants',()=>{
     expect(audit.limitations.join(' ')).toMatch(/Static corpus entries do not establish current law/i);
     expect(audit.sources.map(source=>source.id)).toContain('fssai-labelling-allergen-faq-2023');
   });
+  it('explains a recorded high-protein claim using dated FSSAI criteria without scoring the package',()=>{
+    const pkg=parseLabel('Oat snack\nHigh protein\nPer 100 g\nProtein 8 g',{origin:'user'});
+    const claimObservation=pkg.observations.find(observation=>observation.field==='claim'&&observation.text==='High protein')!;
+    const audit=buildAudit(pkg,30,'g',defaultProfile,'What does this claim mean?');
+    const reference=audit.findings.find(finding=>finding.title==='FSSAI nutrient-content claim wording (dated reference)');
+
+    expect(audit.answer).toContain('20% of RDA per 100 g for solids');
+    expect(audit.answer).toContain('10% per 100 ml for liquids');
+    expect(audit.answer).toContain('10% per 100 kcal');
+    expect(audit.answer).toContain('20% per serving');
+    expect(audit.answer).toContain('“High protein” (user-entered observation)');
+    expect(audit.answer).toMatch(/does not infer an applicable RDA|no RDA or reference group is inferred/i);
+    expect(audit.answer).toMatch(/does not determine which product basis applies.*establish whether the product makes or meets the claim/i);
+    expect(audit.answer).not.toContain('2.4 g protein');
+    expect(reference?.status).toBe('uncertain');
+    expect(reference?.observationIds).toContain(claimObservation.id);
+    expect(reference?.sourceIds).toEqual(['fssai-advertising-claims-compendium-2022','fssai-advertising-claims-amendment-index']);
+    expect(audit.sources.map(source=>source.id)).toEqual(expect.arrayContaining(reference!.sourceIds));
+  });
+  it.each([
+    ['high/rich fibre','6 g per 100 g for solids','3 g per 100 ml for liquids','3 g per 100 kcal'],
+    ['low sugars','not more than 5 g of sugars per 100 g for solids','2.5 g per 100 ml for liquids','No matching claim wording is retained'],
+  ])('explains the dated %s criteria without inferring label values', (claim,...phrases)=>{
+    const audit=buildAudit(label('Per 100 g\nFibre 8 g\nSugars 4 g'),30,'g',defaultProfile,`What does ${claim} mean?`);
+    for(const phrase of phrases)expect(audit.answer).toContain(phrase);
+    expect(audit.answer).toMatch(/general explanation|dated criteria do not determine/i);
+    expect(audit.sources.map(source=>source.id)).toEqual(expect.arrayContaining(['fssai-advertising-claims-compendium-2022','fssai-advertising-claims-amendment-index']));
+    expect(audit.trace.find(entry=>entry.tool==='explain_nutrient_content_claim')?.status).toContain('no compliance classifier');
+  });
+  it('does not classify package claim compliance and keeps current-rule questions unresolved',()=>{
+    const pkg=label('High protein\nPer 100 g\nProtein 8 g');
+    const notClassified=buildAudit(pkg,30,'g',defaultProfile,'Does this high protein package meet FSSAI criteria?');
+    expect(notClassified.answer).toMatch(/does not determine whether the package qualifies for or complies/i);
+    expect(notClassified.answer).not.toMatch(/the package (?:does|does not) qualify|the claim is compliant/i);
+    const current=buildAudit(pkg,30,'g',defaultProfile,'Is this high protein package compliant under current FSSAI rules?');
+    expect(current.answer).toMatch(/Current legal or regulatory status is unresolved/i);
+    expect(current.answer).toMatch(/does not establish current applicability or compliance/i);
+    expect(current.sources.map(source=>source.id)).toEqual(expect.arrayContaining(['fssai-advertising-claims-compendium-2022','fssai-advertising-claims-amendment-index']));
+    expect(current.trace.some(entry=>entry.tool==='check_regulatory_updates'&&entry.status.includes('live research required'))).toBe(true);
+  });
   it('keeps missing label text unknown instead of inferring its absence',()=>{
     const audit=buildAudit(label('Per 100 g\nSugars 10 g'),30,'g',defaultProfile,'What ingredients are listed?');
     expect(audit.answer).toMatch(/No readable ingredient text is recorded.*does not establish that the package has none/i);
@@ -543,6 +583,11 @@ describe('genuine local evidence retrieval',()=>{
     expect(allergen[0]?.source.summary).toMatch(/“Contains \[allergen\]”.*“May Contains \[allergen\]”/);
     expect(allergen[0]?.source.limitations).toMatch(/current regulation, subsequent amendments or directions/);
     expect(retrieveEvidence('FSSAI regulation May contain allergen cross contamination',5).some(hit=>hit.source.id==='fssai-labelling-display-2020')).toBe(true);
+    const proteinClaim=retrieveEvidence('FSSAI high protein claim threshold');
+    expect(proteinClaim[0]?.source.id).toBe('fssai-advertising-claims-compendium-2022');
+    expect(proteinClaim[0]?.source.summary).toMatch(/20% of RDA per 100 g for solids.*20% per serving/i);
+    const claimIndex=retrieveEvidence('Advertising and Claims FSSAI amendments',5).find(hit=>hit.source.id==='fssai-advertising-claims-amendment-index');
+    expect(claimIndex?.source.summary).toMatch(/three amendments.*13 December 2022/i);
     expect(retrieveEvidence('What does WHO mean by free sugars?')[0]?.source.id).toBe('who-sugars-2015');
     expect(evidenceSources.every(s=>sourceSchema.safeParse(s).success)).toBe(true);
     expect(evidenceSources.every(s=>typeof s.license==='string'&&s.license.trim().length>0)).toBe(true);

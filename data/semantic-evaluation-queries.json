@@ -10,6 +10,7 @@
   {"id":"free-sugar-definition","query":"What does WHO count as free sugars?","relevant":["who-sugars-2015"]},
   {"id":"free-sugar-juice","query":"Do sugars naturally present in honey or fruit juice count as free sugars?","relevant":["who-sugars-2015"]},
   {"id":"free-sugar-package-scope","query":"Can I treat the sugars in one snack as my daily WHO free-sugar amount?","relevant":["who-sugars-2015"]},
+  {"id":"fssai-high-protein-claim","query":"What does high protein mean as a claim on an Indian packaged food label?","relevant":["fssai-advertising-claims-compendium-2022"]},
   {"id":"sweetener-exact","query":"WHO non-sugar sweeteners weight control guideline existing diabetes exclusion","relevant":["who-nss"]},
   {"id":"sweetener-paraphrase","query":"Does replacing sugar with artificial sweet taste help prevent obesity?","relevant":["who-nss"]},
   {"id":"sucralose-exact","query":"INS 955","relevant":["fao-955"]},

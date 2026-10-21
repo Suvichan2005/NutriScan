@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-nutrient-content-claim-browser-acceptance",
+  "generatedAt": "2026-10-21T19:03:00.004Z",
+  "evidenceClass": "synthetic typed-label product-flow acceptance; not photo accuracy, held-out retrieval, current legal verification, or model behavior",
+  "baseOrigin": "http://127.0.0.1:3400",
+  "providerCalls": 0,
+  "outcomes": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "syntheticTypedLabel": true,
+      "criteriaExplained": true,
+      "labelTextStaysUnverified": true,
+      "noComplianceVerdict": true,
+      "compendiumVisible": true,
+      "amendmentIndexVisible": true,
+      "currentStatusAbstained": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "providerCalls": [],
+      "nonLoopbackRequests": []
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "syntheticTypedLabel": true,
+      "criteriaExplained": true,
+      "labelTextStaysUnverified": true,
+      "noComplianceVerdict": true,
+      "compendiumVisible": true,
+      "amendmentIndexVisible": true,
+      "currentStatusAbstained": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "providerCalls": [],
+      "nonLoopbackRequests": []
+    }
+  ],
+  "passed": true
+}
