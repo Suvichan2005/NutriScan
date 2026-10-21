@@ -222,7 +222,7 @@ try {
     await page.getByRole('button', { name: 'Send follow-up' }).click();
     await page.locator('.conversation .user-message').filter({ hasText: 'What remains uncertain?' }).waitFor({ state: 'visible', timeout: 20_000 });
     const uncertaintyAnswer = (await page.locator('.conversation .assistant-message').last().innerText()).trim();
-    const uncertaintyFollowUpUsesPackageEvidence = /unresolved points/i.test(uncertaintyAnswer) && /product name was not established/i.test(uncertaintyAnswer) && /OCR readings remain unverified/i.test(uncertaintyAnswer);
+    const uncertaintyFollowUpUsesPackageEvidence = /readings need a closer look/i.test(uncertaintyAnswer) && /product name could not be established/i.test(uncertaintyAnswer) && /label-reading notes and original observations/i.test(uncertaintyAnswer) && /OCR is unverified/i.test(uncertaintyAnswer) && uncertaintyAnswer.length < 330 && !/parser diagnostic|numeric candidate/i.test(uncertaintyAnswer);
     await page.locator('.conversation').screenshot({ path: path.join(captureDir, `${prefix}-04-follow-up.png`) });
 
     await page.getByRole('button', { name: 'Correct a value' }).click();
@@ -293,6 +293,7 @@ try {
       localOcrRegionInspectionWorks,
       localOcrRegionInspectionMadeNoHttpRequest,
       uncertaintyFollowUpUsesPackageEvidence,
+      uncertaintyAnswerLength: uncertaintyAnswer.length,
       followUpMessages: await page.locator('.conversation .assistant-message').count(),
       correctionApplied: correctedText.toLowerCase().includes('corrected'),
       originalObservationsRetained: retainedObservations,

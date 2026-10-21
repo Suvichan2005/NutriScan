@@ -385,23 +385,26 @@ describe('nutrition numerical invariants',()=>{
   it('summarizes conflicting package readings without choosing one and cites their observations',()=>{
     const pkg=label('Per 100 g\nSodium 850 mg\nSodium 85 mg\nIngredients: oats\nContains: milk');
     const audit=buildAudit(pkg,30,'g',defaultProfile,'What remains uncertain?');
-    expect(audit.answer).toMatch(/Sodium needs confirmation/i);
-    expect(audit.answer).toContain('Sodium 850 mg');expect(audit.answer).toContain('Sodium 85 mg');
-    expect(audit.answer).toMatch(/not proof that information is absent|OCR readings remain unverified/i);
+    expect(audit.answer).toMatch(/Sodium readings need a closer look/i);
+    expect(audit.answer).not.toContain('Sodium 850 mg');expect(audit.answer).not.toContain('Sodium 85 mg');
+    expect(audit.answer).toMatch(/unclear values are not zero.*panels outside these photos remain unknown/i);
     const summary=audit.findings.find(item=>item.title==='Unresolved package evidence');
     expect(summary?.status).toBe('conflict');
     expect(summary?.observationIds).toEqual(expect.arrayContaining(pkg.nutrients.flatMap(nutrient=>nutrient.observationIds)));
+    expect(pkg.observations.filter(observation=>summary?.observationIds.includes(observation.id)).map(observation=>observation.text)).toEqual(expect.arrayContaining(['Sodium 850 mg','Sodium 85 mg']));
+    expect(audit.answer.length).toBeLessThan(400);
   });
   it('reports a rejected nutrient row and its original observation as unresolved',()=>{
     const pkg=label('Per 100 g\nProtein <0.5 g\nIngredients: oats\nContains: milk');
     expect(pkg.nutrients.some(nutrient=>nutrient.key==='protein')).toBe(false);
     expect(pkg.parserDiagnostics?.some(diagnostic=>diagnostic.field==='protein'&&diagnostic.decision==='rejected')).toBe(true);
     const audit=buildAudit(pkg,30,'g',defaultProfile,'What is unknown about this package?');
-    expect(audit.answer).toMatch(/Protein row.*approximate or bounded amount/i);
-    expect(audit.answer).toContain('Protein <0.5 g');
+    expect(audit.answer).toMatch(/Protein reading needs a closer look/i);
+    expect(audit.answer).not.toContain('Protein <0.5 g');
     const summary=audit.findings.find(item=>item.title==='Unresolved package evidence');
     const rejectedRowId=pkg.parserDiagnostics!.find(diagnostic=>diagnostic.field==='protein')!.sourceObservationIds[0];
     expect(summary?.observationIds).toContain(rejectedRowId);
+    expect(pkg.observations.find(observation=>observation.id===rejectedRowId)?.text).toBe('Protein <0.5 g');
   });
   it('describes a clear recorded extraction without claiming OCR or uncaptured panels are verified',()=>{
     const pkg=label('Known oat snack\nPer 100 g\nProtein 8 g\nIngredients: oats\nContains: milk');

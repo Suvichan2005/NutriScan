@@ -472,3 +472,13 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - Installed Chrome confirms the actual local source flow at mobile and desktop sizes, including links, source scope and abstentions. The run uses eight evidence requests per viewport and waits for the server's 12-per-minute local budget to reset between viewports. All 16 requests returned HTTP 200; Axe violations, page errors and non-loopback requests were zero.
 - The existing private GitHub repository is verified empty/private. The 149-commit history present before this checkpoint remains unpublished: two tracked historical screenshots contain package photographs with unresolved reuse rights. The scanner found no literal credential; its only candidate is the expected server-side environment-variable reference. Resolve by documenting image-specific permission or by obtaining explicit owner approval for a narrowly scoped screenshot replacement in history; keep the original local evidence. No rewrite, deletion or push was performed.
 - Full suite: 363 tests across 41 files; TypeScript and the six-test Knowledge module suite pass. Gemini remains disabled.
+
+## 22 October 2026 — keep the OCR-to-assist evidence seam unchanged
+
+- The existing shared observation and parser-diagnostic schemas already carry ordered OCR lines, word boxes/confidence, image/capture provenance, and rejected or conflicting numeric/basis candidates into the consented assist payload. Duplicate `rawText` is removed only on exact line-by-line equivalence.
+- Keep evidence-linked synthesis enabled with exact cited spans and a visible limitation that citation matching does not prove entailment. Keep direct quotes and tentative candidates; do not promote inferred label content into package facts. Image inspection remains a separate consented request. No contract change or Gemini call was justified by this audit.
+
+## 22 October 2026 — summarize uncertainty without discarding OCR evidence
+
+- Keep the deterministic follow-up question-focused: name unresolved fields and missing package panels, then direct the user to the detailed label notes and original observations. Preserve conflict/rejection evidence in the package ledger and finding links; do not repeat parser-internal wording in the conversational answer.
+- A same-image Chrome run reduced this answer from 953 to 319 characters at mobile and desktop sizes. This measures response length only; OCR accuracy remained 1/9 exact on the single-human-read development image. Gemini stays disabled.
