@@ -84,7 +84,7 @@ export async function readImages(assets:ImageAsset[],onProgress:(label:string,pr
    const capturesForImage:OcrCapture={runId,imageId:assets[i].id,side:assets[i].side,sourceImage:{width:assets[i].width,height:assets[i].height},preparedImage,bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'tesseract.js',version:BROWSER_OCR_ENGINE_VERSION,language:'eng',confidenceScale:'0-100',segmentationMode},processing:{rotation,contrast:options.contrast,invert:options.invert??false,cropPercent:crop?{x:crop.x,y:crop.y,width:crop.width,height:crop.height}:null}};
    captures.push(capturesForImage);
    for(const [blockIndex,block] of (result.data.blocks??[]).entries()) for(const [paragraphIndex,paragraph] of (block.paragraphs??[]).entries()) for(const [lineIndex,line] of (paragraph.lines??[]).entries()){
-    observations.push({id:crypto.randomUUID(),field:'ocr-line',text:line.text,side:assets[i].side,confidence:line.confidence,bbox:line.bbox,origin:'ocr',imageId:assets[i].id,readingOrder:{runId,blockIndex,paragraphIndex,lineIndex}});
+    observations.push({id:crypto.randomUUID(),field:'ocr-line',text:line.text,side:assets[i].side,confidence:line.confidence,bbox:line.bbox,ocrWords:line.words.map((word,wordIndex)=>({wordIndex,text:word.text,confidence:Number.isFinite(word.confidence)?word.confidence:null,bbox:word.bbox})),origin:'ocr',imageId:assets[i].id,readingOrder:{runId,blockIndex,paragraphIndex,lineIndex}});
    }
   }
   if(cancelled)throw new Error('Reading stopped. Your photos are still here.');

@@ -99,6 +99,21 @@ try {
     await page.locator('.results-section').screenshot({ path: path.join(captureDir, `${prefix}-03-findings.png`) });
     await axe('findings');
 
+    const exportPromise = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Export evidence report' }).click();
+    const exportedStream = await (await exportPromise).createReadStream();
+    if (!exportedStream) throw new Error(`${prefix}: evidence export could not be read in memory.`);
+    const exportChunks: Buffer[] = [];
+    for await (const chunk of exportedStream) exportChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    const exported = JSON.parse(Buffer.concat(exportChunks).toString('utf8')) as { package: { observations: Array<{ field: string; imageId?: string; ocrWords?: Array<{ bbox: { x0: number; y0: number; x1: number; y1: number } }> }>; ocrCaptures?: Array<{ imageId: string; preparedImage: { width: number; height: number } }> } };
+    const exportedOcrLines = exported.package.observations.filter((item) => item.field === 'ocr-line');
+    const exportedOcrWords = exportedOcrLines.flatMap((item) => item.ocrWords ?? []);
+    const captures = new Map((exported.package.ocrCaptures ?? []).map((item) => [item.imageId, item]));
+    const ocrWordGeometryWithinCapture = exportedOcrWords.length > 0 && exportedOcrLines.every((line) => {
+      const capture = line.imageId ? captures.get(line.imageId) : undefined;
+      return !line.ocrWords?.length || !!capture && line.ocrWords.every((word) => word.bbox.x1 <= capture.preparedImage.width && word.bbox.y1 <= capture.preparedImage.height);
+    });
+
     const initialUserMessages = await page.locator('.conversation .user-message').allTextContents();
     const initialQuestionRetained = initialUserMessages.some((message) => message.trim() === 'What does this package show for saturated fat?');
     await page.getByLabel('Ask about this package').fill('What remains uncertain?');
@@ -148,6 +163,9 @@ try {
       selectedNameLineConfidence: nameObservationConfidence,
       packageName,
       ocrObservations: observations,
+      exportedOcrLines: exportedOcrLines.length,
+      exportedOcrWordBoxes: exportedOcrWords.length,
+      ocrWordGeometryWithinCapture,
       parsedNutrientRows: parsedRows,
       addPhotoActionVisible,
       addPhotoPickerOpened,
@@ -179,7 +197,7 @@ try {
   const receipt = { schemaVersion: 1, kind: 'core-intake-to-audit-design-review', generatedAt: new Date().toISOString(), captureTool: 'Playwright using installed Chrome', appOrigin: origin.origin, acceptanceMode: process.env.NUTRISCAN_ACCEPTANCE_MODE ?? 'loopback local application', photoFile, screenshots: 'docs/evidence/private/core-journey-audit', outcomes: results };
   await writeFile('docs/evidence/core-journey-audit.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/core-journey-audit.json', screenshotDirectory: 'docs/evidence/private/core-journey-audit', outcomes: results }, null, 2));
-  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
+  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.ocrWordGeometryWithinCapture || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
 } finally {
   await browser.close();
 }

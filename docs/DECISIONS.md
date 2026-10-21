@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 21 October 2026 — preserve word-level OCR evidence for future interpretation
+
+- Keep Tesseract's recognized words, word order, engine-reported confidence and prepared-image bounding boxes nested on their original OCR line records. Preserve full line text unchanged for existing parser behavior and citation spans.
+- Validate that word boxes remain inside the capture's recorded prepared-image dimensions and that word details only appear on ordered OCR lines. Continue to treat token confidence as recognition metadata, not factual certainty.
+- Do not add a production table-cell structure: the current reader does not reconstruct cells. Do not retain image bytes or introduce a stable image hash in package records. A future provider can inspect the supplied raw lines, words, parser diagnostics and retrieved evidence; any image inspection remains a separate explicit consent step.
+- Fresh Chrome/Playwright export of the known development-only Saffola photo retained 16 OCR lines and 95 word boxes at mobile and desktop sizes. This verifies the browser-to-export data path only; numeric extraction stayed at one parsed row, with no new accuracy claim. Gemini remained disabled.
+
 ## 21 October 2026 — preserve OCR provenance and support cautious synthesis
 
 - Keep every captured OCR line in the package evidence ledger. Add explicit per-image reading order, source/prepared dimensions, coordinate space, Tesseract.js version/language/segmentation, and preprocessing settings so bounding boxes and confidence remain interpretable across crops and rotations.

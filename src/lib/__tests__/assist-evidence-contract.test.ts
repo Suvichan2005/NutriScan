@@ -11,7 +11,7 @@ const runId='ocr-run-1';
 const lines=['Nutrition information','Per 100 g','Protein approx 8.8 g','Sodium 850 mg','Sodium 85 mg'];
 const observations=lines.map((text,lineIndex)=>({
   id:`line-${lineIndex}`,field:'ocr-line' as const,text,side:'back' as const,confidence:lineIndex===2?51:91,origin:'ocr' as const,imageId,
-  bbox:{x0:12,y0:lineIndex*40,x1:230,y1:lineIndex*40+22},readingOrder:{runId,blockIndex:0,paragraphIndex:0,lineIndex}
+  bbox:{x0:12,y0:lineIndex*40,x1:230,y1:lineIndex*40+22},...(lineIndex===2?{ocrWords:[{wordIndex:0,text:'Protein',confidence:93,bbox:{x0:12,y0:80,x1:105,y1:102}},{wordIndex:1,text:'approx',confidence:44,bbox:{x0:112,y0:80,x1:166,y1:102}},{wordIndex:2,text:'8.8',confidence:49,bbox:{x0:172,y0:80,x1:200,y1:102}},{wordIndex:3,text:'g',confidence:68,bbox:{x0:205,y0:80,x1:218,y1:102}}]}:{ }),readingOrder:{runId,blockIndex:0,paragraphIndex:0,lineIndex}
 }));
 const capture={
   runId,imageId,side:'back' as const,sourceImage:{width:1200,height:1800},preparedImage:{width:2000,height:3000},bboxCoordinateSpace:'prepared-image-pixels' as const,
@@ -47,6 +47,23 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(assistInput.safeParse({...base,images:[{...matching,height:1801}]}).success).toBe(false);
   });
 
+  it('keeps word text, recognition scores, layout and order inside each original OCR line',()=>{
+    const pkg=makePackage();
+    const rawLine=pkg.observations.find(item=>item.id==='line-2')!;
+    expect(rawLine.text).toBe('Protein approx 8.8 g');
+    expect(rawLine.ocrWords).toEqual([
+      {wordIndex:0,text:'Protein',confidence:93,bbox:{x0:12,y0:80,x1:105,y1:102}},
+      {wordIndex:1,text:'approx',confidence:44,bbox:{x0:112,y0:80,x1:166,y1:102}},
+      {wordIndex:2,text:'8.8',confidence:49,bbox:{x0:172,y0:80,x1:200,y1:102}},
+      {wordIndex:3,text:'g',confidence:68,bbox:{x0:205,y0:80,x1:218,y1:102}}
+    ]);
+    const assistData=assistInput.parse({consent:true,question:'What did the row appear to say?',package:pkg});
+    expect(assistData.package.observations.find(item=>item.id==='line-2')?.ocrWords).toEqual(rawLine.ocrWords);
+    expect(packageSchema.safeParse({...pkg,observations:pkg.observations.map(item=>item.id==='line-2'?{...item,ocrWords:[{wordIndex:0,text:'outside',confidence:90,bbox:{x0:12,y0:80,x1:2001,y1:102}}]}:item)}).success).toBe(false);
+    expect(packageSchema.safeParse({...pkg,observations:pkg.observations.map(item=>item.id==='line-2'?{...item,ocrWords:[{wordIndex:0,text:'Protein',confidence:90,bbox:{x0:12,y0:80,x1:105,y1:102}},{wordIndex:0,text:'approx',confidence:44,bbox:{x0:112,y0:80,x1:166,y1:102}}]}:item)}).success).toBe(false);
+    expect(packageSchema.safeParse({...pkg,observations:pkg.observations.map(item=>item.id==='line-2'?{...item,ocrWords:[{wordIndex:1,text:'Protein',confidence:90,bbox:{x0:12,y0:80,x1:105,y1:102}},{wordIndex:0,text:'approx',confidence:44,bbox:{x0:112,y0:80,x1:166,y1:102}}]}:item)}).success).toBe(false);
+  });
+
   it('accepts text-only or restored scans without requiring live browser image handles',()=>{
     const pkg=parseLabel('Nutrition information\nSugars 4 g',{origin:'user'});
     expect(pkg.ocrCaptures).toBeUndefined();
@@ -68,7 +85,7 @@ describe('OCR-to-assist evidence contract',()=>{
     const pkg=makePackage();
     expect(pkg.rawText).toBe(lines.join('\n'));
     expect(pkg.observations.filter(item=>item.field==='ocr-line').map(item=>item.text)).toEqual(lines);
-    expect(pkg.observations.find(item=>item.id==='line-2')).toMatchObject({confidence:51,imageId,readingOrder:{runId,lineIndex:2},bbox:{x0:12,y0:80}});
+    expect(pkg.observations.find(item=>item.id==='line-2')).toMatchObject({confidence:51,imageId,readingOrder:{runId,lineIndex:2},bbox:{x0:12,y0:80},ocrWords:[{wordIndex:0,text:'Protein'},{wordIndex:1,text:'approx'},{wordIndex:2,text:'8.8'},{wordIndex:3,text:'g'}]});
     expect(pkg.ocrCaptures).toEqual([capture]);
     const protein=pkg.parserDiagnostics?.find(item=>item.field==='protein');
     expect(protein).toMatchObject({decision:'rejected',reasonCodes:['approximate-or-bounded'],numericCandidates:[{rawValueText:'8.8',value:8.8,unit:'g'}]});
@@ -91,7 +108,7 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(data.package.rawText).toBe(pkg.rawText);
     expect(data.package.ocrCaptures).toEqual(pkg.ocrCaptures);
     expect(data.package.parserDiagnostics).toEqual(pkg.parserDiagnostics);
-    expect(data.package.observations.find(item=>item.id==='line-2')).toMatchObject({origin:'ocr',imageId,readingOrder:{runId,lineIndex:2},bbox:{x0:12,y0:80},confidence:51});
+    expect(data.package.observations.find(item=>item.id==='line-2')).toMatchObject({origin:'ocr',imageId,readingOrder:{runId,lineIndex:2},bbox:{x0:12,y0:80},confidence:51,ocrWords:[{wordIndex:0,text:'Protein'},{wordIndex:1,text:'approx'},{wordIndex:2,text:'8.8'},{wordIndex:3,text:'g'}]});
     expect(data.images?.[0].handle).toBe(data.package.ocrCaptures?.[0].imageId);
     const span={kind:'observation' as const,id:'line-2',quote:'Protein approx 8.8 g'};
     const result=validateClaims({

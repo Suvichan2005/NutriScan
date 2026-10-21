@@ -1,5 +1,13 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — retain word-level OCR evidence through the product flow
+
+- The audit confirmed existing assist readiness for ordered raw lines, line confidence and geometry, capture settings, parser rejection/conflict provenance, retrieved evidence, tentative structured candidates and labeled conversational synthesis. Gemini is still disabled; this was a local contract review only.
+- Added per-word OCR text, word order, engine confidence and prepared-image boxes to the existing raw-line observation. Strict package checks bind those boxes to the matching capture; the text parser and confirmed nutrient records are unchanged.
+- Offline tests checked token preservation through assist parsing, geometry bounds, and duplicate word-index rejection. Full suite: 289 tests across 32 files; typecheck passed.
+- Fresh Chrome/Playwright used the existing loopback app and known development-only Saffola image at 390×844 and 1440×900. Its in-memory JSON export retained 16 OCR lines and 95 word boxes per run, all within capture bounds. One nutrient row remained parsed, matching prior evidence. Axe violations, page errors, off-loopback requests and provider calls were zero. This proves payload integration, not accuracy.
+- Export was inspected in memory; no source photo or raw export was written into the tracked repository. The existing private image stayed under ignored evidence storage.
+
 ## 2026-10-21 — close raw OCR provenance and synthesis contract gaps
 
 - Audited the assist payload and confirmed that current browser reads retain each OCR line's text, confidence, block/paragraph/line order, prepared-image bounding box, capture settings, image ID, parser decisions/candidate values, and retrieved evidence/calculations. The text-assist request includes this structured record and session image handles; it excludes photo bytes. Image/crop transmission remains a separate consented action.
