@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "kind": "local-semantic-retrieval-boundary-diagnostic",
-  "generatedAt": "2026-10-21T06:38:39.842Z",
-  "queryCount": 11,
+  "generatedAt": "2026-10-21T11:26:35.828Z",
+  "queryCount": 12,
   "modelMode": "pinned local MiniLM embeddings plus lexical ranking",
   "results": [
     {
@@ -62,9 +62,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-carbohydrate-2023",
-      "semanticScore": 0.54137,
+      "semanticScore": 0.54017,
       "lexicalScore": 1,
-      "hybridScore": 0.58724,
+      "hybridScore": 0.58616,
       "expectedBehaviorMet": true
     },
     {
@@ -74,9 +74,9 @@
       ],
       "status": "ok",
       "topSourceId": "fao-955",
-      "semanticScore": 0.36751,
+      "semanticScore": 0.36571,
       "lexicalScore": 1,
-      "hybridScore": 0.43076,
+      "hybridScore": 0.42914,
       "expectedBehaviorMet": true
     },
     {
@@ -87,9 +87,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-carbohydrate-2023",
-      "semanticScore": 0.61568,
+      "semanticScore": 0.61433,
       "lexicalScore": 1,
-      "hybridScore": 0.65411,
+      "hybridScore": 0.6529,
       "expectedBehaviorMet": true
     },
     {
@@ -99,9 +99,21 @@
       ],
       "status": "ok",
       "topSourceId": "who-sodium",
-      "semanticScore": 0.56715,
+      "semanticScore": 0.57539,
       "lexicalScore": 1,
-      "hybridScore": 0.61044,
+      "hybridScore": 0.61785,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "free-sugar-definition",
+      "relevant": [
+        "who-sugars-2015"
+      ],
+      "status": "ok",
+      "topSourceId": "who-sugars-2015",
+      "semanticScore": 0.57669,
+      "lexicalScore": 1,
+      "hybridScore": 0.61902,
       "expectedBehaviorMet": true
     },
     {

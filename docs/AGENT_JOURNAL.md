@@ -95,3 +95,10 @@
 - Added exact-span citations for nonempty user-declared profile fields, so a future grounded paraphrase can explain relevance without representing profile text as verified health evidence.
 - Offline assist-contract checks confirm OCR text, order, geometry, confidence, capture metadata, image linkage, and parser conflicts survive request validation; profile claims need exact context spans, while tentative candidates remain tied to OCR lines and retrieved sources.
 - Typecheck and 279 tests across 31 files passed. Gemini remains disabled; no provider request, photo accuracy claim, browser integration or production build is claimed for this contract change.
+
+## 2026-10-21 — add WHO free-sugars guidance to the working evidence path
+
+- Added an original short source record for WHO's sugars guideline and explicit scope limits; connected the new record to deterministic audit references and local MiniLM retrieval without equating package total sugars with whole-diet free sugars.
+- Rebuilt the index from the already-cached local model. On 18 developer-authored queries, hybrid Top-1 and Recall@3 were 18/18; all 12 boundary probes matched expected behavior. These are development measurements, not independent retrieval validation.
+- Chrome/Playwright checked source attribution, guideline summary and scope at 390×844 and 1440×900. Six local route responses were HTTP 200; unrelated/current-law queries abstained, with zero Axe violations, page errors or off-loopback browser requests. No OCR/photo or Gemini behavior was tested.
+- The full suite passed 280 tests across 31 files; TypeScript typecheck and `git diff --check` passed. No optimized build or provider call was performed.

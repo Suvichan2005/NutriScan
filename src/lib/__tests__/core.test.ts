@@ -385,8 +385,20 @@ describe('genuine local evidence retrieval',()=>{
     expect(fibre[0]?.source.summary).toMatch(/400 g\/day of vegetables and fruits/);
     expect(fibre[0]?.source.limitations).toMatch(/cannot be directly equated with a packaged-food fibre declaration/);
     expect(fibre[0]?.source.url).toBe('https://www.who.int/publications/i/9789240073593');
+    expect(retrieveEvidence('What does WHO mean by free sugars?')[0]?.source.id).toBe('who-sugars-2015');
     expect(evidenceSources.every(s=>sourceSchema.safeParse(s).success)).toBe(true);
     expect(()=>retrieveEvidence('query',0)).toThrow();
+  });
+  it('retrieves WHO free-sugar guidance without treating total package sugars as daily free sugars',()=>{
+    const audit=buildAudit(label('Per 100 g\nSugars 12 g\nAdded sugars 5 g'),30,'g',defaultProfile,'What does WHO mean by free sugars?');
+    expect(audit.calculations.find(calculation=>calculation.nutrient==='sugars')?.result).toBe(3.6);
+    expect(audit.calculations.find(calculation=>calculation.nutrient==='addedSugars')?.result).toBe(1.5);
+    const source=audit.sources.find(item=>item.id==='who-sugars-2015');
+    expect(source?.summary).toMatch(/less than 10% of total daily energy/i);
+    expect(source?.summary).toMatch(/fruit-juice concentrates/i);
+    expect(source?.limitations).toMatch(/not a product threshold/i);
+    expect(audit.findings.some(finding=>finding.sourceIds.includes('who-sugars-2015'))).toBe(true);
+    expect(audit.answer).not.toMatch(/3\.6 g.*free sugars/i);
   });
   it('does not apply WHO prevention recommendation as existing-diabetes advice',()=>{
     const audit=buildAudit(label('Ingredients: sucralose (INS 955)\nPer 100 g\nSugars 0 g'),30,'g',{...defaultProfile,healthConsiderations:'User-supplied health context'},'Is sucralose safe?');

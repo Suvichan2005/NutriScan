@@ -45,7 +45,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const userContext=profileText(profile);
   const explicitlyUnder18=isExplicitlyUnder18(profile.ageGroup);
   const askedAdditives=detectAdditives(question);
-  const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|ICMR|\bNIN\b/i.test(question)||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
+  const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|\bfree sugars?\b|\badded sugars?\b|ICMR|\bNIN\b/i.test(question)||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
   const trace:Audit['trace']=[{tool:'reuse_package_observations',reason:'Use the current label evidence for this question; no rescan required.',status:`${pkg.observations.length} observations`},{tool:'calculate_portions',reason:'Scale only unambiguous values with compatible explicit bases.',status:'local deterministic calculation'}];
   const finding=(data:Omit<Finding,'id'>)=> {data.sourceIds.forEach(s=>sourceIds.add(s));findings.push({...data,id:`finding-${findings.length+1}`});};
   if(pkg.userDescription){
@@ -155,6 +155,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     const intentSources = [
       {id:'who-sodium',matches:/\b(sodium|salt|salty|hypertension|blood pressure)\b/i.test(question)},
       {id:'who-nss',matches:/\b(sweeteners?|sucralose|aspartame|non[- ]sugar|nss)\b/i.test(question)},
+      {id:'who-sugars-2015',matches:/\b(?:free|added) sugars?\b|\bsugars?\b.{0,30}\bfree\b|\b(?:honey|syrups?|fruit juice|fruit juice concentrate)\b|\bWHO\b.{0,40}\bsugars?\b/i.test(question)},
       {id:'niddk-meals',matches:/\b(diabetes|diabetic|blood[- ]glucose)\b/i.test(question)},
       {id:'icmrnin-dgi-2024',matches:/\b(icmr|nin|indian dietary guidelines?|dietary guidelines? for india)\b/i.test(question)},
     ];

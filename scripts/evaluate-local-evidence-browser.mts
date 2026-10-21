@@ -57,6 +57,16 @@ try {
     const whoSourceLink = whoEvidenceCard.getByRole('link').first();
     const whoHref = await whoSourceLink.getAttribute('href');
 
+    await page.getByLabel('Public search terms').fill('What does WHO mean by free sugars?');
+    const whoSugarQuery = await page.getByLabel('Public search terms').inputValue() === 'What does WHO mean by free sugars?';
+    await page.getByRole('button', { name: 'Local evidence search' }).click();
+    const whoSugarCard = page.locator('.research-results article').filter({ hasText: 'Guideline: sugars intake for adults and children' }).first();
+    await whoSugarCard.waitFor({ state: 'visible', timeout: 30_000 });
+    const whoSugarText = await whoSugarCard.innerText();
+    const whoSugarHref = await whoSugarCard.getByRole('link').first().getAttribute('href');
+    const whoSugarScreenshot = `docs/evidence/private/local-evidence/${viewport.width === 390 ? 'mobile' : 'desktop'}-who-free-sugars.png`;
+    await whoSugarCard.screenshot({ path: path.resolve(whoSugarScreenshot) });
+
     await page.getByLabel('Public search terms').fill('What is the weather forecast for Delhi tomorrow?');
     await page.getByRole('button', { name: 'Local evidence search' }).click();
     const outOfDomainNotice = page.locator('.remote-status').filter({ hasText: 'No local source candidate cleared the conservative relevance floor' });
@@ -89,6 +99,11 @@ try {
       whoGuidelineVisible: /at least 25 g\/day of naturally occurring dietary fibre/.test(whoSourceText) && /400 g\/day of vegetables and fruits/.test(whoSourceText),
       whoOfficialSourceLink: whoHref === 'https://www.who.int/publications/i/9789240073593',
       whoPackageScopeLimitVisible: /cannot be directly equated with a packaged-food fibre declaration/i.test(whoSourceText),
+      whoSugarQuery,
+      whoFreeSugarGuidelineVisible: /less than 10% of total daily energy/i.test(whoSugarText) && /honey, syrups, fruit juices/i.test(whoSugarText),
+      whoSugarOfficialSourceLink: whoSugarHref === 'https://www.who.int/publications/i/item/9789241549028',
+      whoSugarPackageScopeLimitVisible: /not a product threshold, per-serving target or individualized prescription/i.test(whoSugarText),
+      whoSugarScreenshot,
       unrelatedQueryAbstained,
       currentLawQueryAbstained,
       fssaiQueryAbstained,
@@ -111,11 +126,11 @@ const receipt = {
   generatedAt: new Date().toISOString(),
   browser: 'Chrome via Playwright, headless',
   origin: 'loopback',
-  query: 'INS 955',
-  sourceExpected: 'FAO/WHO Codex additive identity record for sucralose (955).',
+  query: 'INS 955; WHO free-sugars guidance; WHO dietary-fibre guidance',
+  sourceExpected: 'FAO/WHO Codex additive identity record, WHO carbohydrate-quality guidance and WHO free-sugars guideline.',
   limitations: ['Uses explicitly typed queries and a small curated source corpus.', 'The development relevance floor and query-intent guard are not calibrated on independent user queries.', 'Source retrieval is not proof of product ingredients, dose, exposure, safety for an individual or current Indian permission.'],
   outcomes,
 };
 await writeFile('docs/evidence/local-evidence-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
 console.log(JSON.stringify({ receipt: 'docs/evidence/local-evidence-browser.json', outcomes }, null, 2));
-if (outcomes.length !== 2 || outcomes.some((outcome) => !outcome.exactIdentifierQuery || !outcome.officialCodexSourceVisible || !outcome.officialSourceLink || !outcome.publisherAndJurisdictionVisible || !outcome.sourceLimitationsVisible || !outcome.whoFibreQuery || !outcome.whoGuidelineVisible || !outcome.whoOfficialSourceLink || !outcome.whoPackageScopeLimitVisible || !outcome.unrelatedQueryAbstained || !outcome.currentLawQueryAbstained || !outcome.fssaiQueryAbstained || outcome.evidenceRouteStatuses.length < 5 || outcome.evidenceRouteStatuses.some((status) => status !== 200) || !outcome.noNonLoopbackRequests || outcome.axeViolationIds.length || outcome.pageErrors.length)) process.exitCode = 1;
+if (outcomes.length !== 2 || outcomes.some((outcome) => !outcome.exactIdentifierQuery || !outcome.officialCodexSourceVisible || !outcome.officialSourceLink || !outcome.publisherAndJurisdictionVisible || !outcome.sourceLimitationsVisible || !outcome.whoFibreQuery || !outcome.whoGuidelineVisible || !outcome.whoOfficialSourceLink || !outcome.whoPackageScopeLimitVisible || !outcome.whoSugarQuery || !outcome.whoFreeSugarGuidelineVisible || !outcome.whoSugarOfficialSourceLink || !outcome.whoSugarPackageScopeLimitVisible || !outcome.unrelatedQueryAbstained || !outcome.currentLawQueryAbstained || !outcome.fssaiQueryAbstained || outcome.evidenceRouteStatuses.length < 6 || outcome.evidenceRouteStatuses.some((status) => status !== 200) || !outcome.noNonLoopbackRequests || outcome.axeViolationIds.length || outcome.pageErrors.length)) process.exitCode = 1;

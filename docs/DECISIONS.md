@@ -227,7 +227,7 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 ## 21 October 2026 — preserve provenance for salt equivalents and Gemini excerpts
 
 - When a salt-amount question has compatible sodium evidence but no package salt row, expose an explicitly approximate salt equivalent using WHO's published relation of 1 g salt to 400 mg sodium. Keep sodium as the package observation; link the calculation to that observation and WHO source, say the result is not a printed salt declaration, and do not convert across incompatible mass/volume bases. A declared salt row takes precedence.
-- Gemini citation IDs alone are not support. Require each cited observation/source summary to contain a quoted span, require claim text to equal an exact cited span, and rebuild answers from bounded excerpts plus fixed safety copy. This is conservative evidence display rather than synthesis; unsupported paraphrases are withheld. Keep Gemini disabled until owner configuration and actual use are authorized; provider schema compatibility is not live-verified.
+- Initial Gemini boundary: citation IDs alone are not support; each cited observation/source summary needed an exact span, and answers were assembled from bounded evidence. That quote-only fallback was later superseded by the cautious `synthesis` mode recorded in the OCR-provenance decision above: paraphrases may be returned with exact supporting spans and an explicit non-entailment disclosure. Offline schema and validation behavior are tested, but live provider compatibility remains unverified; keep Gemini disabled pending authorization.
 - Added engine regressions and text-only Chrome acceptance at 390×844 and 1440×900. The browser scenario reports 0.375 g equivalent from 500 mg/100 g at 30 g, with zero Axe violations, page errors or off-loopback requests. This is not OCR, package identity or medical-suitability evidence.
 
 ## 21 October 2026 — retain OCR reader after segmentation-mode probe
@@ -252,3 +252,9 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 
 - Keep the main results view readable by grouping unresolved label-reading issues into plain-language copy. Preserve every parser warning under a collapsed label-reading disclosure, with general limitations separate. The short summary must not imply that OCR readings were verified.
 - The fresh Saffola browser journey retained its exact saturated-fat evidence and corrected calculation while showing a shorter uncertainty summary. The 390x844 and 1440x900 run had zero Axe violations, page errors, off-loopback requests or provider calls. No OCR reader or accuracy result changed.
+
+## 21 October 2026 — connect WHO free-sugar guidance to local product questions
+
+- Add the official WHO guideline on sugars intake as an original concise source summary with publication date, retrieval date, global population scope and rights note. Do not reproduce the publication or map a package total-sugars value to a personal daily free-sugar amount.
+- Route explicit free/added-sugar guidance questions to the WHO source in the local audit and MiniLM retrieval while keeping simple nutrient-amount questions on the quick calculation path.
+- Rebuilt corpus version 2026-10-21.5 and measured the 18-case developer query set: hybrid Top-1 18/18, Recall@3 18/18; lexical and semantic Top-1 each 17/18. All 12 local boundary probes met their expected behavior. Mobile/desktop Chrome verified the source card and abstention messages; this is not held-out relevance evidence.
