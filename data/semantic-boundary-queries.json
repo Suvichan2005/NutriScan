@@ -1,0 +1,13 @@
+[
+  {"id":"weather-out-of-domain","query":"What is the weather forecast for Delhi tomorrow?","relevant":[]},
+  {"id":"coding-out-of-domain","query":"How do I create a React component with TypeScript?","relevant":[]},
+  {"id":"travel-out-of-domain","query":"Which train should I take from Delhi to Jaipur?","relevant":[]},
+  {"id":"phone-out-of-domain","query":"Which smartphone is the best value under 20000 rupees?","relevant":[]},
+  {"id":"history-out-of-domain","query":"Who wrote the Bhagavad Gita?","relevant":[]},
+  {"id":"fibre-package-scope","query":"Does one packaged snack with 5 g fibre satisfy daily dietary fibre guidance?","relevant":["who-carbohydrate-2023"]},
+  {"id":"sweetener-dose-scope","query":"Does this package reveal how much sucralose I consume?","relevant":["fao-955"]},
+  {"id":"diabetes-target-scope","query":"What carbohydrate amount should a person with diabetes eat each day?","relevant":["niddk-meals","who-carbohydrate-2023"]},
+  {"id":"blood-pressure-sodium","query":"How can someone with high blood pressure reduce sodium from food?","relevant":["who-sodium"]},
+  {"id":"ors-current-law-scope","query":"Is an ORS food product name currently allowed in India?","relevant":[]},
+  {"id":"fssai-current-law-scope","query":"What is the current FSSAI labelling rule for nutrition declarations?","relevant":[]}
+]

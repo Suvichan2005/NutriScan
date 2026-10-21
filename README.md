@@ -31,6 +31,8 @@ Stop the dev server before `npm start` because both bind port 3400. `npm start` 
 
 An optional French/Spanish model probe is available as `npm run ocr:evaluate:languages`. It requires separately installing the two language packages with the command in the evaluation report. They are not normal project dependencies and are not included in the browser app. A separate `npm run ocr:evaluate:regulatory-pdf` diagnostic checks local OCR on public scanned FSSAI PDFs; it requires Poppler (`pdftoppm`) on `PATH` or an explicit `NUTRISCAN_POPPLER_BIN` path. Its aggregate receipt is not integrated into the product or a verified legal transcript.
 
+The local semantic evidence search uses a conservative 0.30 candidate floor and routes common current-law terms to a no-match message. This development guard is not calibrated on independent user questions and does not replace source applicability review; see [retrieval evaluation](docs/RETRIEVAL_EVALUATION.md).
+
 `npm run ocr:evaluate:preprocessing` compares local upscaling, grayscale and channel-isolation variants on one real label. See the recorded results before changing the production image pipeline.
 
 ## Use

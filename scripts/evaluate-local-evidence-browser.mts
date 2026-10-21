@@ -49,12 +49,31 @@ try {
     const codexSourceLimitationsVisible = /does not establish dose, exposure, safety for an individual, or current Indian permission/i.test(sourceText);
 
     await page.getByLabel('Public search terms').fill('WHO adult naturally occurring dietary fibre 25 g daily');
+    const whoFibreQuery = await page.getByLabel('Public search terms').inputValue() === 'WHO adult naturally occurring dietary fibre 25 g daily';
     await page.getByRole('button', { name: 'Local evidence search' }).click();
     const whoEvidenceCard = page.locator('.research-results article').filter({ hasText: 'Carbohydrate intake for adults and children: WHO guideline' }).first();
     await whoEvidenceCard.waitFor({ state: 'visible', timeout: 30_000 });
     const whoSourceText = await whoEvidenceCard.innerText();
     const whoSourceLink = whoEvidenceCard.getByRole('link').first();
     const whoHref = await whoSourceLink.getAttribute('href');
+
+    await page.getByLabel('Public search terms').fill('What is the weather forecast for Delhi tomorrow?');
+    await page.getByRole('button', { name: 'Local evidence search' }).click();
+    const outOfDomainNotice = page.locator('.remote-status').filter({ hasText: 'No local source candidate cleared the conservative relevance floor' });
+    await outOfDomainNotice.waitFor({ state: 'visible', timeout: 30_000 });
+    const unrelatedQueryAbstained = await page.locator('.research-results article').count() === 0;
+
+    await page.getByLabel('Public search terms').fill('Is an ORS food product name currently allowed in India?');
+    await page.getByRole('button', { name: 'Local evidence search' }).click();
+    const regulatoryNotice = page.locator('.remote-status').filter({ hasText: 'not a current-law source' });
+    await regulatoryNotice.waitFor({ state: 'visible', timeout: 30_000 });
+    const currentLawQueryAbstained = await page.locator('.research-results article').count() === 0;
+
+    await page.getByLabel('Public search terms').fill('What is the current FSSAI labelling rule for nutrition declarations?');
+    await page.getByRole('button', { name: 'Local evidence search' }).click();
+    const fssaiNotice = page.locator('.remote-status').filter({ hasText: 'not a current-law source' });
+    await fssaiNotice.waitFor({ state: 'visible', timeout: 30_000 });
+    const fssaiQueryAbstained = await page.locator('.research-results article').count() === 0;
     const axe = await new AxeBuilder({ page }).analyze();
     const prefix = viewport.width === 390 ? 'mobile' : 'desktop';
     await page.screenshot({ path: path.join(screenshotDirectory, `${prefix}.png`), fullPage: true });
@@ -66,10 +85,13 @@ try {
       officialSourceLink: exactCodexSourceLink,
       publisherAndJurisdictionVisible: codexPublisherAndJurisdictionVisible,
       sourceLimitationsVisible: codexSourceLimitationsVisible,
-      whoFibreQuery: await page.getByLabel('Public search terms').inputValue() === 'WHO adult naturally occurring dietary fibre 25 g daily',
+      whoFibreQuery,
       whoGuidelineVisible: /at least 25 g\/day of naturally occurring dietary fibre/.test(whoSourceText) && /400 g\/day of vegetables and fruits/.test(whoSourceText),
       whoOfficialSourceLink: whoHref === 'https://www.who.int/publications/i/9789240073593',
       whoPackageScopeLimitVisible: /cannot be directly equated with a packaged-food fibre declaration/i.test(whoSourceText),
+      unrelatedQueryAbstained,
+      currentLawQueryAbstained,
+      fssaiQueryAbstained,
       evidenceRouteStatuses: evidenceStatuses,
       noNonLoopbackRequests: nonLoopbackRequests.length === 0,
       axeViolationIds: axe.violations.map((violation) => violation.id).sort(),
@@ -91,9 +113,9 @@ const receipt = {
   origin: 'loopback',
   query: 'INS 955',
   sourceExpected: 'FAO/WHO Codex additive identity record for sucralose (955).',
-  limitations: ['Uses an explicitly typed evidence query and a small curated source corpus.', 'Source retrieval is not proof of product ingredients, dose, exposure, safety for an individual or current Indian permission.'],
+  limitations: ['Uses explicitly typed queries and a small curated source corpus.', 'The development relevance floor and query-intent guard are not calibrated on independent user queries.', 'Source retrieval is not proof of product ingredients, dose, exposure, safety for an individual or current Indian permission.'],
   outcomes,
 };
 await writeFile('docs/evidence/local-evidence-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
 console.log(JSON.stringify({ receipt: 'docs/evidence/local-evidence-browser.json', outcomes }, null, 2));
-if (outcomes.length !== 2 || outcomes.some((outcome) => !outcome.exactIdentifierQuery || !outcome.officialCodexSourceVisible || !outcome.officialSourceLink || !outcome.publisherAndJurisdictionVisible || !outcome.sourceLimitationsVisible || !outcome.whoFibreQuery || !outcome.whoGuidelineVisible || !outcome.whoOfficialSourceLink || !outcome.whoPackageScopeLimitVisible || outcome.evidenceRouteStatuses.length < 2 || outcome.evidenceRouteStatuses.some((status) => status !== 200) || !outcome.noNonLoopbackRequests || outcome.axeViolationIds.length || outcome.pageErrors.length)) process.exitCode = 1;
+if (outcomes.length !== 2 || outcomes.some((outcome) => !outcome.exactIdentifierQuery || !outcome.officialCodexSourceVisible || !outcome.officialSourceLink || !outcome.publisherAndJurisdictionVisible || !outcome.sourceLimitationsVisible || !outcome.whoFibreQuery || !outcome.whoGuidelineVisible || !outcome.whoOfficialSourceLink || !outcome.whoPackageScopeLimitVisible || !outcome.unrelatedQueryAbstained || !outcome.currentLawQueryAbstained || !outcome.fssaiQueryAbstained || outcome.evidenceRouteStatuses.length < 5 || outcome.evidenceRouteStatuses.some((status) => status !== 200) || !outcome.noNonLoopbackRequests || outcome.axeViolationIds.length || outcome.pageErrors.length)) process.exitCode = 1;

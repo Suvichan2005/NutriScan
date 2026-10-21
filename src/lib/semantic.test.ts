@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cosineSimilarity, lexicalRanking, semanticRetrieve } from './semantic';
+import { clearsLocalEvidenceFloor, cosineSimilarity, isCurrentLawOrRegulatoryQuery, lexicalRanking, localEvidenceScoreFloor, semanticRetrieve } from './semantic';
 
 describe('embedding retrieval integrity', () => {
   it('preserves cosine scaling and orthogonality and rejects invalid vectors', () => {
@@ -21,5 +21,21 @@ describe('embedding retrieval integrity', () => {
     expect(result[0].source.id).toBe('fao-955');
     expect(result[0].lexicalScore).toBe(1);
     expect(lexicalRanking('zxxyyq')[0].lexicalScore).toBe(0);
+  });
+  it('suppresses current-law requests from the static scientific corpus', async () => {
+    const result = await semanticRetrieve('Is an ORS food product name currently allowed in India?', 3);
+    expect(result.status).toBe('no_match');
+    expect(result.results).toEqual([]);
+    expect(result.message).toMatch(/not a current-law source/i);
+    expect(isCurrentLawOrRegulatoryQuery('INS 955 sucralose identity')).toBe(false);
+    expect(isCurrentLawOrRegulatoryQuery('Is INS 955 allowed in this product category?')).toBe(true);
+    expect(isCurrentLawOrRegulatoryQuery('What is the current FSSAI labelling rule?')).toBe(true);
+  });
+  it('uses a finite, conservative local candidate floor without treating it as a probability', () => {
+    expect(localEvidenceScoreFloor).toBe(0.3);
+    expect(clearsLocalEvidenceFloor(0.29999)).toBe(false);
+    expect(clearsLocalEvidenceFloor(0.3)).toBe(true);
+    expect(clearsLocalEvidenceFloor(Number.NaN)).toBe(false);
+    expect(clearsLocalEvidenceFloor(Number.POSITIVE_INFINITY)).toBe(false);
   });
 });

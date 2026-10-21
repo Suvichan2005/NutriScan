@@ -8,6 +8,7 @@ import type { EvidenceSource } from './contracts';
 export const embeddingModel = 'Xenova/all-MiniLM-L6-v2';
 export const embeddingRevision = '751bff37182d3f1213fa05d7196b954e230abad9';
 export const embeddingDimensions = 384;
+export const localEvidenceScoreFloor = 0.3;
 export const modelDirectory = path.join(process.cwd(), '.data', 'models');
 export const indexFile = path.join(process.cwd(), 'data', 'semantic-index.json');
 export const documentText = (source: EvidenceSource) => `${source.title}. ${source.summary}`;
@@ -71,6 +72,14 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return a.reduce((sum, n, i) => sum + n * b[i], 0) / denominator;
 }
 
+export function isCurrentLawOrRegulatoryQuery(query: string): boolean {
+  return /\b(?:ors|fssai|egazette|gazette|notification|directive|legal|law|regulatory|regulation|permission|authorization|compliance|recall|recalled|banned|allowed)\b/i.test(query);
+}
+
+export function clearsLocalEvidenceFloor(score: number): boolean {
+  return Number.isFinite(score) && score >= localEvidenceScoreFloor;
+}
+
 async function loadIndex(): Promise<Index> {
   const index = JSON.parse(await readFile(indexFile, 'utf8')) as Index;
   if (index.model !== embeddingModel || index.revision !== embeddingRevision || index.dimensions !== embeddingDimensions || index.corpusSha256 !== corpusFingerprint() || index.corpusVersion !== corpusVersion || index.vectors.length !== evidenceSources.length) throw new Error('Local evidence index is stale. Run npm run embeddings:prepare.');
@@ -81,6 +90,26 @@ async function loadIndex(): Promise<Index> {
 let active = false;
 export async function semanticRetrieve(query: string, limit = 4) {
   if (!query.trim() || query.length > 1200 || !Number.isInteger(limit) || limit < 1 || limit > 5) throw new Error('Invalid evidence query.');
+  const currentRegulatoryIntent = isCurrentLawOrRegulatoryQuery(query);
+  const limitations = [
+    `${evidenceSources.length} curated source summaries and records; retrieval similarity is not medical clearance, evidence quality, or probability of truth.`,
+    'This dated index does not verify current law, product dose, a personal nutrient target, or local stock.',
+    'Queries are processed on this local server without remote inference.',
+    `A conservative development score floor of ${localEvidenceScoreFloor} suppresses weak local matches; it has not been calibrated on an independent user-query set.`,
+  ];
+  if (currentRegulatoryIntent) return {
+    status: 'no_match' as const,
+    mode: 'hybrid-local-embedding' as const,
+    model: embeddingModel,
+    revision: embeddingRevision,
+    corpusVersion,
+    corpusSha256: corpusFingerprint(),
+    retrievedAt: new Date().toISOString(),
+    latencyMs: 0,
+    results: [],
+    message: 'The curated local evidence library is not a current-law source. Use dated regulatory research; its results still require review for the exact product and jurisdiction.',
+    limitations,
+  };
   if (active) throw new Error('Local embedding model is busy. Try again shortly.');
   active = true;
   try {
@@ -89,12 +118,25 @@ export async function semanticRetrieve(query: string, limit = 4) {
     const [vector] = await embedLocally([query]);
     const lexical = lexicalRanking(query);
     const exact = lookupAdditive(query);
-    const results: SemanticHit[] = evidenceSources.map(source => {
+    const ranked: SemanticHit[] = evidenceSources.map(source => {
       const semanticScore = cosineSimilarity(vector, index.vectors.find(v => v.id === source.id)!.vector);
       const lexicalScore = lexical.find(v => v.source.id === source.id)!.lexicalScore;
       const exactIdentity = exact?.sourceIds.includes(source.id) ?? false;
       return { source, semanticScore, lexicalScore, exactIdentity, score: .9 * semanticScore + .1 * lexicalScore + (exactIdentity ? 1 : 0) };
-    }).sort((a, b) => b.score - a.score).slice(0, limit);
-    return { status: 'ok' as const, mode: 'hybrid-local-embedding' as const, model: embeddingModel, revision: embeddingRevision, corpusVersion, corpusSha256: index.corpusSha256, retrievedAt: new Date().toISOString(), latencyMs: Math.round(performance.now() - started), results, limitations: [`${evidenceSources.length} curated source summaries and records; retrieval similarity is not medical clearance, evidence quality, or probability of truth.`, 'This dated index does not verify current law, product dose, a personal nutrient target, or local stock.', 'Queries are processed on this local server without remote inference. No relevance threshold has been clinically validated.'] };
+    }).sort((a, b) => b.score - a.score);
+    const results = ranked.filter(hit => clearsLocalEvidenceFloor(hit.score)).slice(0, limit);
+    return {
+      status: results.length ? 'ok' as const : 'no_match' as const,
+      mode: 'hybrid-local-embedding' as const,
+      model: embeddingModel,
+      revision: embeddingRevision,
+      corpusVersion,
+      corpusSha256: index.corpusSha256,
+      retrievedAt: new Date().toISOString(),
+      latencyMs: Math.round(performance.now() - started),
+      results,
+      ...(!results.length ? { message: 'No local source candidate cleared the conservative relevance floor. Refine the question or use an appropriate live source search.' } : {}),
+      limitations,
+    };
   } finally { active = false; }
 }

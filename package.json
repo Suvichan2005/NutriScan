@@ -39,7 +39,8 @@
     "ocr:evaluate:rapidocr:web": "tsx scripts/evaluate-rapidocr-browser-runtime.mts",
     "ocr:evaluate:trocr": "tsx scripts/evaluate-trocr-probe.mts",
     "embeddings:prepare": "tsx scripts/prepare-embeddings.mts",
-    "embeddings:evaluate": "tsx scripts/semantic-evaluate.mts"
+    "embeddings:evaluate": "tsx scripts/semantic-evaluate.mts",
+    "embeddings:evaluate:boundary": "tsx scripts/evaluate-semantic-boundary.mts"
   },
   "dependencies": {
     "@fontsource/dm-sans": "5.3.0",

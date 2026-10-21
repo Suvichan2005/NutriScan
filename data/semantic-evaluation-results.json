@@ -1,5 +1,5 @@
 {
-  "evaluatedAt": "2026-10-21T05:32:15.818Z",
+  "evaluatedAt": "2026-10-21T06:12:25.173Z",
   "model": "Xenova/all-MiniLM-L6-v2",
   "revision": "751bff37182d3f1213fa05d7196b954e230abad9",
   "runtimeVersion": "4.3.1",
@@ -56,7 +56,7 @@
           "lexicalScore": 0.23016462229475596
         }
       ],
-      "latencyMs": 445
+      "latencyMs": 473
     },
     {
       "id": "sodium-paraphrase",
@@ -140,7 +140,7 @@
           "lexicalScore": 0.4062532754452863
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 5
     },
     {
       "id": "diabetes-paraphrase",
@@ -224,7 +224,7 @@
           "lexicalScore": 0.855288583157583
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 5
     },
     {
       "id": "sweetener-exact",
@@ -252,7 +252,7 @@
           "lexicalScore": 0.06111822804421673
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 5
     },
     {
       "id": "sweetener-paraphrase",
@@ -308,7 +308,7 @@
           "lexicalScore": 0.26221073221025265
         }
       ],
-      "latencyMs": 3
+      "latencyMs": 4
     },
     {
       "id": "sucralose-name",
@@ -336,7 +336,7 @@
           "lexicalScore": 0.3195562736031764
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 5
     },
     {
       "id": "citric-identity",
@@ -364,7 +364,7 @@
           "lexicalScore": 0.10807063733604652
         }
       ],
-      "latencyMs": 3
+      "latencyMs": 4
     },
     {
       "id": "msg-identity",
@@ -420,7 +420,7 @@
           "lexicalScore": 0.16941457828006326
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 5
     }
   ]
 }

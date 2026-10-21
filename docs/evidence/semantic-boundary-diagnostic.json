@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-semantic-retrieval-boundary-diagnostic",
+  "generatedAt": "2026-10-21T06:18:12.491Z",
+  "queryCount": 11,
+  "modelMode": "pinned local MiniLM embeddings plus lexical ranking",
+  "results": [
+    {
+      "id": "weather-out-of-domain",
+      "relevant": [],
+      "status": "no_match",
+      "topSourceId": null,
+      "semanticScore": null,
+      "lexicalScore": null,
+      "hybridScore": null,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "coding-out-of-domain",
+      "relevant": [],
+      "status": "no_match",
+      "topSourceId": null,
+      "semanticScore": null,
+      "lexicalScore": null,
+      "hybridScore": null,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "travel-out-of-domain",
+      "relevant": [],
+      "status": "no_match",
+      "topSourceId": null,
+      "semanticScore": null,
+      "lexicalScore": null,
+      "hybridScore": null,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "phone-out-of-domain",
+      "relevant": [],
+      "status": "no_match",
+      "topSourceId": null,
+      "semanticScore": null,
+      "lexicalScore": null,
+      "hybridScore": null,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "history-out-of-domain",
+      "relevant": [],
+      "status": "no_match",
+      "topSourceId": null,
+      "semanticScore": null,
+      "lexicalScore": null,
+      "hybridScore": null,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "fibre-package-scope",
+      "relevant": [
+        "who-carbohydrate-2023"
+      ],
+      "status": "ok",
+      "topSourceId": "who-carbohydrate-2023",
+      "semanticScore": 0.53444,
+      "lexicalScore": 1,
+      "hybridScore": 0.581,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "sweetener-dose-scope",
+      "relevant": [
+        "fao-955"
+      ],
+      "status": "ok",
+      "topSourceId": "fao-955",
+      "semanticScore": 0.37881,
+      "lexicalScore": 1,
+      "hybridScore": 0.44093,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "diabetes-target-scope",
+      "relevant": [
+        "niddk-meals",
+        "who-carbohydrate-2023"
+      ],
+      "status": "ok",
+      "topSourceId": "who-carbohydrate-2023",
+      "semanticScore": 0.61495,
+      "lexicalScore": 1,
+      "hybridScore": 0.65346,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "blood-pressure-sodium",
+      "relevant": [
+        "who-sodium"
+      ],
+      "status": "ok",
+      "topSourceId": "who-sodium",
+      "semanticScore": 0.56359,
+      "lexicalScore": 1,
+      "hybridScore": 0.60723,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "ors-current-law-scope",
+      "relevant": [],
+      "status": "no_match",
+      "topSourceId": null,
+      "semanticScore": null,
+      "lexicalScore": null,
+      "hybridScore": null,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "fssai-current-law-scope",
+      "relevant": [],
+      "status": "no_match",
+      "topSourceId": null,
+      "semanticScore": null,
+      "lexicalScore": null,
+      "hybridScore": null,
+      "expectedBehaviorMet": true
+    }
+  ],
+  "limitations": [
+    "Queries are developer-authored probes, not an independent held-out benchmark or user study.",
+    "Similarity scores are not probabilities, evidence quality measures or entailment checks.",
+    "This diagnostic exercises a conservative development floor and a current-law intent gate; it does not calibrate them on independent user queries."
+  ]
+}
