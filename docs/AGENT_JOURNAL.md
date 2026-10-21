@@ -7,6 +7,11 @@
 - Changed the capture schema to accept a bounded reader identifier so a future reader can preserve its identity through the existing contract. Added an offline pass-through/length test; no alternate engine was run or integrated. The five-photo OCR evidence and production reader are unchanged. Gemini remains disabled.
 - Fourteen focused assist-contract tests and the full suite (296 tests across 33 files) passed; TypeScript typecheck and `git diff --check` passed. The browser comparison evidence remains synthetic-label workflow validation only.
 
+## 2026-10-21 — separate OCR text visibility from structure and parser outcomes
+
+- Reaggregated the existing official PP-OCRv5 receipt's field-stage flags over its 37 previously explored nutrient fields. Label text was present for 33 and matching numbers somewhere in recognized rows for 34; the approximate row grouper placed label and value together for 21 and label, value and expected unit together for 7. Basis text appeared somewhere in 31, while 16 parser candidates were emitted and 6 matched the declared basis. Final outcomes were 6 exact, 0 incorrect, 21 omitted and 10 withheld.
+- This points to row/unit/basis association and parser acceptance as major visible failure stages, while raw labels/numbers are often present. The counts are proxies: number and basis checks can match unrelated text, row grouping is approximate, and no independent text-region/table-column annotation exists. Detection precision/recall and true cell association remain unmeasured; no engine or product change was made.
+
 ## 2026-10-21 — inspect OCR regions from the evidence ledger
 
 - The evidence ledger exposed OCR words, confidence and prepared-image coordinates, but users had to leave the result and manually find the corresponding line in a photo.
