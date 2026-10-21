@@ -545,6 +545,8 @@ describe('genuine local evidence retrieval',()=>{
     expect(retrieveEvidence('FSSAI regulation May contain allergen cross contamination',5).some(hit=>hit.source.id==='fssai-labelling-display-2020')).toBe(true);
     expect(retrieveEvidence('What does WHO mean by free sugars?')[0]?.source.id).toBe('who-sugars-2015');
     expect(evidenceSources.every(s=>sourceSchema.safeParse(s).success)).toBe(true);
+    expect(evidenceSources.every(s=>typeof s.license==='string'&&s.license.trim().length>0)).toBe(true);
+    expect(evidenceSources.find(s=>s.id==='who-nss')?.license).toMatch(/terms not independently verified/i);
     expect(()=>retrieveEvidence('query',0)).toThrow();
   });
   it('retrieves WHO free-sugar guidance without treating total package sugars as daily free sugars',()=>{
