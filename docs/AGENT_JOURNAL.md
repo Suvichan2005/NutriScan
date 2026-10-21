@@ -1,5 +1,13 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — link consented vision observations to their source image
+
+- The OCR-to-assist review found no loss of raw OCR observations or parser candidate evidence in text assist. A separate gap existed after explicit image inspection: returned vision lines did not retain which selected photo/crop produced them. Vision outputs now carry an image/run link, and the package stores side, source dimensions, crop/preprocessing and model identifier. Later text assist preserves that link and checks a matching live handle.
+- Dimensions are caller-supplied provenance because the inspection input is an already prepared crop; no original image bytes or durable digest are retained. Vision output remains unverified and compatible conflicts remain withheld. Image inspection still requires its separate consent action.
+- Confirmed synthesis already supports concise profile-aware interpretation with exact spans, separate evidence identifiers, safety filtering and a disclosure that citations do not prove entailment. No quote-only change was needed. Gemini stayed disabled.
+- Typed-text Chrome/Playwright acceptance at 390×844 and 1440×900 covered precautionary allergen wording and local context controls; zero Axe violations, page errors, provider calls or off-origin requests. Full suite: 321 tests / 33 files; typecheck and isolated optimized build passed. No photographed-label measurement changed; the Saffola development baseline remains one exact field of nine. No image-accuracy or live-provider claim is made.
+- This entry contains no source images, private chat content, profile data, credentials or request bodies.
+
 ## 2026-10-21 — explain precautionary allergen wording and verify assist evidence readiness
 
 - Added a local source-linked explanation of FSSAI “Contains” versus “May Contains” label wording using the original 2020 Gazette clause and the 2023 FAQ. The answer distinguishes listed ingredients from possible cross-contamination, and does not infer a package's actual allergen presence, exposure, personal risk, safety or legal compliance. Current compliance questions still require live official research.
