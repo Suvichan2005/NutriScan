@@ -494,3 +494,7 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 ## 22 October 2026 — keep restricted evidence out of the private published history
 
 - Preserve the original history and image files in a verified local backup. Perform path-only filtering in an isolated clone, ignore the two owner-identified screenshot paths, and publish only sanitized `main` to the existing private repository after clean-clone tests and build pass. Do not rewrite the active checkout or publish other refs.
+
+## 22 October 2026 — map only clearly aligned OCR values to a recognized basis
+
+- Keep Tesseract and production OCR configuration unchanged: targeted row and word-crop retries did not improve the same development photographs. The parser may skip at most two short, very low-confidence leading OCR tokens before a recognized nutrient label, then select one numeric reading only when its unit is explicit, its word box is uniquely aligned to one recognized basis, and both lines share the same image and OCR capture. Preserve all other readings as unassigned candidates; missing units, ambiguous bases, weak geometry and cross-capture layouts remain unresolved. This is a narrow parser recovery, not a held-out accuracy claim or a reason to enable Gemini.

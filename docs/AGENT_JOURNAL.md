@@ -338,3 +338,7 @@
 ## 22 October 2026 — private repository hygiene checkpoint
 
 - Verified a restorable backup of the original Git refs, retained the restricted image files outside the publish clone, and filtered only the two owner-identified screenshot paths in an isolated clone. A reachable-history credential-signature scan found no high-confidence key material. The clean clone passed installation, repository and module tests, typecheck, and optimized build; no product behavior or provider integration changed.
+
+## 22 October 2026 — recover a value only when OCR geometry supports its basis
+
+- The comparable 14-case Chrome run on two development photos improved from 4 to 6 exact fields out of 118 repeated field cases, with 2 incorrect readings unchanged. One previously missing Bagrry's sugar field now feeds a local 100 g calculation; one Saffola contrast result moved from withheld to exact. Only explicit units and a uniquely aligned value in the same image capture can use the new parser path; raw lines and unused candidates remain preserved. Whole-row and word-crop Tesseract retries performed worse and were not added. Full suite passed 369 tests across 41 files, typecheck passed, and an optimized build passed in an isolated checkout. These two development photos do not establish held-out or population accuracy; Gemini remained disabled.

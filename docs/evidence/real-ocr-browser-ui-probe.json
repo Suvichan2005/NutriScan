@@ -1,10 +1,11 @@
 {
-  "generatedAt": "2026-10-21T19:22:31.920Z",
-  "baseUrl": "http://127.0.0.1:3400",
+  "generatedAt": "2026-10-21T22:38:01.402Z",
+  "baseUrl": "http://127.0.0.1:3413",
   "browser": "Chrome via Playwright, headless; viewport 390x844",
   "sources": [
     {
       "id": "saffola",
+      "evaluationSplit": "development",
       "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
       "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
       "annotationBasis": {
@@ -15,6 +16,7 @@
     },
     {
       "id": "bagrrys",
+      "evaluationSplit": "development",
       "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
       "sha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
       "annotationBasis": {
@@ -24,7 +26,7 @@
       "expectedFields": 8
     }
   ],
-  "method": "Actual upload, role selection, optional contrast setting, optional crop selected by dragging over the displayed image, and in-browser OCR on two hash-verified English package photos. Crop percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching the human-annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.",
+  "method": "Development-split only: actual upload, role selection, optional contrast setting, optional crop selected by dragging over the displayed image, and in-browser OCR on two hash-verified English package photos. No held-out products are included. Crop percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching the human-annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.",
   "results": [
     {
       "id": "saffola-unknown-role-full-image",
@@ -311,11 +313,11 @@
       "cropSelection": null,
       "initialQuestionJourney": null,
       "expected": 8,
-      "correct": 0,
+      "correct": 1,
       "incorrect": 0,
-      "omitted": 8,
+      "omitted": 7,
       "withheld": 0,
-      "calculatedFields": 0,
+      "calculatedFields": 1,
       "fields": [
         {
           "field": "energy",
@@ -334,8 +336,8 @@
         },
         {
           "field": "sugars",
-          "outcome": "omitted",
-          "calculated": false
+          "outcome": "correct",
+          "calculated": true
         },
         {
           "field": "fiber",
@@ -358,7 +360,7 @@
           "calculated": false
         }
       ],
-      "parsedNutrientRows": 0,
+      "parsedNutrientRows": 1,
       "axeViolationIds": [],
       "pageErrorCount": 0,
       "screenshot": "docs/evidence/private/browser-ocr-bagrrys-nutrition-role-full-image.png"
@@ -701,11 +703,11 @@
       "cropSelection": null,
       "initialQuestionJourney": null,
       "expected": 9,
-      "correct": 1,
+      "correct": 2,
       "incorrect": 0,
       "omitted": 7,
-      "withheld": 1,
-      "calculatedFields": 1,
+      "withheld": 0,
+      "calculatedFields": 2,
       "fields": [
         {
           "field": "energy",
@@ -744,8 +746,8 @@
         },
         {
           "field": "saturatedFat",
-          "outcome": "withheld",
-          "calculated": false
+          "outcome": "correct",
+          "calculated": true
         },
         {
           "field": "sodium",
@@ -753,7 +755,7 @@
           "calculated": false
         }
       ],
-      "parsedNutrientRows": 3,
+      "parsedNutrientRows": 2,
       "axeViolationIds": [],
       "pageErrorCount": 0,
       "screenshot": "docs/evidence/private/browser-ocr-saffola-nutrition-role-full-image-contrast.png"

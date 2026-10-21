@@ -15,7 +15,7 @@ type ManifestRecord = {
 
 type Manifest = { records: ManifestRecord[] };
 type Crop = { x: number; y: number; width: number; height: number };
-type SourceSpec = { id: string; file: string; crop: Crop };
+type SourceSpec = { id: string; evaluationSplit: 'development'; file: string; crop: Crop };
 type CaseSpec = { id: string; sourceId: SourceSpec['id']; role: 'unknown' | 'nutrition'; crop?: Crop; contrast?: boolean; initialQuestion?: string };
 type Outcome = 'correct' | 'incorrect' | 'omitted' | 'withheld';
 
@@ -28,8 +28,8 @@ const labels: Record<string, string> = {
   addedSugars: 'Added sugars', fiber: 'Fibre', fat: 'Total fat', saturatedFat: 'Saturated fat', sodium: 'Sodium',
 };
 const sources: SourceSpec[] = [
-  { id: 'saffola', file: 'saffola-veggie-oats-nutrition-off-8901088068758.jpg', crop: { x: 3, y: 0, width: 93, height: 99 } },
-  { id: 'bagrrys', file: 'bagrrys-white-oats-nutrition-off-8902710100150.jpg', crop: { x: 2, y: 2, width: 74, height: 96 } },
+  { id: 'saffola', evaluationSplit: 'development', file: 'saffola-veggie-oats-nutrition-off-8901088068758.jpg', crop: { x: 3, y: 0, width: 93, height: 99 } },
+  { id: 'bagrrys', evaluationSplit: 'development', file: 'bagrrys-white-oats-nutrition-off-8902710100150.jpg', crop: { x: 2, y: 2, width: 74, height: 96 } },
 ];
 const cases: CaseSpec[] = [
   { id: 'saffola-unknown-role-full-image', sourceId: 'saffola', role: 'unknown', initialQuestion: 'What can you read from this label?' },
@@ -203,9 +203,9 @@ async function main() {
     browser: 'Chrome via Playwright, headless; viewport 390x844',
     sources: sources.map((source) => {
       const record = records.get(source.id)!;
-      return { id: source.id, file: record.file, sha256: actualHashes.get(source.id), annotationBasis: record.manualAnnotation.basis, expectedFields: record.manualAnnotation.nutrients.length };
+      return { id: source.id, evaluationSplit: source.evaluationSplit, file: record.file, sha256: actualHashes.get(source.id), annotationBasis: record.manualAnnotation.basis, expectedFields: record.manualAnnotation.nutrients.length };
     }),
-    method: 'Actual upload, role selection, optional contrast setting, optional crop selected by dragging over the displayed image, and in-browser OCR on two hash-verified English package photos. Crop percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching the human-annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.',
+    method: 'Development-split only: actual upload, role selection, optional contrast setting, optional crop selected by dragging over the displayed image, and in-browser OCR on two hash-verified English package photos. No held-out products are included. Crop percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching the human-annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.',
     results,
   };
   await writeFile(resultPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');

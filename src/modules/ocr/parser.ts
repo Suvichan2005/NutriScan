@@ -12,6 +12,104 @@ const rows: {key:NutrientKey;pattern:RegExp}[] = [
   {key:'fiber',pattern:/^(?:dietary\s+)?fib(?:er|re)\b/i},
   {key:'sodium',pattern:/^(?:sodium|sodio)\b/i}, {key:'salt',pattern:/^(?:salt|sel|zout|sal)\b/i},
 ];
+type MatchedRow = {row:typeof rows[number];labelStart:number;recoveredPrefix?:string};
+function matchNutrientRow(line:string,observation?:Observation):MatchedRow|undefined {
+  const exact=rows.find(row=>row.pattern.test(line));
+  if(exact)return {row:exact,labelStart:0};
+  const words=observation?.origin==='ocr'&&observation.field==='ocr-line'?observation.ocrWords:undefined;
+  if(!words?.length)return;
+  // Tesseract occasionally inserts a tiny, low-confidence token before a real
+  // row label (for example, the decorative mark before "Sugar"). Only skip up
+  // to two short alphabetic tokens when every skipped word is very uncertain.
+  for(let prefixCount=1;prefixCount<=2&&prefixCount<words.length;prefixCount++){
+    const prefix=words.slice(0,prefixCount);
+    if(!prefix.every(word=>word.confidence!==null&&word.confidence<=30&&/^[A-Za-z]{1,3}$/.test(word.text)))continue;
+    const suffix=words.slice(prefixCount);
+    const row=rows.find(candidate=>candidate.pattern.test(suffix.map(word=>word.text).join(' ')));
+    if(!row)continue;
+    const firstLabel=suffix[0].text;
+    const labelStart=line.toLocaleLowerCase().indexOf(firstLabel.toLocaleLowerCase());
+    if(labelStart<0)continue;
+    return {row,labelStart,recoveredPrefix:prefix.map(word=>word.text).join(' ')};
+  }
+}
+type GeometryNumber={value:number;unit:string|null;center:number};
+function numericOcrWords(observation:Observation):GeometryNumber[]|undefined {
+  const words=observation.ocrWords;
+  if(!words?.length)return;
+  const result:GeometryNumber[]=[];
+  for(let index=0;index<words.length;index++){
+    const word=words[index];
+    if(word.text.includes('%'))continue;
+    const match=word.text.match(/^(-?(?:\d+(?:[.,]\d+)?|\.\d+))\s*(kcal|kj|mg|g|ml)?[.,;:]?$/i);
+    if(!match)continue;
+    const value=Number(match[1].replace(',','.'));
+    if(!Number.isFinite(value))return;
+    let unit=match[2]?.toLowerCase()??null;
+    let right=word.bbox.x1;
+    if(!unit&&words[index+1]&&/^(kcal|kj|mg|g|ml)$/i.test(words[index+1].text.trim())){
+      unit=words[index+1].text.trim().toLowerCase();
+      right=words[index+1].bbox.x1;
+      index++;
+    }else if(!unit&&words[index+1]?.text.trim()==='%'){
+      index++;
+      continue;
+    }
+    result.push({value,unit,center:(word.bbox.x0+right)/2});
+  }
+  return result;
+}
+function basisGeometryCenter(observation:Observation,basis:Basis):number|undefined {
+  const words=observation.ocrWords;
+  if(!words?.length)return;
+  const amount=String(basis.amount).replace('.','[.,]');
+  const amountPattern=new RegExp(`^(${amount})(?:\\s*(${basis.unit}))?`, 'i');
+  for(let index=0;index<words.length;index++){
+    const word=words[index];
+    let token=word.text.replace(/^(?:per|pour|para)/i,'');
+    const prefixLength=word.text.length-token.length;
+    let match=token.match(amountPattern);
+    if(!match)continue;
+    let right=word.bbox.x0+(word.bbox.x1-word.bbox.x0)*(prefixLength+match[0].length)/Math.max(1,word.text.length);
+    if(!match[2]){
+      const next=words[index+1];
+      if(next&&new RegExp(`^${basis.unit}$`,'i').test(next.text.trim()))right=next.bbox.x1;
+      else continue;
+    }
+    let left=word.bbox.x0;
+    for(let prior=index;prior>=Math.max(0,index-2);prior--){
+      if(/^(?:per|pour|para)$/i.test(words[prior].text.trim())){left=words[prior].bbox.x0;break;}
+    }
+    return (left+right)/2;
+  }
+}
+function geometrySelectedValueIndex(
+  numericCandidates:ParserDiagnostic['numericCandidates'],
+  rowObservation:Observation|undefined,
+  basisObservation:Observation|undefined,
+  basis:Basis|undefined,
+  captures:OcrCapture[]
+):number|undefined {
+  if(numericCandidates.length<2||!rowObservation||!basisObservation||!basis)return;
+  if(rowObservation.origin!=='ocr'||basisObservation.origin!=='ocr'||rowObservation.imageId!==basisObservation.imageId)return;
+  const rowRun=rowObservation.readingOrder?.runId;
+  if(!rowRun||basisObservation.readingOrder?.runId!==rowRun)return;
+  const capture=captures.find(item=>item.runId===rowRun&&item.imageId===rowObservation.imageId);
+  const basisCenter=basisGeometryCenter(basisObservation,basis);
+  const wordValues=numericOcrWords(rowObservation);
+  if(!capture||basisCenter===undefined||!wordValues||wordValues.length!==numericCandidates.length)return;
+  for(let index=0;index<numericCandidates.length;index++){
+    const candidate=numericCandidates[index];
+    const word=wordValues[index];
+    if(candidate.value===null||Math.abs(candidate.value-word.value)>0.000001)return;
+    if(candidate.unit&&word.unit&&candidate.unit.toLowerCase()!==word.unit)return;
+  }
+  const ranked=wordValues.map((word,index)=>({index,distance:Math.abs(word.center-basisCenter)})).sort((a,b)=>a.distance-b.distance);
+  const maxDistance=Math.max(20,capture.preparedImage.width*0.045);
+  const requiredMargin=Math.max(12,capture.preparedImage.width*0.03);
+  if(ranked[0].distance>maxDistance||(ranked[1].distance-ranked[0].distance)<requiredMargin)return;
+  return ranked[0].index;
+}
 function mass(value:string,unit:string): {value:number;unit:'g'|'ml'} | undefined {
   const n = Number(value); const u=unit.toLowerCase();
   if (!Number.isFinite(n) || n <= 0) return;
@@ -90,6 +188,12 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
     if(!original){const key=obs.text.trim();parserObservationCounts.set(key,(parserObservationCounts.get(key)??0)+1);}
     return obs.id;
   };
+  const sourceOcrObservationForId=(observationId:string|undefined):Observation|undefined=>{
+    if(!observationId)return;
+    const derived=observations.find(item=>item.id===observationId);
+    const sourceIds=derived?.derivedFromObservationIds??[observationId];
+    return (options.observations??[]).find(item=>sourceIds.includes(item.id)&&item.origin==='ocr'&&item.field==='ocr-line');
+  };
   const servingMatch=text.match(/(?:serving\s+size|serve\s+size|portion\s+size)\s*[:\-]?\s*(?:[^\n\d]{0,20})?(\d+(?:\.\d+)?)\s*(g|ml)\b/i);
   const serving=servingMatch?mass(servingMatch[1],servingMatch[2]):undefined;
   const weightMatch=text.match(/(?:net\s*(?:weight|wt\.?|quantity|qty\.?)|pack\s*size)\s*[:\-]?\s*(\d+(?:\.\d+)?)\s*(kg|ml|g|l)\b/i);
@@ -113,7 +217,9 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
     // e.g. "NUTRIENTSPer 100g". Normalize only the parser view; keep the
     // original observation text unchanged for user review and provenance.
     const parserLine=line.replace(/([A-Z]{4,})(?=(?:Per|PER|Pour|POUR|Para|PARA)\s*:?\s*\d)/,'$1 ');
-    const nutrientRow=rows.find(row=>row.pattern.test(parserLine));
+    const rawOcrRow=inputObservations.get(line.trim())?.[0];
+    const matchedRow=matchNutrientRow(parserLine,rawOcrRow);
+    const nutrientRow=matchedRow?.row;
     const basisText=/^(?:per|pour|para)\s*:?\s*$/i.test(parserLine)?`${parserLine} ${lines[lineIndex+1]??''}`:parserLine;
     const foundBases=basesIn(basisText,serving);
     const hasBasis=/\b(?:per|pour|para)\s*:?\s*(?:\d|serv|port)/i.test(basisText)||/\/\s*\d+\s*(?:g|ml)\b/i.test(basisText);
@@ -135,7 +241,8 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
       continue;
     }
     ingredientsOpen=false;
-    let tail=line.replace(nutrientRow.pattern,'');
+    if(matchedRow.recoveredPrefix)warnings.push(`${nutrientRow.key}: ignored a very low-confidence leading OCR token before the recognized row label; original text is retained.`);
+    let tail=parserLine.slice(matchedRow.labelStart).replace(nutrientRow.pattern,'');
     tail=tail.replace(/(?:per|pour|para|\/)\s*:?\s*\d+(?:\.\d+)?\s*(?:g|ml)\b/gi,'').replace(/per\s+(?:serving|serve|portion)(?:\s*\(?\s*\d+(?:\.\d+)?\s*(?:g|ml)\)?)?/gi,'');
     // A single decimal comma followed by a unit is unambiguous. Thousands or
     // otherwise unlabeled comma sequences remain multiple values and withheld.
@@ -161,14 +268,18 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
     if(/[<>≤≥~]|\b(?:trace|less than|approx)/i.test(tail)){warnings.push(`${nutrientRow.key}: bounded or approximate value retained in text; exact calculation withheld.`);diagnose('rejected',['approximate-or-bounded']);continue;}
     if(/-\s+\d/.test(tail)){warnings.push(`${nutrientRow.key}: invalid or ambiguous signed value withheld.`);diagnose('rejected',['signed-or-ambiguous']);continue;}
     if(!values.length){warnings.push(`${nutrientRow.key}: no readable numerical value.`);diagnose('rejected',['no-numeric-value']);continue;}
-    const conflicting=ambiguousBasis||values.length>1||foundBases.length>1;
-    if(values.length>1) warnings.push(`${nutrientRow.key}: multiple numeric values retained; confirm the intended column.`);
+    const geometryBasisId=foundBases.length?obsId:basisObservationIds[0];
+    const mappedValueIndex=values.length>1?geometrySelectedValueIndex(numericCandidates,sourceOcrObservationForId(obsId),sourceOcrObservationForId(geometryBasisId),basisCandidates.length===1?basisCandidates[0]:undefined,options.ocrCaptures??[]):undefined;
+    const conflicting=ambiguousBasis||foundBases.length>1||(values.length>1&&mappedValueIndex===undefined);
+    if(values.length>1&&mappedValueIndex!==undefined)warnings.push(`${nutrientRow.key}: one value aligns with the recognized ${basisCandidates[0].amount} ${basisCandidates[0].unit} column; other row values remain unassigned.`);
+    else if(values.length>1) warnings.push(`${nutrientRow.key}: multiple numeric values retained; confirm the intended column.`);
     const reasonCodes:ParserDiagnostic['reasonCodes']=[];
     if(values.length>1)reasonCodes.push('multiple-values');
     if(ambiguousBasis||foundBases.length>1)reasonCodes.push('ambiguous-basis');
     if(!basisCandidates.length)reasonCodes.push('missing-basis');
     let emitted=0;
     for(const [valueIndex,value] of values.entries()){
+      if(mappedValueIndex!==undefined&&valueIndex!==mappedValueIndex)continue;
       const n=Number(value[1]); const unit=(value[2]??(orderedEnergyUnits&&values.length===2?orderedEnergyUnits[valueIndex+1]:rowUnit))?.toLowerCase();
       if(!Number.isFinite(n)||n<0||n>100000){warnings.push(`${nutrientRow.key}: invalid value withheld.`);reasonCodes.push('invalid-value');continue;}
       if(!unit){warnings.push(`${nutrientRow.key}: unit missing; no unit was guessed.`);reasonCodes.push('missing-unit');continue;}
