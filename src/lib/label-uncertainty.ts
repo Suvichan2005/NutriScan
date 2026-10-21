@@ -1,1 +1,1 @@
-export * from '../modules/ocr/label-uncertainty';
+export { summarizeLabelUncertainty } from '../modules/ocr';

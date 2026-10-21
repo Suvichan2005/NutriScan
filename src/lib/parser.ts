@@ -1,5 +1,5 @@
 import { detectAdditives } from './knowledge';
-import { parseLabel as parseLabelCore, type ParseOptions as ModuleParseOptions } from '../modules/ocr/parser';
+import { parseLabel as parseLabelCore, type ParseOptions as ModuleParseOptions } from '../modules/ocr';
 import type { PackageData } from './contracts';
 
 export type ParseOptions = Omit<ModuleParseOptions, 'resolveAdditives'>;

@@ -482,3 +482,7 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 
 - Keep the deterministic follow-up question-focused: name unresolved fields and missing package panels, then direct the user to the detailed label notes and original observations. Preserve conflict/rejection evidence in the package ledger and finding links; do not repeat parser-internal wording in the conversational answer.
 - A same-image Chrome run reduced this answer from 953 to 319 characters at mobile and desktop sizes. This measures response length only; OCR accuracy remained 1/9 exact on the single-human-read development image. Gemini stays disabled.
+
+## 22 October 2026 — keep application adapters on module public entries
+
+- Owner-controlled OCR facades import through `src/modules/ocr/index.ts` and selectively re-export the compatibility surface. Contributors can change module internals behind that entry without changing application adapters. Keep shared Zod contracts centralized; Knowledge's MiniLM path stays explicitly behind `server.ts`.

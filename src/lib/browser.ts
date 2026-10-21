@@ -1,11 +1,11 @@
 import { get, set, del } from 'idb-keyval';
 import { hasUserContext, profileSchema, savedScanSchema, type ImageAsset, type Observation, type OcrCapture, type Profile, type SavedScanRecord } from './contracts';
 import { detectRetailBarcodes } from './barcode';
-import { readOcrImages } from '../modules/ocr/browser';
-import type { BrowserOcrOptions } from '../modules/ocr/browser';
+import { readOcrImages } from '../modules/ocr';
+import type { BrowserOcrOptions } from '../modules/ocr';
 
-export { BROWSER_OCR_ENGINE_VERSION, prepareImage } from '../modules/ocr/browser';
-export type { Crop } from '../modules/ocr/browser';
+export { BROWSER_OCR_ENGINE_VERSION, prepareImage } from '../modules/ocr';
+export type { Crop } from '../modules/ocr';
 
 export type SavedScan = SavedScanRecord;
 const historyKey = 'nutriscan.history.v1';

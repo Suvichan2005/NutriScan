@@ -155,6 +155,11 @@ The local evidence cards expose publisher, jurisdiction, retrieval date and sour
 - Chrome/Playwright acceptance passed at 390×844 and 1440×900. The photo still yields 16 OCR lines, 95 word boxes and one structured nutrient row: 1/9 exact, 0 incorrect, 5 omitted and 3 withheld under a single visual read. The 50 g saturated-fat calculation, correction provenance and local region inspection passed. No page errors, automated Axe violations, off-loopback requests or Gemini route calls occurred.
 - Full suite passed (363 tests across 41 files) and TypeScript passed. The optimized build was not rerun while the local development server was serving the acceptance journey. The private GitHub image-rights gate remains open; no push or history rewrite occurred.
 
+## 22 October 2026 — route OCR compatibility adapters through the public module entry
+
+- Updated the owner-controlled browser, parser, uncertainty, evaluation and annotation facades to import/re-export through `src/modules/ocr/index.ts`, keeping the app dependent on its documented public surface instead of individual implementation files. Knowledge's Node-only `server.ts` remains its deliberate second entry; all other module dependencies stay within their module or the shared contract.
+- Full suite (363/41), TypeScript, all three module-local runners (OCR 21, Knowledge 6, Inference 4), the 21-file import-boundary check and the real-photo mobile/desktop journey passed. Contributor branches or separate clones have not yet been tested. No production OCR behavior or photo scores changed.
+
 ## 22 October 2026 — review OCR evidence passed to optional reasoning
 
 - Existing shared contracts and the inference module preserve raw ordered OCR lines, word geometry and confidence, capture/image provenance, parser candidates and rejection/conflict diagnostics. Assist removes duplicate `rawText` only when it matches the ordered OCR lines exactly; tentative interpretations remain linked to original words and do not mutate package facts.
