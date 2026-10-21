@@ -54,6 +54,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     // Exact spans establish traceability, not entailment; synthesis remains labeled.
     const mode = claim.mode;
     const literalClaim = spans.find(span => span.quote === claim.text);
+    if (mode === 'synthesis' && !numericMentionsAreSupported(claim.text, spans.map(span => span.quote))) return [];
     const unsafeMedicalConclusion = /\b(?:safe|unsafe|suitable|unsuitable)\b|\b(?:diagnos(?:e|is)|treat(?:ment)?|cure|medication|medicine|dosage|dose|insulin)\b/i.test(claim.text);
     if (!allRefsHaveExactQuotes || !noUncitedSpan || mode === 'direct-quote' && !literalClaim || mode === 'synthesis' && unsafeMedicalConclusion) return [];
     return [{ ...claim, mode, text: mode === 'direct-quote' ? literalClaim!.quote : claim.text }];
@@ -169,4 +170,64 @@ function containsOrderedEvidenceTokens(quote: string, words: string[]): boolean 
     cursor = index + 1;
   }
   return true;
+}
+
+type NumericDimension = 'mass' | 'energy' | 'volume' | 'percent' | 'unitless';
+type NumericMention = { value: number; dimension: NumericDimension; rawValue: string; factor: number; localeAmbiguous: boolean };
+const numericMentionPattern = /(?<![\p{L}\p{N}])(-?(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?|\.\d+))(?!\d)\s*(kcal|kilocalories?|kj|kilojoules?|mg|milligrams?|µg|μg|mcg|ug|micrograms?|kg|g|grams?|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|%|percent)?(?![\p{L}])/giu;
+
+function parseNumericLiteral(value: string): { value: number; localeAmbiguous: boolean } {
+  if (value.includes(',') && value.includes('.')) {
+    return {
+      value: value.lastIndexOf(',') > value.lastIndexOf('.')
+        ? Number(value.replaceAll('.', '').replace(',', '.'))
+        : Number(value.replaceAll(',', '')),
+      localeAmbiguous: false,
+    };
+  }
+  if (value.includes(',')) {
+    const [whole, fraction = ''] = value.split(',');
+    return {
+      value: fraction.length === 3 && whole.length > 0 ? Number(value.replaceAll(',', '')) : Number(value.replace(',', '.')),
+      localeAmbiguous: /^-?\d+\,\d{3}$/.test(value),
+    };
+  }
+  return { value: Number(value), localeAmbiguous: /^-?\d+\.\d{3}$/.test(value) };
+}
+
+function numericMentions(text: string): NumericMention[] {
+  const result: NumericMention[] = [];
+  for (const match of text.matchAll(numericMentionPattern)) {
+    const parsed = parseNumericLiteral(match[1]);
+    if (!Number.isFinite(parsed.value)) continue;
+    const unit = (match[2] ?? '').toLocaleLowerCase().replace('μ', 'µ');
+    let dimension: NumericDimension = 'unitless';
+    let factor = 1;
+    if (/^(?:mg|milligrams?)$/.test(unit)) { dimension = 'mass'; factor = 0.001; }
+    else if (/^(?:µg|mcg|ug|micrograms?)$/.test(unit)) { dimension = 'mass'; factor = 0.000001; }
+    else if (/^(?:kg)$/.test(unit)) { dimension = 'mass'; factor = 1000; }
+    else if (/^(?:g|grams?)$/.test(unit)) dimension = 'mass';
+    else if (/^(?:kj|kilojoules?)$/.test(unit)) { dimension = 'energy'; factor = 1 / 4.184; }
+    else if (/^(?:kcal|kilocalories?)$/.test(unit)) dimension = 'energy';
+    else if (/^(?:l|lit(?:er|re)s?)$/.test(unit)) { dimension = 'volume'; factor = 1000; }
+    else if (/^(?:ml|millilit(?:er|re)s?)$/.test(unit)) dimension = 'volume';
+    else if (/^(?:%|percent)$/.test(unit)) dimension = 'percent';
+    result.push({ value: parsed.value * factor, dimension, rawValue: match[1], factor, localeAmbiguous: parsed.localeAmbiguous });
+  }
+  return result;
+}
+
+/** Arabic-numeric synthesis must match a quantity in its cited spans, allowing basic unit equivalence. */
+function numericMentionsAreSupported(claim: string, citedSpans: string[]): boolean {
+  const claimed = numericMentions(claim);
+  if (!claimed.length) return true;
+  const cited = citedSpans.flatMap(numericMentions);
+  return claimed.every(value => cited.some(evidence => {
+    if (value.dimension !== evidence.dimension) return false;
+    if (value.localeAmbiguous || evidence.localeAmbiguous) {
+      return value.localeAmbiguous && evidence.localeAmbiguous && value.rawValue === evidence.rawValue && value.factor === evidence.factor;
+    }
+    const tolerance = Number.EPSILON * Math.max(1, Math.abs(value.value), Math.abs(evidence.value)) * 8;
+    return Math.abs(value.value - evidence.value) <= tolerance;
+  }));
 }

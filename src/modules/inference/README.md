@@ -4,6 +4,8 @@ This module owns bounded assist-evidence preparation and provider-independent va
 
 The module reuses schemas from the owner-controlled `src/lib/contracts.ts`. The Gemini SDK adapter, API request/consent handling, vision/image inspection, routes, UI and session state remain outside this directory and owner-controlled. Application compatibility adapters may import this module and map its typed errors, but module code must not depend on those adapters.
 
+Arabic-numeral quantities in synthesized claims must match quantities in their exact cited spans, with basic mass, energy, volume and percentage unit equivalences normalized. Calculation-backed quantities still require a cited deterministic calculation. This catches digit/unit contradictions; it does not validate written-out number words, prove semantic entailment or establish provider accuracy.
+
 Run the module-only offline fixture suite from the repository root:
 
 ```powershell

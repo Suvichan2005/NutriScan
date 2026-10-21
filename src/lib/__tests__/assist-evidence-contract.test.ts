@@ -278,12 +278,13 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(source).toBeDefined();
     const data=assistInput.parse({consent:true,question:'Does this label tell me my daily free-sugar intake?',package:pkg,evidence:source?[source]:[]});
     const sugar=pkg.observations.find(item=>item.field==='sugars')!;
+    const basis=pkg.observations.find(item=>item.field==='basis')!;
     const who=data.evidence?.find(item=>item.id==='who-sugars-2015')!;
     const output={answer:'ignored',claims:[{
       mode:'synthesis' as const,
       text:'The package line reports 12 g of sugars per 100 g. WHO guidance concerns free sugars across the whole diet, so this line alone does not establish daily free-sugar intake.',
-      observationIds:[sugar.id],sourceIds:[who.id],
-      supportingSpans:[{kind:'observation' as const,id:sugar.id,quote:'Sugars 12 g'},{kind:'source' as const,id:who.id,quote:'free sugars to less than 10% of total daily energy'}]
+      observationIds:[sugar.id,basis.id],sourceIds:[who.id],
+      supportingSpans:[{kind:'observation' as const,id:sugar.id,quote:'Sugars 12 g'},{kind:'observation' as const,id:basis.id,quote:'Per 100 g'},{kind:'source' as const,id:who.id,quote:'free sugars to less than 10% of total daily energy'}]
     }],limitations:[],inspectImage:null};
     const result=validateClaims(output,data);
     expect(result.claims).toHaveLength(1);

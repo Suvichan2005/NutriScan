@@ -487,6 +487,10 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 
 - Owner-controlled OCR facades import through `src/modules/ocr/index.ts` and selectively re-export the compatibility surface. Contributors can change module internals behind that entry without changing application adapters. Keep shared Zod contracts centralized; Knowledge's MiniLM path stays explicitly behind `server.ts`.
 
+## 22 October 2026 — check numeric synthesis against its cited evidence
+
+- Exact citation spans establish traceability but not entailment. As an additional deterministic guard, Arabic-numeral quantities in a synthesized claim must match a cited span after basic unit normalization; calculated quantities must be present in a cited calculation span. Withhold mismatches rather than silently treating citation presence as numerical support. This does not yet check written-out numerals or semantic entailment.
+
 ## 22 October 2026 — keep restricted evidence out of the private published history
 
 - Preserve the original history and image files in a verified local backup. Perform path-only filtering in an isolated clone, ignore the two owner-identified screenshot paths, and publish only sanitized `main` to the existing private repository after clean-clone tests and build pass. Do not rewrite the active checkout or publish other refs.

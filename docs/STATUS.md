@@ -166,6 +166,12 @@ The local evidence cards expose publisher, jurisdiction, retrieval date and sour
 - Evidence-linked synthesis is already supported with exact cited spans and an explicit entailment limitation; direct quotations remain available. Image inspection is a separate consented request. No schema or provider change was warranted, and Gemini remains disabled.
 - OCR, Knowledge and Inference module tests passed (21, 6 and 4); the full suite passed 363 tests across 41 files, typecheck passed, and the module-boundary check passed across 21 TypeScript files. This contract review does not change real-photo measurements or establish live model behavior.
 
+## 22 October 2026 — reject numerically contradicted inference claims offline
+
+- The provider-independent inference validator now withholds synthesized claims when an Arabic-numeral quantity or unit is inconsistent with its exact cited evidence spans. It supports basic mass, energy, volume and percent equivalences, decimal-comma formatting, and claims grounded in cited deterministic calculations. The offline fixtures reject a changed OCR value and a changed calculation result while retaining unit-equivalent and calculation-backed paraphrases. It does not yet validate written-out number words or semantic entailment.
+- A profile/evidence fixture said “12 g per 100 g” but cited only the nutrient row. It now cites the separate `Per 100 g` observation too, reflecting the basis required to support that statement.
+- Full suite passed (367 tests across 41 files), TypeScript passed, the inference module suite passed (8 tests), and module boundaries passed for 21 TypeScript files. This is provider-independent validation evidence, not proof of semantic entailment or Gemini accuracy; no provider call or production enablement occurred.
+
 ## 22 October 2026 — prepare the private baseline without restricted evidence screenshots
 
 - The complete original Git history is preserved in a verified local bundle and restoration clone; the two rights-gated evidence files are also backed up outside the publish clone. The isolated `main` history removes only those paths, and exact-path ignore rules prevent accidental re-tracking. The private remote was confirmed empty before publication.

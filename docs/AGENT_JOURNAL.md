@@ -331,6 +331,10 @@
 - Updated local “What remains uncertain?” phrasing to summarize affected fields and point to label notes/original observations. Same hash-verified photo: 953 to 319 answer characters; OCR remains 1/9 exact, 0 incorrect, 5 omitted and 3 withheld. Chrome journey passed at mobile and desktop with no off-loopback/provider requests, page errors or Axe findings. Full suite (363/41) and typecheck passed; optimized build was skipped to avoid disrupting the active dev server.
 - Routed the owner-controlled browser, parser, uncertainty, evaluation and annotation OCR facades through the module's public index, preserving their existing exports. All module fixture runners, 363 repository tests, TypeScript, module import-boundary validation and the real-photo Chrome journey passed. This narrows the integration seam; it does not prove separate-clone contributor independence or improve OCR field coverage.
 
+## 22 October 2026 — numeric claim grounding on cited evidence
+
+- Added provider-independent numeric grounding for inference synthesis: Arabic-numeral claims with quantities inconsistent with their cited OCR/source/calculation spans are withheld; basic unit conversions and decimal-comma values are covered offline. The full suite passed 367/41, TypeScript passed, inference fixtures passed 8/8 and module boundaries passed. A missing cited serving-basis observation in an existing fixture was corrected. Written-out numerals and semantic entailment remain unchecked; Gemini remains disabled.
+
 ## 22 October 2026 — private repository hygiene checkpoint
 
 - Verified a restorable backup of the original Git refs, retained the restricted image files outside the publish clone, and filtered only the two owner-identified screenshot paths in an isolated clone. A reachable-history credential-signature scan found no high-confidence key material. The clean clone passed installation, repository and module tests, typecheck, and optimized build; no product behavior or provider integration changed.
