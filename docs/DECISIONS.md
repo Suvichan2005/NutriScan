@@ -486,3 +486,7 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 ## 22 October 2026 — keep application adapters on module public entries
 
 - Owner-controlled OCR facades import through `src/modules/ocr/index.ts` and selectively re-export the compatibility surface. Contributors can change module internals behind that entry without changing application adapters. Keep shared Zod contracts centralized; Knowledge's MiniLM path stays explicitly behind `server.ts`.
+
+## 22 October 2026 — keep restricted evidence out of the private published history
+
+- Preserve the original history and image files in a verified local backup. Perform path-only filtering in an isolated clone, ignore the two owner-identified screenshot paths, and publish only sanitized `main` to the existing private repository after clean-clone tests and build pass. Do not rewrite the active checkout or publish other refs.
