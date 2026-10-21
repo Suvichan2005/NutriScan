@@ -5,7 +5,7 @@ Updated: 2026-10-21. This is a local development application and research worksp
 ## Repository checkpoint
 
 - Repository root: this directory; branch: `main`.
-- Latest feature/evidence checkpoint: `b8b2f0a9c5e5f30a4f833faa5cf484f5fe946c7d` (`Add official Gazette navigation fallback`); previous question-first intake checkpoint: `e8bb1477c4cfabe02fbba7430d8f18b77cd4cb77`; previous OCR browser-evaluation checkpoint: `8c05d488550d644d0243dcc882b55c866f25644e`; prior Node crop-evaluation checkpoint: `284d3e0644900830a688804a716b3929f0fba265`.
+- Latest feature/evidence checkpoint: `9441ee130b93819de12f25fb12e8dd34f17122f7` (`Improve mobile intake and guard noisy additive OCR`); previous official-source fallback checkpoint: `7251882`; previous question-first intake checkpoint: `e8bb1477c4cfabe02fbba7430d8f18b77cd4cb77`; previous OCR browser-evaluation checkpoint: `8c05d488550d644d0243dcc882b55c866f25644e`; prior Node crop-evaluation checkpoint: `284d3e0644900830a688804a716b3929f0fba265`.
 - Remote: none configured. No authorized private remote was supplied.
 - First local milestone commit: `6f7b375` (`Build generalized NutriScan product investigation`). No earlier history or remote was present.
 - Provider credentials: none configured; Gemini remains disabled and no provider request has been made.
