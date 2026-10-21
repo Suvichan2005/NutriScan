@@ -4,7 +4,7 @@
 
 - Authenticated GitHub identity matched the owner-authorized target. The target was absent, so one private repository was created and configured as `origin`; its actual visibility is `PRIVATE`, and `git ls-remote --heads origin` returned no branches. No project commit or source image was uploaded.
 - Reviewed all 144 reachable commits and 25 unique historical UI/evidence images. Credential-pattern checks found no high-confidence secrets; the only credential-shaped URL is a deliberately invalid test case. Ignored owner handoff, original private photos, `docs.zip`, archives, academic files and build/model caches were not in the tracked history; `.gitignore` behavior was verified.
-- A tracked browser screenshot embeds package photographs while their image-specific redistribution review is pending. The 144-commit history remains local, unchanged and unpushed until rights are cleared or the owner explicitly approves a history rewrite. Gemini stayed disabled; this work changed no OCR result.
+- A tracked browser screenshot embeds package photographs while their image-specific redistribution review is pending. The audited 144 commits remain intact and unpushed; sanitized documentation-only commits were appended locally afterward. Resume publication only after rights are cleared or the owner explicitly approves a history rewrite. Gemini stayed disabled; this work changed no OCR result.
 
 ## 2026-10-22 — add local annotation adjudication and validate OCR word pointers
 
