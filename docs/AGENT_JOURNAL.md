@@ -126,3 +126,8 @@
 - Audited the existing assist payload: it already carries every recognized OCR line, reading order and geometry, confidence, engine/capture settings, parser rejection/conflict candidates, and session image-handle linkage. It has line geometry rather than table cells, and no durable image digest; no images or hashes were added to remote requests.
 - Added diagnostic links from candidate numeric readings and bases to their separate original OCR line observations, preserving those links through incremental evidence merges. Made `direct-quote`/`synthesis` an explicit required output mode and instructed future synthesis to answer conversationally while retaining exact-span checks and the current safety limits.
 - The full suite passed (284 tests across 31 files), TypeScript typecheck and `git diff --check`. The full suite initially found a missing ID remap in incremental merge; fixed the remap and added a regression. No real photo, browser UI, Gemini/provider call or OCR score was part of this checkpoint.
+
+## 2026-10-21 — prepare explicit follow-up context for future Gemini assist
+
+- Added a separate unchecked control for including no more than four recent local Q/A turns in a consented assist request. Client shaping and strict server validation bound text lengths; prior replies may resolve references but are excluded from the evidence/citation contract.
+- Installed-Chrome acceptance at 390×844 and 1440×900 recorded the default-off state and toggle, with zero provider calls, Axe violations, page errors or off-loopback requests. This is consent/UI evidence only. Focused offline tests and TypeScript validation pass; Gemini remains disabled and no model-backed behavior is claimed.

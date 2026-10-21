@@ -55,6 +55,13 @@ try {
     await page.locator('.assistant-message').filter({ hasText: /Ingredients: Oats, milk powder, salt/ }).first().waitFor({ state: 'visible' });
     await page.getByText('Recorded ingredient text').waitFor({ state: 'visible' });
     const observationDisclosure = await page.locator('.assistant-message').filter({ hasText: /observations, not independently verified product facts/ }).first().isVisible();
+    await page.locator('.provider-details > summary').click();
+    const geminiHistoryOptIn = page.getByRole('checkbox', { name: /Include up to four recent local question-and-answer turns/ });
+    const geminiHistoryStartsUnchecked = !(await geminiHistoryOptIn.isChecked());
+    await geminiHistoryOptIn.check();
+    const geminiHistoryCanBeExplicitlyIncluded = await geminiHistoryOptIn.isChecked();
+    await geminiHistoryOptIn.uncheck();
+    await page.locator('.provider-details > summary').click();
     const firstAnswerAxe = await new AxeBuilder({ page }).analyze();
 
     await page.getByLabel('Ask about this package').fill('Is milk mentioned in an allergen statement?');
@@ -155,6 +162,8 @@ try {
       uncheckingRemovedRememberedContext,
       conversationOptOutRemovedSavedTurns: conversationRemovalConfirmed,
       observationDisclosureVisible: observationDisclosure,
+      geminiHistoryStartsUnchecked,
+      geminiHistoryCanBeExplicitlyIncluded,
       missingTextRemainedUnknown: missingTextUnknown,
       missingTextProducedNoObservationFinding: missingTextHasNoFinding,
       axeViolationIds: [...new Set(axeViolationIds)].sort(),
@@ -164,11 +173,11 @@ try {
     };
     outcomes.push(outcome);
     console.log(JSON.stringify(outcome));
-    if (!observationDisclosure || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
+    if (!observationDisclosure || !geminiHistoryStartsUnchecked || !geminiHistoryCanBeExplicitlyIncluded || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
     await context.close();
   }
 
-  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
+  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.geminiHistoryStartsUnchecked === true && outcome.geminiHistoryCanBeExplicitlyIncluded === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
   const receipt = { schemaVersion: 1, kind: 'synthetic-package-text-conversation-browser-acceptance', generatedAt: new Date().toISOString(), appOrigin: origin.origin, captureTool: 'Playwright using installed Chrome', evaluationInput: 'synthetic label text; not real-photo OCR evidence', persistence: 'explicit local opt-in restores 2 recent turns; opt-out removes saved turns; optional profile is remembered only after separate opt-in and is excluded from scan records', screenshots: 'docs/evidence/private/package-text-conversation', outcomes, passed };
   await writeFile('docs/evidence/package-text-conversation-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/package-text-conversation-browser.json', passed }));

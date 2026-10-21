@@ -53,6 +53,17 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(assistInput.safeParse({consent:true,question:'What does the label say?',package:pkg}).success).toBe(true);
   });
 
+  it('accepts only bounded optional conversation context and never treats it as citeable evidence',()=>{
+    const pkg=makePackage();
+    const conversationContext=Array.from({length:4},(_,index)=>({question:`Prior question ${index+1}`,answer:'A previous local reply; unverified context only.'}));
+    const base={consent:true as const,question:'Why did you say that?',package:pkg};
+    const data=assistInput.parse({...base,conversationContext});
+    expect(data.conversationContext).toEqual(conversationContext);
+    expect(assistInput.safeParse({...base,conversationContext:[...conversationContext,{question:'too many',answer:''}]}).success).toBe(false);
+    expect(assistInput.safeParse({...base,conversationContext:[{question:'   ',answer:'context'}]}).success).toBe(false);
+    expect(()=>validateClaims({answer:'ignored',claims:[{mode:'synthesis',text:'A prior answer said this is suitable.',observationIds:['conversation-turn-1'],sourceIds:[],supportingSpans:[{kind:'observation',id:'conversation-turn-1',quote:'A previous local reply'}]}],limitations:[],inspectImage:null},data)).toThrow('unknown evidence');
+  });
+
   it('keeps imperfect raw lines, reading order, prepared-image geometry, capture provenance, and parse rejections/conflicts',()=>{
     const pkg=makePackage();
     expect(pkg.rawText).toBe(lines.join('\n'));

@@ -278,3 +278,9 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - When the package name is unidentified or no ingredients were read, show a direct action to add a front, ingredients, or barcode photo. It reuses the existing local multi-photo input, returns attention to capture, and stays hidden at the ten-photo limit; it does not infer a missing fact or invoke a remote service.
 - Installed Chrome verified the action and native picker opening at 390×844 and 1440×900 on the hash-verified Saffola nutrition photo. The picker was canceled without adding another image, so this confirms UI routing, not the value of a complementary photo. OCR remained 22 lines / one parsed nutrient row; no accuracy result changed.
 - Axe violations, page errors, off-loopback browser requests and provider calls were zero. Full offline tests remain 284/31 files; typecheck passes.
+
+## 21 October 2026 — explicit, bounded conversation context for future assist
+
+- Local Q/A history may help a future assistant resolve follow-up references, but it is not scientific or package evidence. Keep it out of Gemini requests unless the user checks a separate option; send at most four newest turns and cap question/answer lengths in both the browser payload builder and server schema.
+- Conversation turns cannot be cited through the evidence schema. The provider instruction says prior assistant answers are unverified and may resolve intent only. Exact-span citation checks and safety constraints still govern factual claims. Gemini stays disabled pending owner authorization.
+- Chrome acceptance confirms the default-off control and explicit toggle at phone and desktop viewports, with no provider/network side effect. Offline tests cover payload bounds and evidence rejection; these checks do not demonstrate model-backed follow-up quality.
