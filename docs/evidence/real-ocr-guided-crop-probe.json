@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "real-photo-guided-crop-probe",
-  "generatedAt": "2026-10-21T00:35:55.227Z",
+  "generatedAt": "2026-10-21T00:37:34.209Z",
   "method": "Hash-verified source images, English Tesseract.js, PSM_SINGLE_BLOCK, JPEG quality 98, 3000 px fit-inside proxy; one documented crop variant per image.",
   "runs": [
     {

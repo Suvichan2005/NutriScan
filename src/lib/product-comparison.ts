@@ -1,6 +1,6 @@
 import type { Nutrient, NutrientKey, ProductRecord } from './contracts';
 
-export type ProductComparisonStatus = 'comparable' | 'package-reading-missing' | 'package-reading-conflict' | 'package-basis-unknown' | 'record-basis-unknown' | 'basis-type-mismatch' | 'unit-mismatch';
+export type ProductComparisonStatus = 'comparable' | 'package-identity-conflict' | 'package-reading-missing' | 'package-reading-conflict' | 'package-basis-unknown' | 'record-basis-unknown' | 'basis-type-mismatch' | 'unit-mismatch';
 export type ProductComparisonRow = {
   key: NutrientKey;
   status: ProductComparisonStatus;
@@ -30,15 +30,16 @@ function canonicalValue(key: NutrientKey, value: number, unit: string): { value:
 }
 
 /** Compare a package reading and a community record only after both have an explicit compatible basis. */
-export function compareProductNutrition(packageReadings: Nutrient[], recordReadings: ProductRecord['nutrients']): ProductComparisonRow[] {
+export function compareProductNutrition(packageReadings: Nutrient[], recordReadings: ProductRecord['nutrients'], options: { identityConflict?: boolean } = {}): ProductComparisonRow[] {
   const recordByKey = new Map<NutrientKey, ProductRecord['nutrients'][number]>();
   for (const reading of recordReadings) if (!recordByKey.has(reading.key)) recordByKey.set(reading.key, reading);
   const rows: ProductComparisonRow[] = [];
   for (const recordReading of recordByKey.values()) {
     const candidates = packageReadings.filter(reading => reading.key === recordReading.key);
-    const packageReading = candidates.length === 1 ? candidates[0] : null;
+    const packageReading = !options.identityConflict && candidates.length === 1 ? candidates[0] : null;
     const row: ProductComparisonRow = { key: recordReading.key, status: 'comparable', unit: null, basisUnit: null, packageReading, recordReading, packagePer100: null, recordPer100: null, difference: null };
-    if (!candidates.length) row.status = 'package-reading-missing';
+    if (options.identityConflict) row.status = 'package-identity-conflict';
+    else if (!candidates.length) row.status = 'package-reading-missing';
     else if (candidates.length !== 1 || candidates[0].status === 'conflict') row.status = 'package-reading-conflict';
     else if (!packageReading?.basis) row.status = 'package-basis-unknown';
     else if (!recordReading.basis) row.status = 'record-basis-unknown';

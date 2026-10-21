@@ -34,6 +34,10 @@ describe('evidence-aligned product nutrition comparison', () => {
     expect(compareProductNutrition([reading('protein', 10, 'g', null)], [record('protein', 10, 'g')])[0].status).toBe('package-basis-unknown');
     expect(compareProductNutrition([reading('protein', 10, 'g', 100)], [record('protein', 10, 'g', null)])[0].status).toBe('record-basis-unknown');
   });
+  it('withholds normalized values when package identity is disputed', () => {
+    const [row] = compareProductNutrition([reading('protein', 10, 'g', 100)], [record('protein', 10, 'g')], { identityConflict: true });
+    expect(row).toMatchObject({ status: 'package-identity-conflict', packageReading: null, packagePer100: null, recordPer100: null, difference: null });
+  });
   it('does not equate mass and volume bases or incompatible units', () => {
     expect(compareProductNutrition([reading('sugars', 5, 'g', 100, 'g')], [record('sugars', 5, 'g', { amount: 100, unit: 'ml' })])[0].status).toBe('basis-type-mismatch');
     expect(compareProductNutrition([reading('protein', 5, 'kcal', 100)], [record('protein', 5, 'g')])[0].status).toBe('unit-mismatch');
