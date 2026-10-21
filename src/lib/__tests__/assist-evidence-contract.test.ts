@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import packageInfo from '../../../package.json';
 import { BROWSER_OCR_ENGINE_VERSION } from '../browser';
-import { calculationEvidenceText } from '../contracts';
+import { calculationEvidenceText, defaultProfile } from '../contracts';
 import { parseLabel } from '../parser';
 import { assistInput, validateClaims } from '../server/gemini';
 
@@ -47,6 +47,11 @@ describe('OCR-to-assist evidence contract',()=>{
   it('allows a cited paraphrase and tentative candidate without promoting either into package facts',()=>{
     const pkg=makePackage();
     const data=assistInput.parse({consent:true,question:'What does the noisy protein row appear to say?',package:pkg,images:[{handle:imageId,side:'back',width:1200,height:1800,role:'nutrition',description:'private in-session note'}]});
+    expect(data.package.rawText).toBe(pkg.rawText);
+    expect(data.package.ocrCaptures).toEqual(pkg.ocrCaptures);
+    expect(data.package.parserDiagnostics).toEqual(pkg.parserDiagnostics);
+    expect(data.package.observations.find(item=>item.id==='line-2')).toMatchObject({origin:'ocr',imageId,readingOrder:{runId,lineIndex:2},bbox:{x0:12,y0:80},confidence:51});
+    expect(data.images?.[0].handle).toBe(data.package.ocrCaptures?.[0].imageId);
     const span={kind:'observation' as const,id:'line-2',quote:'Protein approx 8.8 g'};
     const result=validateClaims({
       answer:'ignored free-form answer',
@@ -60,6 +65,35 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(result.tentativeCandidates).toHaveLength(1);
     expect(result.tentativeCandidates[0]).toMatchObject({status:'tentative',numericValue:8.8,basis:null,observationIds:['line-2']});
     expect(data.package.nutrients.some(item=>item.key==='protein')).toBe(false);
+  });
+
+  it('supports careful profile-aware paraphrases with exact user-context and OCR spans',()=>{
+    const pkg=makePackage();
+    const profile={...defaultProfile,goals:'compare quick breakfast options'};
+    const data=assistInput.parse({consent:true,question:'Does this help with my comparison?',package:pkg,profile});
+    const output={answer:'ignored',claims:[{
+      mode:'synthesis',text:'You said you are comparing quick breakfast options. The label contains conflicting sodium readings of 850 mg and 85 mg, so this package does not yet support a reliable comparison.',
+      observationIds:['line-3','line-4'],sourceIds:[],profileFieldIds:['goals'],
+      supportingSpans:[
+        {kind:'profile',id:'goals',quote:'compare quick breakfast options'},
+        {kind:'observation',id:'line-3',quote:'Sodium 850 mg'},
+        {kind:'observation',id:'line-4',quote:'Sodium 85 mg'}
+      ]
+    }],limitations:[],inspectImage:null};
+    const result=validateClaims(output,data);
+    expect(result.claims).toHaveLength(1);
+    expect(result.answer).toContain('Evidence-linked interpretation');
+    expect(result.answer).toContain('[profile:goals]');
+    expect(result.answer).toContain('Sodium 850 mg');
+    expect(result.answer).toContain('Sodium 85 mg');
+
+    const unsupportedProfileQuote=validateClaims({...output,claims:[{...output.claims[0],supportingSpans:[...output.claims[0].supportingSpans.slice(1),{kind:'profile' as const,id:'goals',quote:'I have diabetes'}]}]},data);
+    expect(unsupportedProfileQuote.claims).toEqual([]);
+    const profileCannotValidateSafety=validateClaims({...output,claims:[{...output.claims[0],text:'This product is safe.',supportingSpans:output.claims[0].supportingSpans}]},data);
+    expect(profileCannotValidateSafety.claims).toEqual([]);
+    const withoutProfile=assistInput.parse({consent:true,question:'What do I want?',package:pkg});
+    expect(()=>validateClaims(output,withoutProfile)).toThrow('unknown evidence');
+    expect(data.package.nutrients.some(item=>item.key==='sodium'&&item.status==='observed')).toBe(false);
   });
 
   it('accepts only supplied deterministic calculations as calculation evidence',()=>{

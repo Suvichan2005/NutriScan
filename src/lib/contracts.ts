@@ -49,11 +49,11 @@ export type Calculation=z.infer<typeof calculationSchema>;
 export const calculationEvidenceText=(calculation:Pick<Calculation,'label'|'formula'|'result'|'unit'>):string=>`${calculation.label}; ${calculation.formula} = ${calculation.result} ${calculation.unit}`;
 export type Finding = {id:string;title:string;detail:string;status:'observed'|'calculated'|'context'|'uncertain'|'conflict';observationIds:string[];sourceIds:string[];calculationIds:string[]};
 export type Audit = {answer:string;findings:Finding[];calculations:Calculation[];sources:EvidenceSource[];limitations:string[];nextQuestions:string[];trace:{tool:string;reason:string;status:string}[]};
-export const evidenceSpanSchema=z.object({kind:z.enum(['observation','source','calculation']),id:z.string().min(1).max(160),quote:z.string().min(1).max(1600)}).strict();
+export const evidenceSpanSchema=z.object({kind:z.enum(['observation','source','calculation','profile']),id:z.string().min(1).max(160),quote:z.string().min(1).max(1600)}).strict();
 export const tentativeStructuredCandidateSchema=z.object({
   candidateId:z.string().min(1).max(120),kind:z.enum(['nutrient','ingredient','additive','product-identity','serving-basis']),field:z.string().min(1).max(80),
   proposedValue:z.string().min(1).max(300),numericValue:z.number().finite().nonnegative().max(100000).nullable(),unit:z.string().max(24).nullable(),basis:basisSchema.nullable(),normalizedEntity:z.string().max(200).nullable(),
-  status:z.literal('tentative'),observationIds:z.array(z.string().min(1).max(160)).min(1).max(20),sourceIds:z.array(z.string().min(1).max(160)).max(20),supportingSpans:z.array(evidenceSpanSchema).min(1).max(10),uncertainty:z.string().min(1).max(500)
+  status:z.literal('tentative'),observationIds:z.array(z.string().min(1).max(160)).min(1).max(20),sourceIds:z.array(z.string().min(1).max(160)).max(20),supportingSpans:z.array(evidenceSpanSchema.extend({kind:z.enum(['observation','source'])})).min(1).max(10),uncertainty:z.string().min(1).max(500)
 }).strict();
 export type TentativeStructuredCandidate=z.infer<typeof tentativeStructuredCandidateSchema>;
 export const profileSchema = z.object({dietaryPattern:z.string().max(500),allergies:z.string().max(1000),intolerances:z.string().max(1000),healthConsiderations:z.string().max(1500),goals:z.string().max(1000),ageGroup:z.string().max(80),sexOrReferenceGroup:z.string().max(100),country:z.string().max(80),locality:z.string().max(100)}).strict();
