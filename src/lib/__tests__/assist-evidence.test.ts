@@ -44,4 +44,15 @@ describe('assist evidence context', () => {
     const invalid = assistEvidenceContext({ auditSources: [], localSearch: [], research: [{ ...researchItem('bad-url', 'literature'), url: 'http://example.org/not-https' }] });
     expect(invalid).toEqual([]);
   });
+
+  it('includes prior conversational citations only when the caller explicitly supplies them', () => {
+    const prior = source('prior-local-citation');
+    expect(assistEvidenceContext({ auditSources: [], localSearch: [], research: [] })).toEqual([]);
+    expect(assistEvidenceContext({
+      auditSources: [],
+      localSearch: [],
+      research: [],
+      conversationEvidence: [prior, { ...prior, url: 'http://example.org/not-https' }]
+    })).toEqual([prior]);
+  });
 });

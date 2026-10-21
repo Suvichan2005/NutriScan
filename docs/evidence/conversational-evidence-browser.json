@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "kind": "conversational-local-evidence-browser-acceptance",
+  "generatedAt": "2026-10-21T19:48:49.842Z",
+  "browser": "Chrome via Playwright, headless",
+  "origin": "loopback",
+  "input": "Synthetic typed label; explicit general meal-planning and unrelated follow-up questions.",
+  "evidenceExpected": "NIDDK Healthy Living with Diabetes source summary with its US scope and limitations; no match for quantum mechanics.",
+  "limitations": [
+    "This verifies the UI-to-local-index journey and source presentation, not independent retrieval relevance or health-outcome accuracy.",
+    "The package input is synthetic typed text; no real photo or OCR result is evaluated.",
+    "Gemini is disabled; no provider call or model synthesis is tested.",
+    "The local relevance floor has not been calibrated on an independent user-query set."
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "mealQuestion": "How can I plan a meal around diabetes?",
+      "summaryVisible": true,
+      "sourceScopeVisible": true,
+      "officialNiddkLink": true,
+      "candidateCaveatVisible": true,
+      "noMatchAbstained": true,
+      "evidenceRouteStatuses": [
+        200,
+        200
+      ],
+      "noNonLoopbackRequests": true,
+      "noAssistOrVisionCalls": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/conversational-evidence/mobile.png"
+    },
+    {
+      "viewport": "1440x900",
+      "mealQuestion": "How can I plan a meal around diabetes?",
+      "summaryVisible": true,
+      "sourceScopeVisible": true,
+      "officialNiddkLink": true,
+      "candidateCaveatVisible": true,
+      "noMatchAbstained": true,
+      "evidenceRouteStatuses": [
+        200,
+        200
+      ],
+      "noNonLoopbackRequests": true,
+      "noAssistOrVisionCalls": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/conversational-evidence/desktop.png"
+    }
+  ]
+}

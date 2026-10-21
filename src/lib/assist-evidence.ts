@@ -5,6 +5,7 @@ type AssistEvidenceInputs = {
   auditSources: EvidenceSource[];
   localSearch: LocalSearchEvidence[];
   research: ResearchItem[];
+  conversationEvidence?: EvidenceSource[];
 };
 
 const maxAssistSources = 15;
@@ -44,7 +45,7 @@ function boundedSummary(summary: string): string {
 }
 
 /** Build the bounded, cited evidence context shown in the user's investigation. */
-export function assistEvidenceContext({ auditSources, localSearch, research }: AssistEvidenceInputs): EvidenceSource[] {
+export function assistEvidenceContext({ auditSources, localSearch, research, conversationEvidence = [] }: AssistEvidenceInputs): EvidenceSource[] {
   const result: EvidenceSource[] = [];
   const seen = new Set<string>();
   const add = (source: EvidenceSource) => {
@@ -77,5 +78,6 @@ export function assistEvidenceContext({ auditSources, localSearch, research }: A
       limitations: item.limitations
     });
   }
+  for (const source of conversationEvidence.slice(0, 3)) add(source);
   return result;
 }

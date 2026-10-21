@@ -38,6 +38,7 @@
     "acceptance:neutral-reference": "tsx scripts/evaluate-neutral-reference-browser.mts",
     "acceptance:identity-conflict": "tsx scripts/evaluate-identity-conflict-browser.mts",
     "acceptance:local-evidence": "tsx scripts/evaluate-local-evidence-browser.mts",
+    "acceptance:conversational-evidence": "tsx scripts/evaluate-conversational-evidence-browser.mts",
     "acceptance:product-alternatives": "tsx scripts/evaluate-product-alternatives-browser.mts",
     "acceptance:science-research": "tsx scripts/evaluate-science-research-browser.mts",
     "acceptance:regulatory-research": "tsx scripts/evaluate-regulatory-research-browser.mts",

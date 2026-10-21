@@ -71,6 +71,25 @@ export const packageSchema=packageBaseSchema.superRefine((pkg,context)=>{
 export type PackageData = z.infer<typeof packageSchema>;
 export const sourceSchema = z.object({id:z.string(),title:z.string(),publisher:z.string(),url:z.string().url(),category:z.enum(['guideline','assessment','regulation','product','literature','registry','method']),jurisdiction:z.string(),publishedAt:z.string().nullable(),effectiveAt:z.string().nullable(),retrievedAt:z.string(),summary:z.string(),limitations:z.string(),license:z.string().optional()});
 export type EvidenceSource = z.infer<typeof sourceSchema>;
+export const conversationEvidenceSourceSchema=sourceSchema.extend({
+  id:z.string().min(1).max(160),title:z.string().min(1).max(300),publisher:z.string().min(1).max(240),
+  url:z.string().url().max(2000),jurisdiction:z.string().max(240),publishedAt:z.string().max(80).nullable(),
+  effectiveAt:z.string().max(80).nullable(),retrievedAt:z.string().min(1).max(80),summary:z.string().max(1600),
+  limitations:z.string().max(600),license:z.string().max(500).optional()
+}).strict();
+export type ConversationEvidenceSource=z.infer<typeof conversationEvidenceSourceSchema>;
+export const localEvidenceHitSchema=z.object({
+  source:conversationEvidenceSourceSchema,semanticScore:z.number().finite(),lexicalScore:z.number().finite(),
+  score:z.number().finite(),exactIdentity:z.boolean()
+}).strict();
+export const localEvidenceResponseSchema=z.object({
+  status:z.enum(['ok','no_match']),mode:z.literal('hybrid-local-embedding'),model:z.string().min(1).max(120),
+  revision:z.string().min(1).max(120),corpusVersion:z.string().min(1).max(100),
+  corpusSha256:z.string().regex(/^[a-f0-9]{64}$/),retrievedAt:z.string().min(1).max(80),
+  latencyMs:z.number().int().nonnegative(),results:z.array(localEvidenceHitSchema).max(5),
+  message:z.string().max(1200).optional(),limitations:z.array(z.string().max(500)).max(10),
+  requestId:z.string().uuid().optional()
+}).strict();
 export const calculationSchema=z.object({id:z.string().min(1).max(120),label:z.string().min(1).max(300),nutrient:z.enum(nutrientKeys),input:z.number().finite().nonnegative(),inputUnit:z.string().min(1).max(24),basisAmount:z.number().finite().positive().max(10000),portion:z.number().finite().positive().max(10000),portionUnit:z.enum(['g','ml']),result:z.number().finite().nonnegative(),unit:z.string().min(1).max(24),formula:z.string().min(1).max(1000),evidenceText:z.string().min(1).max(1600).optional(),observationIds:z.array(z.string().min(1).max(160)).min(1).max(20),assumptions:z.array(z.string().max(300)).max(10)}).strict();
 export type Calculation=z.infer<typeof calculationSchema>;
 export const calculationEvidenceText=(calculation:Pick<Calculation,'label'|'formula'|'result'|'unit'>):string=>`${calculation.label}; ${calculation.formula} = ${calculation.result} ${calculation.unit}`;
@@ -90,7 +109,7 @@ export const profileSchema = z.object({dietaryPattern:z.string().max(500),allerg
 export type Profile = z.infer<typeof profileSchema>;
 export const defaultProfile:Profile = {dietaryPattern:'',allergies:'',intolerances:'',healthConsiderations:'',goals:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''};
 export const hasUserContext = (profile:Profile):boolean => Object.values(profile).some(value=>value.trim().length>0);
-export const savedConversationTurnSchema=z.object({question:z.string().trim().min(1).max(1000),answer:z.string().max(8000),at:z.iso.datetime()}).strict();
+export const savedConversationTurnSchema=z.object({question:z.string().trim().min(1).max(1000),answer:z.string().max(8000),at:z.iso.datetime(),evidence:z.array(conversationEvidenceSourceSchema).max(3).optional()}).strict();
 export type SavedConversationTurn=z.infer<typeof savedConversationTurnSchema>;
 export const savedScanSchema=z.object({id:z.string().min(1).max(160),name:z.string().max(200),createdAt:z.string().min(1).max(80),package:packageSchema,portion:z.number().finite().positive().max(10000),unit:z.enum(['g','ml']),conversation:z.array(savedConversationTurnSchema).max(30).optional()}).strict();
 export type SavedScanRecord=z.infer<typeof savedScanSchema>;
