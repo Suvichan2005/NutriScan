@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 22 October 2026 — connect unsupported follow-ups to the local evidence index
+
+- Keep package-specific questions on the deterministic package audit. When its trace marks a question unsupported from the package alone, search the existing curated MiniLM index through the local /api/evidence route using only the bounded question text; do not add profile fields or photos to that request.
+- Validate the shared retrieval response and each HTTPS source URL before attaching at most three citation records to the relevant conversation turn. Show the top source summary, publisher, jurisdiction, publication/retrieval dates and limitations; collapse additional candidates. Label matches as discovery candidates, not verdicts. A no-match remains an explicit statement about this index and development floor, not proof that no evidence exists.
+- Preserve the opt-in boundary: cited sources can be stored with a conversation only under the existing local-save choice, and prior conversation citations enter Gemini evidence only when the user separately includes conversation context. The current assist response already permits labeled synthesis; exact supporting spans and safety validation remain. Gemini stays disabled.
+- Chrome/Playwright tested a synthetic typed-label journey at 390×844 and 1440×900. An otherwise unsupported meal-planning question surfaced the NIDDK summary with US scope and its no-personalized-plan limitation; an unrelated question abstained. Four local route responses returned 200; no non-loopback, assist or vision requests, page errors or Axe violations occurred. This is not independent retrieval-relevance, clinical, OCR-photo or model evidence. Receipt: docs/evidence/conversational-evidence-browser.json.
+
 ## 22 October 2026 — correct OCR browser scorer display-label aliases
 
 - The previous browser scorer looked for “Fat” and “Fiber,” while the result table renders “Total fat” and “Fibre.” Update only the evaluator labels and rerun the same 14 Chrome cases on the same two hash-verified development photos; keep the OCR engine, parsing policy and images unchanged.

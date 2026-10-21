@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-22 — connect broader follow-ups to local source retrieval
+
+- Unsupported package-only questions now query the existing local evidence index with the question text alone. The interaction carries source candidates, curated summaries, scope and limitations into the matching conversation turn; a no-match says only that this local index did not surface a candidate. It does not call Gemini or an external source.
+- Cited source records are bounded and validated before display or local conversation storage. They join later Gemini evidence only when the existing include-conversation choice is explicitly enabled. The audited OCR-to-assist evidence and separate image-inspection consent remain unchanged; the response still supports labeled synthesis with exact-span checks.
+- Chrome/Playwright exercised a synthetic typed-label follow-up at mobile and desktop sizes. The NIDDK candidate and its US scope appeared for a meal-planning query; an unrelated query abstained. Four route calls returned 200, with zero Axe violations, page errors, non-loopback requests or assist/vision routes. This is integration evidence, not independent retrieval relevance, clinical validation, photo accuracy or model behavior.
+- Full suite: 347 tests across 37 files; TypeScript and optimized build passed. Receipt: docs/evidence/conversational-evidence-browser.json. docs.zip was absent from the repository root and parent; no archive content was extracted, altered or committed.
+
 ## 2026-10-22 — repair scorer labels and re-audit the assist evidence contract
 
 - Corrected the browser evaluator's “Fat” and “Fiber” label map to match the UI's “Total fat” and “Fibre,” then reran the same 14 cases on the same two hash-verified photos. Counts moved from 2 correct / 2 incorrect / 111 omitted / 3 withheld to 4 / 2 / 105 / 7 across 118 field-case comparisons; OCR output was unchanged. Two exact Saffola fields repeat across conditions. Zero Axe violations and page errors. This is a scoring correction, not a reader improvement or independent accuracy estimate.
