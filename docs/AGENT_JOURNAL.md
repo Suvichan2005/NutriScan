@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-22 — explain dated nutrient-content claim wording from local sources
+
+- Added concise FSSAI Version IV compendium and amendment-index records plus deterministic wording explanations for high/rich protein, high/rich fibre and low sugars. A matching package line remains an uncertain observation; the engine does not infer RDA, product category, basis, OCR correctness or compliance. Current-law questions abstain for current official research.
+- Refreshed the 20-source local index from cached assets. On 19 developer-authored cases, hybrid remained 100% Top-1/Recall@3; the added query ranked the compendium first in lexical, MiniLM and hybrid retrieval. Current lexical scores are 18/19 Top-1 and Recall@3 (MRR@5 0.9474); MiniLM 17/19 Top-1, 19/19 Recall@3 (MRR@5 0.9474). The 13-case boundary diagnostic remained 13/13. These are tuning-set results, not independent relevance evidence.
+- Chrome/Playwright synthetic typed-label follow-ups passed at 390×844 and 1440×900 with both source cards, generic criteria, unverified line disclosures and current-law abstention. Axe violations, page errors, off-loopback requests and provider routes were zero. Full suite: 342 tests across 36 files; TypeScript passed. No real-photo OCR measurement changed; Gemini remained disabled. Receipt: `docs/evidence/nutrient-claim-browser.json`.
+
 ## 2026-10-22 — retain unparsed text lines and ground a trans-fat follow-up locally
 
 - The browser acceptance caught that a typed “Trans fat 0 g” line remained in `rawText` but was not surfaced to the deterministic audit. The parser now adds otherwise-unrepresented user text lines as `raw-text-line` observations, retains repeated lines and order, and does not parse trans fat as a nutrient. The full original text remains unchanged.

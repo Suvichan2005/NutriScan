@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 22 October 2026 — explain dated FSSAI nutrient-content claim wording locally
+
+- Add a deterministic explanation for recorded high/rich-protein, high/rich-fibre and low-sugars wording, grounded in FSSAI's Version IV Advertising and Claims compendium and dated amendment index. Keep matching package lines as unverified observations. Do not infer an RDA/reference group, classify a product as solid or liquid, choose a serving basis, calculate claim eligibility or make a current-law finding.
+- Keep the source records concise and attributed; terms for downstream redistribution were not independently reviewed. Current applicability and product compliance remain unresolved and must route to current official research.
+- Refresh the local 20-source index from cached MiniLM assets. The 19 developer-authored queries score lexical 18/19 Top-1 and 18/19 Recall@3, MiniLM 17/19 and 19/19, and hybrid 19/19 on both. The new high-protein query ranks its declared source first for all methods; the prior 18-query hybrid set remains 18/18. The 13-case boundary diagnostic remains 13/13. These are development-only retrieval results.
+- Chrome/Playwright acceptance of synthetic typed label text passed at 390×844 and 1440×900. Criteria, source cards, unverified line wording and current-law abstention were verified; Axe violations, page errors, off-origin requests and assist/vision routes were zero. Full suite: 342 tests across 36 files; TypeScript passed. No real-photo OCR score or Gemini behavior changed; Gemini remains disabled.
+
 ## 22 October 2026 — preserve unparsed label lines and explain trans-fat evidence
 
 - Keep the existing OCR record and consent boundary. The text-entry parser now also represents otherwise-unparsed user-entered label lines as bounded `raw-text-line` observations, retaining repeated lines and their order in the observation array. Keep them unverified and leave raw text unchanged.
