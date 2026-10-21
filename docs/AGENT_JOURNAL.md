@@ -108,3 +108,9 @@
 - Rebuilt the index from the already-cached local model. On 18 developer-authored queries, hybrid Top-1 and Recall@3 were 18/18; all 12 boundary probes matched expected behavior. These are development measurements, not independent retrieval validation.
 - Chrome/Playwright checked source attribution, guideline summary and scope at 390×844 and 1440×900. Six local route responses were HTTP 200; unrelated/current-law queries abstained, with zero Axe violations, page errors or off-loopback browser requests. No OCR/photo or Gemini behavior was tested.
 - The full suite passed 280 tests across 31 files; TypeScript typecheck and `git diff --check` passed. No optimized build or provider call was performed.
+
+## 2026-10-21 — verify OCR provenance at the assist boundary
+
+- Kept the existing OCR evidence path: raw lines, confidence, order, geometry, engine/capture settings, and parser rejections/conflicts accompany the consented text request. Matching live handles now have to agree with the capture side and original dimensions; text-only/restored scans do not need a live photo.
+- Confirmed cautious synthesis was already supported with exact source spans, profile context, tentative structured candidates and a non-entailment disclosure. No candidate is promoted into package facts. Original/cropped image transfer remains a separate explicit choice.
+- The focused contract suite (10 tests), full suite (284 tests across 31 files), and TypeScript typecheck passed. Gemini was not called; no real-photo OCR measurement changed.

@@ -28,6 +28,9 @@ const handleSchema = z.object({ handle: z.string().regex(/^[A-Za-z0-9_-]{1,100}$
 export const assistInput = z.object({ consent: z.literal(true), question: z.string().trim().min(1).max(2000), package: packageSchema, profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional() }).strict().superRefine((data,context)=>{
   const observations=new Set(data.package.observations.map(observation=>observation.id));
   for(const [index,observation] of data.package.observations.entries())if(observation.field==='ocr-line'&&(observation.origin!=='ocr'||!observation.imageId||!observation.readingOrder))context.addIssue({code:'custom',path:['package','observations',index,'imageId'],message:'Raw OCR lines need OCR origin, source image and reading order before assist.'});
+  for(const capture of data.package.ocrCaptures??[])data.images?.forEach((image,imageIndex)=>{
+    if(image.handle===capture.imageId&&(image.side!==capture.side||image.width!==capture.sourceImage.width||image.height!==capture.sourceImage.height))context.addIssue({code:'custom',path:['images',imageIndex],message:'A live image handle must match its OCR capture side and original dimensions.'});
+  });
   for(const [index,calculation] of (data.calculations??[]).entries()){
     for(const id of calculation.observationIds)if(!observations.has(id))context.addIssue({code:'custom',path:['calculations',index,'observationIds'],message:'Every supplied calculation must reference package observations.'});
     if(calculation.evidenceText&&calculation.evidenceText!==calculationEvidenceText(calculation))context.addIssue({code:'custom',path:['calculations',index,'evidenceText'],message:'Calculation evidence text must match the supplied deterministic result.'});

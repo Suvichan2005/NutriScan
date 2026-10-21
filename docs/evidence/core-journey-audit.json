@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "kind": "core-intake-to-audit-design-review",
-  "generatedAt": "2026-10-21T11:15:31.993Z",
+  "generatedAt": "2026-10-21T11:39:36.836Z",
   "captureTool": "Playwright using installed Chrome",
   "appOrigin": "http://127.0.0.1:3400",
-  "acceptanceMode": "dev-server-3400",
+  "acceptanceMode": "loopback local application",
   "photoFile": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
   "screenshots": "docs/evidence/private/core-journey-audit",
   "outcomes": [

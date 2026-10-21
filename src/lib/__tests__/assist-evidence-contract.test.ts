@@ -36,6 +36,23 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(assistInput.safeParse({consent:true,question:'What did the label say?',package:pkg}).success).toBe(true);
   });
 
+  it('matches live browser image handles to OCR capture side and original dimensions',()=>{
+    const pkg=makePackage();
+    const base={consent:true as const,question:'What did the label say?',package:pkg};
+    const matching={handle:imageId,side:'back' as const,width:1200,height:1800};
+
+    expect(assistInput.safeParse({...base,images:[matching]}).success).toBe(true);
+    expect(assistInput.safeParse({...base,images:[{...matching,side:'front'}]}).success).toBe(false);
+    expect(assistInput.safeParse({...base,images:[{...matching,width:1201}]}).success).toBe(false);
+    expect(assistInput.safeParse({...base,images:[{...matching,height:1801}]}).success).toBe(false);
+  });
+
+  it('accepts text-only or restored scans without requiring live browser image handles',()=>{
+    const pkg=parseLabel('Nutrition information\nSugars 4 g',{origin:'user'});
+    expect(pkg.ocrCaptures).toBeUndefined();
+    expect(assistInput.safeParse({consent:true,question:'What does the label say?',package:pkg}).success).toBe(true);
+  });
+
   it('keeps imperfect raw lines, reading order, prepared-image geometry, capture provenance, and parse rejections/conflicts',()=>{
     const pkg=makePackage();
     expect(pkg.rawText).toBe(lines.join('\n'));

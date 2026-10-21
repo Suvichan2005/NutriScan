@@ -259,3 +259,10 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - Add the official WHO guideline on sugars intake as an original concise source summary with publication date, retrieval date, global population scope and rights note. Do not reproduce the publication or map a package total-sugars value to a personal daily free-sugar amount.
 - Route explicit free/added-sugar guidance questions to the WHO source in the local audit and MiniLM retrieval while keeping simple nutrient-amount questions on the quick calculation path.
 - Rebuilt corpus version 2026-10-21.5 and measured the 18-case developer query set: hybrid Top-1 18/18, Recall@3 18/18; lexical and semantic Top-1 each 17/18. All 12 local boundary probes met their expected behavior. Mobile/desktop Chrome verified the source card and abstention messages; this is not held-out relevance evidence.
+
+## 21 October 2026 — bind assist image handles to OCR capture provenance
+
+- The consented text-assist request already carries every package observation, OCR order/geometry/confidence, capture engine and processing metadata, and parser-rejected/conflicting candidates. Add a consistency check between a matching live image handle and its capture ID, side and original dimensions; do not require photos for restored/text-only sessions.
+- Keep image bytes out of this request. A model-requested image inspection still requires the separate explicit user action. Do not add a persistent image digest while original photos are not retained; the session image ID and capture metadata are the available provenance.
+- Review confirmed that synthesis mode already supports concise profile-specific paraphrases, with exact evidence spans and an explicit non-entailment disclosure. Citation matching establishes traceability, not that a claim follows from its evidence. No synthesis or safety behavior changed; Gemini remains disabled.
+- The focused assist contract test passed (10 tests), the full suite passed 284 tests across 31 files, and TypeScript typecheck passed. No provider call or live model claim was made.
