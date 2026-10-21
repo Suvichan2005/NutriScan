@@ -15,3 +15,5 @@ public/ocr/
 *.log
 
 *.traineddata
+/docs/evidence/02-genuine-photo-selection.jpg
+/docs/evidence/03-genuine-ocr-corrected-portion.jpg
