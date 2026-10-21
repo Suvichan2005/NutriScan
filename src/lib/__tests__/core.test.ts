@@ -203,4 +203,18 @@ describe('genuine local evidence retrieval',()=>{
     expect(audit.findings.find(f=>f.title==='Sweetener guidance has a defined scope')?.detail).toMatch(/excludes people with existing diabetes/);
     expect(audit.findings.some(f=>/provides no dose/.test(f.detail))).toBe(true);
   });
+  it('surfaces only intent-matched local references with their scope and limitations',()=>{
+    const pkg=label('Per 100 g\nSodium 500 mg');
+    const sodium=buildAudit(pkg,30,'g',defaultProfile,'How does this compare for blood pressure?');
+    expect(sodium.findings.some(f=>f.sourceIds.includes('who-sodium'))).toBe(true);
+    const regulatory=buildAudit(pkg,30,'g',defaultProfile,'Is this product legal in India today?');
+    expect(regulatory.findings.some(f=>f.title.includes('Dietary Guidelines for Indians'))).toBe(false);
+    const unrelated=buildAudit(pkg,30,'g',defaultProfile,'What are the health effects of preservatives?');
+    expect(unrelated.findings.some(f=>f.title.startsWith('Reference to inspect:'))).toBe(false);
+    const metadata=buildAudit(pkg,30,'g',defaultProfile,'What do the ICMR Indian dietary guidelines say?');
+    const icmrReference=metadata.findings.find(f=>f.sourceIds.includes('icmrnin-dgi-2024'));
+    expect(icmrReference?.title).toMatch(/^Reference to inspect:/);
+    expect(icmrReference?.detail).toMatch(/bibliographic metadata only|does not reproduce/i);
+    expect(metadata.sources.some(source=>source.id==='icmrnin-dgi-2024')).toBe(true);
+  });
 });

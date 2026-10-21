@@ -36,7 +36,8 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const limitations=unique([...pkg.warnings,'Package readings are observations and can contain OCR errors.','This answer uses local rules and calculations; it is not a general conversational model.','No live product, regulator or clinical source was contacted by this local audit.']);
   const nextQuestions:string[]=[];
   const userContext=profileText(profile);
-  const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ/i.test(question)||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
+  const askedAdditives=detectAdditives(question);
+  const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|ICMR|\bNIN\b/i.test(question)||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
   const trace:Audit['trace']=[{tool:'reuse_package_observations',reason:'Use the current label evidence for this question; no rescan required.',status:`${pkg.observations.length} observations`},{tool:'calculate_portions',reason:'Scale only unambiguous values with compatible explicit bases.',status:'local deterministic calculation'}];
   const finding=(data:Omit<Finding,'id'>)=> {data.sourceIds.forEach(s=>sourceIds.add(s));findings.push({...data,id:`finding-${findings.length+1}`});};
   if(pkg.userDescription){
@@ -104,7 +105,6 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     finding({title:'Put sodium in a whole-day context',detail:`This portion supplies ${amountText(sodiumCalc.result)} mg sodium, approximately ${amountText(sodiumCalc.result/2000*100)}% of the WHO general adult reference of 2,000 mg/day. WHO recommends less than that amount. This is not a personal sodium allowance or a product safety cutoff.`,status:'context',observationIds:sodiumCalc.observationIds,sourceIds:['who-sodium'],calculationIds:[sodiumCalc.id]});
   }
   const sugars=calculations.find(c=>c.nutrient==='sugars'); const carbs=calculations.find(c=>c.nutrient==='carbohydrate');
-  const askedAdditives=detectAdditives(question);
   for(const code of unique([...pkg.additives,...askedAdditives])){
     const additive=lookupAdditive(code);const obs=pkg.observations.filter(o=>o.field===`additive:${code}`).map(o=>o.id);
     if(additive)finding({title:`INS ${code}: ${additive.name}`,detail:additive.note,status:'context',observationIds:obs,sourceIds:additive.sourceIds,calculationIds:[]});
@@ -130,7 +130,20 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     trace.push({tool:'research_product_context',reason:'Current product identity and location-qualified evidence are needed.',status:'live research required; not performed locally'});
   }
   if(deep){
-    const hits=retrieveEvidence(`${question} ${pkg.additives.join(' ')} ${userContext}`,3);
+    const hits=retrieveEvidence(`${question} ${pkg.additives.join(' ')}`,5);
+    const intentSources = [
+      {id:'who-sodium',matches:/\b(sodium|salt|salty|hypertension|blood pressure)\b/i.test(question)},
+      {id:'who-nss',matches:/\b(sweeteners?|sucralose|aspartame|non[- ]sugar|nss)\b/i.test(question)},
+      {id:'niddk-meals',matches:/\b(diabetes|diabetic|blood glucose|carbohydrates?|carbs|meal planning|sugar claim)\b/i.test(question)},
+      {id:'icmrnin-dgi-2024',matches:/\b(icmr|nin|indian dietary guidelines?|dietary guidelines? for india)\b/i.test(question)},
+    ];
+    const candidateIds=new Set(intentSources.filter(x=>x.matches).map(x=>x.id));
+    for(const code of askedAdditives){const additive=lookupAdditive(code);for(const id of additive?.sourceIds??[])candidateIds.add(id);}
+    const candidates=hits.filter(hit=>candidateIds.has(hit.source.id)).slice(0,3);
+    for(const {source} of candidates){
+      if(sourceIds.has(source.id))continue;
+      finding({title:`Reference to inspect: ${source.title}`,detail:`${source.summary} The local match is a navigation aid, not proof that this source applies to your question. ${source.limitations}`,status:'context',observationIds:[],sourceIds:[source.id],calculationIds:[]});
+    }
     trace.push({tool:'retrieve_evidence',reason:'Select locally stored source context relevant to the question.',status:`${hits.length} local keyword baseline hits; applicability checked by explicit rules. Learned MiniLM retrieval is available separately.`});
   }else trace.push({tool:'intent_router',reason:'A simple quantity question is answerable from label arithmetic.',status:'quick path; no external research selected'});
   if(findings.some(f=>f.status==='conflict'||f.status==='uncertain')||!calculations.length)trace.push({tool:'inspect_image',reason:'A decisive label value or basis is unresolved; the image or a targeted crop can clarify it.',status:'suggested; remote vision requires explicit disclosure and consent'});
