@@ -1,5 +1,13 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — local package-text conversation
+
+- Added deterministic answers for questions about ingredient text, allergen statements, and package claims, linked to their recorded observation IDs. The answer preserves the OCR/transcription uncertainty; absent text remains unknown.
+- Chrome/Playwright passed a synthetic-label intake and follow-up journey at 390×844 and 1440×900. No Axe violations, page errors, or off-loopback requests were observed. This is not real-photo OCR, general language-model, or provider evidence.
+- Re-ran the hash-verified Saffola photo journey at both sizes: 22 OCR observations, one parsed nutrient row, one exact saturated-fat observation, and a corrected 50 g calculation with original observations retained. This reproduces the earlier UI behavior and establishes no OCR accuracy gain.
+- Full verification passed: 250 unit tests across 26 files and TypeScript typecheck. Gemini remained disabled; no provider request was made.
+- No source images, private chat content, provider secrets, health context, or raw request bodies were added to this entry.
+
 ## 2026-10-21 — incremental package photos
 
 - Implemented incremental OCR selection keyed by photo ID and OCR-affecting settings.

@@ -196,12 +196,31 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     answer=`${identities.length?identities.join('; '):'No specific additive identity is established from this question and label'}. Ingredient presence does not establish dose, exposure or an individually safe amount.`;
     if(requested.some(code=>!pkg.additives.includes(code)))answer+=' A question about an additive does not establish that this package contains it.';
   }else{
-    const requested: NutrientKey|undefined=(['addedSugars','saturatedFat',...nutrientKeys] as NutrientKey[]).find(key=>new RegExp(key==='sugars'?'sugars?':key==='addedSugars'?'added sugars?':key==='fiber'?'fib(?:er|re)':key==='fat'?'\\bfat\\b':key==='saturatedFat'?'saturated':key==='carbohydrate'?'carbs?|carbohydrate':key,'i').test(question));
-    if(requested&&!dietRelevant){
-      answerIntent='specific nutrient quantity';const result=calculations.find(c=>c.nutrient===requested);
-      answer=result?.id==='calc-salt-from-sodium'?`For ${amountText(portion)} ${portionUnit}, the declared sodium corresponds to approximately ${amountText(result.result)} g salt equivalent using WHO's approximate relation. This is calculated from sodium, not a printed salt declaration.`:result?`For ${amountText(portion)} ${portionUnit}, the readable label gives ${amountText(result.result)} ${result.unit} ${display[requested].toLowerCase()}.`:`${display[requested]} for this portion is unknown. Confirm the printed amount, unit and serving basis; missing is not zero.`;
-    }else if(!/label|portion|packet|nutrition|mean|audit|analyse|analyze|how much|how many|daily|diet|safe|suitable|reasonable|eat|allerg|intoler/i.test(question)){
-      answerIntent='unsupported local question';answer='The package alone does not establish an answer to that question. This local rule engine can explain label amounts, additive identities and portion scenarios; a question-specific authoritative source or more context is needed.';
+    const textIntent=[
+      {field:'ingredients',label:'ingredient text',matches:/\b(ingredients?|ingredient list|what is it made of)\b/i},
+      {field:'allergens',label:'allergen statement',matches:/\b(allergens?|allergen statement|may contain|contains)\b/i},
+      {field:'claim',label:'package claims',matches:/\b(claims?|marketing claims|what does it claim)\b/i},
+    ].find(intent=>intent.matches.test(question));
+    if(textIntent){
+      answerIntent=`observed ${textIntent.label}`;
+      const rows=pkg.observations.filter(observation=>observation.field===textIntent.field&&observation.text.trim());
+      const text=unique(rows.map(observation=>observation.text.trim()));
+      if(text.length){
+        const shown=text.slice(0,8).map(line=>line.slice(0,240));
+        const omitted=text.length>shown.length||text.some(line=>line.length>240);
+        answer=`The recorded label text says: ${shown.join(' | ')}${omitted?' | Additional text is omitted or truncated.':''} These are package-reading observations, not independently verified product facts; OCR or transcription may be wrong.`;
+        finding({title:`Recorded ${textIntent.label}`,detail:`Literal text retained from the label-reading record. OCR or transcription may be wrong; inspect the package before relying on it.`,status:'observed',observationIds:unique(rows.map(observation=>observation.id)),sourceIds:[],calculationIds:[]});
+      }else{
+        answer=`No readable ${textIntent.label} is recorded for this package. That does not establish that the package has none; add or check a clear photo of the relevant panel.`;
+      }
+    }else{
+      const requested: NutrientKey|undefined=(['addedSugars','saturatedFat',...nutrientKeys] as NutrientKey[]).find(key=>new RegExp(key==='sugars'?'sugars?':key==='addedSugars'?'added sugars?':key==='fiber'?'fib(?:er|re)':key==='fat'?'\\bfat\\b':key==='saturatedFat'?'saturated':key==='carbohydrate'?'carbs?|carbohydrate':key,'i').test(question));
+      if(requested&&!dietRelevant){
+        answerIntent='specific nutrient quantity';const result=calculations.find(c=>c.nutrient===requested);
+        answer=result?.id==='calc-salt-from-sodium'?`For ${amountText(portion)} ${portionUnit}, the declared sodium corresponds to approximately ${amountText(result.result)} g salt equivalent using WHO's approximate relation. This is calculated from sodium, not a printed salt declaration.`:result?`For ${amountText(portion)} ${portionUnit}, the readable label gives ${amountText(result.result)} ${result.unit} ${display[requested].toLowerCase()}.`:`${display[requested]} for this portion is unknown. Confirm the printed amount, unit and serving basis; missing is not zero.`;
+      }else if(!/label|portion|packet|nutrition|mean|audit|analyse|analyze|how much|how many|daily|diet|safe|suitable|reasonable|eat|allerg|intoler/i.test(question)){
+        answerIntent='unsupported local question';answer='The package alone does not establish an answer to that question. This local rule engine can explain label amounts, additive identities and portion scenarios; a question-specific authoritative source or more context is needed.';
+      }
     }
   }
   trace.push({tool:'local_rule_answer',reason:`Select a transparent template for ${answerIntent}.`,status:'deterministic local response; no language model invoked'});

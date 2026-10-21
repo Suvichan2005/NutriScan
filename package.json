@@ -26,6 +26,7 @@
     "acceptance:label-correction": "tsx scripts/evaluate-label-correction.mts",
     "acceptance:keyboard-dialog": "tsx scripts/evaluate-keyboard-dialog.mts",
     "acceptance:core-journey": "tsx scripts/audit-core-journey.mts",
+    "acceptance:package-text-conversation": "tsx scripts/acceptance-package-text-conversation.mts",
     "acceptance:salt-equivalent": "tsx scripts/acceptance-salt-equivalent.mts",
     "acceptance:front-photo-guard": "tsx scripts/diagnose-front-photo-runtime.mts",
     "acceptance:off-liquid-basis": "tsx scripts/acceptance-off-liquid-basis.mts",

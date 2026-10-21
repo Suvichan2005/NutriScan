@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:nutriscan:ocr-evaluation-receipt:1",
   "title": "NutriScan OCR evaluation receipt",
-  "description": "Sanitized common result contract for browser, local/server, and explicitly authorized remote OCR experiments. Never persist image bytes or raw OCR text in tracked receipts.",
+  "description": "Sanitized common per-image result contract for browser, local/server, and explicitly authorized remote OCR experiments. Join engine receipts by image hash, product group, and field ID. Never persist image bytes or raw OCR text in tracked receipts.",
   "type": "object",
   "required": ["schemaVersion", "experimentId", "split", "input", "engine", "metrics", "fields"],
   "properties": {
@@ -35,15 +35,19 @@
     },
     "metrics": {
       "type": "object",
-      "required": ["coldStartMs", "inferenceMs", "networkBytes", "modelBytes", "memory", "fieldScoring"],
+      "required": ["coldStartMs", "inferenceMs", "networkBytes", "imageTransferBytes", "modelBytes", "memory", "fieldScoring"],
       "properties": {
         "coldStartMs": { "type": ["number", "null"], "minimum": 0 },
         "inferenceMs": { "type": ["number", "null"], "minimum": 0 },
+        "warmRunCount": { "type": ["integer", "null"], "minimum": 0 },
+        "warmMedianMs": { "type": ["number", "null"], "minimum": 0 },
+        "warmP95Ms": { "type": ["number", "null"], "minimum": 0 },
         "networkBytes": { "type": ["integer", "null"], "minimum": 0 },
+        "imageTransferBytes": { "type": ["integer", "null"], "minimum": 0 },
         "modelBytes": { "type": ["integer", "null"], "minimum": 0 },
         "fieldScoring": {
           "type": "object",
-          "required": ["expected", "emitted", "exact", "incorrect", "omitted", "abstained", "unscorable", "exactFieldPrecision", "exactFieldRecall"],
+          "required": ["expected", "emitted", "exact", "incorrect", "omitted", "abstained", "unscorable", "exactFieldPrecision", "exactFieldRecall", "fieldCoverage"],
           "properties": {
             "expected": { "type": "integer", "minimum": 0 },
             "emitted": { "type": "integer", "minimum": 0 },
@@ -53,7 +57,17 @@
             "abstained": { "type": "integer", "minimum": 0 },
             "unscorable": { "type": "integer", "minimum": 0 },
             "exactFieldPrecision": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
-            "exactFieldRecall": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+            "exactFieldRecall": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "fieldCoverage": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "numericCorrect": { "type": "integer", "minimum": 0 },
+            "numericScored": { "type": "integer", "minimum": 0 },
+            "numericAccuracy": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "unitCorrect": { "type": "integer", "minimum": 0 },
+            "unitScored": { "type": "integer", "minimum": 0 },
+            "unitAccuracy": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "basisCorrect": { "type": "integer", "minimum": 0 },
+            "basisScored": { "type": "integer", "minimum": 0 },
+            "basisAccuracy": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
           },
           "additionalProperties": false
         },
@@ -67,6 +81,9 @@
           "additionalProperties": false
         },
         "estimatedCostPer1000Images": { "type": ["number", "null"], "minimum": 0 },
+        "costCurrency": { "type": ["string", "null"], "minLength": 3, "maxLength": 3 },
+        "costAssumptions": { "type": ["string", "null"] },
+        "costSourceUrl": { "type": ["string", "null"], "format": "uri" },
         "costAssumptionDate": { "type": ["string", "null"], "format": "date" }
       },
       "additionalProperties": false

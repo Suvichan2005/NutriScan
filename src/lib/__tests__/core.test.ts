@@ -309,6 +309,7 @@ describe('nutrition numerical invariants',()=>{
     expect(buildAudit(pkg,30,'g',defaultProfile,'Does sugar-free mean no carbs?').answer).toMatch(/does not establish zero carbohydrate.*15 g/);
     const additive=buildAudit(pkg,30,'g',defaultProfile,'What is INS 955?');
     expect(additive.answer).toMatch(/INS 955 is Sucralose.*does not establish dose/);
+    expect(buildAudit(pkg,30,'g',defaultProfile,'What is ingredient code INS 955?').answer).toMatch(/INS 955 is Sucralose.*does not establish dose/);
     expect(additive.trace.find(t=>t.tool==='local_rule_answer')?.status).toMatch(/no language model/);
   });
   it('keeps quick quantity questions quick despite a medical profile',()=>{
@@ -322,6 +323,30 @@ describe('nutrition numerical invariants',()=>{
     expect(audit.answer).toMatch(/has not checked current/);
     const other=buildAudit(label('Per 100 g\nSugars 10 g'),30,'g',defaultProfile,'Why is the sky blue?');
     expect(other.answer).toMatch(/local rule engine/);expect(other.answer).not.toMatch(/3 g/);
+  });
+  it('answers open-ended package-text follow-ups with literal observation provenance',()=>{
+    const pkg=label('Ingredients: Oats, milk powder, salt\nContains: Milk\nHigh protein');
+    const cases=[
+      {question:'What ingredients are listed?',field:'ingredients',literal:'Ingredients: Oats, milk powder, salt'},
+      {question:'What allergen warning is shown?',field:'allergens',literal:'Contains: Milk'},
+      {question:'What claims does the package make?',field:'claim',literal:'High protein'},
+    ];
+    for(const item of cases){
+      const audit=buildAudit(pkg,30,'g',defaultProfile,item.question);
+      const sourceRows=pkg.observations.filter(observation=>observation.field===item.field);
+      const finding=audit.findings.find(entry=>entry.title===`Recorded ${item.field==='claim'?'package claims':item.field==='allergens'?'allergen statement':'ingredient text'}`);
+      expect(audit.answer).toContain(item.literal);
+      expect(audit.answer).toMatch(/observations, not independently verified product facts/i);
+      expect(finding?.observationIds).toEqual(sourceRows.map(observation=>observation.id));
+      expect(finding?.sourceIds).toEqual([]);
+      expect(finding?.status).toBe('observed');
+      expect(audit.trace.find(entry=>entry.tool==='local_rule_answer')?.status).toContain('no language model');
+    }
+  });
+  it('keeps missing label text unknown instead of inferring its absence',()=>{
+    const audit=buildAudit(label('Per 100 g\nSugars 10 g'),30,'g',defaultProfile,'What ingredients are listed?');
+    expect(audit.answer).toMatch(/No readable ingredient text is recorded.*does not establish that the package has none/i);
+    expect(audit.findings.some(entry=>entry.title==='Recorded ingredient text')).toBe(false);
   });
 });
 describe('genuine local evidence retrieval',()=>{

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "core-intake-to-audit-design-review",
-  "generatedAt": "2026-10-21T07:21:18.459Z",
+  "generatedAt": "2026-10-21T08:17:22.015Z",
   "captureTool": "Playwright using installed Chrome",
   "appOrigin": "http://127.0.0.1:3400",
   "acceptanceMode": "unspecified local server",

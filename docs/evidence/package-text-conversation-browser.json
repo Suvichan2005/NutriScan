@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "kind": "synthetic-package-text-conversation-browser-acceptance",
+  "generatedAt": "2026-10-21T08:16:03.250Z",
+  "appOrigin": "http://127.0.0.1:3400",
+  "captureTool": "Playwright using installed Chrome",
+  "evaluationInput": "synthetic label text; not real-photo OCR evidence",
+  "screenshots": "docs/evidence/private/package-text-conversation",
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "syntheticLabelInput": true,
+      "observedIngredientQuestionAnswered": true,
+      "allergenFollowUpAnsweredFromRecordedText": true,
+      "observationDisclosureVisible": true,
+      "missingTextRemainedUnknown": true,
+      "missingTextProducedNoObservationFinding": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "nonLoopbackRequestOrigins": []
+    },
+    {
+      "viewport": "1440x900",
+      "syntheticLabelInput": true,
+      "observedIngredientQuestionAnswered": true,
+      "allergenFollowUpAnsweredFromRecordedText": true,
+      "observationDisclosureVisible": true,
+      "missingTextRemainedUnknown": true,
+      "missingTextProducedNoObservationFinding": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "nonLoopbackRequestOrigins": []
+    }
+  ],
+  "passed": true
+}
