@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — record unknown reuse terms instead of leaving license metadata blank
+
+- Audited all 16 curated local evidence records. Eight lacked a license/terms note. Those now state that terms were not independently verified and that NutriScan retains only an original summary and link; recorded source restrictions remain explicit.
+- Added a regression that rejects missing license-status notes. The knowledge summaries, source IDs, URLs and embedding input did not change; corpus version and index fingerprint still match, so no model download or index rebuild occurred.
+- Full suite passed 321 tests across 33 files; TypeScript passed. This is source-provenance readiness, not legal clearance, new retrieval evidence or user-facing scientific accuracy.
+- No source images, private chat content, profile data, credentials or request bodies were added.
+
 ## 2026-10-21 — link consented vision observations to their source image
 
 - The OCR-to-assist review found no loss of raw OCR observations or parser candidate evidence in text assist. A separate gap existed after explicit image inspection: returned vision lines did not retain which selected photo/crop produced them. Vision outputs now carry an image/run link, and the package stores side, source dimensions, crop/preprocessing and model identifier. Later text assist preserves that link and checks a matching live handle.

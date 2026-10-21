@@ -382,3 +382,9 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - Retain no image bytes or durable digest. The source dimensions are client-provided and are not verified against original bytes because inspection sends a prepared image/crop. Image transfer remains a separate explicit user action. Vision output stays unverified; disagreements remain observations and comparable numeric conflicts remain withheld.
 - The existing answer contract supports direct quotation or evidence-linked synthesis, including profile context. Exact-span validation, claim filtering and the traceability-versus-entailment limitation remain in force; the intended response is not restricted to verbatim quotation. Gemini remains disabled.
 - Offline checks passed, including 321 tests, TypeScript, and an isolated optimized build. The synthetic typed-text browser receipt has zero provider calls. No OCR/photo accuracy measurement changed.
+
+## 21 October 2026 — make unknown source reuse terms explicit
+
+- Each curated knowledge record carries a license/terms note. Keep verified restrictions where available and mark other terms unverified; do not infer an open license from an official or academic publisher label.
+- The corpus summaries, citations, retrieval text and embedding fingerprint are unchanged. Do not rebuild embeddings for a metadata-only license-note change; the existing versioned index hash was rechecked and still matches.
+- This is provenance visibility, not legal clearance. No full source text or dataset was added.
