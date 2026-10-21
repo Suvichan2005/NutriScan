@@ -1,11 +1,16 @@
 {
   "schemaVersion": 1,
   "kind": "core-intake-to-audit-design-review",
-  "generatedAt": "2026-10-21T15:59:04.706Z",
+  "generatedAt": "2026-10-21T16:38:41.813Z",
   "captureTool": "Playwright using installed Chrome",
   "appOrigin": "http://127.0.0.1:3400",
   "acceptanceMode": "loopback local application",
   "photoFile": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+  "limitations": [
+    "OCR field measurements use one source image and a single human visual read, not independent adjudication or a held-out accuracy estimate.",
+    "Axe results are automated checks, not full accessibility conformance.",
+    "The browser receipt counts Gemini route invocations, not downstream provider calls or provider cost."
+  ],
   "screenshots": "docs/evidence/private/core-journey-audit",
   "outcomes": [
     {
@@ -25,6 +30,130 @@
       "exportedOcrWordBoxes": 95,
       "ocrWordGeometryWithinCapture": true,
       "parsedNutrientRows": 1,
+      "annotatedFieldCounts": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "expected": 9,
+        "exact": 1,
+        "incorrect": 0,
+        "omitted": 5,
+        "withheld": 3,
+        "fields": [
+          {
+            "key": "energy",
+            "expectedValue": 376,
+            "expectedUnit": "kcal",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "withheld"
+          },
+          {
+            "key": "protein",
+            "expectedValue": 8.8,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "omitted"
+          },
+          {
+            "key": "carbohydrate",
+            "expectedValue": 69.2,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "omitted"
+          },
+          {
+            "key": "sugars",
+            "expectedValue": 5.1,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "omitted"
+          },
+          {
+            "key": "addedSugars",
+            "expectedValue": 3.6,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "omitted"
+          },
+          {
+            "key": "fiber",
+            "expectedValue": 12.4,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "omitted"
+          },
+          {
+            "key": "fat",
+            "expectedValue": 9.9,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "withheld"
+          },
+          {
+            "key": "saturatedFat",
+            "expectedValue": 3.4,
+            "expectedUnit": "g",
+            "emittedValue": 3.4,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per100g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "outcome": "exact"
+          },
+          {
+            "key": "sodium",
+            "expectedValue": 2283,
+            "expectedUnit": "mg",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "withheld"
+          }
+        ]
+      },
+      "annotatedFieldScoreConserved": true,
+      "noIncorrectAnnotatedFields": true,
       "addPhotoActionVisible": true,
       "addPhotoPickerOpened": true,
       "calculatedNutrients": 1,
@@ -50,6 +179,8 @@
       "niddkSourceLinked": true,
       "noNonLoopbackRequests": true,
       "nonLoopbackRequestOrigins": [],
+      "geminiRouteRequests": [],
+      "noGeminiRouteRequests": true,
       "axeViolationIds": {
         "intake": [],
         "photo and crop": [],
@@ -78,6 +209,130 @@
       "exportedOcrWordBoxes": 95,
       "ocrWordGeometryWithinCapture": true,
       "parsedNutrientRows": 1,
+      "annotatedFieldCounts": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "expected": 9,
+        "exact": 1,
+        "incorrect": 0,
+        "omitted": 5,
+        "withheld": 3,
+        "fields": [
+          {
+            "key": "energy",
+            "expectedValue": 376,
+            "expectedUnit": "kcal",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "withheld"
+          },
+          {
+            "key": "protein",
+            "expectedValue": 8.8,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "omitted"
+          },
+          {
+            "key": "carbohydrate",
+            "expectedValue": 69.2,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "omitted"
+          },
+          {
+            "key": "sugars",
+            "expectedValue": 5.1,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "omitted"
+          },
+          {
+            "key": "addedSugars",
+            "expectedValue": 3.6,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "omitted"
+          },
+          {
+            "key": "fiber",
+            "expectedValue": 12.4,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "omitted"
+          },
+          {
+            "key": "fat",
+            "expectedValue": 9.9,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "withheld"
+          },
+          {
+            "key": "saturatedFat",
+            "expectedValue": 3.4,
+            "expectedUnit": "g",
+            "emittedValue": 3.4,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per100g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "outcome": "exact"
+          },
+          {
+            "key": "sodium",
+            "expectedValue": 2283,
+            "expectedUnit": "mg",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "outcome": "withheld"
+          }
+        ]
+      },
+      "annotatedFieldScoreConserved": true,
+      "noIncorrectAnnotatedFields": true,
       "addPhotoActionVisible": true,
       "addPhotoPickerOpened": true,
       "calculatedNutrients": 1,
@@ -103,6 +358,8 @@
       "niddkSourceLinked": true,
       "noNonLoopbackRequests": true,
       "nonLoopbackRequestOrigins": [],
+      "geminiRouteRequests": [],
+      "noGeminiRouteRequests": true,
       "axeViolationIds": {
         "intake": [],
         "photo and crop": [],

@@ -322,6 +322,13 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - Offline assist tests and the 18-case developer retrieval evaluation remain distinct from provider or held-out evidence. Chrome/Playwright checked the local source journey at phone and desktop sizes; all 12 evidence-route calls returned HTTP 200, with no Axe violations, page errors or off-loopback requests.
 - A focused offline regression exercises the noisy OCR + retrieved JECFA synonym + tentative candidate path; it passed with the full 298-test suite across 33 files and TypeScript typecheck. This is contract evidence only.
 
+## 21 October 2026 — record field coverage in the real-photo journey
+
+- Keep the current browser-first reader unchanged pending independently annotated comparisons. In the same hash-verified development photo, both viewports exposed 16 OCR lines and 95 word boxes but only one structured nutrient row. Of nine single-reader reference fields, the row matched one value, unit and per-100 g basis; five fields were omitted and three withheld, with no incorrect emitted field.
+- This end-to-end receipt does not distinguish recognition failure from geometry association or parser rejection for every absent field. Existing stage-level experiments point to association and parser acceptance as plausible bottlenecks, but their geometry-based measures are heuristic. Do not use this one-image result to choose a replacement engine or claim population accuracy.
+- Retain raw OCR, geometry, confidence and parser diagnostics in the consented text-assist contract; keep any future model interpretations tentative and traceable. Image bytes remain behind the separate explicit inspection action. Gemini remains disabled.
+- Chrome/Playwright captured the real-photo flow at 390×844 and 1440×900. The OCR-region inspection remained local, and the journey supported correction, calculation, evidence-linked follow-up and adding another package photo. Axe reported no violations; no page errors or off-loopback requests occurred. These are usability/integration checks, not proof of OCR correctness or full accessibility conformance.
+
 ## 21 October 2026 — let users add package evidence from unresolved results
 
 - When the package name is unidentified or no ingredients were read, show a direct action to add a front, ingredients, or barcode photo. It reuses the existing local multi-photo input, returns attention to capture, and stays hidden at the ten-photo limit; it does not infer a missing fact or invoke a remote service.

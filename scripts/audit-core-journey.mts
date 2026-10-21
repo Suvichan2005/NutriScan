@@ -27,12 +27,14 @@ try {
     const page = await context.newPage();
     const pageErrors: string[] = [];
     const nonLoopbackRequests: string[] = [];
+    const geminiRouteRequests: string[] = [];
     let httpRequestCount=0;
     let postRequestCount=0;
     page.on('pageerror', (error) => pageErrors.push(error.message));
     page.on('request', (request) => {
       const requestUrl = new URL(request.url());
       if(requestUrl.protocol==='http:'||requestUrl.protocol==='https:'){httpRequestCount++;if(request.method()==='POST')postRequestCount++;}
+      if (requestUrl.pathname === '/api/assist' || requestUrl.pathname === '/api/vision') geminiRouteRequests.push(`${request.method()} ${requestUrl.pathname}`);
       const effectiveHostname = requestUrl.origin === 'null' ? '' : new URL(requestUrl.origin).hostname;
       if (effectiveHostname && !['127.0.0.1', 'localhost', '[::1]'].includes(effectiveHostname)) nonLoopbackRequests.push(requestUrl.origin);
     });
@@ -127,7 +129,37 @@ try {
     if (!exportedStream) throw new Error(`${prefix}: evidence export could not be read in memory.`);
     const exportChunks: Buffer[] = [];
     for await (const chunk of exportedStream) exportChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    const exported = JSON.parse(Buffer.concat(exportChunks).toString('utf8')) as { package: { observations: Array<{ field: string; imageId?: string; ocrWords?: Array<{ bbox: { x0: number; y0: number; x1: number; y1: number } }> }>; ocrCaptures?: Array<{ imageId: string; preparedImage: { width: number; height: number } }> } };
+    const exported = JSON.parse(Buffer.concat(exportChunks).toString('utf8')) as { package: {
+      observations: Array<{ field: string; imageId?: string; ocrWords?: Array<{ bbox: { x0: number; y0: number; x1: number; y1: number } }> }>;
+      ocrCaptures?: Array<{ imageId: string; preparedImage: { width: number; height: number } }>;
+      nutrients: Array<{ key: string; value: number; unit: string; basis: { amount: number; unit: string } | null; status: 'observed'|'corrected'|'conflict' }>;
+      parserDiagnostics?: Array<{ field: string; decision: 'accepted'|'conflict'|'rejected' }>;
+    } };
+    const annotatedFields = record.manualAnnotation.nutrients.map((expected) => {
+      const candidates = exported.package.nutrients.filter((nutrient) => nutrient.key === expected.key);
+      const diagnostics = (exported.package.parserDiagnostics ?? []).filter((diagnostic) => diagnostic.field === expected.key);
+      const candidate = candidates[0] ?? null;
+      const numericExact = !!candidate && Math.abs(candidate.value - expected.value) <= Math.max(.015, Math.abs(expected.value) * .005);
+      const unitExact = !!candidate && candidate.unit === expected.unit;
+      const basisExact = !!candidate && candidate.basis?.amount === record.manualAnnotation!.basis!.amount && candidate.basis?.unit === record.manualAnnotation!.basis!.unit;
+      let outcome: 'exact'|'incorrect'|'omitted'|'withheld';
+      if (candidates.some((nutrient) => nutrient.status === 'conflict') || candidates.length > 1) outcome = 'withheld';
+      else if (candidate) outcome = numericExact && unitExact && basisExact ? 'exact' : 'incorrect';
+      else if (diagnostics.some((diagnostic) => diagnostic.decision === 'rejected' || diagnostic.decision === 'conflict')) outcome = 'withheld';
+      else outcome = 'omitted';
+      return { key: expected.key, expectedValue: expected.value, expectedUnit: expected.unit, emittedValue: candidate?.value ?? null, emittedUnit: candidate?.unit ?? null, emittedBasis: candidate?.basis ?? null, numericExact, unitExact, basisExact, outcome };
+    });
+    const annotatedFieldCounts = {
+      referenceStatus: 'single human visual read; not independently adjudicated',
+      expected: annotatedFields.length,
+      exact: annotatedFields.filter((field) => field.outcome === 'exact').length,
+      incorrect: annotatedFields.filter((field) => field.outcome === 'incorrect').length,
+      omitted: annotatedFields.filter((field) => field.outcome === 'omitted').length,
+      withheld: annotatedFields.filter((field) => field.outcome === 'withheld').length,
+      fields: annotatedFields,
+    };
+    const annotatedFieldScoreConserved = annotatedFieldCounts.exact + annotatedFieldCounts.incorrect + annotatedFieldCounts.omitted + annotatedFieldCounts.withheld === annotatedFieldCounts.expected;
+    const noIncorrectAnnotatedFields = annotatedFieldCounts.incorrect === 0;
     const exportedOcrLines = exported.package.observations.filter((item) => item.field === 'ocr-line');
     const exportedOcrWords = exportedOcrLines.flatMap((item) => item.ocrWords ?? []);
     const captures = new Map((exported.package.ocrCaptures ?? []).map((item) => [item.imageId, item]));
@@ -191,6 +223,9 @@ try {
       exportedOcrWordBoxes: exportedOcrWords.length,
       ocrWordGeometryWithinCapture,
       parsedNutrientRows: parsedRows,
+      annotatedFieldCounts,
+      annotatedFieldScoreConserved,
+      noIncorrectAnnotatedFields,
       addPhotoActionVisible,
       addPhotoPickerOpened,
       calculatedNutrients: calculated,
@@ -216,15 +251,17 @@ try {
       niddkSourceLinked: niddkHref === 'https://www.niddk.nih.gov/health-information/diabetes/overview/healthy-living-with-diabetes',
       noNonLoopbackRequests: nonLoopbackRequests.length === 0,
       nonLoopbackRequestOrigins: [...new Set(nonLoopbackRequests.map(requestUrl => new URL(requestUrl).origin))],
+      geminiRouteRequests,
+      noGeminiRouteRequests: geminiRouteRequests.length === 0,
       axeViolationIds: axeIds,
       pageErrors,
     });
     await context.close();
   }
-  const receipt = { schemaVersion: 1, kind: 'core-intake-to-audit-design-review', generatedAt: new Date().toISOString(), captureTool: 'Playwright using installed Chrome', appOrigin: origin.origin, acceptanceMode: process.env.NUTRISCAN_ACCEPTANCE_MODE ?? 'loopback local application', photoFile, screenshots: 'docs/evidence/private/core-journey-audit', outcomes: results };
+  const receipt = { schemaVersion: 1, kind: 'core-intake-to-audit-design-review', generatedAt: new Date().toISOString(), captureTool: 'Playwright using installed Chrome', appOrigin: origin.origin, acceptanceMode: process.env.NUTRISCAN_ACCEPTANCE_MODE ?? 'loopback local application', photoFile, limitations: ['OCR field measurements use one source image and a single human visual read, not independent adjudication or a held-out accuracy estimate.', 'Axe results are automated checks, not full accessibility conformance.', 'The browser receipt counts Gemini route invocations, not downstream provider calls or provider cost.'], screenshots: 'docs/evidence/private/core-journey-audit', outcomes: results };
   await writeFile('docs/evidence/core-journey-audit.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/core-journey-audit.json', screenshotDirectory: 'docs/evidence/private/core-journey-audit', outcomes: results }, null, 2));
-  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.localOcrRegionInspectionWorks || !item.localOcrRegionInspectionMadeNoHttpRequest || !item.uncertaintyFollowUpUsesPackageEvidence || !item.ocrWordGeometryWithinCapture || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
+  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.annotatedFieldScoreConserved || !item.noIncorrectAnnotatedFields || !item.localOcrRegionInspectionWorks || !item.localOcrRegionInspectionMadeNoHttpRequest || !item.uncertaintyFollowUpUsesPackageEvidence || !item.ocrWordGeometryWithinCapture || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || !item.noGeminiRouteRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
 } finally {
   await browser.close();
 }
