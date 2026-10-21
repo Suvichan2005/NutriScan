@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — resolve child-specific fibre follow-ups locally
+
+- Added a narrow local reference resolver for explicit age-group follow-ups to a WHO fibre-guidance question. It uses the preceding user question only; previous assistant text remains untrusted context, and the current prompt stays separate from any opt-in Gemini conversation history.
+- Completed the OCR-to-assist review: the existing contract already preserves raw ordered OCR lines, word text/geometry/confidence, capture settings and session image handles, parser rejection/conflict candidates, retrieval sources, and tentative output candidates. The response boundary already supports exact direct quotations and labeled evidence-linked synthesis with distinct profile citations. No schema redesign or provider call was warranted; exact-span checks establish traceability, not entailment.
+- Offline tests cover age-band guidance, unknown package amounts, and context isolation. The full suite passed 312 tests across 33 files; typecheck, optimized build, and `git diff --check` passed. Production-build Chrome/Playwright at 390×844 and 1440×900 verified the synthetic typed-text flow and five-turn local opt-in restore, with no Axe violations, page errors, provider calls, or off-origin requests. This is not real-photo OCR or Gemini evidence; Gemini remains disabled.
+
 ## 2026-10-21 — route existing WHO carbohydrate-quality guidance into local audits
 
 - Connected explicit whole-diet fibre/fiber, whole-grain, pulse/legume and carbohydrate-quality questions to the existing WHO guideline. Local replies summarize carbohydrate sources and, for fibre questions, distinguish adult guidance from age-specific child guidance. A 30 g package calculation stays 2.4 g from an 8 g/100 g observation and is separate from the whole-day recommendation; simple amount questions remain on the deterministic path.

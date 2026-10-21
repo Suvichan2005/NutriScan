@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 21 October 2026 — answer age-group follow-ups from local whole-diet guidance
+
+- When a short children/adults follow-up directly follows a WHO dietary-fibre guidance question, resolve the reference from the preceding user question alone. Do not use the previous assistant response as evidence or silently send prior turns to Gemini.
+- Use the existing WHO source summary for the child age bands (15 g/day at ages 2–5, 21 g/day at ages 6–9, 25 g/day at ages 10+). Keep them population whole-diet guidance; any package portion calculation remains conditional on the observed label reading.
+- No OCR or assist schema change is needed: the current consented assist input already retains raw OCR observations, recognition metadata, parser diagnostics, capture provenance and tentative candidates, and its response boundary already supports citation-linked synthesis. Offline contract checks remain distinct from live Gemini behavior.
+- The 312-test suite, typecheck, optimized build and synthetic typed-label Chrome flow passed at phone and desktop viewports; the run made no provider calls. This improves local conversational continuity only and establishes no photographed-label accuracy or model quality.
+
 ## 21 October 2026 — route whole-diet carbohydrate guidance without changing package quantities
 
 - Route only clear guidance questions about fibre/fiber quality, whole grains, pulses/legumes or carbohydrate quality to the existing WHO source. Keep direct package/portion amount questions on the local nutrient calculation path.
