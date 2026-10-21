@@ -5,8 +5,8 @@ Updated: 2026-10-21. This is a local development application and research worksp
 ## Repository checkpoint
 
 - Repository root: this directory; branch: `main`.
-- Previous implementation checkpoint: `6c1c8d9` (`Add visual crop selection for product photos`); the follow-up drag-to-OCR evaluation and evidence receipt are recorded below.
-- Current local checks: typecheck passed; 221 tests passed; `npm audit` reported zero vulnerabilities; isolated Webpack production build passed before the current science-query change; synthetic Chrome fallback decoded generated EAN-13, EAN-8 and UPC-A codes with native detection absent; incremental photo and visual crop flows passed at 390×844 and 1440×900.
+- Current implementation checkpoint: `f71e216` (`Refine science search and expand OCR browser evaluation`); working-tree evidence and test results are recorded below.
+- Current local checks: typecheck passed; 221 tests passed; `npm audit` reported zero vulnerabilities; isolated Webpack production build passed; synthetic Chrome fallback decoded generated EAN-13, EAN-8 and UPC-A codes with native detection absent; incremental photo and visual crop flows passed at 390×844 and 1440×900.
 - Remote: none configured. No authorized private remote was supplied.
 - First local milestone commit: `6f7b375` (`Build generalized NutriScan product investigation`). No earlier history or remote was present.
 - Provider credentials: none configured; Gemini remains disabled and no provider request has been made.
