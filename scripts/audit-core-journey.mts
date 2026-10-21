@@ -70,6 +70,14 @@ try {
     });
     const parsedRows = await page.locator('.details-block table tbody tr').count();
     const packageName = (await page.locator('.results-section h2').innerText()).trim();
+    const unknownSummary = await page.locator('.unknown-card .unknown-summary').innerText();
+    const labelNotes = page.locator('.unknown-card details').first();
+    const labelNotesCollapsed = await labelNotes.evaluate((details) => !(details as HTMLDetailsElement).open);
+    const labelNotesDisclosure = await labelNotes.locator('summary').innerText();
+    await labelNotes.locator('summary').click();
+    const detailedLabelNotes = await labelNotes.locator('ul').innerText();
+    const labelNotesPreserveParserDetails = /multiple numeric values retained/i.test(detailedLabelNotes) && /invalid value withheld/i.test(detailedLabelNotes);
+    await labelNotes.locator('summary').click();
     const mathsDetails = page.locator('.nutrition-card .details-block');
     if (!(await mathsDetails.evaluate((details) => (details as HTMLDetailsElement).open))) await page.getByText('See the label & calculation maths').click();
     const calculated = await mathsDetails.locator('table tbody tr').evaluateAll((rows) => rows.filter((row) => !!row.cells[2]?.textContent?.trim() && !/withheld/i.test(row.cells[2].textContent ?? '')).length);
@@ -117,6 +125,8 @@ try {
     await niddkFinding.locator('details.finding-evidence summary').click();
     const niddkLink = niddkFinding.getByRole('link', { name: /Healthy Living with Diabetes/ });
     const niddkHref = await niddkLink.getAttribute('href').catch(() => null);
+    await page.locator('.unknown-card').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(captureDir, `${prefix}-07-personalized-viewport.png`) });
     await page.locator('.results-section').screenshot({ path: path.join(captureDir, `${prefix}-07-personalized-follow-up.png`) });
     await axe('personalized diabetes follow-up');
 
@@ -130,6 +140,11 @@ try {
       ocrObservations: observations,
       parsedNutrientRows: parsedRows,
       calculatedNutrients: calculated,
+      plainLanguageUnknownSummary: unknownSummary,
+      summaryHidesParserJargon: !/unit missing|invalid value withheld|multiple numeric values retained/i.test(unknownSummary),
+      labelNotesInitiallyCollapsed: labelNotesCollapsed,
+      labelNotesDisclosure,
+      labelNotesPreserveParserDetails,
       exactSaturatedFatObservation: exactSatFatMatch,
       followUpMessages: await page.locator('.conversation .assistant-message').count(),
       correctionApplied: correctedText.toLowerCase().includes('corrected'),
@@ -152,7 +167,7 @@ try {
   const receipt = { schemaVersion: 1, kind: 'core-intake-to-audit-design-review', generatedAt: new Date().toISOString(), captureTool: 'Playwright using installed Chrome', appOrigin: origin.origin, acceptanceMode: process.env.NUTRISCAN_ACCEPTANCE_MODE ?? 'unspecified local server', photoFile, screenshots: 'docs/evidence/private/core-journey-audit', outcomes: results };
   await writeFile('docs/evidence/core-journey-audit.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/core-journey-audit.json', screenshotDirectory: 'docs/evidence/private/core-journey-audit', outcomes: results }, null, 2));
-  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.exactSaturatedFatObservation || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
+  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
 } finally {
   await browser.close();
 }

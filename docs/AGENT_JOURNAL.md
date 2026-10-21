@@ -83,3 +83,9 @@
 - `npm audit` and `npm audit --omit=dev` each reported zero known vulnerabilities during this checkpoint.
 - Nutrition calculations now carry provenance links for separate basis and serving-size declarations; matching readings across photos retain links to both sources. Regression coverage passes.
 - Latest verified local state: 93 tests / 12 files, typecheck, optimized production build and `git diff --check` passed. Browser-only acceptance remains pending the selected-browser question.
+
+## 2026-10-21 — plain-language uncertainty in the package result
+
+- Updated the result view to lead with a short explanation of unresolved label readings. Original parser notes remain available in a collapsed disclosure; OCR observations and package facts are unchanged.
+- Fresh installed-Chrome acceptance on the hash-verified Saffola photo passed at 390x844 and 1440x900: 22 OCR observations, one parsed nutrient row, exact 3.4 g/100 g saturated-fat observation and a corrected 50 g calculation of 1.7 g. The optional context follow-up used a synthetic profile fixture; it withheld a personal daily target and linked the NIDDK source.
+- TypeScript typecheck and 278 tests passed. Axe violations, page errors, off-loopback requests and provider calls were zero. Screenshots stay under ignored docs/evidence/private/core-journey-audit/. No OCR accuracy improvement or live Gemini behavior is claimed.

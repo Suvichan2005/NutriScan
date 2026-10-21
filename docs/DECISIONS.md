@@ -245,3 +245,8 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - Local follow-ups may quote ingredient text, allergen statements, and recognizable package claims only from matching observation rows. Link the answer to those observation IDs and disclose that OCR or transcription may be wrong; a missing row must remain unknown rather than imply absence.
 - Keep this as bounded deterministic local behavior. It improves evidence-grounded conversation without claiming general language-model reasoning or changing the OCR reader. Gemini remains disabled.
 - Chrome/Playwright exercised the actual intake, pasted-label, result, and follow-up UI at mobile and desktop viewports using explicitly synthetic text. Both positive answers and the missing-text case passed; this is UI integration evidence, not photo OCR evidence.
+
+## 21 October 2026 — summarize uncertainty in the consumer flow
+
+- Keep the main results view readable by grouping unresolved label-reading issues into plain-language copy. Preserve every parser warning under a collapsed label-reading disclosure, with general limitations separate. The short summary must not imply that OCR readings were verified.
+- The fresh Saffola browser journey retained its exact saturated-fat evidence and corrected calculation while showing a shorter uncertainty summary. The 390x844 and 1440x900 run had zero Axe violations, page errors, off-loopback requests or provider calls. No OCR reader or accuracy result changed.
