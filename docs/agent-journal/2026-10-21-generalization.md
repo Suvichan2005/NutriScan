@@ -51,6 +51,12 @@ Continued the existing local NutriScan implementation. No source history or remo
 
 ## Limits
 
+## Continuation checkpoint — repeatable browser OCR crop probe
+
+- Added `npm run ocr:evaluate:browser-ui`, which verifies the local Saffola source-image hash and drives the production browser upload/OCR flow on loopback Chrome at mobile width. Four cases compare unknown role, nutrition role, a user-directed crop and a repeated crop. The versioned receipt contains only aggregate outcomes, screenshot paths, axe IDs and page-error counts; screenshots and source photos remain ignored/private.
+- Results on nine manifest annotations: unknown role/full image 0 correct / 0 incorrect / 9 omitted; nutrition role/full image 0 correct / 0 incorrect / 8 omitted / 1 withheld; the selected crop matched one field with 0 incorrect and 8 omitted on both runs. All runs had zero page errors and axe violations.
+- The browser crop result differs from the earlier Node proxy using identical bounds. Treat the evidence as a single-photo browser-path observation; do not change automatic crop/role behavior or claim broader OCR improvement. Method and limitations are in [REAL_OCR_EVALUATION.md](../REAL_OCR_EVALUATION.md).
+
 ## Continuation checkpoint — research source-selection guard
 
 - Fixed-registry research previously selected two source cards even when the query had no registry match, and substring scoring could count incidental fragments. Replaced that with whole-token normalized term/phrase matching, removed the blanket FSSAI score, and return an explicit unavailable result with no network fetch when nothing matches.

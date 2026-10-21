@@ -12,7 +12,19 @@ The benchmark also covers the browser-prepared image in automatic, single-column
 
 The low yield is useful evidence: preprocessing alone did not make these five photos reliably machine-readable, and false numeric readings remain a material risk. The segmentation comparison is exploratory and does not support a population accuracy estimate or a claim that one image mode is generally better. Keep uncertain values withheld and ask for a closer, flatter, well-lit photo or exact-product corroboration where warranted.
 
-## User-directed crop diagnostic
+## User-directed crop experiments
+
+### Browser UI confirmation on one photo
+
+`npm run ocr:evaluate:browser-ui` exercises the production client-side upload and OCR workflow through local Chrome at a 390 × 844 viewport. It verifies the ignored source image against the manifest SHA-256, then runs unknown-role/full-image, nutrition-role/full-image, and the same nutrition-role crop twice. The result receipt is [real-ocr-browser-ui-probe.json](evidence/real-ocr-browser-ui-probe.json); screenshots remain under the ignored `docs/evidence/private/` directory.
+
+On the Saffola photograph / nine annotated fields, the unknown-role run produced 0 nutrient rows (0 correct, 0 incorrect, 9 omitted). The nutrition-role full-image run produced two rows but no exact-basis annotated match (0 correct, 0 incorrect, 8 omitted, 1 withheld). The user-selected crop (x 3%, y 0%, width 93%, height 99%) produced one exact-basis match in both repeated runs (1 correct, 0 incorrect, 8 omitted, 0 withheld). All four browser runs had zero page errors and zero axe violations. The repeat supports reproducibility for this single browser/photo/crop configuration only.
+
+This differs from the earlier Node crop proxy, where the same bounds removed both recovered Saffola values. The Node `sharp` proxy and browser canvas path are distinct processing paths; this observation does not establish that browser cropping generally improves OCR. It does not justify an automatic crop, retry, or default-role change. The successful field remains one human-annotated package observation, not laboratory or formulation verification.
+
+The command requires the ignored source photo and an already-running local production server; set `NUTRISCAN_BASE_URL` to select another loopback origin. The script rejects non-loopback origins. It writes only aggregate field outcomes, hashes, accessibility IDs, error counts and screenshot paths to the tracked receipt—never OCR text or image bytes.
+
+### Earlier Node proxy result
 
 `npm run ocr:evaluate:guided-crops` compares a full-frame 3,000 px proxy with one user-selected-style crop on two difficult Indian English labels: Saffola Veggie Twist Oats and Bagrry's White Oats. Both variants use English Tesseract `SINGLE_BLOCK`, matching the app's existing nutrition-panel role; only the image crop changes. Crops are expressed as percentages of the EXIF-oriented original. Saffola's interior crop removes a narrow outer border (x 3%, y 0%, width 93%, height 99%). Bagrry's crop keeps the label heading and first `per 100 g` column while excluding the adjacent `per 35 g` column (x 2%, y 2%, width 74%, height 96%). Each crop retains the basis header; the Bagrry's crop also drops the serving-size footer.
 

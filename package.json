@@ -19,6 +19,7 @@
     "ocr:evaluate:preprocessing": "tsx scripts/evaluate-ocr-preprocessing.mts",
     "ocr:evaluate:upscale": "tsx scripts/evaluate-ocr-upscale.mts",
     "ocr:evaluate:guided-crops": "tsx scripts/evaluate-ocr-guided-crops.mts",
+    "ocr:evaluate:browser-ui": "tsx scripts/evaluate-ocr-browser-ui.mts",
     "embeddings:prepare": "tsx scripts/prepare-embeddings.mts",
     "embeddings:evaluate": "tsx scripts/semantic-evaluate.mts"
   },

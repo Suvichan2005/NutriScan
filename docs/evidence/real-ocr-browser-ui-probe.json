@@ -1,0 +1,233 @@
+{
+  "generatedAt": "2026-10-21T01:05:24.160Z",
+  "baseUrl": "http://127.0.0.1:3413",
+  "browser": "Chrome via Playwright, headless; viewport 390x844",
+  "source": {
+    "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+    "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+    "annotationBasis": {
+      "amount": 100,
+      "unit": "g"
+    },
+    "expectedFields": 9
+  },
+  "method": "Actual upload, role selection, optional user-directed crop and in-browser OCR. Scoring requires matching annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.",
+  "results": [
+    {
+      "id": "unknown-role-full-image",
+      "role": "unknown",
+      "expected": 9,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 9,
+      "withheld": 0,
+      "fields": [
+        {
+          "field": "energy",
+          "outcome": "omitted"
+        },
+        {
+          "field": "protein",
+          "outcome": "omitted"
+        },
+        {
+          "field": "carbohydrate",
+          "outcome": "omitted"
+        },
+        {
+          "field": "sugars",
+          "outcome": "omitted"
+        },
+        {
+          "field": "addedSugars",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fiber",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fat",
+          "outcome": "omitted"
+        },
+        {
+          "field": "saturatedFat",
+          "outcome": "omitted"
+        },
+        {
+          "field": "sodium",
+          "outcome": "omitted"
+        }
+      ],
+      "parsedNutrientRows": 0,
+      "axeViolationIds": [],
+      "pageErrorCount": 0,
+      "screenshot": "docs/evidence/private/browser-ocr-unknown-role-full-image.png"
+    },
+    {
+      "id": "nutrition-role-full-image",
+      "role": "nutrition",
+      "expected": 9,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 1,
+      "fields": [
+        {
+          "field": "energy",
+          "outcome": "omitted"
+        },
+        {
+          "field": "protein",
+          "outcome": "omitted"
+        },
+        {
+          "field": "carbohydrate",
+          "outcome": "omitted"
+        },
+        {
+          "field": "sugars",
+          "outcome": "omitted"
+        },
+        {
+          "field": "addedSugars",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fiber",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fat",
+          "outcome": "omitted"
+        },
+        {
+          "field": "saturatedFat",
+          "outcome": "withheld"
+        },
+        {
+          "field": "sodium",
+          "outcome": "omitted"
+        }
+      ],
+      "parsedNutrientRows": 2,
+      "axeViolationIds": [],
+      "pageErrorCount": 0,
+      "screenshot": "docs/evidence/private/browser-ocr-nutrition-role-full-image.png"
+    },
+    {
+      "id": "nutrition-role-user-crop",
+      "role": "nutrition",
+      "crop": {
+        "x": 3,
+        "y": 0,
+        "width": 93,
+        "height": 99
+      },
+      "expected": 9,
+      "correct": 1,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "fields": [
+        {
+          "field": "energy",
+          "outcome": "omitted"
+        },
+        {
+          "field": "protein",
+          "outcome": "omitted"
+        },
+        {
+          "field": "carbohydrate",
+          "outcome": "omitted"
+        },
+        {
+          "field": "sugars",
+          "outcome": "omitted"
+        },
+        {
+          "field": "addedSugars",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fiber",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fat",
+          "outcome": "omitted"
+        },
+        {
+          "field": "saturatedFat",
+          "outcome": "correct"
+        },
+        {
+          "field": "sodium",
+          "outcome": "omitted"
+        }
+      ],
+      "parsedNutrientRows": 1,
+      "axeViolationIds": [],
+      "pageErrorCount": 0,
+      "screenshot": "docs/evidence/private/browser-ocr-nutrition-role-user-crop.png"
+    },
+    {
+      "id": "nutrition-role-user-crop-repeat",
+      "role": "nutrition",
+      "crop": {
+        "x": 3,
+        "y": 0,
+        "width": 93,
+        "height": 99
+      },
+      "expected": 9,
+      "correct": 1,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "fields": [
+        {
+          "field": "energy",
+          "outcome": "omitted"
+        },
+        {
+          "field": "protein",
+          "outcome": "omitted"
+        },
+        {
+          "field": "carbohydrate",
+          "outcome": "omitted"
+        },
+        {
+          "field": "sugars",
+          "outcome": "omitted"
+        },
+        {
+          "field": "addedSugars",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fiber",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fat",
+          "outcome": "omitted"
+        },
+        {
+          "field": "saturatedFat",
+          "outcome": "correct"
+        },
+        {
+          "field": "sodium",
+          "outcome": "omitted"
+        }
+      ],
+      "parsedNutrientRows": 1,
+      "axeViolationIds": [],
+      "pageErrorCount": 0,
+      "screenshot": "docs/evidence/private/browser-ocr-nutrition-role-user-crop-repeat.png"
+    }
+  ]
+}
