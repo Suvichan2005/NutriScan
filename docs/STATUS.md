@@ -5,7 +5,7 @@ Updated: 2026-10-21. This is a local development application and research worksp
 ## Repository checkpoint
 
 - Repository root: this directory; branch: `main`.
-- Latest implementation checkpoint: `266239e12ea94cab486cf6dc483e033be8bb34f5` (`Add optional local package barcode detection`).
+- Latest implementation checkpoint: `284d3e0644900830a688804a716b3929f0fba265` (`Measure user-directed OCR crop results`); the preceding identity-conflict fix is `eaad91231c44e3cfc312c8a8f393777452ab60e8`.
 - Remote: none configured. No authorized private remote was supplied.
 - First local milestone commit: `6f7b375` (`Build generalized NutriScan product investigation`). No earlier history or remote was present.
 - Provider credentials: none configured; Gemini remains disabled and no provider request has been made.
