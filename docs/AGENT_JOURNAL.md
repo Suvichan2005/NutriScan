@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — connect retrieved research records to future synthesis
+
+- Inspection found that the consented assist request contained the deterministic audit sources but omitted local semantic-search results and source-search cards already visible in the same investigation.
+- Added a small evidence-context adapter that merges those three existing inputs, deduplicates IDs, caps total sources and summary lengths, keeps the search classification citeable, and uses an explicit unknown jurisdiction. It rejects invalid/non-HTTPS URLs before request assembly. The server retains its own URL check.
+- Updated the consent disclosure and provider instructions: source-search results are included only with the user's separate Gemini consent, treated as discovery candidates, and must retain their stated limits. Gemini remains disabled.
+- Offline tests validate context construction and a synthetic literature paraphrase linked to exact source spans. The full suite passed 292 tests across 33 files and typecheck passed. No live model call, browser API route, retrieval relevance claim or entailment result was produced.
+
 ## 2026-10-21 — retain word-level OCR evidence through the product flow
 
 - The audit confirmed existing assist readiness for ordered raw lines, line confidence and geometry, capture settings, parser rejection/conflict provenance, retrieved evidence, tentative structured candidates and labeled conversational synthesis. Gemini is still disabled; this was a local contract review only.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import packageInfo from '../../../package.json';
+import { assistEvidenceContext } from '../assist-evidence';
 import { BROWSER_OCR_ENGINE_VERSION } from '../browser';
 import { calculationEvidenceText, defaultProfile, packageSchema } from '../contracts';
 import { retrieveEvidence } from '../knowledge';
@@ -172,6 +173,27 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(result.answer).toContain('Evidence-linked interpretation');
     expect(result.answer).toContain('whole diet');
     expect(result.answer).toContain('[source:who-sugars-2015]');
+  });
+
+  it('makes user-requested research results available as cited candidate evidence',()=>{
+    const pkg=parseLabel('Nutrition per 100 g\nSugars 12 g',{origin:'user'});
+    const evidence=assistEvidenceContext({auditSources:[],localSearch:[],research:[{
+      id:'epmc-example-trial',title:'Example food study',url:'https://europepmc.org/article/MED/12345',publisher:'Example Journal',
+      publishedAt:'2024-01-02',effectiveAt:null,retrievedAt:'2026-10-21T12:00:00.000Z',category:'Randomized Controlled Trial',
+      summary:'Abstract: participants consumed the test food for four weeks.',limitations:'Search match only; study quality and applicability have not been assessed.'
+    }]});
+    const data=assistInput.parse({consent:true,question:'What does this research result say about the product?',package:pkg,evidence});
+    const result=validateClaims({answer:'ignored',claims:[{
+      mode:'synthesis',text:'This is a research-search candidate; its abstract describes a four-week study, while the search result says applicability has not been assessed.',
+      observationIds:[],sourceIds:['epmc-example-trial'],supportingSpans:[
+        {kind:'source',id:'epmc-example-trial',quote:'Search classification: Randomized Controlled Trial'},
+        {kind:'source',id:'epmc-example-trial',quote:'Abstract: participants consumed the test food for four weeks.'},
+        {kind:'source',id:'epmc-example-trial',quote:'Search match only; study quality and applicability have not been assessed.'}
+      ]
+    }],limitations:[],inspectImage:null},data);
+    expect(result.claims).toHaveLength(1);
+    expect(result.answer).toContain('applicability has not been assessed');
+    expect(data.evidence?.[0].category).toBe('literature');
   });
 
   it('accepts only supplied deterministic calculations as calculation evidence',()=>{

@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 21 October 2026 — include shown search results in consented synthesis context
+
+- Compose the existing deterministic audit references, local semantic-search references and user-requested research results already shown in the investigation into one source-ID namespace for future assist. Deduplicate by ID, keep the total at 15, bound each summary, and retain the search classification alongside the excerpt.
+- Map search metadata into the existing strict source contract; state unknown jurisdiction rather than infer it. Drop invalid or non-HTTPS URLs before building the request, while retaining server-side URL validation.
+- Treat research results as discovery candidates, preserve their limitations, and cite only exact text spans. This allows later synthesis to discuss retrieved literature or regulatory records without asserting search relevance as truth. Gemini remains disabled; no provider behavior is claimed.
+- Offline tests cover source mapping, limits, URL rejection, and a synthetic research-result paraphrase with exact source spans. They do not measure relevance, entailment, or model output quality.
+
 ## 21 October 2026 — preserve word-level OCR evidence for future interpretation
 
 - Keep Tesseract's recognized words, word order, engine-reported confidence and prepared-image bounding boxes nested on their original OCR line records. Preserve full line text unchanged for existing parser behavior and citation spans.
