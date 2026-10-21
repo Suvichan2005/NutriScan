@@ -64,6 +64,12 @@ Continued the existing local NutriScan implementation. No source history or remo
 - Scoped source audit found no chapati/roti-specific production flow or seeded health profile. The only active product example remains behind “Explore a sample label,” and is visibly labeled synthetic/no real product verdict. Health sources are selected by question matching; the Gemini instruction describes limits but does not assert a user diagnosis. Existing tests cover empty-profile behavior and reject the obsolete chapati field.
 - Verification after the intake change: typecheck, 107 tests, optimized build, browser OCR evaluation and `git diff --check` pass. The small OCR crop result remains 1 correct / 0 incorrect / 8 omitted in two repeats; no OCR policy changed.
 - Checkpoint: `e8bb1477c4cfabe02fbba7430d8f18b77cd4cb77` (`Move question-first prompt ahead of photo intake`).
+
+## Continuation checkpoint — current regulatory retrieval boundary
+
+- The live local `/api/research` route on the existing port 3400 returned `unavailable`, two official FSSAI navigation-only cards and no current-law verdict for a same-origin `FSSAI labelling` request. An Origin-less request was rejected with 403 before source work.
+- Direct local retrieval of the official FSSAI PDF still returns an HTML challenge; a guessed eGazette PDF URL returned 404. The official eGazette homepage and interactive search form load, but the exact PDF download path has not been captured. No TLS validation was bypassed and no law text was inferred from search indexing.
+- Recorded in [INTEGRATIONS.md](../INTEGRATIONS.md). The next independent source-path task is a session-bound eGazette UI lookup followed by direct TLS/content-type verification of its exact returned URL.
 - Local evidence checkpoint: `8c05d488550d644d0243dcc882b55c866f25644e` (`Add reproducible browser OCR crop evaluation`). Typecheck, all 107 tests, optimized build, the repeatable browser command and `git diff --check` passed; private screenshots remain ignored.
 
 ## Continuation checkpoint — research source-selection guard
