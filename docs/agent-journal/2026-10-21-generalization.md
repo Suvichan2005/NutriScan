@@ -55,6 +55,7 @@ Continued the existing local NutriScan implementation. No source history or remo
 
 - Fixed-registry research previously selected two source cards even when the query had no registry match, and substring scoring could count incidental fragments. Replaced that with whole-token normalized term/phrase matching, removed the blanket FSSAI score, and return an explicit unavailable result with no network fetch when nothing matches.
 - Regression tests cover an unrelated query/no-fetch case and a registered hyphenated phrase. This improves source relevance only; it does not broaden or certify regulatory coverage. The later full suite includes this change.
+- Built-app acceptance on temporary loopback port 3411 returned `unavailable` and zero source cards for `almond manufacture`; request `471c6dbb-1597-4082-a5ed-fa37ec69e603`. The temporary listener was stopped and verified absent. The detailed receipt is in [integrations](../INTEGRATIONS.md).
 
 ## Continuation checkpoint — sparse catalog comparison
 
