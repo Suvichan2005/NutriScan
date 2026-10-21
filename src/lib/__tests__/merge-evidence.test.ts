@@ -70,15 +70,20 @@ describe('incremental package evidence', () => {
 
   it('deduplicates repeated observations from the same image and preserves nutrient links', () => {
     const first = parseLabel('Nutrition per 100 g\nProtein 12 g', { origin: 'ocr', observations: [
+      { id: 'img-a-header', field: 'ocr-line', text: 'Nutrition per 100 g', side: 'back', origin: 'ocr', confidence: 90, imageId: 'photo-a' },
       { id: 'img-a-line', field: 'ocr-line', text: 'Protein 12 g', side: 'back', origin: 'ocr', confidence: 90, imageId: 'photo-a' },
     ] });
     const second = parseLabel('Nutrition per 100 g\nProtein 12 g', { origin: 'ocr', observations: [
+      { id: 'img-a-header-2', field: 'ocr-line', text: 'Nutrition per 100 g', side: 'back', origin: 'ocr', confidence: 90, imageId: 'photo-a' },
       { id: 'img-a-line-2', field: 'ocr-line', text: 'Protein 12 g', side: 'back', origin: 'ocr', confidence: 90, imageId: 'photo-a' },
     ] });
     const merged = mergePackageEvidence(first, second);
-    expect(merged.observations.filter(o => o.imageId === 'photo-a' && o.field === 'ocr-line')).toHaveLength(1);
+    expect(merged.observations.filter(o => o.imageId === 'photo-a' && o.field === 'ocr-line')).toHaveLength(2);
     expect(merged.nutrients).toHaveLength(1);
     expect(merged.nutrients[0].observationIds.every(id => merged.observations.some(o => o.id === id))).toBe(true);
+    const diagnostic=merged.parserDiagnostics?.find(item=>item.field==='protein');
+    expect(diagnostic?.numericEvidenceObservationIds).toEqual(['img-a-line']);
+    expect(diagnostic?.basisEvidenceObservationIds).toEqual(['img-a-header']);
   });
 
   it('keeps both image sources when identical nutrient readings are merged', () => {

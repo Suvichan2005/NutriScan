@@ -61,9 +61,13 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(pkg.ocrCaptures).toEqual([capture]);
     const protein=pkg.parserDiagnostics?.find(item=>item.field==='protein');
     expect(protein).toMatchObject({decision:'rejected',reasonCodes:['approximate-or-bounded'],numericCandidates:[{rawValueText:'8.8',value:8.8,unit:'g'}]});
+    expect(protein?.numericEvidenceObservationIds).toEqual(['line-2']);
+    expect(protein?.basisEvidenceObservationIds).toEqual(['line-1']);
     const sodium=pkg.parserDiagnostics?.filter(item=>item.field==='sodium');
     expect(sodium).toHaveLength(2);
     expect(sodium?.every(item=>item.decision==='conflict'&&item.reasonCodes.includes('cross-reading-conflict'))).toBe(true);
+    expect(sodium?.map(item=>item.numericEvidenceObservationIds)).toEqual([['line-3'],['line-4']]);
+    expect(sodium?.every(item=>item.basisEvidenceObservationIds?.includes('line-1'))).toBe(true);
     const structuredProtein=pkg.observations.find(item=>item.field==='protein');
     expect(structuredProtein?.derivedFromObservationIds).toEqual(['line-2']);
     expect(pkg.nutrients.some(item=>item.key==='protein')).toBe(false);

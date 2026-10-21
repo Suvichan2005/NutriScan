@@ -173,6 +173,8 @@ describe('provider validation, independent of provider invocation', () => {
     const providerSchema = z.toJSONSchema(assistOutput);
     expect(JSON.stringify(providerSchema)).toContain('supportingSpans');
     expect(JSON.stringify(providerSchema)).toContain('quote');
+    expect(JSON.stringify(providerSchema)).toContain('mode');
+    expect(assistOutput.safeParse({answer:'',claims:[{text:'A paraphrase',observationIds:[],sourceIds:[],supportingSpans:[]}],limitations:[],inspectImage:null}).success).toBe(false);
   });
   it('cannot enable the provider using just a key or search flag', () => {
     vi.stubEnv('ENABLE_GEMINI', 'false'); vi.stubEnv('ENABLE_GEMINI_SEARCH', 'true'); vi.stubEnv('GEMINI_API_KEY', 'test-only-placeholder'); vi.stubEnv('GEMINI_MODEL', 'gemini-test');
@@ -181,14 +183,14 @@ describe('provider validation, independent of provider invocation', () => {
   it('rejects forged citations and unknown browser image handles', () => {
     const data = assistInput.parse({ consent: true, question: 'What is visible?', package: { id: 'test', name: 'Test', userDescription: 'User says it is a cereal snack.', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'o1', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'user' }, { id: 'o2', field: 'user-description', text: 'User says it is a cereal snack.', side: 'text', confidence: null, origin: 'user' }], rawText: '', warnings: [], synthetic: true, createdAt: new Date().toISOString() } });
     expect(data.package.userDescription).toBe('User says it is a cereal snack.');
-    const valid = { answer: 'Unsupported extra medical assertion', claims: [{ text: 'sugar 3g', observationIds: ['o1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'o1', quote: 'sugar 3g' }] }], limitations: ['Take this amount to manage diabetes.'], inspectImage: null };
+    const valid = { answer: 'Unsupported extra medical assertion', claims: [{ mode:'direct-quote',text: 'sugar 3g', observationIds: ['o1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'o1', quote: 'sugar 3g' }] }], limitations: ['Take this amount to manage diabetes.'], inspectImage: null };
     expect(validateClaims(valid, data).claims).toHaveLength(1);
     expect(validateClaims(valid, data).answer).toBe('Package observation: “sugar 3g” [observation:o1]');
     expect(validateClaims(valid, data).answer).not.toContain('medical assertion');
     expect(validateClaims(valid, data).answer).not.toContain('diabetes');
     expect(validateClaims(valid, data).limitations.join(' ')).not.toContain('manage diabetes');
     expect(validateClaims(valid, data).limitations).toEqual(['Generated explanations are not independently verified; exact cited evidence spans are provided for inspection. Tentative structured candidates never alter confirmed package observations. No diagnosis, medication advice, or safety assessment is provided.']);
-    expect(() => validateClaims({ ...valid, claims: [{ text: 'Claim', observationIds: ['missing'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'missing', quote: 'Claim' }] }] }, data)).toThrow('unknown evidence');
+    expect(() => validateClaims({ ...valid, claims: [{ mode:'direct-quote',text: 'Claim', observationIds: ['missing'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'missing', quote: 'Claim' }] }] }, data)).toThrow('unknown evidence');
     expect(() => validateClaims({ ...valid, inspectImage: { handle: 'not-owned', reason: 'Read label' } }, data)).toThrow('unknown browser image');
   });
   it('withholds unsupported diabetes safety advice even when it cites a real sugar observation', () => {
@@ -202,7 +204,7 @@ describe('provider validation, independent of provider invocation', () => {
   });
   it('withholds a claim when its quoted span does not occur in the cited item', () => {
     const data = assistInput.parse({ consent: true, question: 'What does it say?', package: { id: 'test', name: 'Test', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'o1', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'ocr' }], rawText: '', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
-    const output = { answer: 'Added sugar is 0g.', claims: [{ text: 'added sugar 0g', observationIds: ['o1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'o1', quote: 'added sugar 0g' }] }], limitations: [], inspectImage: null };
+    const output = { answer: 'Added sugar is 0g.', claims: [{ mode:'direct-quote',text: 'added sugar 0g', observationIds: ['o1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'o1', quote: 'added sugar 0g' }] }], limitations: [], inspectImage: null };
     const result = validateClaims(output, data);
     expect(result.claims).toEqual([]);
     expect(result.answer).not.toContain('added sugar 0g');

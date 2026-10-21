@@ -46,7 +46,11 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
   }
   const parserDiagnostics=[
     ...(current.parserDiagnostics??[]),
-    ...(incoming.parserDiagnostics??[]).map(diagnostic=>({...diagnostic,sourceObservationIds:diagnostic.sourceObservationIds.map(id=>idMap.get(id)??id)})),
+    ...(incoming.parserDiagnostics??[]).map(diagnostic=>({...diagnostic,
+      sourceObservationIds:diagnostic.sourceObservationIds.map(id=>idMap.get(id)??id),
+      ...(diagnostic.numericEvidenceObservationIds?{numericEvidenceObservationIds:diagnostic.numericEvidenceObservationIds.map(id=>idMap.get(id)??id)}:{}),
+      ...(diagnostic.basisEvidenceObservationIds?{basisEvidenceObservationIds:diagnostic.basisEvidenceObservationIds.map(id=>idMap.get(id)??id)}:{}),
+    })),
   ];
   for(const diagnostic of parserDiagnostics){
     const rowObservationId=diagnostic.sourceObservationIds[0];

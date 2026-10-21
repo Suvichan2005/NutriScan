@@ -125,13 +125,18 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
     const rowUnit=tail.match(/\b(kcal|kj|mg|g)\b/i)?.[1];
     const orderedEnergyUnits=nutrientRow.key==='energy'?tail.match(/^\s*[:\-]?\s*\(\s*(kJ|kcal)\s*\/\s*(kJ|kcal)\s*\)/i):null;
     const obsId=observe(nutrientRow.key,line);
-    const sourceObservationIds=[obsId,...(foundBases.length===0?basisObservationIds:[])];
+    const baseSourceObservationIds=[obsId,...(foundBases.length===0?basisObservationIds:[])];
     const numericCandidates=values.map((value,valueIndex)=>{
       const n=Number(value[1]);const unit=(value[2]??(orderedEnergyUnits&&values.length===2?orderedEnergyUnits[valueIndex+1]:rowUnit))?.toLowerCase()??null;
       return {rawValueText:value[1],value:Number.isFinite(n)?n:null,unit};
     });
     const basisCandidates=foundBases.length?foundBases:(basis?[basis]:[]);
-    const diagnose=(decision:ParserDiagnostic['decision'],reasonCodes:ParserDiagnostic['reasonCodes'])=>parserDiagnostics.push({field:nutrientRow.key,decision,reasonCodes:Array.from(new Set<ParserDiagnostic['reasonCodes'][number]>(reasonCodes)),sourceObservationIds,numericCandidates,basisCandidates});
+    const evidenceIds=(observationId:string)=>observations.find(item=>item.id===observationId)?.derivedFromObservationIds??[observationId];
+    const numericEvidenceObservationIds=evidenceIds(obsId);
+    const basisObservationIdCandidates=foundBases.length?[obsId]:basisObservationIds;
+    const basisEvidenceObservationIds=Array.from(new Set(basisObservationIdCandidates.flatMap(evidenceIds)));
+    const sourceObservationIds=Array.from(new Set([...baseSourceObservationIds,...numericEvidenceObservationIds,...basisEvidenceObservationIds]));
+    const diagnose=(decision:ParserDiagnostic['decision'],reasonCodes:ParserDiagnostic['reasonCodes'])=>parserDiagnostics.push({field:nutrientRow.key,decision,reasonCodes:Array.from(new Set<ParserDiagnostic['reasonCodes'][number]>(reasonCodes)),sourceObservationIds,numericEvidenceObservationIds,basisEvidenceObservationIds,numericCandidates,basisCandidates});
     if(/[<>≤≥~]|\b(?:trace|less than|approx)/i.test(tail)){warnings.push(`${nutrientRow.key}: bounded or approximate value retained in text; exact calculation withheld.`);diagnose('rejected',['approximate-or-bounded']);continue;}
     if(/-\s+\d/.test(tail)){warnings.push(`${nutrientRow.key}: invalid or ambiguous signed value withheld.`);diagnose('rejected',['signed-or-ambiguous']);continue;}
     if(!values.length){warnings.push(`${nutrientRow.key}: no readable numerical value.`);diagnose('rejected',['no-numeric-value']);continue;}

@@ -120,3 +120,9 @@
 - Added a conditional result-side action for an unidentified package or missing ingredients. It scrolls to the existing local photo input and opens the multi-file picker; it does not submit or send an image.
 - Chrome on the same hash-verified Saffola photo confirmed the action at 390×844 and 1440×900. We canceled the picker, so no added-photo OCR result is claimed. The core run still yielded 22 line observations and one usable nutrient row, with zero Axe violations, page errors, off-loopback requests or provider calls.
 - The full test suite (284 tests across 31 files) and typecheck passed. No OCR accuracy score changed.
+
+## 2026-10-21 — expose candidate value and basis evidence separately
+
+- Audited the existing assist payload: it already carries every recognized OCR line, reading order and geometry, confidence, engine/capture settings, parser rejection/conflict candidates, and session image-handle linkage. It has line geometry rather than table cells, and no durable image digest; no images or hashes were added to remote requests.
+- Added diagnostic links from candidate numeric readings and bases to their separate original OCR line observations, preserving those links through incremental evidence merges. Made `direct-quote`/`synthesis` an explicit required output mode and instructed future synthesis to answer conversationally while retaining exact-span checks and the current safety limits.
+- The full suite passed (284 tests across 31 files), TypeScript typecheck and `git diff --check`. The full suite initially found a missing ID remap in incremental merge; fixed the remap and added a regression. No real photo, browser UI, Gemini/provider call or OCR score was part of this checkpoint.

@@ -18,6 +18,8 @@ export const parserDiagnosticSchema=z.object({
   field:z.enum(nutrientKeys),decision:z.enum(['accepted','conflict','rejected']),
   reasonCodes:z.array(z.enum(['approximate-or-bounded','signed-or-ambiguous','no-numeric-value','multiple-values','ambiguous-basis','invalid-value','missing-unit','incompatible-unit','missing-basis','cross-reading-conflict'])).max(10),
   sourceObservationIds:z.array(z.string().min(1).max(160)).min(1).max(20),
+  numericEvidenceObservationIds:z.array(z.string().min(1).max(160)).max(20).optional(),
+  basisEvidenceObservationIds:z.array(z.string().min(1).max(160)).max(20).optional(),
   numericCandidates:z.array(z.object({rawValueText:z.string().max(40),value:z.number().finite().nullable(),unit:z.string().max(24).nullable()}).strict()).max(20),
   basisCandidates:z.array(basisSchema).max(20)
 }).strict();
@@ -39,7 +41,10 @@ export const packageSchema=packageBaseSchema.superRefine((pkg,context)=>{
       else if(observation.side!==capture.side||observation.bbox&&(observation.bbox.x1>capture.preparedImage.width||observation.bbox.y1>capture.preparedImage.height))context.addIssue({code:'custom',path:['observations',index,'bbox'],message:'OCR geometry must fit its recorded prepared-image coordinate space.'});
     }
   }
-  for(const [index,diagnostic] of (pkg.parserDiagnostics??[]).entries())for(const id of diagnostic.sourceObservationIds)if(!observationIds.has(id))context.addIssue({code:'custom',path:['parserDiagnostics',index,'sourceObservationIds'],message:'Parser diagnostics must point to recorded observations.'});
+  for(const [index,diagnostic] of (pkg.parserDiagnostics??[]).entries()){
+    for(const id of [...diagnostic.sourceObservationIds,...(diagnostic.numericEvidenceObservationIds??[]),...(diagnostic.basisEvidenceObservationIds??[])])if(!observationIds.has(id))context.addIssue({code:'custom',path:['parserDiagnostics',index,'sourceObservationIds'],message:'Parser diagnostics must point to recorded observations.'});
+    for(const id of [...(diagnostic.numericEvidenceObservationIds??[]),...(diagnostic.basisEvidenceObservationIds??[])])if(!diagnostic.sourceObservationIds.includes(id))context.addIssue({code:'custom',path:['parserDiagnostics',index,'sourceObservationIds'],message:'Candidate evidence must also be listed among the parser diagnostic source observations.'});
+  }
 });
 export type PackageData = z.infer<typeof packageSchema>;
 export const sourceSchema = z.object({id:z.string(),title:z.string(),publisher:z.string(),url:z.string().url(),category:z.enum(['guideline','assessment','regulation','product','literature','registry','method']),jurisdiction:z.string(),publishedAt:z.string().nullable(),effectiveAt:z.string().nullable(),retrievedAt:z.string(),summary:z.string(),limitations:z.string(),license:z.string().optional()});

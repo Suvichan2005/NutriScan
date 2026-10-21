@@ -11,6 +11,12 @@
 - Allow paraphrases to cite a nonempty user-declared profile field by field name and exact span. This lets a future explanation state why context matters while keeping it distinct from package facts and external evidence; profile text cannot support a product-health or safety conclusion by itself. Tentative structured candidates remain limited to OCR-line and retrieved-source evidence.
 - Offline tests use synthetic lines only. They verify traceability, a rejected approximate row, conflicting sodium readings, candidate non-promotion and calculation references. They do not measure photographic accuracy, model behavior or browser integration.
 
+## 21 October 2026 — make parser candidate provenance explicit for future synthesis
+
+- Keep the existing observation-to-assist path and add separate `numericEvidenceObservationIds` and `basisEvidenceObservationIds` to parser diagnostics. These point to the original recognized line(s) carrying a candidate value and its basis, including header lines, and are remapped when incremental scans deduplicate observations. They remain evidence links, not confirmations or table-cell associations.
+- Require every future assist claim to choose `direct-quote` or `synthesis` explicitly. Prefer careful question-focused synthesis when explaining relationships among label observations, validated calculations, retrieved sources and user-declared context; retain exact-span citation checks and the current safety limits. A synthesis remains traceable, not entailment-verified.
+- Offline tests cover an approximate/rejected value, two conflicting readings, distinct basis-header links, evidence-link remapping across incremental scan merges, and profile/source-aware paraphrase validation. No photo accuracy or Gemini behavior is measured; Gemini remains disabled.
+
 ## 21 October 2026 — connect package additive findings to official-source search
 
 - Add a shortcut to additive-code findings that prepares the known additive name (when in the small local identity corpus), `INS` code and `additive` search term, and selects Indian regulation. Scroll and focus the search field so the next action is clear.
