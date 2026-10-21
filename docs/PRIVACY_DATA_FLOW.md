@@ -1,6 +1,6 @@
 # Privacy and data flow
 
-Photos: selected file → local browser Blob → bounded canvas/prepared image → local Tesseract worker/WASM → OCR observations in memory. Worker and English language data and fonts are served from this local installation. Originals are not posted to an API by ordinary scanning. Removed/replaced/new-scan blobs are released. Browser memory is not a secure vault.
+Photos: selected file → local browser Blob → optional native barcode detection where supported → bounded canvas/prepared image → local Tesseract worker/WASM → observations in memory. Worker and English language data and fonts are served from this local installation. Barcode decode and OCR run in the browser; originals are not posted to an API by ordinary scanning. Removed/replaced/new-scan blobs are released. Browser memory is not a secure vault.
 
 Health context: dietary preferences, food allergies, food intolerances, user-declared health considerations, goals and optional reference details stay in React memory for the session. Allergy and intolerance inputs remain separate; neither is a diagnosis. The profile starts empty, does not ask for meal measurements, is not saved in IndexedDB, and is excluded from JSON exports. Derived calculation assumptions/results may appear in reports. Review reports before sharing. A user must consent before any profile text is sent to Gemini; if every field is blank, Gemini receives no profile object. Public search sends only the search text entered in the research panel. No account, cloud sync or encryption claim.
 

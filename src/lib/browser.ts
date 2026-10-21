@@ -1,5 +1,6 @@
 import { get, set, del } from 'idb-keyval';
 import type { ImageAsset, Observation, PackageData } from './contracts';
+import { detectRetailBarcodes } from './barcode';
 
 export type SavedScan = {id:string;name:string;createdAt:string;package:PackageData;portion:number;unit:'g'|'ml'};
 const historyKey='nutriscan.history.v1';
@@ -32,7 +33,7 @@ export async function prepareImage(asset:ImageAsset,rotation=0,contrast=false,cr
  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Image preparation failed.')),'image/jpeg',0.98));
 }
 
-export async function readImages(assets:ImageAsset[],onProgress:(label:string,progress:number)=>void,signal:AbortSignal,options:{rotation:number;contrast:boolean;invert?:boolean;crop?:Crop;cropTarget?:string}):Promise<{text:string;observations:Observation[];confidence:number}>{
+export async function readImages(assets:ImageAsset[],onProgress:(label:string,progress:number)=>void,signal:AbortSignal,options:{rotation:number;contrast:boolean;invert?:boolean;crop?:Crop;cropTarget?:string}):Promise<{text:string;observations:Observation[];confidence:number;barcodes:{code:string;imageId:string;side:ImageAsset['side']}[]}>{
  const { createWorker, PSM }=await import('tesseract.js');
  let worker:Awaited<ReturnType<typeof createWorker>>|undefined;
  let cancelled=false;
@@ -45,10 +46,12 @@ export async function readImages(assets:ImageAsset[],onProgress:(label:string,pr
   worker=await Promise.race([createWorker('eng',1,{workerPath:'/ocr/worker.min.js',corePath:'/ocr/',langPath:'/ocr/',workerBlobURL:false,logger:m=>{if(!cancelled)onProgress(m.status,Math.max(.02,m.progress||0));}}).then(w=>{if(cancelled)void w.terminate();return w;}),abortPromise]);
   if(cancelled)throw new Error('Reading stopped. Your photos are still here.');
   await worker.setParameters({preserve_interword_spaces:'1'});
-  const texts:string[]=[];const observations:Observation[]=[];let confidence=0;
+  const texts:string[]=[];const observations:Observation[]=[];const barcodes:{code:string;imageId:string;side:ImageAsset['side']}[]=[];let confidence=0;
   for(let i=0;i<assets.length;i++){
    if(cancelled)throw new Error('Reading stopped. Your photos are still here.');
    onProgress(`Reading photo ${i+1} of ${assets.length}`,i/assets.length);
+   const barcodeValues=await Promise.race([detectRetailBarcodes(assets[i].blob),abortPromise]);
+   for(const code of barcodeValues)barcodes.push({code,imageId:assets[i].id,side:assets[i].side});
    await worker.setParameters({tessedit_pageseg_mode:assets[i].role==='nutrition'||assets[i].role==='ingredients'||assets[i].side==='back'?PSM.SINGLE_BLOCK:PSM.AUTO});
    const image=await prepareImage(assets[i],assets[i].rotation??options.rotation,options.contrast,options.cropTarget===assets[i].id?options.crop:undefined,options.invert);
    const result=await Promise.race([worker.recognize(image,{}, {text:true,blocks:true,tsv:true}),abortPromise]);
@@ -58,7 +61,7 @@ export async function readImages(assets:ImageAsset[],onProgress:(label:string,pr
    }
   }
   if(cancelled)throw new Error('Reading stopped. Your photos are still here.');
-  return {text:texts.join('\n\n'),observations,confidence:confidence/assets.length};
+  return {text:texts.join('\n\n'),observations,confidence:confidence/assets.length,barcodes};
  }catch(error){ if(cancelled)throw new Error('Reading stopped or timed out. Try a smaller, tightly cropped photo.');throw error;
  }finally{clearTimeout(timeout);signal.removeEventListener('abort',abort);await worker?.terminate().catch(()=>{});}
 }
