@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 21 October 2026 — add bounded on-demand FSSAI additive source retrieval
+
+- Retrieve the official Appendix A PDF and link the separate additive-amendments discovery index only when query terms identify a food additive or INS code. Keep this additive-compendium entry's 6,000,000-byte, 380-page, 900,000-character and 900-character excerpt limits source-specific; generic PDF retrieval stays at 2 MB, 40 pages and 50,000 characters.
+- Rank excerpts by inverse frequency of query terms and exact adjacent terms so rare ingredient names and numeric identifiers beat repeated headings. A regression captures the failure where common FSSAI/document words surfaced an unrelated section despite a matching additive row elsewhere in the document.
+- Show the extracted text only as an uninterpreted navigation aid. The source page says the compendium is not a legal document and original Gazette notifications prevail; exact category conditions, later amendments, authorization and package compliance remain unresolved. Do not bundle the complete PDF; preserve attribution and third-party-content caveats from FSSAI's website policy.
+- Chrome acceptance on isolated production build passed mobile and desktop with a relevant Xanthan/INS 415 excerpt, official source attribution, companion amendments-index link, scope caveats, 200 response and no browser provider/off-origin calls. Observed route latency with both sources was 8.349 s and 7.145 s. This is integration evidence, not a legal or scientific validation.
+
 ## 21 October 2026 — keep remembered user context separate and opt-in
 
 - Keep user-declared context distinct from package observations, saved conversations, public evidence and exports. Default to an empty session profile; persist fields only after a separate user action in a dedicated versioned IndexedDB key.

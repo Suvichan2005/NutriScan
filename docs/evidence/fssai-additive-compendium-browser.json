@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "kind": "live-fssai-additive-compendium-browser-acceptance",
+  "generatedAt": "2026-10-21T10:30:51.365Z",
+  "appOrigin": "http://127.0.0.1:3401",
+  "captureTool": "Playwright using installed Chrome",
+  "query": "What does FSSAI Appendix A list for xanthan gum INS 415 in dairy products?",
+  "evaluationInput": "synthetic label text; official FSSAI source fetched on user action; no photo/OCR evaluation",
+  "evidenceLimits": [
+    "The FSSAI compendium itself says it cannot be considered a legal document and that original Gazette notifications prevail.",
+    "This verifies bounded source retrieval and disclosure only; exact category conditions, amendments, current permission and package compliance remain unresolved.",
+    "The amendment index is offered for source discovery only; no Gazette amendment was fetched or interpreted by this test.",
+    "The query and result do not establish that a product contains the additive or that a use is authorized for a specific food."
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "syntheticLabelInput": true,
+      "sourceLinkValid": true,
+      "publisherIdentified": true,
+      "amendmentIndexLinked": true,
+      "excerptVisible": true,
+      "excerptChecks": {
+        "sourceTextMarker": true,
+        "xanthanMention": true,
+        "ins415Mention": true,
+        "categoryTermInExcerpt": true
+      },
+      "nonbindingDisclosure": true,
+      "gazettePrecedenceDisclosure": true,
+      "categoryApplicabilityCaveat": true,
+      "currentStatusRemainsUnverified": true,
+      "expandedSummaryChars": 1127,
+      "researchRouteStatuses": [
+        200
+      ],
+      "researchRouteLatencyMs": 8349,
+      "providerCalls": [],
+      "nonLoopbackRequests": [],
+      "axeViolationIds": [],
+      "horizontalOverflow": false,
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/fssai-additive-compendium/mobile.png"
+    },
+    {
+      "viewport": "1440x900",
+      "syntheticLabelInput": true,
+      "sourceLinkValid": true,
+      "publisherIdentified": true,
+      "amendmentIndexLinked": true,
+      "excerptVisible": true,
+      "excerptChecks": {
+        "sourceTextMarker": true,
+        "xanthanMention": true,
+        "ins415Mention": true,
+        "categoryTermInExcerpt": true
+      },
+      "nonbindingDisclosure": true,
+      "gazettePrecedenceDisclosure": true,
+      "categoryApplicabilityCaveat": true,
+      "currentStatusRemainsUnverified": true,
+      "expandedSummaryChars": 1127,
+      "researchRouteStatuses": [
+        200
+      ],
+      "researchRouteLatencyMs": 7145,
+      "providerCalls": [],
+      "nonLoopbackRequests": [],
+      "axeViolationIds": [],
+      "horizontalOverflow": false,
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/fssai-additive-compendium/desktop.png"
+    }
+  ],
+  "passed": true
+}

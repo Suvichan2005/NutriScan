@@ -102,7 +102,9 @@ describe('official regulation PDF discovery', () => {
       ? textPdf('')
       : '<html><body>Official FSSAI regulations index for food labeling and claims.</body></html>');
     const ocrSources: string[] = [];
+    const extractionOptions: { sourceId: string; allowOcr: boolean; pages: number; characters: number }[] = [];
     const result = await research({ query: 'Is this ORS legal in India today?', topic: 'regulation' }, async (_bytes, options) => {
+      extractionOptions.push(options);
       if (options.allowOcr) {
         ocrSources.push(options.sourceId);
         return {
@@ -123,6 +125,8 @@ describe('official regulation PDF discovery', () => {
     expect(clarification?.summary).toMatch(/Machine OCR was used on 2 pages/i);
     expect(clarification?.limitations).toMatch(/unverified and may contain recognition errors/i);
     expect(result.message).toMatch(/Current legal status and package compliance remain unverified/i);
+    expect(extractionOptions).toContainEqual({ sourceId: 'fssai-ors-2025-withdrawal', allowOcr: true, pages: 40, characters: 50_000 });
+    expect(extractionOptions).toContainEqual({ sourceId: 'delhi-hc-ors-2025-dr-reddys', allowOcr: false, pages: 40, characters: 50_000 });
   });
 
   it('keeps primary-source links visible when only a client-rendered shell is retrieved', async () => {
@@ -157,6 +161,63 @@ describe('official regulation PDF discovery', () => {
     fixedFetchMock.mockResolvedValue('<html><body>Official guidance for non sugar sweeteners and product labelling. This page contains enough content to inspect safely.</body></html>');
     const result = await research({ query: 'non-sugar sweeteners', topic: 'regulation' });
     expect(result.items.some(item => item.id === 'who-sweeteners-live')).toBe(true);
+  });
+
+  it('retrieves Appendix A for additive queries with per-entry PDF bounds and persistent legal caveats', async () => {
+    fixedFetchMock.mockImplementation(async (url: URL, format: string) => format === 'pdf'
+      ? new Uint8Array([37, 80, 68, 70, 45])
+      : '<html><body>Official FSSAI regulations index for food safety and standards. Review original notifications and amendments.</body></html>');
+    const extractionCalls: { sourceId: string; allowOcr: boolean; pages: number; characters: number }[] = [];
+    const result = await research({ query: 'INS 415 xanthan gum', topic: 'regulation' }, async (_bytes, options) => {
+      extractionCalls.push(options);
+      return { text: 'Appendix A food additive listing: Xanthan gum INS 415. Exact category and conditions of use must be checked in the original notification.', pagesRead: options.pages, totalPages: 361, truncated: true, extraction: 'selectable-text', ocrPages: 0 };
+    });
+    const appendix = result.items.find(item => item.id === 'fssai-additive-compendium-appendix-a');
+    const amendments = result.items.find(item => item.id === 'fssai-food-additive-amendments-index');
+    const request = fixedFetchMock.mock.calls.find(([url]) => new URL(String(url)).pathname.includes('Appendix%20A(4).pdf'));
+
+    expect(request?.slice(1)).toEqual(['pdf', 6_000_000]);
+    expect(extractionCalls).toContainEqual({ sourceId: 'fssai-additive-compendium-appendix-a', allowOcr: false, pages: 380, characters: 900_000 });
+    expect(appendix?.url).toBe('https://www.fssai.gov.in/docs/food-law/regulations/compendium/food-products-standards/Appendix%20A(4).pdf');
+    expect(appendix?.summary).toContain('Xanthan gum INS 415');
+    expect(appendix?.summary).toMatch(/navigation aid only/i);
+    expect(appendix?.limitations).toMatch(/not a legal document, current-law determination, additive authorization or package-compliance finding/i);
+    expect(appendix?.limitations).toMatch(/original notifications prevail/i);
+    expect(appendix?.limitations).toMatch(/exact food category and conditions of use/i);
+    expect(appendix?.limitations).toMatch(/Gazette notifications and amendments/i);
+    expect(amendments?.url).toBe('https://fssai.gov.in/food-law/regulations/amendments/food-products-standards');
+    expect(amendments?.category).toMatch(/amendment index; source discovery only/i);
+    expect(amendments?.limitations).toMatch(/not a consolidated rule, current additive authorization or package-compliance finding/i);
+  });
+
+  it('ranks an exact additive code and rare ingredient above repeated document boilerplate', async () => {
+    fixedFetchMock.mockImplementation(async (_url: URL, format: string) => format === 'pdf'
+      ? new Uint8Array([37, 80, 68, 70, 45])
+      : '<html><body>Official FSSAI index. Food safety and product standards.</body></html>');
+    const boilerplate = 'FSSAI Appendix A lists food products and general dairy guidance. '.repeat(80);
+    const result = await research({ query: 'What does FSSAI Appendix A list for xanthan gum INS 415 in dairy products?', topic: 'regulation' }, async (_bytes, options) => ({
+      text: `${boilerplate}\n01.0 Dairy products — Xanthan gum INS 415; verify exact food category and conditions in the original notification.`,
+      pagesRead: options.pages,
+      totalPages: 361,
+      truncated: true,
+      extraction: 'selectable-text',
+      ocrPages: 0,
+    }));
+    const appendix = result.items.find(item => item.id === 'fssai-additive-compendium-appendix-a');
+
+    expect(appendix?.summary).toMatch(/01\.0 Dairy products — Xanthan gum INS 415/);
+  });
+
+  it('does not fetch Appendix A for unrelated food-labelling or ORS regulation queries', async () => {
+    fixedFetchMock.mockResolvedValue('<html><body>Official FSSAI regulations index for food labelling and claims. This page contains enough content for a bounded source excerpt.</body></html>');
+    const labelResult = await research({ query: 'FSSAI food labelling regulations', topic: 'regulation' });
+    const orsResult = await research({ query: 'Is this ORS legal in India today?', topic: 'regulation' });
+
+    expect(labelResult.items.some(item => item.id === 'fssai-additive-compendium-appendix-a')).toBe(false);
+    expect(labelResult.items.some(item => item.id === 'fssai-food-additive-amendments-index')).toBe(false);
+    expect(orsResult.items.some(item => item.id === 'fssai-additive-compendium-appendix-a')).toBe(false);
+    expect(orsResult.items.some(item => item.id === 'fssai-food-additive-amendments-index')).toBe(false);
+    expect(fixedFetchMock.mock.calls.some(([url]) => new URL(String(url)).pathname.includes('food-products-standards'))).toBe(false);
   });
 });
 

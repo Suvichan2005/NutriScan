@@ -4,9 +4,11 @@ import { ApiError, fixedFetch, plain } from './http';
 import { extractPdfText, type PdfText } from './pdf-text';
 
 export const researchInput = z.object({ query: z.string().trim().min(3).max(250), topic: z.enum(['science', 'regulation', 'claims', 'brand', 'recalls']) }).strict();
-type Entry = { id: string; title: string; url: string; publisher: string; terms: string[]; publishedAt: string | null; category: string; effectiveAt?: string | null; format?: 'html' | 'pdf'; allowOcr?: boolean };
-export type ResearchPdfExtractor = (bytes: Uint8Array, options: {sourceId:string;allowOcr:boolean}) => Promise<PdfText>;
+type Entry = { id: string; title: string; url: string; publisher: string; terms: string[]; publishedAt: string | null; category: string; effectiveAt?: string | null; format?: 'html' | 'pdf'; allowOcr?: boolean; maxBytes?: number; maxPages?: number; maxCharacters?: number; maxExcerpt?: number };
+export type ResearchPdfExtractor = (bytes: Uint8Array, options: {sourceId:string;allowOcr:boolean;pages:number;characters:number}) => Promise<PdfText>;
 export const primaryRegistry: Entry[] = [
+  { id: 'fssai-additive-compendium-appendix-a', title: 'FSSAI Food Products Standards and Food Additives Compendium, Appendix A', url: 'https://www.fssai.gov.in/docs/food-law/regulations/compendium/food-products-standards/Appendix%20A(4).pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['additive', 'additives', 'food additive', 'food additives', 'appendix', 'appendix a', 'compendium', 'ins', '415', 'xanthan', 'xanthan gum'], publishedAt: null, category: 'food standards and additives compendium; navigation aid only', format: 'pdf', maxBytes: 6_000_000, maxPages: 380, maxCharacters: 900_000, maxExcerpt: 900 },
+  { id: 'fssai-food-additive-amendments-index', title: 'FSSAI Food Products Standards and Food Additives amendments index', url: 'https://fssai.gov.in/food-law/regulations/amendments/food-products-standards', publisher: 'Food Safety and Standards Authority of India', terms: ['additive', 'additives', 'food additive', 'food additives', 'appendix', 'appendix a', 'ins', '415', 'xanthan', 'xanthan gum'], publishedAt: null, category: 'amendment index; source discovery only' },
   { id: 'fssai-regulations-live', title: 'FSSAI food safety and standards regulations index', url: 'https://www.fssai.gov.in/cms/food-safety-and-standards-regulations.php', publisher: 'FSSAI', terms: ['regulation', 'label', 'claim', 'additive', 'india', 'fssai', 'ins'], publishedAt: null, category: 'regulation index' },
   { id: 'fssai-label-amendments-live', title: 'FSSAI labelling and display amendments', url: 'https://fssai.gov.in/food-law/regulations/amendments/labelling-display', publisher: 'FSSAI', terms: ['regulation', 'label', 'display', 'india', 'fssai'], publishedAt: null, category: 'amendment index' },
   { id: 'fssai-label-amendment-2026', title: 'FSSAI Labelling and Display First Amendment Regulations, 2026', url: 'https://www.fssai.gov.in/upload/notifications/2026/04/69cca2b3f3ce9Notification%20dt%2024.03.2026_NRC.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['infant', 'nutrition', 'rda', 'servings', 'non-retail', 'small package', '100 cm', 'logos', 'label', 'labelling', 'display', 'amendment', '2026'], publishedAt: '2026-03-24', effectiveAt: '2027-07-01', category: 'final Gazette notification; future commencement', format: 'pdf' },
@@ -29,6 +31,8 @@ function registryScore(entry: Entry, query: string) {
 }
 
 function sourceLimitations(entry: Entry) {
+  if (entry.id === 'fssai-additive-compendium-appendix-a') return 'Navigation aid only, not a legal document, current-law determination, additive authorization or package-compliance finding. FSSAI states the compendium includes notified amendments but the original notifications prevail. Verify the exact food category and conditions of use, and review applicable Gazette notifications and amendments before drawing any conclusion.';
+  if (entry.id === 'fssai-food-additive-amendments-index') return 'Amendment discovery index only, not a consolidated rule, current additive authorization or package-compliance finding. Open and verify the relevant Gazette notification, commencement date, exact food category and later amendments before drawing any conclusion.';
   const orsCaseLimit = entry.id === 'delhi-hc-ors-2025-dr-reddys'
     ? ' This is a case-specific judgment dated 31 October 2025: the Delhi High Court dismissed this petitioner’s challenge to the FSSAI measures and directed FSSAI to consider a representation about existing stock. It does not decide every product, party, proceeding or later order.'
     : entry.id === 'fssai-ors-2022-direction'
@@ -116,15 +120,15 @@ export async function research(data: z.infer<typeof researchInput>, pdfExtractor
     let failureReason = 'source request failed';
     let stage: 'fetch' | 'pdf-extraction' | 'pdf-ocr' | 'excerpt' = 'fetch';
     try {
-      const source = await fixedFetch(new URL(entry.url), entry.format ?? 'html', 2_000_000);
+      const source = await fixedFetch(new URL(entry.url), entry.format ?? 'html', entry.maxBytes ?? 2_000_000);
       stage = entry.format === 'pdf' ? entry.allowOcr ? 'pdf-ocr' : 'pdf-extraction' : 'excerpt';
-      const pdf = entry.format === 'pdf' ? await pdfExtractor(source as Uint8Array, { sourceId: entry.id, allowOcr: !!entry.allowOcr }) : null;
+      const pdf = entry.format === 'pdf' ? await pdfExtractor(source as Uint8Array, { sourceId: entry.id, allowOcr: !!entry.allowOcr, pages: entry.maxPages ?? 40, characters: entry.maxCharacters ?? 50_000 }) : null;
       stage = 'excerpt';
       if (pdf && !pdf.text.trim()) {
         failureReason = 'the PDF has no extractable text, including any permitted local OCR';
         throw new Error('No selectable PDF text');
       }
-      const excerpt = pdf ? excerptPlain(pdf.text, data.query) : excerptHtml(source as string, data.query);
+      const excerpt = pdf ? excerptPlain(pdf.text, data.query, entry.maxExcerpt) : excerptHtml(source as string, data.query);
       if (excerpt.length < 100 || /access denied|captcha|request rejected/i.test(excerpt)) {
         failureReason = 'the source text was too short or blocked for a reliable excerpt';
         throw new Error('Unusable source page');
@@ -136,10 +140,11 @@ export async function research(data: z.infer<typeof researchInput>, pdfExtractor
         ? pdf.ocrPages ? 'Official PDF OCR excerpt (machine-extracted; unverified; not interpreted)' : entry.category.includes('Gazette') ? 'Official Gazette PDF text excerpt' : 'Official PDF text excerpt'
         : 'Live page excerpt';
       const category = entry.allowOcr && pdf?.ocrPages ? `${entry.category}; machine OCR excerpt` : entry.category;
-      return { ok: true as const, entry, item: { id: entry.id, title: entry.title, url: entry.url, publisher: entry.publisher, publishedAt: entry.publishedAt, ...(entry.effectiveAt ? { effectiveAt: entry.effectiveAt } : {}), retrievedAt: new Date().toISOString(), category, summary: `${sourceKind} (truncated; not interpreted): ${excerpt}${pdfDisclosure}`, limitations: sourceLimitations(entry) } satisfies ResearchItem };
+      const sourceCaveat = entry.id === 'fssai-additive-compendium-appendix-a' ? ' This excerpt is a navigation aid only; the original legal notifications prevail.' : '';
+      return { ok: true as const, entry, item: { id: entry.id, title: entry.title, url: entry.url, publisher: entry.publisher, publishedAt: entry.publishedAt, ...(entry.effectiveAt ? { effectiveAt: entry.effectiveAt } : {}), retrievedAt: new Date().toISOString(), category, summary: `${sourceKind} (truncated; not interpreted): ${excerpt}${pdfDisclosure}${sourceCaveat}`, limitations: sourceLimitations(entry) } satisfies ResearchItem };
     } catch (error) {
       if (error instanceof ApiError) {
-        failureReason = error.code === 'upstream_too_large' ? 'the PDF exceeded the 2 MB retrieval limit'
+        failureReason = error.code === 'upstream_too_large' ? 'the source response exceeded its configured retrieval limit'
           : error.code === 'unexpected_content' ? 'the source returned a different content type than expected'
             : error.code === 'upstream_failure' ? 'the source returned an unsuccessful HTTP response'
               : 'the source could not be reached within the request limits';
@@ -191,17 +196,37 @@ export async function research(data: z.infer<typeof researchInput>, pdfExtractor
   };
 }
 
-function excerptPlain(text: string, query: string) {
-  const words = [...new Set(query.toLowerCase().split(/\W+/).filter(x => x.length > 3))];
+function excerptPlain(text: string, query: string, max = 1200) {
+  const stopWords = new Set(['a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'does', 'for', 'from', 'how', 'in', 'is', 'it', 'of', 'on', 'or', 'the', 'to', 'was', 'what', 'when', 'where', 'which', 'who', 'why', 'with']);
+  const words = [...new Set(query.normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])]
+    .filter(word => word.length >= 3 && !stopWords.has(word));
+  if (!words.length) return text.slice(0, max).trim();
+  const normalizedText = text.toLowerCase();
+  const weights = new Map(words.map(word => {
+    let count = 0;
+    let position = normalizedText.indexOf(word);
+    while (position >= 0) { count++; position = normalizedText.indexOf(word, position + word.length); }
+    const numericIdentifier = /^\d{3,}$/.test(word);
+    return [word, (numericIdentifier ? 3 : 1) + Math.log((normalizedText.length + 1) / (count + 1))] as const;
+  }));
+  const phrases = words.slice(0, -1).flatMap((word, index) => {
+    const next = words[index + 1];
+    return word.length >= 3 && next.length >= 3 ? [`${word} ${next}`] : [];
+  });
   const candidates = words.flatMap(word => {
     const positions: number[] = [];
-    let position = text.toLowerCase().indexOf(word);
-    while (position >= 0) { positions.push(position); position = text.toLowerCase().indexOf(word, position + word.length); }
+    let position = normalizedText.indexOf(word);
+    while (position >= 0) { positions.push(position); position = normalizedText.indexOf(word, position + word.length); }
     return positions.map(position => Math.max(0, position - 160));
   });
   const start = candidates.sort((a, b) => {
-    const score = (offset: number) => { const window = text.slice(offset, offset + 1200).toLowerCase(); return words.filter(word => window.includes(word)).length; };
+    const score = (offset: number) => {
+      const window = normalizedText.slice(offset, offset + max);
+      const termScore = words.reduce((total, word) => total + (window.includes(word) ? weights.get(word)! : 0), 0);
+      const phraseScore = phrases.reduce((total, phrase) => total + (window.includes(phrase) ? 4 : 0), 0);
+      return termScore + phraseScore;
+    };
     return score(b) - score(a);
   })[0] ?? 0;
-  return text.slice(start, start + 1200).trim();
+  return text.slice(start, start + max).trim();
 }

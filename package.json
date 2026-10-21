@@ -39,6 +39,7 @@
     "acceptance:product-alternatives": "tsx scripts/evaluate-product-alternatives-browser.mts",
     "acceptance:science-research": "tsx scripts/evaluate-science-research-browser.mts",
     "acceptance:regulatory-research": "tsx scripts/evaluate-regulatory-research-browser.mts",
+    "acceptance:fssai-additive-compendium": "tsx scripts/acceptance-fssai-additive-compendium.mts",
     "ocr:evaluate:regulatory-pdf": "tsx scripts/evaluate-regulatory-pdf-ocr.mts",
     "acceptance:keyboard-application": "tsx scripts/evaluate-keyboard-application.mts",
     "ocr:evaluate:rapidocr": "tsx scripts/evaluate-rapidocr.mts",

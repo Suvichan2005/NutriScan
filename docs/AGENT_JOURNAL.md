@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — retrieve official additive excerpts on demand
+
+- Added a fixed FSSAI Appendix A source entry plus companion additive-amendments index for additive/INS queries. The PDF has source-specific byte, page, character and excerpt bounds; the general PDF extraction budget was left unchanged, and unrelated label/ORS regulation queries do not fetch either additive source.
+- A live Chrome test revealed excerpt ranking chose common document boilerplate over a relevant Xanthan/INS 415 row. Updated ranking to weight rare query terms and numeric identifiers; added a regression with repeated boilerplate. The production API now returns the matching excerpt while keeping exact category use and legal status unresolved.
+- Mobile and desktop isolated-production Chrome acceptance passed at 390×844 and 1440×900. Route times with both official sources were 8.349 s and 7.145 s; both returned HTTP 200. The publisher/source link, amendment-index link, and nonbinding, Gazette-precedence and category caveats appeared. Axe violations, page errors, horizontal overflow, browser provider calls and off-loopback browser requests were zero.
+- The request used synthetic label text and public-source research; it did not process a package photograph or evaluate OCR. No full PDF, raw source excerpt, source image, personal health data, credential or private handoff text is stored in the repository. This does not establish current additive authorization or package compliance.
+
 ## 2026-10-21 — separate on-device profile context from scan history
 
 - Added a distinct opt-in for remembering user-entered context in local IndexedDB. Default profile remains empty; scan and conversation contracts and JSON exports continue to omit profile fields. Clearing or unchecking the option removes only the remembered copy while session context is preserved for uncheck.
