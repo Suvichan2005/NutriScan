@@ -81,6 +81,8 @@ The following were real HTTP calls to `http://127.0.0.1:3400` with explicit matc
 | Consented synthetic empty assist input, provider disabled | 503 / disabled / provider_disabled; no provider call | `ec11cda2-c85c-471f-97ec-7b4660958cc8` |
 | Cross-origin product request | 403 / origin_rejected, before source work | Failure receipt inspected directly |
 
+Follow-up built-app route probe on 2026-10-21 (UTC): `POST http://127.0.0.1:3401/api/research`, query `FSSAI labelling`, returned `unavailable`, two official FSSAI source links, navigation-only limitations on both, and a message stating that no source text or current-law verdict was available. Request ID: `2c68a945-71e8-4a00-b3cc-7b8e94c36cb0`. The temporary port 3401 process was stopped after the probe. This is route-level failure-state verification, not browser presentation or regulatory text acceptance.
+
 Focused failure/numerical suite: `npx vitest run src/lib/server/server.test.ts` — **18 passed** after Host normalization, US recall scope, shell rejection and answer-reconstruction additions. Full `npx tsc --noEmit` also passed at this milestone. These boundary checks do not prove genuine provider or photo acceptance.
 
 ## Product comparison browser receipt — 21 October 2026
