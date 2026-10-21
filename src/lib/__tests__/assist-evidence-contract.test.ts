@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import packageInfo from '../../../package.json';
 import { BROWSER_OCR_ENGINE_VERSION } from '../browser';
-import { calculationEvidenceText, defaultProfile } from '../contracts';
+import { calculationEvidenceText, defaultProfile, packageSchema } from '../contracts';
+import { retrieveEvidence } from '../knowledge';
 import { parseLabel } from '../parser';
 import { assistInput, validateClaims } from '../server/gemini';
 
@@ -25,6 +26,14 @@ function makePackage(){
 describe('OCR-to-assist evidence contract',()=>{
   it('keeps recorded Tesseract.js version synchronized with the pinned dependency',()=>{
     expect(BROWSER_OCR_ENGINE_VERSION).toBe(packageInfo.dependencies['tesseract.js']);
+  });
+
+  it('requires raw OCR lines to retain their source image and reading order before assist',()=>{
+    const pkg=makePackage();
+    const unlinked={...pkg,observations:pkg.observations.map(item=>item.id==='line-0'?{...item,imageId:undefined,readingOrder:undefined}:item)};
+    expect(packageSchema.safeParse(unlinked).success).toBe(true);
+    expect(assistInput.safeParse({consent:true,question:'What did the label say?',package:unlinked}).success).toBe(false);
+    expect(assistInput.safeParse({consent:true,question:'What did the label say?',package:pkg}).success).toBe(true);
   });
 
   it('keeps imperfect raw lines, reading order, prepared-image geometry, capture provenance, and parse rejections/conflicts',()=>{
@@ -94,6 +103,26 @@ describe('OCR-to-assist evidence contract',()=>{
     const withoutProfile=assistInput.parse({consent:true,question:'What do I want?',package:pkg});
     expect(()=>validateClaims(output,withoutProfile)).toThrow('unknown evidence');
     expect(data.package.nutrients.some(item=>item.key==='sodium'&&item.status==='observed')).toBe(false);
+  });
+
+  it('accepts a bounded paraphrase that combines an OCR observation with locally retrieved food guidance',()=>{
+    const pkg=parseLabel('Nutrition information\nPer 100 g\nSugars 12 g',{origin:'user'});
+    const source=retrieveEvidence('What does WHO say about free sugars, and does this package row establish daily intake?',4).find(hit=>hit.source.id==='who-sugars-2015')?.source;
+    expect(source).toBeDefined();
+    const data=assistInput.parse({consent:true,question:'Does this label tell me my daily free-sugar intake?',package:pkg,evidence:source?[source]:[]});
+    const sugar=pkg.observations.find(item=>item.field==='sugars')!;
+    const who=data.evidence?.find(item=>item.id==='who-sugars-2015')!;
+    const output={answer:'ignored',claims:[{
+      mode:'synthesis' as const,
+      text:'The package line reports 12 g of sugars per 100 g. WHO guidance concerns free sugars across the whole diet, so this line alone does not establish daily free-sugar intake.',
+      observationIds:[sugar.id],sourceIds:[who.id],
+      supportingSpans:[{kind:'observation' as const,id:sugar.id,quote:'Sugars 12 g'},{kind:'source' as const,id:who.id,quote:'free sugars to less than 10% of total daily energy'}]
+    }],limitations:[],inspectImage:null};
+    const result=validateClaims(output,data);
+    expect(result.claims).toHaveLength(1);
+    expect(result.answer).toContain('Evidence-linked interpretation');
+    expect(result.answer).toContain('whole diet');
+    expect(result.answer).toContain('[source:who-sugars-2015]');
   });
 
   it('accepts only supplied deterministic calculations as calculation evidence',()=>{

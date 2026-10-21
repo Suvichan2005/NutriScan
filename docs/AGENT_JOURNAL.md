@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — close raw OCR provenance and synthesis contract gaps
+
+- Audited the assist payload and confirmed that current browser reads retain each OCR line's text, confidence, block/paragraph/line order, prepared-image bounding box, capture settings, image ID, parser decisions/candidate values, and retrieved evidence/calculations. The text-assist request includes this structured record and session image handles; it excludes photo bytes. Image/crop transmission remains a separate consented action.
+- Tightened consented assist-input validation so records explicitly marked `ocr-line` cannot cross the boundary without their OCR origin, image link or reading order. Existing cross-record validation ensures the order maps to the image's capture record; standalone parsing remains tolerant of legacy/text-only lines. Added an offline test that combines an OCR observation with locally retrieved WHO food guidance in a bounded synthesis, while retaining exact-span citations and an explicit non-entailment label.
+- Reconciled `docs/INTEGRATIONS.md`: the actual response boundary supports both direct quotation and cautious synthesis, rebuilds output from validated claims, and does not claim citation matching proves entailment. Gemini remains disabled. Synthetic tests do not establish provider compatibility, photo accuracy or model safety.
+
 ## 2026-10-21 — preserve OCR-to-assist evidence and allow labeled synthesis
 
 - Extended the product package with capture metadata, explicit per-image OCR line ordering, and nutrient parser decisions linked to the observations they considered. Raw lines remain present when a parser rejects a candidate; disagreement remains a conflict.
