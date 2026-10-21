@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — inspect OCR regions from the evidence ledger
+
+- The evidence ledger exposed OCR words, confidence and prepared-image coordinates, but users had to leave the result and manually find the corresponding line in a photo.
+- Added an explicit local preview for raw OCR lines that still have a session image and matching capture metadata. It reconstructs the same crop and preprocessing, checks the result dimensions, draws the recorded box, and revokes the preview URL when closed. No image request, upload, OCR change or fact promotion occurs.
+- Chrome/Playwright with the hash-verified Saffola photo passed at 390×844 and 1440×900. The line matched its preview, the box stayed inside the image, and preview opening created no HTTP or POST request. Axe violations, page errors and off-loopback requests were zero. The original run remained at one usable nutrient row, so this is verification UX rather than an accuracy gain.
+- Full suite passed (295 tests across 33 files) and typecheck passed. Gemini remained disabled.
+
 ## 2026-10-21 — make uncertainty follow-ups package-specific
 
 - A real-photo browser review found that the follow-up “What remains uncertain?” returned a generic local fallback even though the package record contained parser rejections and unresolved product identity.

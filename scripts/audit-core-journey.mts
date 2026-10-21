@@ -27,9 +27,12 @@ try {
     const page = await context.newPage();
     const pageErrors: string[] = [];
     const nonLoopbackRequests: string[] = [];
+    let httpRequestCount=0;
+    let postRequestCount=0;
     page.on('pageerror', (error) => pageErrors.push(error.message));
     page.on('request', (request) => {
       const requestUrl = new URL(request.url());
+      if(requestUrl.protocol==='http:'||requestUrl.protocol==='https:'){httpRequestCount++;if(request.method()==='POST')postRequestCount++;}
       const effectiveHostname = requestUrl.origin === 'null' ? '' : new URL(requestUrl.origin).hostname;
       if (effectiveHostname && !['127.0.0.1', 'localhost', '[::1]'].includes(effectiveHostname)) nonLoopbackRequests.push(requestUrl.origin);
     });
@@ -88,6 +91,25 @@ try {
     const detailedLabelNotes = await labelNotes.locator('ul').innerText();
     const labelNotesPreserveParserDetails = /multiple numeric values retained/i.test(detailedLabelNotes) && /invalid value withheld/i.test(detailedLabelNotes);
     await labelNotes.locator('summary').click();
+    const originalObservations=page.locator('.sources-section details').filter({hasText:'Original label observations'});
+    await originalObservations.locator('summary').click();
+    const inspectableLine=page.locator('.observations-list .observation-entry').filter({has:page.locator('button.inspect-region-button')}).first();
+    await inspectableLine.waitFor({state:'visible'});
+    const rawOcrLine=(await inspectableLine.locator('.ocr-line-text').innerText()).trim();
+    const requestsBeforeLocalInspection=httpRequestCount,postsBeforeLocalInspection=postRequestCount;
+    await inspectableLine.getByRole('button',{name:'Inspect photo region'}).click();
+    const inspectionDialog=page.getByRole('dialog');
+    await inspectionDialog.getByRole('heading',{name:'Inspect OCR photo region'}).waitFor({state:'visible'});
+    await page.waitForFunction(()=>{const image=document.querySelector<HTMLImageElement>('.ocr-region-preview img');return !!image?.complete&&image.naturalWidth>0;});
+    const regionAnswer=(await inspectionDialog.locator('.ocr-region-line').innerText()).trim();
+    const preparedDimensions=await inspectionDialog.locator('.ocr-region-preview img').evaluate(node=>({width:(node as HTMLImageElement).naturalWidth,height:(node as HTMLImageElement).naturalHeight}));
+    const highlightedBox=await inspectionDialog.locator('.ocr-region-preview svg').evaluate(node=>{const rect=node.querySelector('rect');const viewBox=(node.getAttribute('viewBox')??'').split(/\s+/).map(Number);return{x:Number(rect?.getAttribute('x')),y:Number(rect?.getAttribute('y')),width:Number(rect?.getAttribute('width')),height:Number(rect?.getAttribute('height')),viewBoxWidth:viewBox[2],viewBoxHeight:viewBox[3]};});
+    const localOcrRegionInspectionWorks=!!rawOcrLine&&regionAnswer.includes(rawOcrLine)&&preparedDimensions.width===highlightedBox.viewBoxWidth&&preparedDimensions.height===highlightedBox.viewBoxHeight&&highlightedBox.x>=0&&highlightedBox.y>=0&&highlightedBox.width>0&&highlightedBox.height>0&&highlightedBox.x+highlightedBox.width<=preparedDimensions.width&&highlightedBox.y+highlightedBox.height<=preparedDimensions.height;
+    const localOcrRegionInspectionMadeNoHttpRequest=httpRequestCount===requestsBeforeLocalInspection&&postRequestCount===postsBeforeLocalInspection;
+    await inspectionDialog.screenshot({path:path.join(captureDir,`${prefix}-03-ocr-evidence-region.png`)});
+    await axe('local OCR image inspection');
+    await inspectionDialog.getByRole('button',{name:'Close dialog'}).click();
+    await inspectionDialog.waitFor({state:'hidden'});
     const mathsDetails = page.locator('.nutrition-card .details-block');
     if (!(await mathsDetails.evaluate((details) => (details as HTMLDetailsElement).open))) await page.getByText('See the label & calculation maths').click();
     const calculated = await mathsDetails.locator('table tbody tr').evaluateAll((rows) => rows.filter((row) => !!row.cells[2]?.textContent?.trim() && !/withheld/i.test(row.cells[2].textContent ?? '')).length);
@@ -178,6 +200,8 @@ try {
       labelNotesDisclosure,
       labelNotesPreserveParserDetails,
       exactSaturatedFatObservation: exactSatFatMatch,
+      localOcrRegionInspectionWorks,
+      localOcrRegionInspectionMadeNoHttpRequest,
       uncertaintyFollowUpUsesPackageEvidence,
       followUpMessages: await page.locator('.conversation .assistant-message').count(),
       correctionApplied: correctedText.toLowerCase().includes('corrected'),
@@ -200,7 +224,7 @@ try {
   const receipt = { schemaVersion: 1, kind: 'core-intake-to-audit-design-review', generatedAt: new Date().toISOString(), captureTool: 'Playwright using installed Chrome', appOrigin: origin.origin, acceptanceMode: process.env.NUTRISCAN_ACCEPTANCE_MODE ?? 'loopback local application', photoFile, screenshots: 'docs/evidence/private/core-journey-audit', outcomes: results };
   await writeFile('docs/evidence/core-journey-audit.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/core-journey-audit.json', screenshotDirectory: 'docs/evidence/private/core-journey-audit', outcomes: results }, null, 2));
-  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.uncertaintyFollowUpUsesPackageEvidence || !item.ocrWordGeometryWithinCapture || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
+  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.localOcrRegionInspectionWorks || !item.localOcrRegionInspectionMadeNoHttpRequest || !item.uncertaintyFollowUpUsesPackageEvidence || !item.ocrWordGeometryWithinCapture || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
 } finally {
   await browser.close();
 }

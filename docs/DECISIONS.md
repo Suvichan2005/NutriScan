@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 21 October 2026 — let users inspect OCR lines in the local source image
+
+- Add an explicit **Inspect photo region** action beside a raw OCR line only when its image, capture run and geometry are linked and the image remains in the current browser session.
+- Rebuild the same prepared image using the capture's recorded preprocessing and crop, verify dimensions against the capture, and overlay the OCR bounding box. Keep the image browser-local; do not call a provider or retain the preview URL after the dialog closes.
+- This is a visual aid for checking where the reader found text, not a confirmation that the reading is correct. Keep OCR observations and confidence metadata unchanged; text-only or restored records still expose their observations without offering a missing-photo preview.
+- Real-photo Chrome acceptance verified the line, geometry and no-request behavior at mobile and desktop sizes. It did not measure accuracy or test a live provider.
+
 ## 21 October 2026 — answer package uncertainty questions from retained evidence
 
 - Route explicit “what is unknown/uncertain?” follow-ups through the deterministic package audit. Summarize existing uncertain/conflicting findings, parser-rejected nutrition rows and identity or ingredient/allergen record gaps; retain original OCR line excerpts and observation IDs where present.

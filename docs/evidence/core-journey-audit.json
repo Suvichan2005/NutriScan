@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "core-intake-to-audit-design-review",
-  "generatedAt": "2026-10-21T15:48:39.105Z",
+  "generatedAt": "2026-10-21T15:59:04.706Z",
   "captureTool": "Playwright using installed Chrome",
   "appOrigin": "http://127.0.0.1:3400",
   "acceptanceMode": "loopback local application",
@@ -34,6 +34,8 @@
       "labelNotesDisclosure": "Label-reading notes (6)",
       "labelNotesPreserveParserDetails": true,
       "exactSaturatedFatObservation": true,
+      "localOcrRegionInspectionWorks": true,
+      "localOcrRegionInspectionMadeNoHttpRequest": true,
       "uncertaintyFollowUpUsesPackageEvidence": true,
       "followUpMessages": 3,
       "correctionApplied": true,
@@ -51,6 +53,7 @@
       "axeViolationIds": {
         "intake": [],
         "photo and crop": [],
+        "local OCR image inspection": [],
         "findings": [],
         "correction dialog": [],
         "corrected calculation": [],
@@ -84,6 +87,8 @@
       "labelNotesDisclosure": "Label-reading notes (6)",
       "labelNotesPreserveParserDetails": true,
       "exactSaturatedFatObservation": true,
+      "localOcrRegionInspectionWorks": true,
+      "localOcrRegionInspectionMadeNoHttpRequest": true,
       "uncertaintyFollowUpUsesPackageEvidence": true,
       "followUpMessages": 3,
       "correctionApplied": true,
@@ -101,6 +106,7 @@
       "axeViolationIds": {
         "intake": [],
         "photo and crop": [],
+        "local OCR image inspection": [],
         "findings": [],
         "correction dialog": [],
         "corrected calculation": [],
