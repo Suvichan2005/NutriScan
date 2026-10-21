@@ -126,9 +126,16 @@ async function main() {
         await page.getByText('Focus OCR on one photo region').click();
         await page.getByLabel('Use a crop on a selected photo').check();
         await page.getByLabel('Photo to crop').selectOption({ index: 1 });
-        for (const key of ['x', 'y', 'width', 'height'] as const) {
-          await page.getByLabel(key, { exact: true }).fill(String(spec.crop[key]));
-        }
+        const cropSelector = page.locator('.crop-preview');
+        const bounds = await cropSelector.boundingBox();
+        if (!bounds) throw new Error('Visual crop selector has no rendered bounds.');
+        await page.mouse.move(bounds.x + bounds.width * spec.crop.x / 100, bounds.y + bounds.height * spec.crop.y / 100);
+        await page.mouse.down();
+        await page.mouse.move(bounds.x + bounds.width * (spec.crop.x + spec.crop.width) / 100, bounds.y + bounds.height * (spec.crop.y + spec.crop.height) / 100, { steps: 10 });
+        await page.mouse.up();
+        const selected = await page.locator('.crop-fields input').evaluateAll((inputs) => inputs.map((input) => Number((input as HTMLInputElement).value)));
+        const expected = [spec.crop.x, spec.crop.y, spec.crop.width, spec.crop.height];
+        if (selected.some((value, index) => Math.abs(value - expected[index]) > 1)) throw new Error(`Visual crop selection mismatch: ${selected.join(',')}.`);
       }
       await page.getByRole('button', { name: /Read these photos/ }).click();
       await page.locator('.results-section').waitFor({ state: 'visible', timeout: 120_000 });
@@ -145,6 +152,7 @@ async function main() {
         id: spec.id,
         role: spec.role,
         crop: spec.crop,
+        cropSelection: spec.crop ? 'pointer-drag' : null,
         initialQuestionJourney: spec.initialQuestion ? {
           enteredBeforePhoto: true,
           preservedAfterRead: initialQuestionPreserved,
@@ -168,7 +176,7 @@ async function main() {
     baseUrl,
     browser: 'Chrome via Playwright, headless; viewport 390x844',
     source: { file: record.file, sha256: actualHash, annotationBasis: record.manualAnnotation.basis, expectedFields: record.manualAnnotation.nutrients.length },
-    method: 'Actual upload, role selection, optional user-directed crop and in-browser OCR. Scoring requires matching annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.',
+    method: 'Actual upload, role selection, optional crop selected by dragging over the displayed image, and in-browser OCR. The resulting percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.',
     results,
   };
   await writeFile(resultPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
