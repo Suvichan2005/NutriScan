@@ -10,6 +10,11 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
   const warnings = [...current.warnings, ...incoming.warnings];
   const barcodeMismatch = !!(current.barcode && incoming.barcode && current.barcode !== incoming.barcode);
   if (barcodeMismatch) warnings.push('A newly read barcode differs from the original package. The photos may show different products; verify identity before using combined evidence.');
+  const identityMismatches = [
+    current.brand && incoming.brand && current.brand.trim().toLocaleLowerCase() !== incoming.brand.trim().toLocaleLowerCase() ? 'brand' : '',
+    current.license && incoming.license && current.license !== incoming.license ? 'license number' : '',
+  ].filter(Boolean);
+  if (identityMismatches.length) warnings.push(`New photo evidence disagrees with the original ${identityMismatches.join(' and ')}. The photos may show different products; verify identity before combining evidence.`);
 
   const observations = [...current.observations];
   const idMap = new Map<string, string>();

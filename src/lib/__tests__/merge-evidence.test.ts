@@ -40,6 +40,15 @@ describe('incremental package evidence', () => {
     expect(merged.warnings.join(' ')).toMatch(/barcode differs/i);
   });
 
+  it('warns when package brand or license evidence conflicts without barcodes', () => {
+    const first = parseLabel('Brand: North Mill\nFSSAI License No: 12345678901234\nNutrition per 100 g\nProtein 1 g', { origin: 'ocr' });
+    const second = parseLabel('Brand: South Mill\nFSSAI License No: 43210987654321\nNutrition per 100 g\nProtein 1 g', { origin: 'ocr' });
+    const merged = mergePackageEvidence(first, second);
+    expect(merged.brand).toBe('North Mill');
+    expect(merged.license).toBe('12345678901234');
+    expect(merged.warnings.join(' ')).toMatch(/brand and license number/i);
+  });
+
   it('labels pasted evidence separately from OCR in the accumulated text record', () => {
     const first = parseLabel('Nutrition per 100 g\nProtein 12 g', { origin: 'ocr' });
     const entered = parseLabel('Nutrition per 100 g\nFibre 5 g', { origin: 'user' });

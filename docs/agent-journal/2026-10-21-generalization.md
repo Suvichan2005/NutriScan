@@ -55,8 +55,8 @@ Additional browser acceptance is still required for photo removal/replacement, k
 
 ## Continuation checkpoint — incremental multimodal input
 
-- Follow-up image reads now preserve the active package identity, portion and conversation, carry image IDs into parsed observations, skip unchanged attachments, and retain conflicting comparable values for review. Barcode mismatch is made explicit.
+- Follow-up image reads now preserve the active package identity, portion and conversation, carry image IDs into parsed observations, skip unchanged attachments, and retain conflicting comparable values for review. Barcode, brand and license disagreements are made explicit.
 - Pasted text can enrich an existing investigation without detaching its photos. Optional user product details are stored as user-originated context separate from OCR, linked to an observation, and labeled unverified in local audits and the Gemini instruction. Product details are included in history/export disclosures.
-- Verification: 91 tests across 12 files, TypeScript check, optimized production build, fresh localhost production-process HTTP 200 and `/api/status` `ok`, with Gemini disabled. Full and runtime-only `npm audit` both returned zero known vulnerabilities.
+- Verification: 92 tests across 12 files, TypeScript check, optimized production build, fresh localhost production-process HTTP 200 and `/api/status` `ok`, with Gemini disabled. Full and runtime-only `npm audit` both returned zero known vulnerabilities.
 - This is not fresh browser acceptance: selected-browser proof for adding photos and text after an analysis remains pending. No provider invocation or new real-photo OCR accuracy result is claimed.
 - Checkpoint commits: `83a6c48` (photo evidence merge), `a4fb141` (joined text and user details), `18a95be` (runtime and dependency verification).
