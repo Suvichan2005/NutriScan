@@ -1,0 +1,514 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nutriscan:ocr-annotation-pass:1",
+  "title": "NutriScan independent package-photo annotation pass",
+  "description": "Single-reader, unadjudicated visual annotation metadata. Strictly excludes image bytes, OCR output, filenames and local paths.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "annotatorCode": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    },
+    "record": {
+      "type": "object",
+      "properties": {
+        "imageId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "productGroupId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "split": {
+          "type": "string",
+          "enum": [
+            "development",
+            "held-out",
+            "not-assigned"
+          ]
+        },
+        "image": {
+          "type": "object",
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{64}$"
+            },
+            "width": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "height": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "byteLength": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "sha256",
+            "width",
+            "height",
+            "byteLength"
+          ],
+          "additionalProperties": false
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "imageUrl": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uri"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "publisher": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "uploader": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "licenseId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "licenseUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "retrievedAt": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            },
+            "redistributionReview": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "not-approved",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "url",
+            "publisher",
+            "uploader",
+            "licenseId",
+            "licenseUrl",
+            "retrievedAt",
+            "redistributionReview"
+          ],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "type": "object",
+          "properties": {
+            "language": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80
+            },
+            "tableRegions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "regionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "table",
+                      "row",
+                      "label",
+                      "value",
+                      "unit",
+                      "basis",
+                      "other-text"
+                    ]
+                  },
+                  "columnId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "polygon": {
+                    "minItems": 4,
+                    "maxItems": 32,
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "prefixItems": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      ],
+                      "items": false,
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  }
+                },
+                "required": [
+                  "regionId",
+                  "role",
+                  "polygon"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "nutrients": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "fieldId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "labelText": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "printedNumericText": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "numericValue": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "numericOperator": {
+                    "default": "eq",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "eq",
+                          "lt",
+                          "lte",
+                          "gt",
+                          "gte"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "unit": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 24
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "basis": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "per-100g",
+                              "per-100ml",
+                              "per-serving",
+                              "per-package",
+                              "per-unit",
+                              "other",
+                              "unknown"
+                            ]
+                          },
+                          "amount": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "exclusiveMinimum": 0,
+                                "maximum": 10000
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "unit": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "g",
+                                  "ml",
+                                  "piece"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "amount",
+                          "unit"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "basisText": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "labelRegionId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "valueRegionId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "rowRegionId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "unitRegionId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "basisRegionId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "columnId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "clear",
+                      "ambiguous",
+                      "not-visible"
+                    ]
+                  }
+                },
+                "required": [
+                  "fieldId",
+                  "key",
+                  "labelText",
+                  "numericValue",
+                  "numericOperator",
+                  "unit",
+                  "basis",
+                  "basisText",
+                  "labelRegionId",
+                  "valueRegionId",
+                  "rowRegionId",
+                  "unitRegionId",
+                  "basisRegionId",
+                  "columnId",
+                  "status"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "review": {
+              "type": "object",
+              "properties": {
+                "annotatorCount": {
+                  "type": "number",
+                  "const": 1
+                },
+                "adjudicated": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "agreementMetric": {
+                  "type": "null"
+                },
+                "referenceStatus": {
+                  "type": "string",
+                  "const": "single-reader"
+                },
+                "method": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "annotatorCount",
+                "adjudicated",
+                "agreementMetric",
+                "referenceStatus",
+                "method"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "language",
+            "tableRegions",
+            "nutrients",
+            "review"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "imageId",
+        "productGroupId",
+        "split",
+        "image",
+        "source",
+        "annotations"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "annotatorCode",
+    "createdAt",
+    "record"
+  ],
+  "additionalProperties": false
+}

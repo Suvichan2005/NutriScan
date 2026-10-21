@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "kind": "synthetic-local-ocr-annotation-tool-browser-acceptance",
+  "generatedAt": "2026-10-21T09:14:48.752Z",
+  "appOrigin": "http://127.0.0.1:3400",
+  "captureTool": "Playwright using installed Chrome",
+  "evaluationInput": "Generated synthetic image; interface and export contract only; no OCR accuracy evidence",
+  "imagesUploaded": false,
+  "providerCalls": 0,
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "syntheticImageOnly": true,
+      "annotatedRegionCount": 6,
+      "exportedNutrientFieldCount": 1,
+      "exportedPassValid": true,
+      "horizontalOverflow": false,
+      "postRequests": [],
+      "nonLoopbackRequestOrigins": [],
+      "axeViolationIds": [],
+      "axeViolationTargets": [],
+      "pageErrors": []
+    },
+    {
+      "viewport": "1440x900",
+      "syntheticImageOnly": true,
+      "annotatedRegionCount": 6,
+      "exportedNutrientFieldCount": 1,
+      "exportedPassValid": true,
+      "horizontalOverflow": false,
+      "postRequests": [],
+      "nonLoopbackRequestOrigins": [],
+      "axeViolationIds": [],
+      "axeViolationTargets": [],
+      "pageErrors": []
+    }
+  ],
+  "passed": true
+}

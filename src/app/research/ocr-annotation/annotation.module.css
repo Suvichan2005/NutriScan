@@ -1,0 +1,48 @@
+.page{min-height:100vh;background:#f6f8f4;color:#20342c;padding:clamp(18px,4vw,44px)}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:20px}
+.masthead{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.brand{color:#214e36;font-weight:800;font-size:20px;letter-spacing:-.7px}
+.local{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#596d50;background:#e8eee3;border-radius:999px;padding:8px 11px;font-weight:700}
+.intro{max-width:760px;display:grid;gap:10px}
+.intro h1{font-size:clamp(26px,4vw,38px);line-height:1.14;letter-spacing:-1.2px}
+.intro p{font-size:14px;line-height:1.65;color:#596d50}
+.callout{border:1px solid #d9e3d4;background:#eef4ec;border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.65;color:#36523d}
+.columns{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(340px,.92fr);gap:18px;align-items:start}
+.stack{display:grid;gap:16px;min-width:0}
+.card{background:#fff;border:1px solid #e0e7dd;border-radius:16px;padding:clamp(16px,2.2vw,23px);box-shadow:0 5px 22px #283e2807;min-width:0}
+.card h2{font-size:16px;letter-spacing:-.3px;margin:0 0 6px}
+.sub{font-size:12px;line-height:1.6;color:#69766d;margin:0 0 16px}
+.form{display:grid;gap:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.control{display:grid;gap:5px;min-width:0;color:#415447;font-size:11px;font-weight:650}
+.control input,.control select,.control textarea{width:100%;min-height:40px;border:1px solid #d8e1d5;border-radius:8px;background:#fff;color:#24372d;padding:8px 10px;font:inherit;font-size:13px;font-weight:400}
+.control textarea{min-height:76px;resize:vertical;line-height:1.5}
+.help{font-size:11px;line-height:1.45;color:#596d50;font-weight:400}
+.upload{display:grid;gap:10px;border:1px dashed #b8c9b3;border-radius:12px;background:#fafcf9;padding:16px}
+.upload input{max-width:100%;font-size:12px}
+.preview{position:relative;max-width:100%;border:1px solid #dfe6dc;border-radius:10px;overflow:hidden;background:#f1f4ef;touch-action:none}
+.preview img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}
+.overlay{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;overflow:visible}
+.meta{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:#596d50;overflow-wrap:anywhere}
+.meta code{font-size:10px;color:#405447;overflow-wrap:anywhere}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;font-size:10px;color:#596d50}
+.legend span{display:flex;align-items:center;gap:5px}
+.swatch{width:9px;height:9px;border-radius:2px}
+.rowList{display:grid;gap:6px;margin-top:12px;max-height:180px;overflow:auto}
+.regionItem,.fieldItem{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;border:1px solid #e7ece4;border-radius:8px;padding:9px 10px;font-size:11px}
+.regionItem small,.fieldItem small{display:block;color:#596d50;font-size:11px;margin-top:3px;overflow-wrap:anywhere}
+.regionItem button,.fieldItem button{color:#745833;font-size:10px;min-height:28px;padding:2px 6px;flex-shrink:0}
+.fields{display:grid;gap:8px;margin-top:14px}
+.fieldItem{background:#fafcf9}
+.fieldItem strong{font-size:12px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.primary,.secondary{min-height:42px;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:700}
+.primary{background:#266747;color:#fff}
+.secondary{border:1px solid #d6e1d2;background:#fff;color:#31523a}
+.primary:disabled{opacity:.45}
+.error{color:#8b352b;background:#fff1ef;border:1px solid #f0ccc6;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5}
+.ok{color:#315b3e;background:#eff7ed;border:1px solid #d7e8d3;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5}
+.footer{color:#596d50;font-size:11px;line-height:1.6;padding:4px 2px 18px}
+@media(max-width:850px){.columns{grid-template-columns:1fr}.columns>section:first-child{order:1}.columns>section:last-child{order:2}}
+@media(max-width:520px){.page{padding:16px}.masthead{align-items:flex-start;flex-direction:column;gap:8px}.grid2,.grid3{grid-template-columns:1fr}.card{padding:16px}.intro p{font-size:13px}}

@@ -1,6 +1,6 @@
 # Package-photo annotation guide
 
-This guide defines the reference-label process for the shared OCR research contracts. A model output is never a reference label. The initial pilot remains unscored until its image regions and field values receive independent human review.
+This guide defines the reference-label process for the shared OCR research contracts. A model output is never a reference label. The initial pilot remains unscored until its image regions and field values receive independent human review. The local-only annotation interface is `/research/ocr-annotation`; it exports one pass conforming to `data/ocr-annotation-pass.schema.json`. It does not perform OCR, upload images, store draft state, or include photo bytes in exports.
 
 ## Sampling and split lock
 
@@ -12,9 +12,11 @@ This guide defines the reference-label process for the shared OCR research contr
 
 ## Blind annotation and adjudication
 
-Two annotators independently transcribe each image before seeing OCR output or each other's work. They record visible nutrient labels, the printed numeric value and qualifier, printed unit, column and serving basis. They separately draw table, row, label, value, unit and basis polygons in normalized image coordinates. Do not infer a value from product databases, nutrient arithmetic, a serving-size calculator or another product variant.
+Two annotators independently transcribe each image before seeing OCR output or each other's work. They record visible nutrient labels, the exact printed numeric string, its normalized numeric value and qualifier, printed unit, column and serving basis. They separately draw table, row, label, value, unit and basis polygons in normalized image coordinates. Do not infer a value from product databases, nutrient arithmetic, a serving-size calculator or another product variant. Use distinct anonymous reader codes; keep both exported JSON passes private until both readers finish.
 
-After independent passes, compare field-by-field agreement for label/key, numeric value and qualifier, unit, basis kind/amount/unit, and region placement. Adjudicate disagreements against the original source pixels. Preserve unresolved or unreadable fields as `ambiguous` or `not-visible`; never replace them with zero. Record the agreement method and result, annotator count, adjudication state and reference status in the dataset. `human-verified` is reserved for human-reviewed annotations. Model-assisted transcription is useful for exploration but is not a gold standard.
+After independent passes, compare field-by-field agreement for label/key, literal numeric text, normalized numeric value and qualifier, unit, basis kind/amount/unit, column, and region placement. State each component's denominator and agreement formula. Adjudicate disagreements against the original source pixels. Preserve unresolved or unreadable fields as `ambiguous` or `not-visible`; never replace them with zero. Record the agreement method and result, annotator count, adjudication state and reference status in the dataset. `human-verified` is reserved for human-reviewed annotations. Model-assisted transcription is useful for exploration but is not a gold standard.
+
+For a first comparison, run `npm run ocr:compare-annotations -- <reader-a.json> <reader-b.json>`. It validates that the passes are from distinct readers and the same image hash, then prints dimension-level exact agreement and region bounding-box IoU to stdout. Nutrient rows pair by array order, so both readers must annotate top-to-bottom; check key differences and unpaired rows manually. The comparator does not merge passes, choose an adjudicated value, set `human-verified`, or write an output file. Review all mismatches against the original image before creating a dataset record.
 
 Annotate the exact printed column and unit. A `per package` value is not converted to a mass basis unless that mass is printed on the same package. Preserve qualifiers such as `<1 g` with a numeric operator; do not round a printed decimal to create an exact match. Record a serving basis as its kind and known amount/unit. If the amount is absent or unclear, do not infer it.
 

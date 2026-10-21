@@ -1,5 +1,13 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — independent OCR annotation workflow
+
+- Added a local browser route for blinded human transcription of real package photographs. Image bytes stay in tab memory; the export contains hash/dimensions, attribution, normalized table/row/field polygons, exact printed numeric text, normalized value/operator, unit, and serving basis. It excludes bytes, file names, paths and OCR output.
+- Added strict schema generation and focused pass-contract checks. The route is annotation tooling only; it does not establish OCR accuracy or human-verified references. The three candidate photos still need two independent readers, adjudication and license review.
+- Extended the public research protocol and annotation guide with reader independence, exact text preservation, metric denominators, privacy boundaries, and resource/network/cost measurement. Production OCR and Gemini configuration were unchanged.
+- The pass comparison utility reports exact agreement by field dimension and bounding-box IoU by region role; it neither merges nor adjudicates. `npm test` passed (266 tests / 29 files), typecheck passed, and an isolated optimized production build passed. Chrome/Playwright synthetic-image acceptance passed at 390×844 and 1440×900 with no Axe violations, page errors, horizontal overflow, POSTs or off-origin requests. Receipt: `docs/evidence/ocr-annotation-workflow-browser.json`.
+- No source images, private chat content, provider secrets, health context, or raw request bodies were added to this entry.
+
 ## 2026-10-21 — executable OCR research contracts
 
 - Added strict TypeScript/Zod contracts for annotated image data, a common transient engine output and sanitized per-image result receipts. A common scorer now separates exact numeric/operator, unit and basis correctness; omissions, abstentions, conflicts, false positives and unscorable references remain distinct.

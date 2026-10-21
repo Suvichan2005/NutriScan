@@ -44,11 +44,15 @@ export const ocrAnnotatedRegionSchema = z.object({
   columnId:z.string().min(1).max(100).nullable().optional(),
   polygon:ocrPolygonSchema
 }).strict();
+export type OcrAnnotatedRegion = z.infer<typeof ocrAnnotatedRegionSchema>;
 export const ocrReferenceStatusSchema = z.enum(['human-verified','model-assisted','single-reader']);
 export const ocrDatasetFieldSchema = z.object({
   fieldId:z.string().min(1).max(120),
   key:z.string().min(1).max(80),
   labelText:z.string().min(1).max(120),
+  // Keep the literal printed digits for auditability alongside the normalized
+  // numeric value used by exact-value scoring. Older datasets may omit it.
+  printedNumericText:z.string().max(40).nullable().optional(),
   numericValue:z.number().finite().nonnegative().nullable(),
   numericOperator:z.enum(['eq','lt','lte','gt','gte']).nullable().default('eq'),
   unit:z.string().min(1).max(24).nullable(),
@@ -75,6 +79,7 @@ export const ocrDatasetRecordSchema = z.object({
   }).strict(),
   source:z.object({
     url:z.string().url(),
+    imageUrl:z.string().url().nullable().optional(),
     publisher:z.string().min(1).max(160),
     uploader:z.string().min(1).max(160),
     licenseId:z.string().min(1).max(80),
@@ -96,6 +101,23 @@ export const ocrDatasetRecordSchema = z.object({
   }).strict()
 }).strict();
 export type OcrDatasetRecord = z.infer<typeof ocrDatasetRecordSchema>;
+const ocrAnnotationPassReviewSchema = z.object({
+  annotatorCount:z.literal(1),
+  adjudicated:z.literal(false),
+  agreementMetric:z.null(),
+  referenceStatus:z.literal('single-reader'),
+  method:z.string().min(1).max(1000)
+}).strict();
+export const ocrAnnotationPassRecordSchema = ocrDatasetRecordSchema.extend({
+  annotations:ocrDatasetRecordSchema.shape.annotations.extend({review:ocrAnnotationPassReviewSchema})
+}).strict();
+export const ocrAnnotationPassSchema = z.object({
+  schemaVersion:z.literal(1),
+  annotatorCode:z.string().trim().min(1).max(80),
+  createdAt:z.iso.datetime(),
+  record:ocrAnnotationPassRecordSchema
+}).strict();
+export type OcrAnnotationPass = z.infer<typeof ocrAnnotationPassSchema>;
 export const ocrAnnotatedDatasetSchema = z.object({
   schemaVersion:z.literal(2),
   datasetVersion:z.string().min(1).max(80),

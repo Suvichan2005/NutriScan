@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 21 October 2026 — make independent OCR annotation executable
+
+- Add a local-only browser route for independent source-pixel transcription and region geometry. Keep image bytes in tab memory, hash locally, and export only a strict single-reader pass with provenance metadata. Never include OCR output, image bytes, file names or local paths.
+- Preserve the exact printed numeric string alongside normalized value and qualifier in the shared reference field. This is backward-compatible for existing dataset records.
+- Require two separate reader passes, blind comparison, adjudication and an explicit agreement method before promoting a reference as human-verified. Keep the three new candidates unassigned and unscored until that work is done.
+- Keep production browser Tesseract unchanged, keep PaddleOCR.js diagnostic-only, and keep Gemini disabled. The five-photo comparison remains exploratory development evidence.
+
 ## 21 October 2026 — make OCR research scoring executable
 
 - Keep browser-first OCR as the product baseline, but define the same transient extraction and sanitized evaluation contracts for browser, local/server, remote and hybrid candidates. Strict Zod contracts in `src/lib/contracts.ts` generate the dataset v2, extraction v1 and evaluation receipt v2 JSON Schemas.
