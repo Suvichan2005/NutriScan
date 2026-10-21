@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "kind": "synthetic-local-ocr-annotation-tool-browser-acceptance",
-  "generatedAt": "2026-10-21T09:14:48.752Z",
-  "appOrigin": "http://127.0.0.1:3400",
+  "generatedAt": "2026-10-21T09:54:52.517Z",
+  "appOrigin": "http://127.0.0.1:3401",
   "captureTool": "Playwright using installed Chrome",
   "evaluationInput": "Generated synthetic image; interface and export contract only; no OCR accuracy evidence",
   "imagesUploaded": false,
@@ -11,8 +11,16 @@
     {
       "viewport": "390x844",
       "syntheticImageOnly": true,
+      "selectableCandidateIds": [
+        "off-0066721028426-nutrition-rev25",
+        "off-0718604978174-nutrition-rev14"
+      ],
+      "exposedDevelopmentAndLowLegibilityPhotosExcluded": true,
+      "candidateEligibilityVerified": true,
       "annotatedRegionCount": 6,
-      "exportedNutrientFieldCount": 1,
+      "exportedNutrientFieldCount": 2,
+      "explicitUnitRoundTrip": true,
+      "absentUnitRoundTrip": true,
       "exportedPassValid": true,
       "horizontalOverflow": false,
       "postRequests": [],
@@ -24,8 +32,16 @@
     {
       "viewport": "1440x900",
       "syntheticImageOnly": true,
+      "selectableCandidateIds": [
+        "off-0066721028426-nutrition-rev25",
+        "off-0718604978174-nutrition-rev14"
+      ],
+      "exposedDevelopmentAndLowLegibilityPhotosExcluded": true,
+      "candidateEligibilityVerified": true,
       "annotatedRegionCount": 6,
-      "exportedNutrientFieldCount": 1,
+      "exportedNutrientFieldCount": 2,
+      "explicitUnitRoundTrip": true,
+      "absentUnitRoundTrip": true,
       "exportedPassValid": true,
       "horizontalOverflow": false,
       "postRequests": [],

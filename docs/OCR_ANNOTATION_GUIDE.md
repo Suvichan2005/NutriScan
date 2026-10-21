@@ -22,7 +22,7 @@ Annotate the exact printed column and unit. A `per package` value is not convert
 
 ## Geometry and stage evidence
 
-Polygons use normalized `[x,y]` coordinates in the orientation and dimensions of the original image bytes. Include a table polygon, row polygons and separate label/value/unit/basis polygons where visible. Region IDs are stable within one image. Each nutrient annotation links to its label, value, row, unit and basis regions and to a column ID.
+Polygons use normalized `[x,y]` coordinates in the orientation and dimensions of the original image bytes. Include a table polygon, row polygons and separate label/value/unit/basis polygons where visible. Region IDs are stable within one image. Each nutrient annotation links to its label, value, row and basis regions and to a column ID. Record `unit: null` and no unit polygon when the printed row has no separate unit; do not infer one from convention. If a unit is printed, transcribe it and link its visible region.
 
 Text-region detection is measurable only when the target region is annotated. The current scorer reports a detected-region match when a predicted OCR region covers at least 50% of the reference polygon's bounding-box area. Label recognition is case-insensitive normalized text agreement within the annotated label region. Numeric, unit and basis results are scored separately. Row/column association requires the emitted candidate's source region to overlap the annotated row and value region in the expected column. Parser acceptance/rejection is recorded separately with a bounded rejection code. If required annotations or engine evidence are absent, report that stage as unavailable (`null`) rather than infer a cause from the final nutrient score.
 

@@ -1,5 +1,13 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — real-photo structural diagnostic and annotation correction
+
+- Corrected the local annotation workflow so a clear numeric row can state that no separate unit is printed, without inventing one or requiring nonexistent unit geometry. Chrome/Playwright round-tripped both an explicit unit and `unit: null` at 390×844 and 1440×900. It also verified that only the two unexposed candidates are selectable; the OCR-exposed Grandma's image and low-legibility Weet-Bix are excluded. No Axe issues, POSTs, off-origin requests, page errors or horizontal overflow were observed.
+- Ran one private, hash-registered Grandma's Chocolate Brownie photograph through the browser product flow. Tesseract.js 7.0.0 produced 28 line observations; parser output retained two conflicting fat candidates with unknown bases and produced no usable calculations. The two numeric columns were not associated with separate bases. No independent transcript/polygons were available, so this is qualitative development evidence only and the product is excluded from held-out evaluation. See `docs/evidence/ocr-real-photo-structural-diagnostic.json`.
+- Tightened local evidence selection so generic calorie/carbohydrate/sugar label questions do not surface diabetes education unless diabetes context or a sugar claim is explicitly asked about. Fresh isolated-build Chrome export showed no NIDDK source for the generic real-photo question; focused regression covers generic, explicit sugar-claim and diabetes queries.
+- Full verification passed: 270 tests across 30 files, typecheck, isolated optimized Next build, and local Chrome/Playwright annotation acceptance. The photo was read in-browser; no POST/off-origin/provider call occurred, Gemini remained disabled, and no source image or raw OCR transcript was committed.
+- No independent candidate has been annotated, no field accuracy was scored, and no OCR engine was promoted. The two remaining unexposed candidates still need independent human annotation and license review before any split lock.
+
 ## 2026-10-21 — opt-in local conversation continuity
 
 - Added a strict saved-scan contract that remains compatible with package-only history and can hold up to 30 recent local turns. Saved turns reopen with their package evidence and calculation amount; the optional profile returns empty.

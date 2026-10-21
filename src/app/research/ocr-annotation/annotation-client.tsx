@@ -133,7 +133,7 @@ export default function AnnotationClient({candidates}:{candidates:AnnotationCand
     setError('');
     const amount=draft.numericValue.trim()?Number(draft.numericValue):null;
     if(draft.numericValue.trim()&&(!Number.isFinite(amount)||amount!<0)){setError('Enter a non-negative numeric interpretation using a period for decimals, or leave it blank when unreadable.');return;}
-    if(draft.status==='clear'&&(amount===null||!draft.unit.trim()||draft.basisKind==='unknown')){setError('A clear field needs a numeric value, printed unit and known serving basis. Mark it ambiguous when any of those cannot be read.');return;}
+    if(draft.status==='clear'&&(amount===null||draft.basisKind==='unknown')){setError('A clear field needs a readable numeric value and known serving basis. Leave the unit blank when none is printed; mark the field ambiguous when its value or basis cannot be read.');return;}
     if(draft.printedNumericText.trim()&&!draft.printedNumericText.trim().match(/^[0-9]+(?:[.,][0-9]+)?$/)){setError('Enter only the literal digits and decimal separator in the printed-value field; put < or > in the qualifier selector.');return;}
     const nextFieldNumber=fields.reduce((maximum,field)=>Math.max(maximum,Number(field.fieldId.match(/^field-(\d+)$/)?.[1]??0)),0)+1;
     const fieldId=`field-${nextFieldNumber}`;
@@ -156,8 +156,8 @@ export default function AnnotationClient({candidates}:{candidates:AnnotationCand
     if(!image){setError('Choose a package-label photograph first.');return;}
     if(!regions.some(region=>region.role==='table')){setError('Mark the nutrition table region before exporting this pass.');return;}
     if(fields.length===0){setError('Transcribe at least one visible nutrient row. Record unreadable rows as ambiguous; do not leave them out or enter zero.');return;}
-    const geometryIncomplete=fields.some(field=>field.status==='clear'&&(!field.labelRegionId||!field.valueRegionId||!field.rowRegionId||!field.unitRegionId||!field.basisRegionId||!field.columnId||!field.basisText));
-    if(geometryIncomplete){setError('Each clear nutrient row needs label, value, row, unit and basis regions plus its column and exact basis text. Mark uncertain rows ambiguous instead.');return;}
+    const geometryIncomplete=fields.some(field=>field.status==='clear'&&(!field.labelRegionId||!field.valueRegionId||!field.rowRegionId||(field.unit&&!field.unitRegionId)||!field.basisRegionId||!field.columnId||!field.basisText));
+    if(geometryIncomplete){setError('Each clear nutrient row needs label, value, row and basis regions plus its column and exact basis text. Link a unit region when a printed unit is present. Mark uncertain rows ambiguous instead.');return;}
     if(!matchesCandidate){setError('The chosen photo SHA-256 does not match the registered source image. Select the correct photo or choose Custom / other source.');return;}
     const effectiveSource=source;
     const record={

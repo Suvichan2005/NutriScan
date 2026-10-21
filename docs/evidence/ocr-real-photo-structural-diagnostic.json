@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "kind": "qualitative-real-package-ocr-development-diagnostic",
+  "generatedAt": "2026-10-21",
+  "imageId": "off-0028400079143-nutrition-rev12",
+  "imageSha256": "f9a6b8199271fb97d7c8ccd4bd484c22b1c9fb9e09677e8e4fa39c6dba9f1b34",
+  "researchSplit": "development-only-after-reader-exposure",
+  "sourceImageBytesCommitted": false,
+  "groundTruth": {
+    "independentAnnotations": 0,
+    "annotatorCount": 0,
+    "adjudicated": false,
+    "referenceTextAvailable": false,
+    "referencePolygonsAvailable": false,
+    "fieldAccuracyScored": false
+  },
+  "run": {
+    "productReader": "browser Tesseract.js",
+    "tesseractJsVersion": "7.0.0",
+    "languageDataPackage": "@tesseract.js-data/eng@1.0.0",
+    "capture": "Playwright with installed Chrome",
+    "viewport": "390x844",
+    "origin": "local loopback",
+    "sameOriginGetRequests": 19,
+    "postRequests": 0,
+    "offOriginRequests": 0,
+    "failedRequests": 0,
+    "pageErrors": 0,
+    "photoUploadedToServer": false,
+    "providerCalls": 0,
+    "geminiEnabled": false,
+    "latencyMs": null,
+    "memory": null,
+    "networkBytes": null,
+    "modelBytes": null,
+    "deploymentCost": "not applicable; no provider request"
+  },
+  "observedPipeline": {
+    "textDetection": {
+      "lineObservations": 28,
+      "confidenceMin": 17,
+      "confidenceMean": 62.4,
+      "confidenceMax": 95,
+      "confidenceCalibration": "unknown",
+      "precision": null,
+      "recall": null,
+      "interpretation": "Line boxes were emitted, but without reference polygons detection misses and false positives cannot be identified."
+    },
+    "textRecognition": {
+      "qualitativeVisualReview": true,
+      "characterOrFieldAccuracy": null,
+      "interpretation": "Some prominent label/value text was recognizable; the serving-size statement and several smaller nutrient entries were distorted or absent. No token-level score was computed."
+    },
+    "nutritionTableStructure": {
+      "twoNumericColumnsSeparated": false,
+      "columnHeadingAssociatedWithValues": false,
+      "interpretation": "The two-column serving/package heading was emitted as one line, so the numeric columns did not retain separate serving bases."
+    },
+    "unitAndBasisAssociation": {
+      "candidateFieldsWithKnownBasis": 0,
+      "servingDeclarationParsed": false,
+      "explicitUnitOnEmittedFatCandidates": "g",
+      "unitAccuracy": null,
+      "basisAccuracy": null,
+      "interpretation": "The two emitted fat candidates had a unit token but no serving basis; unit correctness cannot be scored without independent references."
+    },
+    "parser": {
+      "nutrientCandidatesReturned": 2,
+      "candidateNutrientKey": "fat",
+      "candidateValues": [6, 13],
+      "candidateUnits": ["g", "g"],
+      "candidateBases": ["unknown", "unknown"],
+      "candidateStatuses": ["conflict", "conflict"],
+      "usableCalculations": 0,
+      "requestedEnergyCarbohydrateAndSugarsAvailable": false,
+      "parserRejectionCount": null,
+      "omissionAttribution": "unavailable"
+    },
+    "stageAttribution": "This run cannot distinguish detection failure from recognition failure for absent fields. Structural column/basis association failure is directly observed, while parser rejection counts and field-level correctness require independently annotated text and geometry."
+  },
+  "productFlow": {
+    "questionType": "generic nutrient-label reading",
+    "localAuditWithheldUnresolvedRequestedAmounts": true,
+    "unrelatedDiabetesSourceAttached": false,
+    "evidenceBasis": "fresh isolated optimized local build on loopback; source card check from exported audit"
+  },
+  "limitations": [
+    "One exploratory photo is not a benchmark, held-out result, or population-accuracy estimate.",
+    "Confidence values are engine outputs, not calibrated correctness probabilities.",
+    "No latency, memory, transfer-byte, model-size, or billed-cost measurement was made.",
+    "The image remains in private local storage; image-specific license and redistribution review is pending."
+  ]
+}

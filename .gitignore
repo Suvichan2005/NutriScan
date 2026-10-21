@@ -1,6 +1,7 @@
 NutriScan_Autonomous_Codex_ChatGPT_Handoff_2026-10-21/
 node_modules/
 .next/
+.next-acceptance/
 out/
 .env*
 !.env.example

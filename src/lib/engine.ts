@@ -133,7 +133,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   }
   if(pkg.additives.length)trace.push({tool:'lookup_additive',reason:'Resolve exact INS codes and aliases before considering evidence applicability.',status:`${pkg.additives.length} declarations examined locally`});
   if(pkg.additives.includes('955')||/sweetener|sucralose/i.test(question))finding({title:'Sweetener guidance has a defined scope',detail:'WHO’s conditional 2023 recommendation concerns weight control and prevention of noncommunicable disease. It excludes people with existing diabetes and is not a toxicological safety assessment. Ingredient presence provides no dose for an exposure calculation.',status:'context',observationIds:pkg.observations.filter(o=>o.field==='additive:955').map(o=>o.id),sourceIds:['who-nss'],calculationIds:[]});
-  if(pkg.claims.some(c=>/sugar[ -]free|no added sugar/i.test(c))||/sugar[ -]free/i.test(question))finding({title:'Sugar-free does not establish zero carbohydrate',detail:carbs?`The selected portion still has ${amountText(carbs.result)} g total carbohydrate in the label reading. Evaluate that total separately from sugar claims.`:'Total carbohydrate is not established for this portion. A sugar claim alone cannot fill that missing value.',status:carbs?'calculated':'context',observationIds:unique([...pkg.observations.filter(o=>o.field==='claim').map(o=>o.id),...(carbs?.observationIds??[])]),sourceIds:['niddk-meals'],calculationIds:carbs?[carbs.id]:[]});
+  if(/sugar[ -]free|no added sugar|sugar claim/i.test(question))finding({title:'Sugar-free does not establish zero carbohydrate',detail:carbs?`The selected portion still has ${amountText(carbs.result)} g total carbohydrate in the label reading. Evaluate that total separately from sugar claims.`:'Total carbohydrate is not established for this portion. A sugar claim alone cannot fill that missing value.',status:carbs?'calculated':'context',observationIds:unique([...pkg.observations.filter(o=>o.field==='claim').map(o=>o.id),...(carbs?.observationIds??[])]),sourceIds:['niddk-meals'],calculationIds:carbs?[carbs.id]:[]});
   const personalSuitability=/\b(safe|suitable|can i eat|should i eat|fit for me|for my|my diet|allerg|intoler|daily)\b/i.test(question);
   const dietRelevant=personalSuitability&&!!userContext;
   if(personalSuitability&&userContext){
@@ -155,7 +155,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     const intentSources = [
       {id:'who-sodium',matches:/\b(sodium|salt|salty|hypertension|blood pressure)\b/i.test(question)},
       {id:'who-nss',matches:/\b(sweeteners?|sucralose|aspartame|non[- ]sugar|nss)\b/i.test(question)},
-      {id:'niddk-meals',matches:/\b(diabetes|diabetic|blood glucose|carbohydrates?|carbs|meal planning|sugar claim)\b/i.test(question)},
+      {id:'niddk-meals',matches:/\b(diabetes|diabetic|blood[- ]glucose)\b/i.test(question)},
       {id:'icmrnin-dgi-2024',matches:/\b(icmr|nin|indian dietary guidelines?|dietary guidelines? for india)\b/i.test(question)},
     ];
     const candidateIds=new Set(intentSources.filter(x=>x.matches).map(x=>x.id));

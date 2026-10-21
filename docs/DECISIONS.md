@@ -1,5 +1,13 @@
 # Chronological decisions
 
+## 21 October 2026 — keep absent printed units annotatable and expose the real-photo bottleneck
+
+- A readable nutrient value with a known basis may be annotated with `unit: null` when the package prints no separate unit. Require unit geometry only when a unit is actually transcribed; never infer a unit from convention.
+- Keep the Grandma's Chocolate Brownie browser read as development-only after exposure. It returned 28 line observations but no independent reference, so record structural observations without scoring or changing the production OCR engine.
+- The directly observed failure is column/basis reconstruction: two nutrient columns were not separated, leaving two conflicting fat candidates with unknown bases and no usable calculations. Detection/recognition attribution and parser omission counts remain unavailable without annotated polygons and transcript.
+- Gate diabetes and sugar-claim references on explicit user intent. A generic nutrient-label question must not inherit diabetes education merely because OCR or package metadata contains a sugar-free claim.
+- Leave the owner-managed port-3400 process untouched; build and browser-check current code in isolated `.next-acceptance` on a separate loopback port.
+
 ## 21 October 2026 — keep local conversation memory explicit
 
 - Add a separate opt-in for saving up to 30 recent local question-and-answer turns with a saved package investigation. Saving turns also retains the package evidence and current amount needed to reopen the exchange.
@@ -11,7 +19,7 @@
 
 - Add a local-only browser route for independent source-pixel transcription and region geometry. Keep image bytes in tab memory, hash locally, and export only a strict single-reader pass with provenance metadata. Never include OCR output, image bytes, file names or local paths.
 - Preserve the exact printed numeric string alongside normalized value and qualifier in the shared reference field. This is backward-compatible for existing dataset records.
-- Require two separate reader passes, blind comparison, adjudication and an explicit agreement method before promoting a reference as human-verified. Keep the three new candidates unassigned and unscored until that work is done.
+- Require two separate reader passes, blind comparison, adjudication and an explicit agreement method before promoting a reference as human-verified. At that earlier annotation-tool checkpoint, all three new candidates were still unassigned and unscored; Grandma's Chocolate Brownie was later exposed to OCR and is now development-only.
 - Keep production browser Tesseract unchanged, keep PaddleOCR.js diagnostic-only, and keep Gemini disabled. The five-photo comparison remains exploratory development evidence.
 
 ## 21 October 2026 — make OCR research scoring executable
@@ -19,7 +27,7 @@
 - Keep browser-first OCR as the product baseline, but define the same transient extraction and sanitized evaluation contracts for browser, local/server, remote and hybrid candidates. Strict Zod contracts in `src/lib/contracts.ts` generate the dataset v2, extraction v1 and evaluation receipt v2 JSON Schemas.
 - Score exact printed number/operator, canonical unit and serving basis separately. Count missing, explicit abstention, wrong fields, unscorable labels and extra candidates distinctly; preserve conflicts and printed zero. Do not score an unmeasured stage from final-parser output.
 - Keep recognized text transient; tracked receipts retain normalized candidate values and sanitized stage flags, never raw OCR lines or image bytes. Use image hashes and dimensions to prevent mismatched comparisons.
-- Three sourced package photos are unassigned candidates pending independent human double annotation and split lock. No OCR engine has run against them. Exclude the low-legibility Weet-Bix photo from clear numeric reference scoring. Keep existing five-photo results in development only.
+- At that initial scoring-contract checkpoint, three sourced photos were unassigned and unexposed, pending independent double annotation and split lock. Grandma's Chocolate Brownie was later exposed in one qualitative product-flow diagnostic and must stay in development; the other two remain unexposed. Exclude the low-legibility Weet-Bix photo from clear numeric reference scoring and keep existing five-photo results in development only.
 - Do not change production OCR or activate Gemini. The exact Open Food Facts photo reuse review remains pending; record uploader/source attribution and keep source image bytes private.
 
 ## 21 October 2026 — bootstrap

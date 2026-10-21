@@ -271,6 +271,18 @@ describe('nutrition numerical invariants',()=>{
     expect(known.answer).toMatch(/not everyone with diabetes needs to count carbs/i);
     expect(known.answer).not.toMatch(/\b\d+(?:\.\d+)?\s*g\s*\/\s*day/i);
   });
+  it('does not attach diabetes education to generic label arithmetic, but retains it for explicit diabetes questions',()=>{
+    const pkg=label('Sugar-free example\nNutrition per 100 g\nEnergy 180 kcal\nCarbohydrate 30 g\nSugars 4 g');
+    const generic=buildAudit(pkg,30,'g',defaultProfile,'What does this nutrition label report for calories, carbohydrates, and sugars per serving?');
+    expect(generic.sources.some(source=>source.id==='niddk-meals')).toBe(false);
+    expect(generic.findings.some(finding=>finding.sourceIds.includes('niddk-meals'))).toBe(false);
+    expect(generic.answer).toMatch(/carbohydrate|calories|sugars/i);
+
+    const explicit=buildAudit(pkg,30,'g',defaultProfile,'How many carbs should someone with diabetes eat daily?');
+    expect(explicit.sources.some(source=>source.id==='niddk-meals')).toBe(true);
+    expect(explicit.findings.some(finding=>finding.sourceIds.includes('niddk-meals'))).toBe(true);
+    expect(explicit.answer).toMatch(/not everyone with diabetes needs to count carbs/i);
+  });
   it('surfaces literal allergy and intolerance mentions as separate unverified label observations',()=>{
     const pkg=label('Ingredients: Milk powder, sugar\nContains: Milk');
     const profile={...defaultProfile,allergies:'milk',intolerances:'lactose'};
@@ -306,7 +318,9 @@ describe('nutrition numerical invariants',()=>{
   });
   it('answers sugar claims and additive questions directly with the decisive limit',()=>{
     const pkg=label('Sugar-free example\nPer 100 g\nCarbohydrate 50 g\nSugars 0 g\nIngredients: flour, INS 955');
-    expect(buildAudit(pkg,30,'g',defaultProfile,'Does sugar-free mean no carbs?').answer).toMatch(/does not establish zero carbohydrate.*15 g/);
+    const sugarClaim=buildAudit(pkg,30,'g',defaultProfile,'Does sugar-free mean no carbs?');
+    expect(sugarClaim.answer).toMatch(/does not establish zero carbohydrate.*15 g/);
+    expect(sugarClaim.findings.some(finding=>finding.sourceIds.includes('niddk-meals'))).toBe(true);
     const additive=buildAudit(pkg,30,'g',defaultProfile,'What is INS 955?');
     expect(additive.answer).toMatch(/INS 955 is Sucralose.*does not establish dose/);
     expect(buildAudit(pkg,30,'g',defaultProfile,'What is ingredient code INS 955?').answer).toMatch(/INS 955 is Sucralose.*does not establish dose/);

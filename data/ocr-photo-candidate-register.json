@@ -3,7 +3,7 @@
   "retrievedAt": "2026-10-21",
   "sourcePublisher": "Open Food Facts",
   "licenseGuidanceUrl": "https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/tutorials/license-be-on-the-legal-side/",
-  "statusDefinition": "Candidates are not assigned to a research split and no OCR engine has been run against these bytes. Independent human annotation and review are pending.",
+  "statusDefinition": "All photo bytes remain private and no candidate is held out. The Grandma's Chocolate Brownie image has been exposed to the current browser reader in one qualitative development-only product-flow diagnostic and must not be promoted to held-out data. The Wheat Thins and Nonni's images remain unexposed. Independent human annotation, split lock, and image-specific redistribution review are pending.",
   "candidates": [
     {
       "imageId": "off-0066721028426-nutrition-rev25",
@@ -21,6 +21,7 @@
       },
       "privateLocalFile": "docs/evidence/private/ocr-heldout-2026-10-pilot/wheat-thins-nutrition.jpg",
       "status": "pending-independent-human-annotation",
+      "researchSplit": "not-assigned",
       "redistributionReview": "pending"
     },
     {
@@ -39,6 +40,7 @@
       },
       "privateLocalFile": "docs/evidence/private/ocr-heldout-2026-10-pilot/nonnis-biscotti-nutrition.jpg",
       "status": "pending-independent-human-annotation",
+      "researchSplit": "not-assigned",
       "redistributionReview": "pending"
     },
     {
@@ -56,7 +58,9 @@
         "byteLength": 438537
       },
       "privateLocalFile": "docs/evidence/private/ocr-heldout-2026-10-pilot/grandmas-brownie-nutrition.jpg",
-      "status": "pending-independent-human-annotation",
+      "status": "exploratory-development-only",
+      "researchSplit": "development",
+      "exposureNote": "One local browser product-flow diagnostic on 2026-10-21; not independently annotated, not scored, and ineligible for held-out evaluation.",
       "redistributionReview": "pending"
     },
     {
@@ -75,6 +79,7 @@
       },
       "privateLocalFile": "docs/evidence/private/ocr-heldout-2026-10-pilot/weet-bix-original-imgid-28.jpg",
       "status": "excluded-low-legibility",
+      "researchSplit": "excluded",
       "exclusionReason": "The nutrition panel remains difficult to read at original source resolution; do not use as a clear numeric reference without better source pixels or independent adjudication.",
       "redistributionReview": "pending"
     }
