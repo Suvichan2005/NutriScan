@@ -93,6 +93,25 @@ describe('public source normalization', () => {
     expect(researchInput.safeParse({ query: 'local alternatives', topic: 'alternatives' }).success).toBe(false);
     expect(researchInput.safeParse({ query: 'sugar', topic: 'unknown' }).success).toBe(false);
   });
+  it('scopes natural-language Europe PMC topics to title and abstract while preserving source metadata', async () => {
+    const paper = { id: '12345', source: 'MED', title: 'Oat beta-glucan and LDL cholesterol', firstPublicationDate: '2024-01-02', abstractText: 'A bounded source abstract.', doi: '10.1234/example.1', journalInfo: { journal: { title: 'Example Journal' } }, pubTypeList: { pubType: ['Randomized Controlled Trial'] } };
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ resultList: { result: [paper] } }), { headers: { 'content-type': 'application/json' } })); vi.stubGlobal('fetch', fetcher);
+    const result = await research({ query: 'How does oat beta-glucan affect LDL cholesterol?', topic: 'science' });
+    const url = fetcher.mock.calls[0][0] as URL;
+    expect(url.searchParams.get('query')).toBe('TITLE_ABS:"oat" AND TITLE_ABS:"beta" AND TITLE_ABS:"glucan" AND TITLE_ABS:"affect" AND TITLE_ABS:"ldl" AND TITLE_ABS:"cholesterol"');
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({ id: 'epmc-MED-12345', title: paper.title, url: 'https://europepmc.org/article/MED/12345', publisher: 'Example Journal', publishedAt: '2024-01-02', category: 'Randomized Controlled Trial', summary: paper.abstractText, doi: paper.doi });
+    expect(result.items[0].limitations).toContain('not been assessed');
+    expect(result.message).toContain('candidate publications');
+  });
+  it('keeps Europe PMC query operators inert and rejects a query with no topic terms', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ resultList: { result: [] } }), { headers: { 'content-type': 'application/json' } })); vi.stubGlobal('fetch', fetcher);
+    await research({ query: 'oats OR (TITLE_ABS:*)', topic: 'science' });
+    expect((fetcher.mock.calls[0][0] as URL).searchParams.get('query')).toBe('TITLE_ABS:"oats" AND TITLE_ABS:"title" AND TITLE_ABS:"abs"');
+    fetcher.mockClear();
+    await expect(research({ query: 'and of the', topic: 'science' })).rejects.toMatchObject({ code: 'invalid_input', status: 400 });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
   it('keeps US FDA historical reports attributable and jurisdiction-bounded', async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ meta: { last_updated: '2026-10-01' }, results: [{ recall_number: 'F-1234-2024', product_description: '<b>Example oats</b>', recalling_firm: 'Example Foods', reason_for_recall: 'Undeclared milk', classification: 'Class II', status: 'Ongoing', report_date: '20240320', recall_initiation_date: '20240312', distribution_pattern: 'US retail', code_info: 'Lot ABC' }] }), { headers: { 'content-type': 'application/json' } })); vi.stubGlobal('fetch', fetcher);
     const result = await researchRecalls('Example OR oats:foo');

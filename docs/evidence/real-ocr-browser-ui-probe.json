@@ -1,21 +1,36 @@
 {
-  "generatedAt": "2026-10-21T02:06:26.049Z",
-  "baseUrl": "http://127.0.0.1:3416",
+  "generatedAt": "2026-10-21T02:15:58.537Z",
+  "baseUrl": "http://127.0.0.1:3400",
   "browser": "Chrome via Playwright, headless; viewport 390x844",
-  "source": {
-    "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
-    "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
-    "annotationBasis": {
-      "amount": 100,
-      "unit": "g"
+  "sources": [
+    {
+      "id": "saffola",
+      "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+      "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+      "annotationBasis": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "expectedFields": 9
     },
-    "expectedFields": 9
-  },
-  "method": "Actual upload, role selection, optional crop selected by dragging over the displayed image, and in-browser OCR. The resulting percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.",
+    {
+      "id": "bagrrys",
+      "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+      "sha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+      "annotationBasis": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "expectedFields": 8
+    }
+  ],
+  "method": "Actual upload, role selection, optional crop selected by dragging over the displayed image, and in-browser OCR on two hash-verified English package photos. Crop percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching the human-annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.",
   "results": [
     {
-      "id": "unknown-role-full-image",
+      "id": "saffola-unknown-role-full-image",
+      "sourceId": "saffola",
       "role": "unknown",
+      "cropSelection": null,
       "initialQuestionJourney": {
         "enteredBeforePhoto": true,
         "preservedAfterRead": true,
@@ -68,12 +83,13 @@
       "parsedNutrientRows": 0,
       "axeViolationIds": [],
       "pageErrorCount": 0,
-      "screenshot": "docs/evidence/private/browser-ocr-unknown-role-full-image.png",
-      "cropSelection": null
+      "screenshot": "docs/evidence/private/browser-ocr-saffola-unknown-role-full-image.png"
     },
     {
-      "id": "nutrition-role-full-image",
+      "id": "saffola-nutrition-role-full-image",
+      "sourceId": "saffola",
       "role": "nutrition",
+      "cropSelection": null,
       "initialQuestionJourney": null,
       "expected": 9,
       "correct": 0,
@@ -121,11 +137,11 @@
       "parsedNutrientRows": 2,
       "axeViolationIds": [],
       "pageErrorCount": 0,
-      "screenshot": "docs/evidence/private/browser-ocr-nutrition-role-full-image.png",
-      "cropSelection": null
+      "screenshot": "docs/evidence/private/browser-ocr-saffola-nutrition-role-full-image.png"
     },
     {
-      "id": "nutrition-role-user-crop",
+      "id": "saffola-nutrition-role-user-crop",
+      "sourceId": "saffola",
       "role": "nutrition",
       "crop": {
         "x": 3,
@@ -133,6 +149,7 @@
         "width": 93,
         "height": 99
       },
+      "cropSelection": "pointer-drag",
       "initialQuestionJourney": null,
       "expected": 9,
       "correct": 1,
@@ -180,11 +197,11 @@
       "parsedNutrientRows": 1,
       "axeViolationIds": [],
       "pageErrorCount": 0,
-      "screenshot": "docs/evidence/private/browser-ocr-nutrition-role-user-crop.png",
-      "cropSelection": "pointer-drag"
+      "screenshot": "docs/evidence/private/browser-ocr-saffola-nutrition-role-user-crop.png"
     },
     {
-      "id": "nutrition-role-user-crop-repeat",
+      "id": "saffola-nutrition-role-user-crop-repeat",
+      "sourceId": "saffola",
       "role": "nutrition",
       "crop": {
         "x": 3,
@@ -192,6 +209,7 @@
         "width": 93,
         "height": 99
       },
+      "cropSelection": "pointer-drag",
       "initialQuestionJourney": null,
       "expected": 9,
       "correct": 1,
@@ -239,8 +257,169 @@
       "parsedNutrientRows": 1,
       "axeViolationIds": [],
       "pageErrorCount": 0,
-      "screenshot": "docs/evidence/private/browser-ocr-nutrition-role-user-crop-repeat.png",
-      "cropSelection": "pointer-drag"
+      "screenshot": "docs/evidence/private/browser-ocr-saffola-nutrition-role-user-crop-repeat.png"
+    },
+    {
+      "id": "bagrrys-nutrition-role-full-image",
+      "sourceId": "bagrrys",
+      "role": "nutrition",
+      "cropSelection": null,
+      "initialQuestionJourney": null,
+      "expected": 8,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "fields": [
+        {
+          "field": "energy",
+          "outcome": "omitted"
+        },
+        {
+          "field": "protein",
+          "outcome": "omitted"
+        },
+        {
+          "field": "carbohydrate",
+          "outcome": "omitted"
+        },
+        {
+          "field": "sugars",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fiber",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fat",
+          "outcome": "omitted"
+        },
+        {
+          "field": "saturatedFat",
+          "outcome": "omitted"
+        },
+        {
+          "field": "sodium",
+          "outcome": "omitted"
+        }
+      ],
+      "parsedNutrientRows": 0,
+      "axeViolationIds": [],
+      "pageErrorCount": 0,
+      "screenshot": "docs/evidence/private/browser-ocr-bagrrys-nutrition-role-full-image.png"
+    },
+    {
+      "id": "bagrrys-nutrition-role-user-crop",
+      "sourceId": "bagrrys",
+      "role": "nutrition",
+      "crop": {
+        "x": 2,
+        "y": 2,
+        "width": 74,
+        "height": 96
+      },
+      "cropSelection": "pointer-drag",
+      "initialQuestionJourney": null,
+      "expected": 8,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "fields": [
+        {
+          "field": "energy",
+          "outcome": "omitted"
+        },
+        {
+          "field": "protein",
+          "outcome": "omitted"
+        },
+        {
+          "field": "carbohydrate",
+          "outcome": "omitted"
+        },
+        {
+          "field": "sugars",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fiber",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fat",
+          "outcome": "omitted"
+        },
+        {
+          "field": "saturatedFat",
+          "outcome": "omitted"
+        },
+        {
+          "field": "sodium",
+          "outcome": "omitted"
+        }
+      ],
+      "parsedNutrientRows": 0,
+      "axeViolationIds": [],
+      "pageErrorCount": 0,
+      "screenshot": "docs/evidence/private/browser-ocr-bagrrys-nutrition-role-user-crop.png"
+    },
+    {
+      "id": "bagrrys-nutrition-role-user-crop-repeat",
+      "sourceId": "bagrrys",
+      "role": "nutrition",
+      "crop": {
+        "x": 2,
+        "y": 2,
+        "width": 74,
+        "height": 96
+      },
+      "cropSelection": "pointer-drag",
+      "initialQuestionJourney": null,
+      "expected": 8,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "fields": [
+        {
+          "field": "energy",
+          "outcome": "omitted"
+        },
+        {
+          "field": "protein",
+          "outcome": "omitted"
+        },
+        {
+          "field": "carbohydrate",
+          "outcome": "omitted"
+        },
+        {
+          "field": "sugars",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fiber",
+          "outcome": "omitted"
+        },
+        {
+          "field": "fat",
+          "outcome": "omitted"
+        },
+        {
+          "field": "saturatedFat",
+          "outcome": "omitted"
+        },
+        {
+          "field": "sodium",
+          "outcome": "omitted"
+        }
+      ],
+      "parsedNutrientRows": 0,
+      "axeViolationIds": [],
+      "pageErrorCount": 0,
+      "screenshot": "docs/evidence/private/browser-ocr-bagrrys-nutrition-role-user-crop-repeat.png"
     }
   ]
 }

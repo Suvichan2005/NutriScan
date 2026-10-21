@@ -8,14 +8,15 @@ type ManifestRecord = {
   file: string;
   hash: string;
   manualAnnotation: {
-    basis: { amount: number; unit: string };
+    basis: { amount: number; unit: string } | null;
     nutrients: Array<{ key: string; value: number; unit: string }>;
   };
 };
 
 type Manifest = { records: ManifestRecord[] };
 type Crop = { x: number; y: number; width: number; height: number };
-type CaseSpec = { id: string; role: 'unknown' | 'nutrition'; crop?: Crop; initialQuestion?: string };
+type SourceSpec = { id: string; file: string; crop: Crop };
+type CaseSpec = { id: string; sourceId: SourceSpec['id']; role: 'unknown' | 'nutrition'; crop?: Crop; initialQuestion?: string };
 type Outcome = 'correct' | 'incorrect' | 'omitted' | 'withheld';
 
 const root = process.cwd();
@@ -26,12 +27,18 @@ const labels: Record<string, string> = {
   energy: 'Energy', protein: 'Protein', carbohydrate: 'Carbohydrate', sugars: 'Sugars',
   addedSugars: 'Added sugars', fiber: 'Fiber', fat: 'Fat', saturatedFat: 'Saturated fat', sodium: 'Sodium',
 };
-const crop: Crop = { x: 3, y: 0, width: 93, height: 99 };
+const sources: SourceSpec[] = [
+  { id: 'saffola', file: 'saffola-veggie-oats-nutrition-off-8901088068758.jpg', crop: { x: 3, y: 0, width: 93, height: 99 } },
+  { id: 'bagrrys', file: 'bagrrys-white-oats-nutrition-off-8902710100150.jpg', crop: { x: 2, y: 2, width: 74, height: 96 } },
+];
 const cases: CaseSpec[] = [
-  { id: 'unknown-role-full-image', role: 'unknown', initialQuestion: 'What can you read from this label?' },
-  { id: 'nutrition-role-full-image', role: 'nutrition' },
-  { id: 'nutrition-role-user-crop', role: 'nutrition', crop },
-  { id: 'nutrition-role-user-crop-repeat', role: 'nutrition', crop },
+  { id: 'saffola-unknown-role-full-image', sourceId: 'saffola', role: 'unknown', initialQuestion: 'What can you read from this label?' },
+  { id: 'saffola-nutrition-role-full-image', sourceId: 'saffola', role: 'nutrition' },
+  { id: 'saffola-nutrition-role-user-crop', sourceId: 'saffola', role: 'nutrition', crop: sources[0].crop },
+  { id: 'saffola-nutrition-role-user-crop-repeat', sourceId: 'saffola', role: 'nutrition', crop: sources[0].crop },
+  { id: 'bagrrys-nutrition-role-full-image', sourceId: 'bagrrys', role: 'nutrition' },
+  { id: 'bagrrys-nutrition-role-user-crop', sourceId: 'bagrrys', role: 'nutrition', crop: sources[1].crop },
+  { id: 'bagrrys-nutrition-role-user-crop-repeat', sourceId: 'bagrrys', role: 'nutrition', crop: sources[1].crop },
 ];
 
 function assertLoopbackOrigin(value: string) {
@@ -52,6 +59,7 @@ function parseReading(text: string): { value: number; unit: string } | undefined
 }
 
 async function scorePage(page: Page, record: ManifestRecord) {
+  if (!record.manualAnnotation.basis) throw new Error(`Photo ${record.file} has no human-annotated nutrition basis.`);
   const rowData = await page.locator('.details-block table tbody tr').evaluateAll((rows) => rows.map((row) => {
     const cells = Array.from(row.querySelectorAll('th, td')).map((cell) => cell.textContent?.trim() ?? '');
     return { name: cells[0] ?? '', reading: cells[1] ?? '', basis: cells[2] ?? '', calculation: cells[3] ?? '' };
@@ -95,12 +103,18 @@ async function scorePage(page: Page, record: ManifestRecord) {
 async function main() {
   assertLoopbackOrigin(baseUrl);
   const manifest = JSON.parse(await readFile(path.join(root, 'data/semantic-photo-manifest.json'), 'utf8')) as Manifest;
-  const record = manifest.records.find((item) => item.file === 'saffola-veggie-oats-nutrition-off-8901088068758.jpg');
-  if (!record) throw new Error('Annotated Saffola photo record is missing from the manifest.');
-  const photoPath = path.join(photoDirectory, record.file);
-  const photo = await readFile(photoPath);
-  const actualHash = createHash('sha256').update(photo).digest('hex');
-  if (actualHash !== record.hash.toLowerCase()) throw new Error('Private photo hash does not match its manifest annotation.');
+  const records = new Map<SourceSpec['id'], ManifestRecord>();
+  const actualHashes = new Map<SourceSpec['id'], string>();
+  for (const source of sources) {
+    const record = manifest.records.find((item) => item.file === source.file);
+    if (!record) throw new Error(`Annotated ${source.id} photo record is missing from the manifest.`);
+    if (!record.manualAnnotation.basis || !record.manualAnnotation.nutrients.length) throw new Error(`Photo ${source.file} lacks an annotated basis or nutrient fields.`);
+    const photo = await readFile(path.join(photoDirectory, record.file));
+    const actualHash = createHash('sha256').update(photo).digest('hex');
+    if (actualHash !== record.hash.toLowerCase()) throw new Error(`${source.id} photo hash does not match its manifest annotation.`);
+    records.set(source.id, record);
+    actualHashes.set(source.id, actualHash);
+  }
   const health = await fetch(baseUrl, { signal: AbortSignal.timeout(5000) });
   if (!health.ok) throw new Error(`Local application is unavailable (HTTP ${health.status}).`);
 
@@ -109,6 +123,8 @@ async function main() {
   const results = [];
   try {
     for (const spec of cases) {
+      const record = records.get(spec.sourceId)!;
+      const photoPath = path.join(photoDirectory, record.file);
       const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
       const page = await context.newPage();
       let pageErrorCount = 0;
@@ -150,6 +166,7 @@ async function main() {
       await page.screenshot({ path: screenshotPath, fullPage: true });
       results.push({
         id: spec.id,
+        sourceId: spec.sourceId,
         role: spec.role,
         crop: spec.crop,
         cropSelection: spec.crop ? 'pointer-drag' : null,
@@ -175,8 +192,11 @@ async function main() {
     generatedAt: new Date().toISOString(),
     baseUrl,
     browser: 'Chrome via Playwright, headless; viewport 390x844',
-    source: { file: record.file, sha256: actualHash, annotationBasis: record.manualAnnotation.basis, expectedFields: record.manualAnnotation.nutrients.length },
-    method: 'Actual upload, role selection, optional crop selected by dragging over the displayed image, and in-browser OCR. The resulting percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.',
+    sources: sources.map((source) => {
+      const record = records.get(source.id)!;
+      return { id: source.id, file: record.file, sha256: actualHashes.get(source.id), annotationBasis: record.manualAnnotation.basis, expectedFields: record.manualAnnotation.nutrients.length };
+    }),
+    method: 'Actual upload, role selection, optional crop selected by dragging over the displayed image, and in-browser OCR on two hash-verified English package photos. Crop percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching the human-annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.',
     results,
   };
   await writeFile(resultPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');

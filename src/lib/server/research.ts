@@ -29,6 +29,19 @@ function excerptHtml(html: string, query: string) {
   return text.slice(Math.max(0, position - 80), Math.max(0, position - 80) + 800);
 }
 
+const europePmcStopWords = new Set(['a', 'an', 'and', 'are', 'about', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'for', 'from', 'how', 'in', 'into', 'is', 'it', 'of', 'on', 'or', 'the', 'to', 'was', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'would']);
+
+function europePmcScienceQuery(input: string) {
+  // Scope free-text topic terms to metadata that describes the paper, rather
+  // than incidental mentions anywhere in Europe PMC's indexed full text.
+  // Token-only clauses keep user-supplied query operators inert.
+  const terms = (input.normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])
+    .filter(term => !europePmcStopWords.has(term))
+    .slice(0, 24);
+  if (!terms.length) throw new ApiError(400, 'invalid_input', 'Include a food, ingredient, nutrient, outcome, or other specific science topic.');
+  return terms.map(term => `TITLE_ABS:"${term}"`).join(' AND ');
+}
+
 const enforcementSchema = z.object({ recall_number: z.string().regex(/^[A-Za-z0-9-]{1,40}$/), product_description: z.string(), recalling_firm: z.string(), reason_for_recall: z.string().optional(), classification: z.string().optional(), status: z.string().optional(), distribution_pattern: z.string().optional(), report_date: z.string().optional(), recall_initiation_date: z.string().optional(), code_info: z.string().optional() }).passthrough();
 function fdaDate(value?: string) {
   if (!value || !/^\d{8}$/.test(value)) return null;
@@ -56,8 +69,7 @@ export async function researchRecalls(query: string) {
 export async function research(data: z.infer<typeof researchInput>) {
   if (data.topic === 'science') {
     const url = new URL('https://www.ebi.ac.uk/europepmc/webservices/rest/search');
-    // Treat user input as literal search terms, not Europe PMC query operators.
-    const query = data.query.replace(/[^\p{L}\p{N}\s-]/gu, ' ').trim().split(/\s+/).slice(0, 24).map(t => `"${t}"`).join(' AND ');
+    const query = europePmcScienceQuery(data.query);
     url.searchParams.set('query', query); url.searchParams.set('format', 'json'); url.searchParams.set('pageSize', '6'); url.searchParams.set('resultType', 'core');
     const raw = await fixedFetch(url) as { resultList?: { result?: unknown[] } };
     const paper = z.object({ id: z.string(), source: z.string(), title: z.string(), firstPublicationDate: z.string().optional(), pubYear: z.string().optional(), abstractText: z.string().optional(), doi: z.string().optional(), journalInfo: z.object({ journal: z.object({ title: z.string().optional() }).optional() }).optional(), pubTypeList: z.object({ pubType: z.array(z.string()).optional() }).optional() }).passthrough();
