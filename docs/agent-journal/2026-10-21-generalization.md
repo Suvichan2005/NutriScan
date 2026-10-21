@@ -67,6 +67,11 @@ Continued the existing local NutriScan implementation. No source history or remo
 - A general-adult WHO sodium reference could previously appear even when a user explicitly supplied a child/adolescent age group. The audit now retains the package-derived amount, withholds the adult percentage for clearly under-18 age text or age ranges, states that no pediatric target was inferred, and asks for applicable age-specific guidance.
 - Regression test covers a declared 16-year-old with a sodium label value. Verification: full suite 106 passing across 13 files, TypeScript typecheck, optimized production build, and `git diff --check` pass. This guard does not classify ambiguous ages or determine personal suitability.
 
+## Collaboration journal integration check
+
+- Read the installed collaboration-status workflow and performed a read-only check. The collaboration launcher is present/running globally, but this repository has no `collab.json`, `agent-journal/state.json`, runner lock, or `Codex-Collab-Daemon` scheduled task. No project-specific sync, inbox, or quota status can be established from this checkout.
+- The sanitized chronological journal remains versioned locally. No connector enrollment, journal publication, or configuration change was performed.
+
 Additional browser acceptance is still required for photo removal/replacement, keyboard focus, camera hardware and consented image selection. OCR remains imperfect on glossy, multilingual and multi-column packaging. Product identity and changing regulatory claims need exact, dated corroboration.
 
 ## Continuation checkpoint — incremental multimodal input
