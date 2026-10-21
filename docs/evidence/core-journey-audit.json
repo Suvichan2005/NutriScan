@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "core-intake-to-audit-design-review",
-  "generatedAt": "2026-10-21T06:11:39.593Z",
+  "generatedAt": "2026-10-21T06:29:53.520Z",
   "captureTool": "Playwright using installed Chrome",
   "appOrigin": "http://127.0.0.1:3411",
   "acceptanceMode": "optimized production build",
@@ -24,17 +24,25 @@
       "parsedNutrientRows": 1,
       "calculatedNutrients": 1,
       "exactSaturatedFatObservation": true,
-      "followUpMessages": 2,
+      "followUpMessages": 3,
       "correctionApplied": true,
       "originalObservationsRetained": true,
       "portion": "50",
       "fiftyGramCalculation": true,
+      "syntheticProfileOnly": true,
+      "personalizedQuestionRetained": true,
+      "personalCarbohydrateTargetWithheld": true,
+      "clinicianContextVisible": true,
+      "niddkSourceLinked": true,
+      "noNonLoopbackRequests": true,
+      "nonLoopbackRequestOrigins": [],
       "axeViolationIds": {
         "intake": [],
         "photo and crop": [],
         "findings": [],
         "correction dialog": [],
-        "corrected calculation": []
+        "corrected calculation": [],
+        "personalized diabetes follow-up": []
       },
       "pageErrors": []
     },
@@ -54,17 +62,25 @@
       "parsedNutrientRows": 1,
       "calculatedNutrients": 1,
       "exactSaturatedFatObservation": true,
-      "followUpMessages": 2,
+      "followUpMessages": 3,
       "correctionApplied": true,
       "originalObservationsRetained": true,
       "portion": "50",
       "fiftyGramCalculation": true,
+      "syntheticProfileOnly": true,
+      "personalizedQuestionRetained": true,
+      "personalCarbohydrateTargetWithheld": true,
+      "clinicianContextVisible": true,
+      "niddkSourceLinked": true,
+      "noNonLoopbackRequests": true,
+      "nonLoopbackRequestOrigins": [],
       "axeViolationIds": {
         "intake": [],
         "photo and crop": [],
         "findings": [],
         "correction dialog": [],
-        "corrected calculation": []
+        "corrected calculation": [],
+        "personalized diabetes follow-up": []
       },
       "pageErrors": []
     }

@@ -224,6 +224,22 @@ describe('nutrition numerical invariants',()=>{
     expect(audit.calculations.find(c=>c.nutrient==='carbohydrate')?.result).toBe(12);
     expect(pkg.nutrients[0].value).toBe(60);expect(pkg.observations.length).toBeGreaterThan(0);
    });
+  it('answers diabetes carbohydrate questions without inventing a daily target',()=>{
+    const profile={...defaultProfile,healthConsiderations:'Type 2 diabetes'};
+    const missing=buildAudit(label('Per 100 g\nSaturated fat 4 g'),50,'g',profile,'How much carbohydrate should I eat daily with diabetes?');
+    expect(missing.answer).toMatch(/does not establish total carbohydrate/i);
+    expect(missing.answer).toMatch(/cannot calculate a package amount or a daily target/i);
+    expect(missing.answer).toMatch(/health care team/i);
+    expect(missing.findings.some(f=>f.sourceIds.includes('niddk-meals'))).toBe(true);
+    expect(missing.nextQuestions).toContain('Do you have a carbohydrate amount from your health care team that you want compared with this label?');
+    expect(missing.answer).not.toMatch(/\b\d+(?:\.\d+)?\s*g\s*\/\s*day/i);
+
+    const known=buildAudit(label('Per 100 g\nCarbohydrate 60 g'),50,'g',profile,'How many carbs should I eat each day with diabetes?');
+    expect(known.answer).toMatch(/30 g total carbohydrate in 50 g/i);
+    expect(known.answer).toMatch(/package amount, not a personal daily target/i);
+    expect(known.answer).toMatch(/NIDDK source below is general education/i);
+    expect(known.answer).not.toMatch(/\b\d+(?:\.\d+)?\s*g\s*\/\s*day/i);
+  });
   it('surfaces literal allergy and intolerance mentions as separate unverified label observations',()=>{
     const pkg=label('Ingredients: Milk powder, sugar\nContains: Milk');
     const profile={...defaultProfile,allergies:'milk',intolerances:'lactose'};

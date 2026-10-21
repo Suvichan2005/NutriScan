@@ -26,7 +26,13 @@ try {
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();
     const pageErrors: string[] = [];
+    const nonLoopbackRequests: string[] = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
+    page.on('request', (request) => {
+      const requestUrl = new URL(request.url());
+      const effectiveHostname = requestUrl.origin === 'null' ? '' : new URL(requestUrl.origin).hostname;
+      if (effectiveHostname && !['127.0.0.1', 'localhost', '[::1]'].includes(effectiveHostname)) nonLoopbackRequests.push(requestUrl.origin);
+    });
     const prefix = viewport.width === 390 ? 'mobile' : 'desktop';
     const axeIds: Record<string, string[]> = {};
     const axe = async (step: string) => { axeIds[step] = (await new AxeBuilder({ page }).analyze()).violations.map((violation) => violation.id).sort(); };
@@ -80,7 +86,6 @@ try {
     await page.getByLabel('Ask about this package').fill('What remains uncertain?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
     await page.locator('.conversation .user-message').filter({ hasText: 'What remains uncertain?' }).waitFor({ state: 'visible', timeout: 20_000 });
-    const replyCount = await page.locator('.conversation .assistant-message').count();
     await page.locator('.conversation').screenshot({ path: path.join(captureDir, `${prefix}-04-follow-up.png`) });
 
     await page.getByRole('button', { name: 'Correct a value' }).click();
@@ -99,6 +104,22 @@ try {
     await page.locator('.nutrition-card').screenshot({ path: path.join(captureDir, `${prefix}-06-calculation.png`) });
     await axe('corrected calculation');
 
+    await page.getByRole('button', { name: 'Add optional context', exact: true }).click();
+    await page.getByLabel('Health considerations or professional guidance').fill('Type 2 diabetes');
+    await page.getByRole('button', { name: 'Use for this session' }).click();
+    const personalizedQuestion = 'How much carbohydrate should I eat daily with diabetes?';
+    await page.getByLabel('Ask about this package').fill(personalizedQuestion);
+    await page.getByRole('button', { name: 'Send follow-up' }).click();
+    const personalizedUserMessage = page.locator('.conversation .user-message').filter({ hasText: personalizedQuestion });
+    await personalizedUserMessage.waitFor({ state: 'visible', timeout: 20_000 });
+    const personalizedAnswer = (await page.locator('.conversation .assistant-message').last().innerText()).trim();
+    const niddkFinding = page.locator('.finding').filter({ hasText: 'Healthy Living with Diabetes' });
+    await niddkFinding.locator('details.finding-evidence summary').click();
+    const niddkLink = niddkFinding.getByRole('link', { name: /Healthy Living with Diabetes/ });
+    const niddkHref = await niddkLink.getAttribute('href').catch(() => null);
+    await page.locator('.results-section').screenshot({ path: path.join(captureDir, `${prefix}-07-personalized-follow-up.png`) });
+    await axe('personalized diabetes follow-up');
+
     results.push({
       viewport: `${viewport.width}x${viewport.height}`,
       initialQuestionRetained,
@@ -110,11 +131,18 @@ try {
       parsedNutrientRows: parsedRows,
       calculatedNutrients: calculated,
       exactSaturatedFatObservation: exactSatFatMatch,
-      followUpMessages: replyCount,
+      followUpMessages: await page.locator('.conversation .assistant-message').count(),
       correctionApplied: correctedText.toLowerCase().includes('corrected'),
       originalObservationsRetained: retainedObservations,
       portion: await page.locator('#portion').inputValue(),
       fiftyGramCalculation: /1\.7/.test(calculation),
+      syntheticProfileOnly: true,
+      personalizedQuestionRetained: (await personalizedUserMessage.innerText()).includes(personalizedQuestion),
+      personalCarbohydrateTargetWithheld: /does not establish total carbohydrate/i.test(personalizedAnswer) && /cannot calculate a package amount or a daily target/i.test(personalizedAnswer) && !/\b\d+(?:\.\d+)?\s*g\s*\/\s*day/i.test(personalizedAnswer),
+      clinicianContextVisible: /health care team/i.test(personalizedAnswer) && /no individual allowance/i.test(personalizedAnswer),
+      niddkSourceLinked: niddkHref === 'https://www.niddk.nih.gov/health-information/diabetes/overview/healthy-living-with-diabetes',
+      noNonLoopbackRequests: nonLoopbackRequests.length === 0,
+      nonLoopbackRequestOrigins: [...new Set(nonLoopbackRequests.map(requestUrl => new URL(requestUrl).origin))],
       axeViolationIds: axeIds,
       pageErrors,
     });
@@ -123,7 +151,7 @@ try {
   const receipt = { schemaVersion: 1, kind: 'core-intake-to-audit-design-review', generatedAt: new Date().toISOString(), captureTool: 'Playwright using installed Chrome', appOrigin: origin.origin, acceptanceMode: process.env.NUTRISCAN_ACCEPTANCE_MODE ?? 'unspecified local server', photoFile, screenshots: 'docs/evidence/private/core-journey-audit', outcomes: results };
   await writeFile('docs/evidence/core-journey-audit.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/core-journey-audit.json', screenshotDirectory: 'docs/evidence/private/core-journey-audit', outcomes: results }, null, 2));
-  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.exactSaturatedFatObservation || !item.fiftyGramCalculation || !item.originalObservationsRetained || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
+  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.exactSaturatedFatObservation || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
 } finally {
   await browser.close();
 }

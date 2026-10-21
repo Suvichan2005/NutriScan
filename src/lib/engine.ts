@@ -164,12 +164,20 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const overview=primary.length?primary:calculations.slice(0,3);
   const important=overview.map(c=>`${amountText(c.result)} ${c.unit} ${display[c.nutrient].toLowerCase()}`);
   const conflict=findings.some(f=>f.status==='conflict');
+  const asksDiabetesCarbohydrateAmount=/\b(diabetes|diabetic|blood glucose)\b/i.test(question)&&/\b(carbs?|carbohydrates?)\b/i.test(question)&&/\b(daily|day|amount|how many|how much|allowance|target)\b/i.test(question);
   let answer=important.length?`For ${amountText(portion)} ${portionUnit}: ${important.join(', ')} from the readable label values.`:`A reliable ${amountText(portion)} ${portionUnit} calculation needs readable nutrient amounts, units and a matching basis.`;
   let answerIntent='label overview';
   if(/\bORS\b|oral rehydration|legal|regulat|recall|banned|fssai|licen[cs]e|current/i.test(question)){
     answerIntent='current regulatory question';answer='Current legal or regulatory status is unresolved. The next evidence is a dated official notice for the exact product and jurisdiction, checked for later amendments or orders.';
   }else if(/alternativ|stock|available|reviews?|brand|controvers/i.test(question)){
     answerIntent='current product context';answer='This local audit has not checked current alternatives, stock, reviews or brand events. A current source matching the product and your location is the decisive next evidence.';
+  }else if(asksDiabetesCarbohydrateAmount){
+    answerIntent='diabetes carbohydrate context';
+    const labelCarbs=calculations.find(c=>c.nutrient==='carbohydrate');
+    answer=labelCarbs
+      ?`The readable label gives ${amountText(labelCarbs.result)} g total carbohydrate in ${amountText(portion)} ${portionUnit}. This is a package amount, not a personal daily target. For diabetes, amount and timing should be planned with your health care team in light of medication, activity and other conditions. The NIDDK source below is general education and sets no individual allowance.`
+      :`This scan does not establish total carbohydrate for the selected portion, so it cannot calculate a package amount or a daily target. For diabetes, amount and timing should be planned with your health care team in light of medication, activity and other conditions. The NIDDK source below is general education and sets no individual allowance.`;
+    nextQuestions.push('Do you have a carbohydrate amount from your health care team that you want compared with this label?');
   }else if(/sugar[ -]free|no added sugar/i.test(question)){
     answerIntent='sugar claim';answer=`A sugar-free or no-added-sugar claim does not establish zero carbohydrate. ${carbs?`The readable label gives ${amountText(carbs.result)} g total carbohydrate in ${amountText(portion)} ${portionUnit}.`:'Total carbohydrate for this portion remains unknown; confirm its amount and basis.'}`;
   }else if(askedAdditives.length||/additive|sweetener|sucralose|ingredient code/i.test(question)){
