@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — connect observed additive codes to official research
+
+- Added a shortcut on additive-code findings. It prepares the known local identity and observed INS code for the Indian regulation search, then focuses the search field; the user must review and submit explicitly.
+- Mobile and desktop Chrome acceptance started from synthetic pasted label text with xanthan gum/INS 415. It confirmed detection, prefilled query/topic, no research request before the user's button click, and exactly one request after. The official Appendix A excerpt, companion amendments index, source caveats and scope disclosures appeared. No provider or off-origin browser calls occurred; Axe, page errors and horizontal overflow were zero.
+- The source request took 7.057 s on mobile and 8.121 s on desktop in this run. These timings varied from the previous live-source run and are not device-performance estimates. This accepts the synthetic-text-to-source workflow only; no package photo or OCR result was part of this test.
+- No image bytes, health profile, conversation, source PDF or private handoff content was added to the repository.
+
 ## 2026-10-21 — retrieve official additive excerpts on demand
 
 - Added a fixed FSSAI Appendix A source entry plus companion additive-amendments index for additive/INS queries. The PDF has source-specific byte, page, character and excerpt bounds; the general PDF extraction budget was left unchanged, and unrelated label/ORS regulation queries do not fetch either additive source.

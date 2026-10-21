@@ -8,7 +8,7 @@ const origin = new URL(baseUrl);
 if (!['127.0.0.1', 'localhost', '[::1]'].includes(origin.hostname)) throw new Error('FSSAI additive acceptance only accepts a loopback origin.');
 if (!(await fetch(baseUrl, { signal: AbortSignal.timeout(5000) })).ok) throw new Error('NutriScan is unavailable.');
 
-const query = 'What does FSSAI Appendix A list for xanthan gum INS 415 in dairy products?';
+const query = 'Xanthan gum INS 415 additive';
 const captureDir = path.resolve('docs/evidence/private/fssai-additive-compendium');
 await mkdir(captureDir, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -19,6 +19,7 @@ try {
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();
     const pageErrors: string[] = [];
+    const researchRouteCalls: number[] = [];
     const routeStatuses: number[] = [];
     const providerCalls: string[] = [];
     const nonLoopbackRequests: string[] = [];
@@ -29,7 +30,7 @@ try {
       const requestUrl = new URL(request.url());
       if (!['127.0.0.1', 'localhost', '[::1]'].includes(requestUrl.hostname)) nonLoopbackRequests.push(requestUrl.origin);
       if (['/api/assist', '/api/vision'].includes(requestUrl.pathname)) providerCalls.push(`${request.method()} ${requestUrl.pathname}`);
-      if (requestUrl.pathname === '/api/research') routeStartedAt = Date.now();
+      if (requestUrl.pathname === '/api/research') { routeStartedAt = Date.now(); researchRouteCalls.push(routeStartedAt); }
     });
     page.on('response', response => {
       if (new URL(response.url()).pathname !== '/api/research') return;
@@ -40,11 +41,18 @@ try {
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
     await page.getByRole('button', { name: 'Paste label text' }).click();
-    await page.getByLabel('Label text').fill('Synthetic evaluation label\nNutrition information per 100 g\nEnergy 380 kcal\nIngredients: oats, sugar');
+    await page.getByLabel('Label text').fill('Synthetic evaluation label\nNutrition information per 100 g\nEnergy 380 kcal\nIngredients: oats, sugar, xanthan gum (INS 415)');
     await page.getByRole('button', { name: 'Read label text' }).click();
     await page.locator('.results-section').waitFor({ state: 'visible' });
-    await page.getByLabel('Public search terms').fill(query);
-    await page.getByLabel('Research topic').selectOption('regulation');
+    const additiveShortcut = page.getByRole('button', { name: 'Prepare official source search for INS 415' });
+    await additiveShortcut.waitFor({ state: 'visible' });
+    await additiveShortcut.click();
+    const preparedQuery = await page.getByLabel('Public search terms').inputValue();
+    const preparedTopic = await page.getByLabel('Research topic').inputValue();
+    const additiveDetected = await page.locator('.finding').filter({ hasText: 'INS 415: Xanthan gum' }).count() > 0;
+    const additiveShortcutPrepared = preparedQuery === query;
+    const regulationTopicPrepared = preparedTopic === 'regulation';
+    const noRequestBeforeExplicitSearch = researchRouteCalls.length === 0;
     await page.getByRole('button', { name: 'Research sources' }).click();
     const sourceCard = page.locator('.research-results article').filter({ hasText: /Appendix A/i }).first();
     await sourceCard.waitFor({ state: 'visible', timeout: 60_000 });
@@ -76,6 +84,11 @@ try {
     const outcome = {
       viewport: `${viewport.width}x${viewport.height}`,
       syntheticLabelInput: true,
+      additiveDetected,
+      additiveShortcutPrepared,
+      regulationTopicPrepared,
+      noRequestBeforeExplicitSearch,
+      explicitResearchCallCount: researchRouteCalls.length,
       sourceLinkValid,
       publisherIdentified,
       amendmentIndexLinked,
@@ -103,7 +116,9 @@ try {
 }
 
 const passed = outcomes.length === 2 && outcomes.every(outcome =>
-  outcome.syntheticLabelInput === true && outcome.sourceLinkValid === true && outcome.publisherIdentified === true && outcome.amendmentIndexLinked === true && outcome.excerptVisible === true &&
+  outcome.syntheticLabelInput === true && outcome.additiveDetected === true && outcome.additiveShortcutPrepared === true && outcome.regulationTopicPrepared === true &&
+    outcome.noRequestBeforeExplicitSearch === true && outcome.explicitResearchCallCount === 1 &&
+    outcome.sourceLinkValid === true && outcome.publisherIdentified === true && outcome.amendmentIndexLinked === true && outcome.excerptVisible === true &&
     outcome.nonbindingDisclosure === true && outcome.gazettePrecedenceDisclosure === true && outcome.categoryApplicabilityCaveat === true &&
   outcome.currentStatusRemainsUnverified === true && (outcome.expandedSummaryChars as number) <= 1250 &&
   (outcome.researchRouteStatuses as number[]).includes(200) && typeof outcome.researchRouteLatencyMs === 'number' &&
@@ -117,11 +132,12 @@ const receipt = {
   appOrigin: origin.origin,
   captureTool: 'Playwright using installed Chrome',
   query,
-  evaluationInput: 'synthetic label text; official FSSAI source fetched on user action; no photo/OCR evaluation',
+  evaluationInput: 'synthetic label text containing xanthan gum and INS 415; the user invoked the official-source shortcut and chose Research sources; no photo/OCR evaluation',
   evidenceLimits: [
     'The FSSAI compendium itself says it cannot be considered a legal document and that original Gazette notifications prevail.',
     'This verifies bounded source retrieval and disclosure only; exact category conditions, amendments, current permission and package compliance remain unresolved.',
     'The amendment index is offered for source discovery only; no Gazette amendment was fetched or interpreted by this test.',
+    'The label and additive code are synthetic; detection does not verify a real package ingredient.',
     'The query and result do not establish that a product contains the additive or that a use is authorized for a specific food.',
   ],
   outcomes,

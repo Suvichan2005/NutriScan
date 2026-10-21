@@ -1,5 +1,11 @@
 # Chronological decisions
 
+## 21 October 2026 — connect package additive findings to official-source search
+
+- Add a shortcut to additive-code findings that prepares the known additive name (when in the small local identity corpus), `INS` code and `additive` search term, and selects Indian regulation. Scroll and focus the search field so the next action is clear.
+- Do not submit automatically. The user reviews the public query and explicitly chooses **Research sources**; no image, health profile or conversation is sent with this request.
+- Chrome acceptance used synthetic label text with xanthan gum/INS 415 at 390×844 and 1440×900. It verified code detection, query/topic preparation, zero research requests before the button click and one request after it, followed by the official Appendix A excerpt and amendments-index link. This is UI and source integration evidence, not photo OCR, ingredient verification or authorization evidence.
+
 ## 21 October 2026 — add bounded on-demand FSSAI additive source retrieval
 
 - Retrieve the official Appendix A PDF and link the separate additive-amendments discovery index only when query terms identify a food additive or INS code. Keep this additive-compendium entry's 6,000,000-byte, 380-page, 900,000-character and 900-character excerpt limits source-specific; generic PDF retrieval stays at 2 MB, 40 pages and 50,000 characters.
