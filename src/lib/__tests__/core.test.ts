@@ -194,6 +194,7 @@ describe('genuine local evidence retrieval',()=>{
     expect(retrieveEvidence('high blood pressure salty snack')[0].source.id).toBe('who-sodium');
     expect(retrieveEvidence('INS 955')[0].source.id).toBe('fao-955');
     expect(retrieveEvidence('sweeteners weight control').some(h=>h.source.id==='who-nss')).toBe(true);
+    expect(retrieveEvidence('ICMR India dietary guidelines').some(h=>h.source.id==='icmrnin-dgi-2024')).toBe(true);
     expect(evidenceSources.every(s=>sourceSchema.safeParse(s).success)).toBe(true);
     expect(()=>retrieveEvidence('query',0)).toThrow();
   });

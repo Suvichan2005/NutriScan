@@ -61,5 +61,6 @@ Additional browser acceptance is still required for photo removal/replacement, k
 - Re-ran `npm run ocr:evaluate`: the five-photo, 37-field aggregate reproduced the recorded totals (single-block prepared 2 correct / 0 incorrect / 34 omitted / 1 withheld; enhanced 2 / 0 / 33 / 2). No new OCR change is justified by this small set.
 - Calculation provenance now links nutrient values to the separate basis and declared serving observations used for scaling. When different photos yield the same reading, numeric deduplication keeps observation links from both sources. Tests cover this basis/source trace.
 - Final focused suite at this checkpoint: 93 tests across 12 files; typecheck and optimized build passed.
+- Added bibliographic metadata for the official ICMR-NIN Dietary Guidelines for Indians, Revised Edition 2024. The research corpus links to the official publication and does not reproduce its contents because the source notice restricts electronic product use without prior written permission.
 - This is not fresh browser acceptance: selected-browser proof for adding photos and text after an analysis remains pending. No provider invocation or new real-photo OCR accuracy result is claimed.
 - Checkpoint commits: `83a6c48` (photo evidence merge), `a4fb141` (joined text and user details), `18a95be` (runtime and dependency verification).
