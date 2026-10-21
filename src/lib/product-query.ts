@@ -28,3 +28,14 @@ export function buildProductLookupRequest(options: ProductLookupOptions) {
     ...(options.alternatives && options.productBarcode ? { excludeBarcode: options.productBarcode } : {}),
   };
 }
+
+/** Distinguish a search-field match from evidence that a record is the same package. */
+export function productIdentityDisclosure(packageBarcode: string | undefined, recordBarcode: string, lookupMatch: 'barcode' | 'candidate') {
+  const lookup = lookupMatch === 'barcode' ? 'The record exactly matches the barcode entered in search.' : 'The record was returned as a text-search candidate.';
+  const packageIdentity = packageBarcode
+    ? packageBarcode === recordBarcode
+      ? 'The recorded package barcode agrees with this record; confirm regional formulation, variant, and label date.'
+      : 'The recorded package barcode differs from this record; treat the comparison as a candidate or alternative only.'
+    : 'No package barcode was established, so exact package identity remains unverified.';
+  return `${lookup} ${packageIdentity}`;
+}

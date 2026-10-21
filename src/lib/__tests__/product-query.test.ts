@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildProductLookupRequest, defaultProductLookup } from '../product-query';
+import { buildProductLookupRequest, defaultProductLookup, productIdentityDisclosure } from '../product-query';
 
 describe('product catalog request construction', () => {
   it('keeps exact barcode lookup separate from candidate search', () => {
@@ -17,5 +17,10 @@ describe('product catalog request construction', () => {
   });
   it('leaves catalog search blank when merged package identity is disputed', () => {
     expect(defaultProductLookup({ barcode: undefined, identityConflict: true, name: 'Original product', userDescription: undefined })).toBe('');
+  });
+  it('does not confuse an exact search barcode with verified package identity', () => {
+    expect(productIdentityDisclosure(undefined, '8902710100150', 'barcode')).toMatch(/exactly matches the barcode entered in search.*No package barcode was established.*unverified/i);
+    expect(productIdentityDisclosure('12345678', '8902710100150', 'candidate')).toMatch(/text-search candidate.*barcode differs.*candidate or alternative only/i);
+    expect(productIdentityDisclosure('8902710100150', '8902710100150', 'barcode')).toMatch(/package barcode agrees.*confirm regional formulation/i);
   });
 });
