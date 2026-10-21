@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 22 October 2026 — keep the private remote empty pending image-rights review
+
+- The authenticated GitHub account matched the requested owner and the target repository did not exist. Under the owner's explicit authorization, create one private repository and add it as `origin`; verify GitHub reports private visibility. Leave it empty until the reachable project history clears review.
+- Audit 144 reachable commits (1,991 Git objects; 1,067 reachable blobs under 10 MB), the current tracked tree and ignore rules. No high-confidence key/token patterns, private-key material, credential files, academic documents, archives, model caches or generated dependency/build artifacts were found; the inspected evidence screenshots show product/UI content and synthetic flows, not a real user profile. The only credential-shaped text is an intentionally invalid URL in a URL-rejection unit test; `.env.example` contains empty provider settings. The ignored owner handoff and original-photo directory remain outside Git.
+- The complete tracked image history contains 25 UI/evidence images. `docs/evidence/02-genuine-photo-selection.jpg` embeds package photographs; related source records identify Open Food Facts imagery but mark image-specific redistribution review pending, and `docs/DATA_PROVENANCE.md` says not to redistribute before checking the exact source terms and attribution. Treat this as a licensing blocker even for the requested private upload.
+- Do not push or rewrite history and do not remove the evidence silently. Resume history publication after the owner either provides rights/attribution clearance for the exact embedded images or explicitly approves a history rewrite that removes or replaces them, followed by a fresh audit. The local branch and all 144 commits remain intact.
+
 ## 22 October 2026 — finish the local OCR reference-adjudication path and strengthen OCR evidence links
 
 - Keep the current blind browser annotation pass and add a bounded offline adjudication command, rather than changing the PWA or OCR engine. It requires two distinct passes for the same image, source/license metadata and language; each source field must be explicitly mapped exactly once.

@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-22 — create an empty private GitHub remote and gate history upload
+
+- Authenticated GitHub identity matched the owner-authorized target. The target was absent, so one private repository was created and configured as `origin`; its actual visibility is `PRIVATE`, and `git ls-remote --heads origin` returned no branches. No project commit or source image was uploaded.
+- Reviewed all 144 reachable commits and 25 unique historical UI/evidence images. Credential-pattern checks found no high-confidence secrets; the only credential-shaped URL is a deliberately invalid test case. Ignored owner handoff, original private photos, `docs.zip`, archives, academic files and build/model caches were not in the tracked history; `.gitignore` behavior was verified.
+- A tracked browser screenshot embeds package photographs while their image-specific redistribution review is pending. The 144-commit history remains local, unchanged and unpushed until rights are cleared or the owner explicitly approves a history rewrite. Gemini stayed disabled; this work changed no OCR result.
+
 ## 2026-10-22 — add local annotation adjudication and validate OCR word pointers
 
 - Added `/research/ocr-adjudication`, a browser-local review flow for two independent label reads. It verifies each pass's file hash and the original image's hash/dimensions/byte length, overlays both region sets, requires explicit source-field coverage and rationale, and exports one validated record without images, filenames or local paths.
