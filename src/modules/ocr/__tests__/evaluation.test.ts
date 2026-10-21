@@ -5,8 +5,8 @@ import {
   ocrExtractionSchema,
   type OcrAnnotatedDataset,
   type OcrEvaluationReceipt
-} from '../contracts';
-import { assertOcrDatasetSemantics, scoreOcrExtraction } from '../ocr-evaluation';
+} from '../../../lib/contracts';
+import { assertOcrDatasetSemantics, scoreOcrExtraction } from '../evaluation';
 
 function makeDataset() {
   return ocrAnnotatedDatasetSchema.parse({

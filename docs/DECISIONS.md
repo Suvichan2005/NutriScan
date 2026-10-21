@@ -458,3 +458,10 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - Each curated knowledge record carries a license/terms note. Keep verified restrictions where available and mark other terms unverified; do not infer an open license from an official or academic publisher label.
 - The corpus summaries, citations, retrieval text and embedding fingerprint are unchanged. Do not rebuild embeddings for a metadata-only license-note change; the existing versioned index hash was rechecked and still matches.
 - This is provenance visibility, not legal clearance. No full source text or dataset was added.
+
+## 22 October 2026 — isolate contributor code at existing seams
+
+- Move working implementations incrementally under `src/modules/ocr/`, `src/modules/knowledge/` and `src/modules/inference/`; keep old `src/lib/` entry points as compatibility adapters so current application callers and browser behavior remain stable.
+- Keep `src/lib/contracts.ts` as the only shared production-schema source. Module code may depend on that contract but must not import another module's internals. A simple checked import boundary and per-module file-scope checker are sufficient; do not add workspace/package infrastructure.
+- Keep browser persistence, barcode composition, product orchestration, routes, Gemini configuration/vision, consent and shared contracts owner-controlled. Inject the additive identity resolver into OCR; split Knowledge's static browser-safe entry from Node/MiniLM retrieval; keep Inference provider-independent and map its typed validation errors in the existing Gemini adapter.
+- Verification evidence is the 362-test full suite, three module-local fixture suites, TypeScript, optimized build, import-boundary check and real-photo Chrome journey recorded in `STATUS.md`. The photographed-label measurement remains 1/9 exact, with five omitted and three withheld; module isolation is not an OCR accuracy improvement.

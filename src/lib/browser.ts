@@ -1,97 +1,91 @@
 import { get, set, del } from 'idb-keyval';
 import { hasUserContext, profileSchema, savedScanSchema, type ImageAsset, type Observation, type OcrCapture, type Profile, type SavedScanRecord } from './contracts';
 import { detectRetailBarcodes } from './barcode';
+import { readOcrImages } from '../modules/ocr/browser';
+import type { BrowserOcrOptions } from '../modules/ocr/browser';
+
+export { BROWSER_OCR_ENGINE_VERSION, prepareImage } from '../modules/ocr/browser';
+export type { Crop } from '../modules/ocr/browser';
 
 export type SavedScan = SavedScanRecord;
-const historyKey='nutriscan.history.v1';
-const rememberedProfileKey='nutriscan.user-context.v1';
-export async function readHistory():Promise<SavedScan[]> { const data:unknown=await get(historyKey); return Array.isArray(data)?data.flatMap(item=>{const parsed=savedScanSchema.safeParse(item);return parsed.success?[parsed.data]:[];}).slice(0,20):[]; }
-export async function saveScan(input:SavedScan) { const scan=savedScanSchema.parse(input);const history=await readHistory();await set(historyKey,[scan,...history.filter(x=>x.id!==scan.id)].slice(0,20)); }
-export async function removeSavedScan(id:string) { const history=await readHistory();await set(historyKey,history.filter(scan=>scan.id!==id)); }
-export async function clearHistory(){ await del(historyKey); }
+const historyKey = 'nutriscan.history.v1';
+const rememberedProfileKey = 'nutriscan.user-context.v1';
+
+export async function readHistory(): Promise<SavedScan[]> {
+  const data: unknown = await get(historyKey);
+  return Array.isArray(data) ? data.flatMap(item => {
+    const parsed = savedScanSchema.safeParse(item);
+    return parsed.success ? [parsed.data] : [];
+  }).slice(0, 20) : [];
+}
+export async function saveScan(input: SavedScan) {
+  const scan = savedScanSchema.parse(input);
+  const history = await readHistory();
+  await set(historyKey, [scan, ...history.filter(item => item.id !== scan.id)].slice(0, 20));
+}
+export async function removeSavedScan(id: string) {
+  const history = await readHistory();
+  await set(historyKey, history.filter(scan => scan.id !== id));
+}
+export async function clearHistory() { await del(historyKey); }
 
 /** Optional user context is stored separately from scan and conversation history. */
-export async function readRememberedProfile():Promise<Profile|null>{
- const value:unknown=await get(rememberedProfileKey);
- if(value===undefined)return null;
- const parsed=profileSchema.safeParse(value);
- if(!parsed.success){await del(rememberedProfileKey);return null;}
- return hasUserContext(parsed.data)?parsed.data:null;
+export async function readRememberedProfile(): Promise<Profile | null> {
+  const value: unknown = await get(rememberedProfileKey);
+  if (value === undefined) return null;
+  const parsed = profileSchema.safeParse(value);
+  if (!parsed.success) { await del(rememberedProfileKey); return null; }
+  return hasUserContext(parsed.data) ? parsed.data : null;
 }
-export async function saveRememberedProfile(input:Profile):Promise<void>{
- const profile=profileSchema.parse(input);
- if(!hasUserContext(profile)){await del(rememberedProfileKey);return;}
- await set(rememberedProfileKey,profile);
+export async function saveRememberedProfile(input: Profile): Promise<void> {
+  const profile = profileSchema.parse(input);
+  if (!hasUserContext(profile)) { await del(rememberedProfileKey); return; }
+  await set(rememberedProfileKey, profile);
 }
-export async function deleteRememberedProfile():Promise<void>{await del(rememberedProfileKey);}
+export async function deleteRememberedProfile(): Promise<void> { await del(rememberedProfileKey); }
 
-export async function loadImage(file:Blob,side:ImageAsset['side'],name='Package photograph'):Promise<ImageAsset>{
- if (!['image/jpeg','image/png','image/webp'].includes(file.type)) throw new Error('Choose a JPG, PNG or WebP photo. HEIC needs conversion first.');
- if (file.size>12*1024*1024) throw new Error('This photo is larger than 12 MB. Choose a smaller image.');
- const bitmap=await createImageBitmap(file);
- const {width,height}=bitmap; bitmap.close();
- if (width*height>40_000_000) throw new Error('This image is too large to process comfortably. Choose a photo below 40 megapixels.');
- return {id:crypto.randomUUID(),side,blob:file,url:URL.createObjectURL(file),width,height,name};
-}
-
-export type Crop = {x:number;y:number;width:number;height:number};
-export async function prepareImage(asset:ImageAsset,rotation=0,contrast=false,crop?:Crop,invert=false):Promise<Blob>{
- const bitmap=await createImageBitmap(asset.blob);
- const box=crop?{x:bitmap.width*crop.x/100,y:bitmap.height*crop.y/100,w:bitmap.width*crop.width/100,h:bitmap.height*crop.height/100}:{x:0,y:0,w:bitmap.width,h:bitmap.height};
- const scale=Math.min(3,3000/Math.max(box.w,box.h));
- const width=Math.round(box.w*scale),height=Math.round(box.h*scale);
- const canvas=document.createElement('canvas');
- const swap=rotation%180!==0; canvas.width=swap?height:width;canvas.height=swap?width:height;
- const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Your browser could not prepare this image. Try another photo.');
- ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);
- ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(rotation*Math.PI/180);
- ctx.filter=[contrast?'grayscale(1) contrast(1.5)':'',invert?'invert(1)':''].filter(Boolean).join(' ')||'none';
- ctx.drawImage(bitmap,box.x,box.y,box.w,box.h,-width/2,-height/2,width,height);bitmap.close();
- return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Image preparation failed.')),'image/jpeg',0.98));
+export async function loadImage(file: Blob, side: ImageAsset['side'], name = 'Package photograph'): Promise<ImageAsset> {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('Choose a JPG, PNG or WebP photo. HEIC needs conversion first.');
+  if (file.size > 12 * 1024 * 1024) throw new Error('This photo is larger than 12 MB. Choose a smaller image.');
+  const bitmap = await createImageBitmap(file);
+  const { width, height } = bitmap;
+  bitmap.close();
+  if (width * height > 40_000_000) throw new Error('This image is too large to process comfortably. Choose a photo below 40 megapixels.');
+  return { id: crypto.randomUUID(), side, blob: file, url: URL.createObjectURL(file), width, height, name };
 }
 
-export const BROWSER_OCR_ENGINE_VERSION='7.0.0';
-export async function readImages(assets:ImageAsset[],onProgress:(label:string,progress:number)=>void,signal:AbortSignal,options:{rotation:number;contrast:boolean;invert?:boolean;crop?:Crop;cropTarget?:string}):Promise<{text:string;observations:Observation[];confidence:number;barcodes:{code:string;imageId:string;side:ImageAsset['side']}[];captures:OcrCapture[]}>{
- const { createWorker, PSM }=await import('tesseract.js');
- let worker:Awaited<ReturnType<typeof createWorker>>|undefined;
- let cancelled=false;
- let rejectAbort:((reason:Error)=>void)|undefined;
- const abortPromise=new Promise<never>((_,reject)=>{rejectAbort=reject;});
- const abort=()=>{cancelled=true;void worker?.terminate();rejectAbort?.(new Error('Reading stopped. Your photos are still here.'));};signal.addEventListener('abort',abort);
- const timeout=setTimeout(abort,120000);
- try{
-  onProgress('Preparing the on-device reader',0.02);
-  worker=await Promise.race([createWorker('eng',1,{workerPath:'/ocr/worker.min.js',corePath:'/ocr/',langPath:'/ocr/',workerBlobURL:false,logger:m=>{if(!cancelled)onProgress(m.status,Math.max(.02,m.progress||0));}}).then(w=>{if(cancelled)void w.terminate();return w;}),abortPromise]);
-  if(cancelled)throw new Error('Reading stopped. Your photos are still here.');
-  await worker.setParameters({preserve_interword_spaces:'1'});
-  const texts:string[]=[];const observations:Observation[]=[];const barcodes:{code:string;imageId:string;side:ImageAsset['side']}[]=[];const captures:OcrCapture[]=[];let confidence=0;
-  for(let i=0;i<assets.length;i++){
-   if(cancelled)throw new Error('Reading stopped. Your photos are still here.');
-   onProgress(`Reading photo ${i+1} of ${assets.length}`,i/assets.length);
-   const runId=crypto.randomUUID();
-   const barcodeValues=await Promise.race([detectRetailBarcodes(assets[i].blob),abortPromise]);
-   for(const code of barcodeValues)barcodes.push({code,imageId:assets[i].id,side:assets[i].side});
-   const segmentationMode=assets[i].role==='nutrition'||assets[i].role==='ingredients'||assets[i].side==='back'?'single-block':'auto';
-   await worker.setParameters({tessedit_pageseg_mode:segmentationMode==='single-block'?PSM.SINGLE_BLOCK:PSM.AUTO});
-   const rotation=(assets[i].rotation??options.rotation) as 0|90|180|270;
-   const crop=options.cropTarget===assets[i].id?options.crop:undefined;
-   const image=await prepareImage(assets[i],rotation,options.contrast,crop,options.invert);
-   const preparedBitmap=await createImageBitmap(image);
-   const preparedImage={width:preparedBitmap.width,height:preparedBitmap.height};
-   preparedBitmap.close();
-   const result=await Promise.race([worker.recognize(image,{}, {text:true,blocks:true,tsv:true}),abortPromise]);
-   texts.push(result.data.text);confidence+=result.data.confidence;
-   const capturesForImage:OcrCapture={runId,imageId:assets[i].id,side:assets[i].side,sourceImage:{width:assets[i].width,height:assets[i].height},preparedImage,bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'tesseract.js',version:BROWSER_OCR_ENGINE_VERSION,language:'eng',confidenceScale:'0-100',segmentationMode},processing:{rotation,contrast:options.contrast,invert:options.invert??false,cropPercent:crop?{x:crop.x,y:crop.y,width:crop.width,height:crop.height}:null}};
-   captures.push(capturesForImage);
-   for(const [blockIndex,block] of (result.data.blocks??[]).entries()) for(const [paragraphIndex,paragraph] of (block.paragraphs??[]).entries()) for(const [lineIndex,line] of (paragraph.lines??[]).entries()){
-    observations.push({id:crypto.randomUUID(),field:'ocr-line',text:line.text,side:assets[i].side,confidence:line.confidence,bbox:line.bbox,ocrWords:line.words.map((word,wordIndex)=>({wordIndex,text:word.text,confidence:Number.isFinite(word.confidence)?word.confidence:null,bbox:word.bbox})),origin:'ocr',imageId:assets[i].id,readingOrder:{runId,blockIndex,paragraphIndex,lineIndex}});
-   }
-  }
-  if(cancelled)throw new Error('Reading stopped. Your photos are still here.');
-  return {text:texts.join('\n\n'),observations,confidence:confidence/assets.length,barcodes,captures};
- }catch(error){ if(cancelled)throw new Error('Reading stopped or timed out. Try a smaller, tightly cropped photo.');throw error;
- }finally{clearTimeout(timeout);signal.removeEventListener('abort',abort);await worker?.terminate().catch(()=>{});}
+/** Compatibility boundary: local OCR stays in its module; barcode decoding and app orchestration stay here. */
+export async function readImages(
+  assets: ImageAsset[],
+  onProgress: (label: string, progress: number) => void,
+  signal: AbortSignal,
+  options: BrowserOcrOptions
+): Promise<{ text: string; observations: Observation[]; confidence: number; barcodes: { code: string; imageId: string; side: ImageAsset['side'] }[]; captures: OcrCapture[] }> {
+  const barcodes: { code: string; imageId: string; side: ImageAsset['side'] }[] = [];
+  const recognized = await readOcrImages(assets, onProgress, signal, {
+    ...options,
+    beforeImage: async asset => {
+      const values = await detectRetailBarcodes(asset.blob);
+      for (const code of values) barcodes.push({ code, imageId: asset.id, side: asset.side });
+      await options.beforeImage?.(asset);
+    }
+  });
+  return { ...recognized, barcodes };
 }
 
-export async function imageBase64(blob:Blob):Promise<string>{return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Image could not be read.'));reader.readAsDataURL(blob);});}
-export function downloadJson(name:string,value:unknown){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+export async function imageBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1]);
+    reader.onerror = () => reject(new Error('Image could not be read.'));
+    reader.readAsDataURL(blob);
+  });
+}
+export function downloadJson(name: string, value: unknown) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

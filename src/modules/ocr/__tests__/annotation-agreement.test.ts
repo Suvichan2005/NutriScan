@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compareOcrAnnotationPasses } from '../ocr-annotation';
+import { compareOcrAnnotationPasses } from '../annotation';
 
 const makePass=(annotatorCode:string,changes:Record<string,unknown>={})=>({
   schemaVersion:1,

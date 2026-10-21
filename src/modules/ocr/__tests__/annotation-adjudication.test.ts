@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { adjudicateOcrAnnotationPasses } from '../ocr-annotation';
-import { ocrAdjudicationInputSchema, ocrAnnotatedDatasetSchema } from '../contracts';
-import { assertOcrDatasetSemantics } from '../ocr-evaluation';
+import { adjudicateOcrAnnotationPasses } from '../annotation';
+import { ocrAdjudicationInputSchema, ocrAnnotatedDatasetSchema } from '../../../lib/contracts';
+import { assertOcrDatasetSemantics } from '../evaluation';
 
 const polygon=(left:number,top:number,right:number,bottom:number):Array<[number,number]>=>[[left,top],[right,top],[right,bottom],[left,bottom]];
 const source={url:'https://example.test/product',imageUrl:'https://example.test/label.jpg',publisher:'Example',uploader:'contributor',licenseId:'CC BY 4.0',licenseUrl:'https://example.test/license',retrievedAt:'2026-10-21',redistributionReview:'approved' as const};

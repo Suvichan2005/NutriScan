@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ocrAnnotationPassSchema } from '../contracts';
+import { ocrAnnotationPassSchema } from '../../../lib/contracts';
 
 const pass={
   schemaVersion:1,
