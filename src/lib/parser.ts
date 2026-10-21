@@ -1,7 +1,7 @@
 import { packageSchema, type Nutrient, type NutrientKey, type Observation, type PackageData } from './contracts';
 import { detectAdditives } from './knowledge';
 
-type ParseOptions = {side?:Observation['side'];origin?:Observation['origin'];confidence?:number|null;observations?:Observation[];synthetic?:boolean};
+type ParseOptions = {side?:Observation['side'];origin?:Observation['origin'];confidence?:number|null;observations?:Observation[];synthetic?:boolean;userDescription?:string};
 type Basis = NonNullable<Nutrient['basis']>;
 const rows: {key:NutrientKey;pattern:RegExp}[] = [
   {key:'addedSugars',pattern:/^(?:(?:includes?|of which)\s+)?added\s+sugars?\b/i},
@@ -123,11 +123,13 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   const additiveCodes=detectAdditives(text);
   for(const code of additiveCodes){const line=lines.find(l=>detectAdditives(`Ingredients: ${l}`).includes(code));observe(`additive:${code}`,line??code);}
   const name=labelName(lines);observe('name',name);
+  const userDescription=options.userDescription?.trim().slice(0,4000);
+  if(userDescription)observations.push({id:`${id}-user-description`,field:'user-description',text:userDescription,side:'text',origin:'user',confidence:null});
   const brand=text.match(/^brand\s*[:：]\s*([^\n]{1,120})/im)?.[1];
   const barcode=text.match(/(?:barcode|ean|upc)\s*[:\-]?\s*(\d{8,14})\b/i)?.[1];
   const license=text.match(/(?:fssai|licen[cs]e)(?:\s*(?:licen[cs]e|no\.?|number))?\s*[:\-]?\s*(\d{14})\b/i)?.[1];
   if(barcode)observe('barcode',barcode); if(license)observe('license',license);
   if(!nutrients.length)warnings.push('No usable nutrition values were extracted. Missing values are unknown, not zero.');
   if(brand)observe('brand',brand);
-  return packageSchema.parse({id,name,...(brand?{brand}:{}),...(barcode?{barcode}:{}),...(license?{license}:{}),...(serving?{serving}:{}),...(netWeight?{netWeight}:{}),ingredients,additives:additiveCodes,allergens,claims,nutrients,observations,rawText:text,warnings:[...new Set(warnings)],synthetic:options.synthetic??options.origin==='fixture',createdAt:new Date().toISOString()});
+  return packageSchema.parse({id,name,...(brand?{brand}:{}),...(barcode?{barcode}:{}),...(userDescription?{userDescription}:{}),...(license?{license}:{}),...(serving?{serving}:{}),...(netWeight?{netWeight}:{}),ingredients,additives:additiveCodes,allergens,claims,nutrients,observations,rawText:text,warnings:[...new Set(warnings)],synthetic:options.synthetic??options.origin==='fixture',createdAt:new Date().toISOString()});
 }

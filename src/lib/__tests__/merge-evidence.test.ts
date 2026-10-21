@@ -40,6 +40,20 @@ describe('incremental package evidence', () => {
     expect(merged.warnings.join(' ')).toMatch(/barcode differs/i);
   });
 
+  it('labels pasted evidence separately from OCR in the accumulated text record', () => {
+    const first = parseLabel('Nutrition per 100 g\nProtein 12 g', { origin: 'ocr' });
+    const entered = parseLabel('Nutrition per 100 g\nFibre 5 g', { origin: 'user' });
+    expect(mergePackageEvidence(first, entered).rawText).toContain('Additional user-entered label text');
+  });
+
+  it('preserves and deduplicates user descriptions across later photo reads', () => {
+    const first = parseLabel('Nutrition per 100 g\nProtein 12 g', { origin: 'user', userDescription: 'Oat snack' });
+    const second = parseLabel('Nutrition per 100 g\nFibre 5 g', { origin: 'ocr', userDescription: 'Oat snack' });
+    const merged = mergePackageEvidence(first, second);
+    expect(merged.userDescription).toBe('Oat snack');
+    expect(merged.observations.filter(o => o.field === 'user-description')).toHaveLength(1);
+  });
+
   it('deduplicates repeated observations from the same image and preserves nutrient links', () => {
     const first = parseLabel('Nutrition per 100 g\nProtein 12 g', { origin: 'ocr', observations: [
       { id: 'img-a-line', field: 'ocr-line', text: 'Protein 12 g', side: 'back', origin: 'ocr', confidence: 90, imageId: 'photo-a' },

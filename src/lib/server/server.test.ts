@@ -117,7 +117,8 @@ describe('provider validation, independent of provider invocation', () => {
     expect(providerStatus()).toMatchObject({ configured: true, enabled: false, searchEnabled: false }); expect(JSON.stringify(providerStatus())).not.toContain('test-only-placeholder');
   });
   it('rejects forged citations and unknown browser image handles', () => {
-    const data = assistInput.parse({ consent: true, question: 'What is visible?', package: { id: 'test', name: 'Test', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'o1', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'user' }], rawText: '', warnings: [], synthetic: true, createdAt: new Date().toISOString() } });
+    const data = assistInput.parse({ consent: true, question: 'What is visible?', package: { id: 'test', name: 'Test', userDescription: 'User says it is a cereal snack.', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'o1', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'user' }, { id: 'o2', field: 'user-description', text: 'User says it is a cereal snack.', side: 'text', confidence: null, origin: 'user' }], rawText: '', warnings: [], synthetic: true, createdAt: new Date().toISOString() } });
+    expect(data.package.userDescription).toBe('User says it is a cereal snack.');
     const valid = { answer: 'Unsupported extra medical assertion', claims: [{ text: 'Sugar 3g', observationIds: ['o1'], sourceIds: [] }], limitations: [], inspectImage: null };
     expect(validateClaims(valid, data).claims).toHaveLength(1);
     expect(validateClaims(valid, data).answer).toBe('Sugar 3g [observation:o1]');

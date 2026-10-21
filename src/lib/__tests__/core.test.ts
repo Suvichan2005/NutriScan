@@ -7,6 +7,16 @@ import { detectAdditives, evidenceSources, lookupAdditive, retrieveEvidence } fr
 const label=(body:string)=>parseLabel(`Synthetic test snack\n${body}`,{origin:'fixture',synthetic:true});
 const calc=(body:string,portion=30,unit:'g'|'ml'='g')=>buildAudit(label(body),portion,unit,defaultProfile,'How much sugar?');
 describe('conservative package extraction',()=>{
+  it('keeps optional user product details separate from package-label text',()=>{
+    const pkg=parseLabel('Nutrition per 100 g\nProtein 12 g',{origin:'ocr',userDescription:'Bought at a local market; package says wholegrain.'});
+    expect(pkg.rawText).not.toContain('local market');
+    expect(pkg.userDescription).toContain('local market');
+    const audit=buildAudit(pkg,100,'g',defaultProfile,'What is known about this package?');
+    const context=audit.findings.find(f=>f.title==='User-provided product details');
+    expect(context?.status).toBe('context');
+    expect(context?.observationIds).toEqual([pkg.observations.find(o=>o.field==='user-description')?.id]);
+    expect(context?.detail).toMatch(/not been verified/i);
+  });
   it('preserves explicit zero and leaves missing fields unknown',()=>{
     const pkg=label('Nutrition per 100 g\nSugars 0 g\nSodium 500 mg');
     expect(pkg.nutrients.find(n=>n.key==='sugars')?.value).toBe(0);

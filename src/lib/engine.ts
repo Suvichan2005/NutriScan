@@ -39,6 +39,11 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ/i.test(question)||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
   const trace:Audit['trace']=[{tool:'reuse_package_observations',reason:'Use the current label evidence for this question; no rescan required.',status:`${pkg.observations.length} observations`},{tool:'calculate_portions',reason:'Scale only unambiguous values with compatible explicit bases.',status:'local deterministic calculation'}];
   const finding=(data:Omit<Finding,'id'>)=> {data.sourceIds.forEach(s=>sourceIds.add(s));findings.push({...data,id:`finding-${findings.length+1}`});};
+  if(pkg.userDescription){
+    const descriptionIds=pkg.observations.filter(o=>o.field==='user-description').map(o=>o.id);
+    finding({title:'User-provided product details',detail:`${pkg.userDescription} These details were supplied by the user and have not been verified against the package or an external product record.`,status:'context',observationIds:descriptionIds,sourceIds:[],calculationIds:[]});
+    limitations.push('User-provided product details are unverified context, not package-label evidence.');
+  }
   const ingredientEvidence=pkg.observations.filter(o=>o.field==='ingredients'||o.field==='allergens').map(o=>o.id);
   for(const mention of findDeclaredFoodMentions(pkg,profile)){
     const labelTextPresent=pkg.ingredients.length>0||pkg.allergens.length>0;

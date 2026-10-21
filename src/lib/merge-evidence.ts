@@ -1,6 +1,9 @@
 import { packageSchema, type Nutrient, type PackageData } from './contracts';
 
 const normalized = (n: Nutrient) => n.value * (n.unit === 'mg' ? 0.001 : n.unit === 'kJ' ? 1 / 4.184 : 1);
+const observationSignature = (observation: PackageData['observations'][number]) => observation.imageId
+  ? `${observation.imageId}|${observation.field}|${observation.text.trim().toLocaleLowerCase()}`
+  : observation.field === 'user-description' ? `user-description|${observation.text.trim().toLocaleLowerCase()}` : '';
 
 /** Adds a new package read to an investigation without replacing its established state. */
 export function mergePackageEvidence(current: PackageData, incoming: PackageData): PackageData {
@@ -11,8 +14,8 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
   const observations = [...current.observations];
   const idMap = new Map<string, string>();
   for (const observation of incoming.observations) {
-    const signature = observation.imageId ? `${observation.imageId}|${observation.field}|${observation.text.trim().toLocaleLowerCase()}` : '';
-    const existing = signature ? observations.find(o => `${o.imageId}|${o.field}|${o.text.trim().toLocaleLowerCase()}` === signature) : undefined;
+    const signature = observationSignature(observation);
+    const existing = signature ? observations.find(o => observationSignature(o) === signature) : undefined;
     if (existing) { idMap.set(observation.id, existing.id); continue; }
     let id = observation.id;
     if (observations.some(o => o.id === id)) id = `merged-${crypto.randomUUID()}`;
@@ -34,7 +37,9 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
       if (!warnings.includes(warning)) warnings.push(warning);
     }
   }
-  const rawText = `${current.rawText}${current.rawText && incoming.rawText ? '\n\n--- Additional photo evidence ---\n' : ''}${incoming.rawText}`.slice(0, 40000);
+  const incomingHasOcr = incoming.observations.some(observation => observation.origin === 'ocr');
+  const sectionTitle = incomingHasOcr ? 'Additional photo evidence' : 'Additional user-entered label text';
+  const rawText = `${current.rawText}${current.rawText && incoming.rawText ? `\n\n--- ${sectionTitle} ---\n` : ''}${incoming.rawText}`.slice(0, 40000);
   if (current.rawText.length + incoming.rawText.length > rawText.length) warnings.push('Combined label text reached the 40,000-character storage limit; later text was truncated.');
   if (mergedNutrients.length) {
     const noValues = 'No usable nutrition values were extracted. Missing values are unknown, not zero.';
@@ -46,6 +51,7 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
     name: current.name === 'Unidentified package' && incoming.name !== 'Unidentified package' ? incoming.name : current.name,
     brand: current.brand || incoming.brand,
     barcode: current.barcode || incoming.barcode,
+    userDescription: [...new Set([current.userDescription, incoming.userDescription].filter((value): value is string => !!value))].join('\n').slice(0, 4000) || undefined,
     license: current.license || incoming.license,
     serving: current.serving || incoming.serving,
     netWeight: current.netWeight || incoming.netWeight,
