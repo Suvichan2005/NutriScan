@@ -285,7 +285,7 @@ export default function AnnotationClient({candidates}:{candidates:AnnotationCand
           </div>
         </section>
       </div>
-      <footer className={styles.footer}>Local-only prototype. Do not include package photographs or identifying annotator details in a tracked dataset. A single annotation pass is not a gold reference; two independent passes and adjudication are still required before held-out scoring.</footer>
+      <footer className={styles.footer}>Local-only prototype. Do not include package photographs or identifying annotator details in a tracked dataset. A single annotation pass is not a gold reference; two independent passes and adjudication are still required before held-out scoring. <a className={styles.brand} href="/research/ocr-adjudication">Open the local adjudication tool</a></footer>
     </div>
   </main>;
 }

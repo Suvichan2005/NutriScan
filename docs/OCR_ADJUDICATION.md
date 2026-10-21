@@ -1,6 +1,12 @@
 # Offline OCR annotation adjudication
 
-Use this workflow only after two people have independently annotated the same original package photograph. Each single-reader pass must remain blind to OCR output, product databases, arithmetic, and the other pass until both exports are complete. The tool runs locally and never opens the image or contacts a provider.
+Use this workflow only after two people have independently annotated the same original package photograph. Each single-reader pass must remain blind to OCR output, product databases, arithmetic, and the other pass until both exports are complete. The command-line adjudicator processes JSON files only. The browser review tool opens the original image and both passes locally in the current tab; it makes no server upload, storage write, or provider call.
+
+## Browser review
+
+Open `/research/ocr-adjudication` in the local NutriScan app. Load both completed pass JSON files and the exact original image. The page compares their image SHA-256, dimensions and byte length before enabling export. It displays both readers' annotation regions over the image, but it never proposes field matches automatically. Add one explicit decision for each field, select each source field at most once, record the rationale and export the validated one-record dataset. Ambiguous or not-visible decisions keep printed digits, normalized values, operators, units and basis fields null. The exported record preserves pass-file hashes and field/region lineage without storing source filenames or image bytes.
+
+The page is an offline interface to the same `adjudicateOcrAnnotationPasses` builder and shared schemas used by the CLI. Its synthetic browser acceptance checks the interaction and lineage contract only; it is not evidence that any real photo has been independently annotated.
 
 ## Run an adjudication
 

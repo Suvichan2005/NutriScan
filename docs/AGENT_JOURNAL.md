@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-22 — add local annotation adjudication and validate OCR word pointers
+
+- Added `/research/ocr-adjudication`, a browser-local review flow for two independent label reads. It verifies each pass's file hash and the original image's hash/dimensions/byte length, overlays both region sets, requires explicit source-field coverage and rationale, and exports one validated record without images, filenames or local paths.
+- Installed-Chrome synthetic acceptance passed at 390×844 and 1440×1000. Both readers' pass hashes and decision links survived export; an explicitly ambiguous sodium reading retained null numeric text, value, unit and basis. Axe violations, page errors, off-origin requests and POST requests were zero. This does not count as a real annotated image.
+- Hardened the future assist candidate contract: role-tagged OCR word indexes must be unique, in range, ordered and text-linked to an exact span from the same raw OCR line. Offline tests still accept a fuzzy entity normalization while rejecting unsupported word pointers. Gemini remains disabled; no production OCR or real-photo score changed.
+
 ## 2026-10-22 — record offline double-read adjudication
 
 - Added a strict adjudication input contract and local CLI that consumes two independently exported passes and a human-authored mapping. Every reader field must be covered once; pairings are explicit IDs rather than array order. The output records byte-exact SHA-256 hashes of both passes, pseudonymous annotator/adjudicator codes, rationales, source-field links and collision-free region mappings.

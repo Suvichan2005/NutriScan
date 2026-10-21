@@ -33,6 +33,7 @@
     "acceptance:nutrient-claims": "tsx scripts/acceptance-nutrient-claims.mts",
     "acceptance:trans-fat": "tsx scripts/acceptance-trans-fat.mts",
     "acceptance:ocr-annotation": "tsx scripts/acceptance-ocr-annotation.mts",
+    "acceptance:ocr-adjudication": "tsx scripts/acceptance-ocr-adjudication.mts",
     "acceptance:salt-equivalent": "tsx scripts/acceptance-salt-equivalent.mts",
     "acceptance:front-photo-guard": "tsx scripts/diagnose-front-photo-runtime.mts",
     "acceptance:off-liquid-basis": "tsx scripts/acceptance-off-liquid-basis.mts",

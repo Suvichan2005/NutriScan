@@ -202,6 +202,8 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(data.package.nutrients.some(item=>item.key==='protein')).toBe(false);
     expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[]}]},data).tentativeCandidates).toEqual([]);
     expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-2',role:'value',wordIndexes:[99]}]}]},data).tentativeCandidates).toEqual([]);
+    expect(validateClaims({...output,tentativeCandidates:[{...candidate,supportingSpans:[{...span,quote:'Protein approx'}]}]},data).tentativeCandidates).toEqual([]);
+    expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-2',role:'value',wordIndexes:[3,2]}]}]},data).tentativeCandidates).toEqual([]);
     expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-1',role:'value',wordIndexes:[0]}]}]},data).tentativeCandidates).toEqual([]);
   });
 
@@ -238,6 +240,7 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(pkg.additives).not.toContain('385');
     expect(result.tentativeCandidates).toEqual([candidate]);
     expect(result.answer).toContain('Not verified and not added to package facts.');
+    expect(validateClaims({answer:'ignored',claims:[],tentativeCandidates:[{...candidate,supportingSpans:[{...candidate.supportingSpans[0],quote:'Calciurn disodium'}]}],limitations:[],inspectImage:null},data).tentativeCandidates).toEqual([]);
   });
 
   it('supports careful profile-aware paraphrases with exact user-context and OCR spans',()=>{

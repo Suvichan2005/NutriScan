@@ -90,7 +90,11 @@ export function validateClaims(output: unknown, data: z.infer<typeof assistInput
       if(seenWordRoles.has(roleKey)||!candidate.observationIds.includes(reference.observationId)||!observation||observation.origin!=='ocr'||observation.field!=='ocr-line'||!observation.imageId||!observation.readingOrder||!observation.ocrWords)return false;
       seenWordRoles.add(roleKey);
       const uniqueIndexes=new Set(reference.wordIndexes);
-      return uniqueIndexes.size===reference.wordIndexes.length&&reference.wordIndexes.every(index=>index<observation.ocrWords!.length);
+      const orderedIndexes=reference.wordIndexes.every((index,position)=>index<observation.ocrWords!.length&&(position===0||index>reference.wordIndexes[position-1]));
+      if(uniqueIndexes.size!==reference.wordIndexes.length||!orderedIndexes)return false;
+      const selectedWords=reference.wordIndexes.map(index=>normalizeEvidenceToken(observation.ocrWords![index].text));
+      if(selectedWords.some(word=>!word))return false;
+      return candidate.supportingSpans.some(span=>span.kind==='observation'&&span.id===observation.id&&containsOrderedEvidenceTokens(span.quote,selectedWords));
     });
     return wordEvidenceIsValid&&refs.every(ref=>candidate.supportingSpans.some(span=>span.kind===ref.kind&&span.id===ref.id&&ref.text.includes(span.quote)))&&candidate.supportingSpans.every(span=>refs.some(ref=>ref.kind===span.kind&&ref.id===span.id));
   });
@@ -129,6 +133,22 @@ export function validateClaims(output: unknown, data: z.infer<typeof assistInput
     inspectImage: result.data.inspectImage ? { ...result.data.inspectImage, reason: 'A specific package detail may need a closer look. Review the selected image before choosing to send it.' } : null,
     answer,
   };
+}
+
+function normalizeEvidenceToken(value:string):string {
+  return value.normalize('NFKC').toLocaleLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,'');
+}
+
+/** Word indexes must locate visible OCR text inside an exact quote for that same line. */
+function containsOrderedEvidenceTokens(quote:string,words:string[]):boolean {
+  const tokens=(quote.normalize('NFKC').match(/[\p{L}\p{N}]+(?:[.,/%'’-][\p{L}\p{N}]+)*/gu)??[]).map(normalizeEvidenceToken);
+  let cursor=0;
+  for(const word of words){
+    const index=tokens.indexOf(word,cursor);
+    if(index<0)return false;
+    cursor=index+1;
+  }
+  return true;
 }
 
 export async function assist(data: z.infer<typeof assistInput>) {
