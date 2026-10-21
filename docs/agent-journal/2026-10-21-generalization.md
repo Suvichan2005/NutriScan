@@ -139,3 +139,10 @@ Additional browser acceptance is still required for photo removal/replacement, k
 
 - The official eGazette home page returned HTTP 200 in ordinary Chrome with its anonymous session-bound route. A credentialed same-origin request to `SearchMenu.aspx` timed out after 8 seconds. Official-domain search did not return the target First Amendment PDF; the surfaced `272858.pdf` is an unrelated draft amendment and was excluded.
 - No session-state inspection, authentication bypass, TLS exception, or new source URL was used. NutriScan continues to return `unavailable` and only presents the eGazette navigation fallback. This route is blocked on the government search page responsiveness or a verifiable exact official document URL; other application work can continue.
+## 2026-10-21 — cross-browser barcode fallback
+
+- Chrome on this machine has no native `BarcodeDetector`. Added a lazy local ZXing fallback for checksum-valid EAN-13, EAN-8 and UPC-A decoding; native detection remains preferred and any decode failure falls through to OCR.
+- Added Vitest coverage for fallback invocation, native-to-fallback recovery, validation and safe failure. Full test suite: 219 passed; typecheck passed.
+- A synthetic browser test generated EAN-13 `4006381333931` in Chrome and decoded it through the production function with native `BarcodeDetector` absent. Reproduce with `npx tsx scripts/evaluate-barcode-fallback.mts`.
+- Three initial package-photo scans predated the fallback build and did not establish real barcode accuracy. A fresh isolated production build with fallback enabled was then scanned in Chrome at 390×844 and 1440×900 using a Heinz front-only photo; intake guidance appeared at both sizes and the scan reached results without a code, as expected for an image without a visible barcode. No suitable real barcode photo was available.
+- New runtime dependencies are pinned to `@zxing/browser@0.1.5` and `@zxing/library@0.21.3`. `npm audit` found zero vulnerabilities. Isolated production compilation and prerender completed with Webpack. The initial Turbopack run could not resolve the external `node_modules` junction and was not used as a build result.

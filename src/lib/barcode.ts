@@ -4,6 +4,7 @@ export type BarcodeDetectorProvider = {
   new(options: { formats: string[] }): BarcodeDetectorLike;
   getSupportedFormats(): Promise<string[]>;
 };
+export type BarcodeFallback = (blob: Blob) => Promise<BarcodeDetection[]>;
 export type BarcodeReading = { code: string; imageId: string; side: 'front'|'back'|'extra' };
 
 const supportedRetailFormats = new Set(['ean_13','ean_8','upc_a']);
@@ -18,21 +19,58 @@ export function isValidGtin(value: string): boolean {
   return (10-(sum%10))%10===check;
 }
 
-/** Uses the optional native detector only; unsupported browsers continue with OCR. */
-export async function detectRetailBarcodes(blob: Blob, provider?: BarcodeDetectorProvider, bitmapFactory: typeof createImageBitmap = globalThis.createImageBitmap): Promise<string[]> {
+/** Lazily loads a local ZXing decoder when the browser has no native barcode API. */
+async function decodeWithZxing(blob: Blob, bitmapFactory: typeof createImageBitmap = globalThis.createImageBitmap): Promise<BarcodeDetection[]> {
+  if (!bitmapFactory || typeof document === 'undefined') return [];
+  let bitmap: ImageBitmap | undefined;
+  let canvas: HTMLCanvasElement | undefined;
+  try {
+    const [{ BrowserMultiFormatReader }, { BarcodeFormat, DecodeHintType }] = await Promise.all([
+      import('@zxing/browser'),
+      import('@zxing/library'),
+    ]);
+    bitmap = await bitmapFactory(blob);
+    const scale = Math.min(1, 3000 / Math.max(bitmap.width, bitmap.height));
+    canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) return [];
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const hints = new Map<typeof DecodeHintType.POSSIBLE_FORMATS | typeof DecodeHintType.TRY_HARDER, unknown>([
+      [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A]],
+      [DecodeHintType.TRY_HARDER, true],
+    ]);
+    const result = new BrowserMultiFormatReader(hints).decodeFromCanvas(canvas);
+    const format = BarcodeFormat[result.getBarcodeFormat()];
+    const formatName = format === 'EAN_13' ? 'ean_13' : format === 'EAN_8' ? 'ean_8' : format === 'UPC_A' ? 'upc_a' : undefined;
+    return formatName ? [{ rawValue: result.getText(), format: formatName }] : [];
+  } catch {
+    // No barcode and decoder failures both fall through to the existing OCR path.
+    return [];
+  } finally {
+    bitmap?.close();
+    if (canvas) { canvas.width = 0; canvas.height = 0; }
+  }
+}
+
+/** Uses the native detector where available, with a lazy local decoder as fallback. */
+export async function detectRetailBarcodes(blob: Blob, provider?: BarcodeDetectorProvider, bitmapFactory: typeof createImageBitmap = globalThis.createImageBitmap, fallback: BarcodeFallback = (source) => decodeWithZxing(source, bitmapFactory)): Promise<string[]> {
   const detectorProvider=provider??(globalThis as typeof globalThis&{BarcodeDetector?:BarcodeDetectorProvider}).BarcodeDetector;
-  if(!detectorProvider||!bitmapFactory)return [];
+  const decodeFallback = async () => [...new Set((await fallback(blob)).filter(item=>item.format&&supportedRetailFormats.has(item.format)).map(item=>item.rawValue?.trim()??'').filter(isValidGtin))];
+  if(!detectorProvider||!bitmapFactory)return decodeFallback().catch(()=>[]);
   try{
     const formats=(await detectorProvider.getSupportedFormats()).filter(format=>supportedRetailFormats.has(format));
-    if(!formats.length)return [];
+    if(!formats.length)return decodeFallback().catch(()=>[]);
     const bitmap=await bitmapFactory(blob);
     let detected:BarcodeDetection[];
     try{detected=await new detectorProvider({formats}).detect(bitmap);}
     finally{bitmap.close();}
-    return [...new Set(detected.filter(item=>item.format&&supportedRetailFormats.has(item.format)).map(item=>item.rawValue?.trim()??'').filter(isValidGtin))];
+    const valid=[...new Set(detected.filter(item=>item.format&&supportedRetailFormats.has(item.format)).map(item=>item.rawValue?.trim()??'').filter(isValidGtin))];
+    return valid.length ? valid : decodeFallback().catch(()=>[]);
   }catch{
-    // A platform decoder failure must not prevent the local OCR path.
-    return [];
+    // A platform decoder failure must not prevent local decoding or the OCR path.
+    return decodeFallback().catch(()=>[]);
   }
 }
 

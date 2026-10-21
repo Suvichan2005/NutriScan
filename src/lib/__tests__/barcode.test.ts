@@ -38,6 +38,34 @@ describe('local retail barcode reading',()=>{
     expect(await detectRetailBarcodes(new Blob(['local image']),Unsupported as unknown as BarcodeDetectorProvider,vi.fn())).toEqual([]);
   });
 
+  it('uses the local decoder when the native API is unavailable and validates its output',async()=>{
+    const fallback=vi.fn().mockResolvedValue([
+      {rawValue:'4006381333931',format:'ean_13'},
+      {rawValue:'4006381333931',format:'ean_13'},
+      {rawValue:'4006381333932',format:'ean_13'},
+      {rawValue:'4006381333931',format:'qr_code'},
+    ]);
+    expect(await detectRetailBarcodes(new Blob(['local image']),undefined,undefined,fallback)).toEqual(['4006381333931']);
+    expect(fallback).toHaveBeenCalledOnce();
+  });
+
+  it('tries local decoding after a native detector finds no valid retail code',async()=>{
+    const detector={detect:vi.fn().mockResolvedValue([])};
+    const provider={getSupportedFormats:vi.fn().mockResolvedValue(['ean_13'])} as unknown as BarcodeDetectorProvider;
+    const constructor=vi.fn(function(this:unknown){return detector;}) as unknown as BarcodeDetectorProvider;
+    Object.assign(constructor,{getSupportedFormats:provider.getSupportedFormats});
+    const bitmap={close:vi.fn()} as unknown as ImageBitmap;
+    const fallback=vi.fn().mockResolvedValue([{rawValue:'036000291452',format:'upc_a'}]);
+    expect(await detectRetailBarcodes(new Blob(['local image']),constructor,vi.fn().mockResolvedValue(bitmap),fallback)).toEqual(['036000291452']);
+    expect(bitmap.close).toHaveBeenCalledOnce();
+    expect(fallback).toHaveBeenCalledOnce();
+  });
+
+  it('keeps barcode failures non-fatal to OCR',async()=>{
+    const fallback=vi.fn().mockRejectedValue(new Error('decoder unavailable'));
+    expect(await detectRetailBarcodes(new Blob(['local image']),undefined,undefined,fallback)).toEqual([]);
+  });
+
   it('supports a barcode-only photo and preserves per-image decoding provenance',()=>{
     const base=parseLabel('',{origin:'ocr'});
     const result=applyBarcodeReadings(base,[
