@@ -16,6 +16,7 @@
     "evaluate": "tsx scripts/evaluate.ts",
     "ocr:contracts:export": "tsx scripts/export-ocr-contract-schemas.mts",
     "ocr:compare-annotations": "tsx scripts/compare-ocr-annotation-passes.mts",
+    "ocr:adjudicate-annotations": "tsx scripts/adjudicate-ocr-annotation-passes.mts",
     "ocr:evaluate": "tsx scripts/evaluate-real-ocr.mts",
     "ocr:evaluate:languages": "tsx scripts/evaluate-ocr-languages.mts",
     "ocr:evaluate:preprocessing": "tsx scripts/evaluate-ocr-preprocessing.mts",

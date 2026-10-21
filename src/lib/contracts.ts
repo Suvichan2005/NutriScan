@@ -163,6 +163,38 @@ export const ocrDatasetFieldSchema = z.object({
   status:z.enum(['clear','ambiguous','not-visible'])
 }).strict();
 export type OcrDatasetField = z.infer<typeof ocrDatasetFieldSchema>;
+export const ocrAdjudicationDispositionSchema = z.enum(['reader-a','reader-b','manual','ambiguous','not-visible']);
+export const ocrAdjudicationDecisionSchema = z.object({
+  fieldId:z.string().min(1).max(120),
+  disposition:ocrAdjudicationDispositionSchema,
+  readerAFieldId:z.string().min(1).max(120).nullable(),
+  readerBFieldId:z.string().min(1).max(120).nullable(),
+  field:ocrDatasetFieldSchema.nullable(),
+  // For explicit manual decisions, identifies which blind pass supplied the
+  // region IDs. The adjudication tool remaps them into a collision-free union.
+  regionSource:z.enum(['reader-a','reader-b']).nullable(),
+  rationale:z.string().trim().min(1).max(1000)
+}).strict();
+export type OcrAdjudicationDecision = z.infer<typeof ocrAdjudicationDecisionSchema>;
+export const ocrAdjudicationInputSchema = z.object({
+  schemaVersion:z.literal(1),
+  datasetVersion:z.string().trim().min(1).max(80),
+  adjudicatorCode:z.string().trim().min(1).max(80),
+  adjudicatedAt:z.iso.datetime(),
+  method:z.string().trim().min(1).max(1000),
+  decisions:z.array(ocrAdjudicationDecisionSchema).min(1).max(1000)
+}).strict();
+export type OcrAdjudicationInput = z.infer<typeof ocrAdjudicationInputSchema>;
+export const ocrAdjudicationProvenanceSchema = z.object({
+  schemaVersion:z.literal(1),
+  adjudicatorCode:z.string().min(1).max(80),
+  adjudicatedAt:z.iso.datetime(),
+  method:z.string().min(1).max(1000),
+  sourcePasses:z.array(z.object({reader:z.enum(['reader-a','reader-b']),annotatorCode:z.string().min(1).max(80),sha256:z.string().regex(/^[a-fA-F0-9]{64}$/)}).strict()).length(2),
+  regions:z.array(z.object({reader:z.enum(['reader-a','reader-b']),sourceRegionId:z.string().min(1).max(100),canonicalRegionId:z.string().min(1).max(100)}).strict()).max(20000),
+  regionAlignment:z.array(z.object({role:z.enum(['label','value','row','unit','basis']),readerACount:z.number().int().nonnegative(),readerBCount:z.number().int().nonnegative(),paired:z.number().int().nonnegative(),overlapAtLeastHalf:z.number().int().nonnegative(),meanBoundingBoxIoU:z.number().min(0).max(1).nullable()}).strict()).max(5),
+  decisions:z.array(z.object({fieldId:z.string().min(1).max(120),disposition:ocrAdjudicationDispositionSchema,readerAFieldId:z.string().min(1).max(120).nullable(),readerBFieldId:z.string().min(1).max(120).nullable(),rationale:z.string().min(1).max(1000)}).strict()).min(1).max(1000)
+}).strict();
 export const ocrDatasetRecordSchema = z.object({
   imageId:z.string().min(1).max(160),
   productGroupId:z.string().min(1).max(160),
@@ -192,7 +224,8 @@ export const ocrDatasetRecordSchema = z.object({
       adjudicated:z.boolean(),
       agreementMetric:z.number().min(0).max(1).nullable(),
       referenceStatus:ocrReferenceStatusSchema,
-      method:z.string().min(1).max(1000)
+      method:z.string().min(1).max(1000),
+      adjudication:ocrAdjudicationProvenanceSchema.optional()
     }).strict()
   }).strict()
 }).strict();

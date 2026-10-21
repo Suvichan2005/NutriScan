@@ -482,6 +482,227 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 1000
+                  },
+                  "adjudication": {
+                    "type": "object",
+                    "properties": {
+                      "schemaVersion": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "adjudicatorCode": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      },
+                      "adjudicatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "method": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      },
+                      "sourcePasses": {
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "reader": {
+                              "type": "string",
+                              "enum": [
+                                "reader-a",
+                                "reader-b"
+                              ]
+                            },
+                            "annotatorCode": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "sha256": {
+                              "type": "string",
+                              "pattern": "^[a-fA-F0-9]{64}$"
+                            }
+                          },
+                          "required": [
+                            "reader",
+                            "annotatorCode",
+                            "sha256"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "regions": {
+                        "maxItems": 20000,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "reader": {
+                              "type": "string",
+                              "enum": [
+                                "reader-a",
+                                "reader-b"
+                              ]
+                            },
+                            "sourceRegionId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100
+                            },
+                            "canonicalRegionId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100
+                            }
+                          },
+                          "required": [
+                            "reader",
+                            "sourceRegionId",
+                            "canonicalRegionId"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "regionAlignment": {
+                        "maxItems": 5,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "role": {
+                              "type": "string",
+                              "enum": [
+                                "label",
+                                "value",
+                                "row",
+                                "unit",
+                                "basis"
+                              ]
+                            },
+                            "readerACount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "readerBCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "paired": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "overlapAtLeastHalf": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "meanBoundingBoxIoU": {
+                              "anyOf": [
+                                {
+                                  "type": "number",
+                                  "minimum": 0,
+                                  "maximum": 1
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "role",
+                            "readerACount",
+                            "readerBCount",
+                            "paired",
+                            "overlapAtLeastHalf",
+                            "meanBoundingBoxIoU"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "decisions": {
+                        "minItems": 1,
+                        "maxItems": 1000,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "fieldId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120
+                            },
+                            "disposition": {
+                              "type": "string",
+                              "enum": [
+                                "reader-a",
+                                "reader-b",
+                                "manual",
+                                "ambiguous",
+                                "not-visible"
+                              ]
+                            },
+                            "readerAFieldId": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 120
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "readerBFieldId": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 120
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "rationale": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 1000
+                            }
+                          },
+                          "required": [
+                            "fieldId",
+                            "disposition",
+                            "readerAFieldId",
+                            "readerBFieldId",
+                            "rationale"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "schemaVersion",
+                      "adjudicatorCode",
+                      "adjudicatedAt",
+                      "method",
+                      "sourcePasses",
+                      "regions",
+                      "regionAlignment",
+                      "decisions"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [

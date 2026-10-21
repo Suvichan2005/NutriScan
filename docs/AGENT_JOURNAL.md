@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-22 — record offline double-read adjudication
+
+- Added a strict adjudication input contract and local CLI that consumes two independently exported passes and a human-authored mapping. Every reader field must be covered once; pairings are explicit IDs rather than array order. The output records byte-exact SHA-256 hashes of both passes, pseudonymous annotator/adjudicator codes, rationales, source-field links and collision-free region mappings.
+- Clear fields are accepted from a reader or entered as an explicit adjudication and must retain label/value/row/basis geometry. Unresolved fields can remain ambiguous or not visible only with printed numeric text, value/operator, unit and basis all null. The tool computes a seven-dimension paired-field agreement rate and reports row-linked region IoU separately; these are annotation agreement measures, not OCR accuracy.
+- Added the offline workflow documentation and generated JSON Schema. Controlled synthetic unit cases pass; full validation: 350 tests / 38 files, TypeScript and optimized Next.js build passed. This does not add a real annotated product or change the exploratory photo baseline. No browser acceptance or Gemini/provider call was needed.
+- No image, raw OCR output, profile information, credential, private conversation, or absolute local path was added to this journal.
+
 ## 2026-10-22 — connect broader follow-ups to local source retrieval
 
 - Unsupported package-only questions now query the existing local evidence index with the question text alone. The interaction carries source candidates, curated summaries, scope and limitations into the matching conversation turn; a no-match says only that this local index did not surface a candidate. It does not call Gemini or an external source.

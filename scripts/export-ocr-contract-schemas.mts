@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { z } from 'zod';
 import {
   ocrAnnotatedDatasetSchema,
+  ocrAdjudicationInputSchema,
   ocrAnnotationPassSchema,
   ocrEvaluationReceiptSchema,
   ocrExtractionSchema
@@ -14,6 +15,12 @@ const schemas = [
     id:'urn:nutriscan:ocr-annotated-dataset:2',
     title:'NutriScan annotated package-photo record',
     description:'Metadata and reference annotations for local OCR research. The schema contains no image bytes. A held-out accuracy result requires human-verified reference labels.'
+  },
+  {
+    path:'data/ocr-adjudication.schema.json',
+    id:'urn:nutriscan:ocr-adjudication:1',
+    title:'NutriScan offline OCR annotation adjudication',
+    description:'Local decisions linking two independent single-reader passes to an explicitly adjudicated reference record. It contains no image bytes or local paths.'
   },
   {
     path:'data/ocr-annotation-pass.schema.json',
@@ -35,7 +42,7 @@ const schemas = [
   }
 ] as const;
 
-const values = [ocrAnnotatedDatasetSchema,ocrAnnotationPassSchema,ocrExtractionSchema,ocrEvaluationReceiptSchema];
+const values = [ocrAnnotatedDatasetSchema,ocrAdjudicationInputSchema,ocrAnnotationPassSchema,ocrExtractionSchema,ocrEvaluationReceiptSchema];
 for (const [index, definition] of schemas.entries()) {
   const generated = z.toJSONSchema(values[index],{target:'draft-2020-12'}) as Record<string,unknown>;
   const json = {

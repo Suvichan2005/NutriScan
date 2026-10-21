@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 22 October 2026 — finish the local OCR reference-adjudication path
+
+- Keep the current blind browser annotation pass and add a bounded offline adjudication command, rather than changing the PWA or OCR engine. It requires two distinct passes for the same image, source/license metadata and language; each source field must be explicitly mapped exactly once.
+- Require the reviewer to choose a reader, enter an explicit adjudicated field, or withhold the value as ambiguous/not visible. Unresolved numeric text, normalized value, operator, unit and basis must stay null. Preserve byte-exact pass SHA-256 digests, source field links, decision rationale and region-ID mappings in the canonical record.
+- Compute the descriptive seven-dimension reader agreement only over fields explicitly paired by ID. Report region bounding-box overlap separately for the paired label/value/row/unit/basis regions. Neither metric establishes OCR accuracy or reference truth.
+- Human-verified evaluation records now require the adjudication provenance map. Offline tests cover a manually resolved value, an unresolved disagreement, missing/reused field links, image/source mismatch and provenance rejection. No real annotation pass or image was processed, so the real-photo baseline and held-out status did not change.
+
 ## 22 October 2026 — connect unsupported follow-ups to the local evidence index
 
 - Keep package-specific questions on the deterministic package audit. When its trace marks a question unsupported from the package alone, search the existing curated MiniLM index through the local /api/evidence route using only the bounded question text; do not add profile fields or photos to that request.

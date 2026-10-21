@@ -54,6 +54,23 @@ export function assertOcrDatasetSemantics(dataset: OcrAnnotatedDataset): void {
         (record.annotations.review.annotatorCount < 2 || !record.annotations.review.adjudicated || record.annotations.review.agreementMetric === null)) {
       failures.push(`human-verified record ${record.imageId} requires two readers, adjudication and an agreement metric`);
     }
+    if(record.annotations.review.referenceStatus==='human-verified'){
+      const provenance=record.annotations.review.adjudication;
+      if(!provenance){
+        failures.push(`human-verified record ${record.imageId} requires source-pass and field-decision provenance`);
+      } else {
+        if(provenance.sourcePasses.length!==2||provenance.sourcePasses[0].annotatorCode===provenance.sourcePasses[1].annotatorCode||new Set(provenance.sourcePasses.map(pass=>pass.reader)).size!==2){
+          failures.push(`human-verified record ${record.imageId} requires two distinct source passes`);
+        }
+        const decisionIds=provenance.decisions.map(decision=>decision.fieldId);
+        if(new Set(decisionIds).size!==decisionIds.length||decisionIds.length!==record.annotations.nutrients.length||record.annotations.nutrients.some(field=>!decisionIds.includes(field.fieldId))){
+          failures.push(`human-verified record ${record.imageId} requires one traceable adjudication decision per final field`);
+        }
+        if(provenance.decisions.some(decision=>decision.readerAFieldId===null&&decision.readerBFieldId===null)){
+          failures.push(`human-verified record ${record.imageId} contains an adjudication decision without source-field links`);
+        }
+      }
+    }
   }
   if (failures.length) throw new Error(`OCR dataset semantic validation failed: ${failures.join('; ')}`);
 }
