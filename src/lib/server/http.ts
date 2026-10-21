@@ -64,7 +64,7 @@ export async function input<T extends z.ZodType>(request: Request, schema: T, ma
 }
 
 export async function fixedFetch(url: URL, type: 'json' | 'html' | 'pdf' = 'json', max = 900_000, searchBody?: object) {
-  const allowed = ['world.openfoodfacts.org', 'search.openfoodfacts.org', 'www.ebi.ac.uk', 'www.who.int', 'fssai.gov.in', 'www.fssai.gov.in', 'api.fda.gov'];
+  const allowed = ['world.openfoodfacts.org', 'search.openfoodfacts.org', 'www.ebi.ac.uk', 'www.who.int', 'fssai.gov.in', 'www.fssai.gov.in', 'delhihighcourt.nic.in', 'api.fda.gov'];
   if (url.protocol !== 'https:' || !allowed.includes(url.hostname) || url.username || url.password || url.port) throw new ApiError(400, 'url_rejected', 'Remote destination is not allowed.');
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 12_000);
   try {

@@ -89,6 +89,10 @@ Follow-up built-app route probe on 2026-10-21 (UTC): `POST http://127.0.0.1:3401
 
 Current local production-route probe on 2026-10-21 IST: `POST http://127.0.0.1:3411/api/research` with the non-personal query `almond manufacture` and topic `regulation` returned `unavailable`, an empty `items` array and an explicit notice that no fixed-registry source matched. Request ID: `471c6dbb-1597-4082-a5ed-fa37ec69e603`. The route ran from the optimized build; the temporary server on port 3411 was stopped and no listener remained. Unit tests separately verify that this unmatched query performs no external fetch. This is local route evidence, not broader live legal-source coverage.
 
+### ORS source-history integration probe — 21 October 2026
+
+The fixed registry now includes the official FSSAI 2022 direction, 14 and 15 October 2025 actions, and the 31 October 2025 Delhi High Court judgment. A same-origin POST to the existing development app at `http://127.0.0.1:3400/api/research`, query `ORS legal India brand`, topic `regulation`, returned `unavailable`, four dated primary-source cards plus an eGazette navigation card, and no retrieved PDF text. Request ID: `006b33b6-6980-4490-b74e-39b85126fccb`. The response explicitly said no current-law verdict is available. This route receipt establishes registry matching and truthful fallback behavior; it does not establish successful live PDF retrieval or product-specific legal applicability. The FSSAI and court PDFs remain available as direct links for human review.
+
 Focused failure/numerical suite: `npx vitest run src/lib/server/server.test.ts` — **18 passed** after Host normalization, US recall scope, shell rejection and answer-reconstruction additions. Full `npx tsc --noEmit` also passed at this milestone. These boundary checks do not prove genuine provider or photo acceptance.
 
 ## Product comparison browser receipt — 21 October 2026

@@ -52,6 +52,28 @@ describe('official regulation PDF discovery', () => {
     expect(notice?.url).toBe('https://www.fssai.gov.in/upload/notifications/2026/04/69cca2b3f3ce9Notification%20dt%2024.03.2026_NRC.pdf');
   });
 
+  it('retrieves the dated ORS order and court history without turning it into a product verdict', async () => {
+    fixedFetchMock.mockImplementation(async (url: URL, format: string) => format === 'pdf'
+      ? url.hostname === 'delhihighcourt.nic.in'
+        ? textPdf('Official ORS case history. The Delhi High Court dismissed this case-specific challenge on 31 October 2025 and left product-specific applicability for further review.')
+        : textPdf('')
+      : '<html><body>Official FSSAI regulations index for food labeling and claims.</body></html>');
+
+    const result = await research({ query: 'Is this ORS legal in India today?', topic: 'regulation' });
+    const history = result.items.filter(item => item.id.startsWith('fssai-ors-') || item.id === 'delhi-hc-ors-2025-dr-reddys');
+
+    expect(result.status).toBe('ok');
+    expect(history.map(item => item.id)).toEqual(expect.arrayContaining([
+      'fssai-ors-2022-direction', 'fssai-ors-2025-withdrawal', 'fssai-ors-2025-clarification', 'delhi-hc-ors-2025-dr-reddys',
+    ]));
+    expect(history.find(item => item.id === 'fssai-ors-2025-withdrawal')).toMatchObject({ publishedAt: '2025-10-14' });
+    expect(history.find(item => item.id === 'fssai-ors-2025-clarification')).toMatchObject({ publishedAt: '2025-10-15' });
+    expect(history.find(item => item.id === 'delhi-hc-ors-2025-dr-reddys')?.limitations).toMatch(/case-specific judgment.*does not decide every product/i);
+    expect(history.find(item => item.id === 'fssai-ors-2025-withdrawal')?.category).toMatch(/regulatory withdrawal of prior permissions/i);
+    expect(history.find(item => item.id === 'fssai-ors-2025-withdrawal')?.limitations).toMatch(/not retrieved source text.*not a product-specific adjudication/i);
+    expect(fixedFetchMock).toHaveBeenCalledTimes(4);
+  });
+
   it('keeps primary-source links visible when only a client-rendered shell is retrieved', async () => {
     fixedFetchMock.mockResolvedValue('<html><title>FSSAI</title><div id="root"></div><script src="app.js"></script></html>');
     const result = await research({ query: 'FSSAI labelling', topic: 'regulation' });

@@ -28,6 +28,14 @@ describe('bounded server boundary', () => {
     await expect(fixedFetch(new URL('http://127.0.0.1/private'))).rejects.toMatchObject({ code: 'url_rejected' });
     expect(fetcher).not.toHaveBeenCalled();
   });
+  it('fetches official Delhi High Court PDFs through the exact fixed-source host allowlist', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(new Uint8Array([37, 80, 68, 70, 45, 49, 46, 55]), { headers: { 'content-type': 'application/pdf' } })); vi.stubGlobal('fetch', fetcher);
+    const result = await fixedFetch(new URL('https://delhihighcourt.nic.in/app/showFileJudgment/case.pdf'), 'pdf');
+    expect(result).toHaveLength(8);
+    expect(fetcher).toHaveBeenCalledWith(expect.any(URL), expect.objectContaining({ redirect: 'error' }));
+    await expect(fixedFetch(new URL('https://delhihighcourt.nic.in.evil.example/case.pdf'), 'pdf')).rejects.toMatchObject({ code: 'url_rejected' });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it('rejects oversized streams, invalid JSON, and extra request fields', async () => {
     await expect(readBounded(new Response('a'.repeat(30)).body, 20)).rejects.toMatchObject({ code: 'too_large' });
     await expect(input(request({ query: 'oats', injected: true }), productInput)).rejects.toMatchObject({ code: 'invalid_input' });

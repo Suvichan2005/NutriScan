@@ -9,6 +9,10 @@ export const primaryRegistry: Entry[] = [
   { id: 'fssai-regulations-live', title: 'FSSAI food safety and standards regulations index', url: 'https://www.fssai.gov.in/cms/food-safety-and-standards-regulations.php', publisher: 'FSSAI', terms: ['regulation', 'label', 'claim', 'additive', 'india', 'fssai', 'ins'], publishedAt: null, category: 'regulation index' },
   { id: 'fssai-label-amendments-live', title: 'FSSAI labelling and display amendments', url: 'https://fssai.gov.in/food-law/regulations/amendments/labelling-display', publisher: 'FSSAI', terms: ['regulation', 'label', 'display', 'india', 'fssai'], publishedAt: null, category: 'amendment index' },
   { id: 'fssai-label-amendment-2026', title: 'FSSAI Labelling and Display First Amendment Regulations, 2026', url: 'https://www.fssai.gov.in/upload/notifications/2026/04/69cca2b3f3ce9Notification%20dt%2024.03.2026_NRC.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['infant', 'nutrition', 'rda', 'servings', 'non-retail', 'small package', '100 cm', 'logos', 'label', 'labelling', 'display', 'amendment', '2026'], publishedAt: '2026-03-24', effectiveAt: '2027-07-01', category: 'final Gazette notification; future commencement', format: 'pdf' },
+  { id: 'fssai-ors-2022-direction', title: 'FSSAI direction on ORS-substitute advertising and marketing', url: 'https://www.fssai.gov.in/upload/advisories/2022/04/6253ddfde2161Direction_advertisement_ORS_11_04_2022.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['ors', 'oral rehydration', 'substitute', 'beverage', 'drug', 'direction', 'brand', 'india'], publishedAt: '2022-04-08', category: 'historical Section 16(5) direction; referenced as remaining in effect in 2025', format: 'pdf' },
+  { id: 'fssai-ors-2025-withdrawal', title: 'FSSAI withdrawal of prior ORS brand-name permissions', url: 'https://www.fssai.gov.in/upload/advisories/2025/10/68ee3ba06bb7eWithdrawal%20of%20Orders%20regarding%20Usage%20of%20the%20term%20ORS%20along%20with%20brand%20names%20dt%2014.10.2025.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['ors', 'oral rehydration', 'withdrawal', 'brand', 'orders', 'legal', 'india', '2025'], publishedAt: '2025-10-14', category: 'regulatory withdrawal of prior permissions', format: 'pdf' },
+  { id: 'fssai-ors-2025-clarification', title: 'FSSAI clarification on ORS in food-product names', url: 'https://fssai.gov.in/upload/advisories/2025/10/68ef8cea74223clarification_151025.pdf', publisher: 'Food Safety and Standards Authority of India', terms: ['ors', 'oral rehydration', 'clarification', 'brand', 'names', 'legal', 'india', '2025', 'remove'], publishedAt: '2025-10-15', category: 'regulatory clarification and removal direction', format: 'pdf' },
+  { id: 'delhi-hc-ors-2025-dr-reddys', title: 'Delhi High Court: Dr Reddy’s Laboratories v Union of India, W.P.(C) 16303/2025', url: 'https://delhihighcourt.nic.in/app/showFileJudgment/58731102025CW163032025_193432.pdf', publisher: 'High Court of Delhi', terms: ['ors', 'oral rehydration', 'legal', 'india', 'court', 'judgment', 'fssai', 'brand', 'dismissed', '2025'], publishedAt: '2025-10-31', category: 'High Court judgment; case-specific disposition', format: 'pdf' },
   { id: 'who-sugars-live', title: 'WHO guideline: sugars intake for adults and children', url: 'https://www.who.int/publications/i/item/9789241549028', publisher: 'World Health Organization', terms: ['sugar', 'sugars', 'sweet', 'carbohydrate'], publishedAt: '2015-03-04', category: 'population guideline' },
   { id: 'who-sweeteners-live', title: 'WHO guideline: use of non-sugar sweeteners', url: 'https://www.who.int/publications/i/item/9789240073616', publisher: 'World Health Organization', terms: ['sweetener', 'sweeteners', 'aspartame', 'sucralose', 'weight'], publishedAt: '2023-05-15', category: 'population guideline' },
 ];
@@ -20,6 +24,20 @@ function registryScore(entry: Entry, query: string) {
     const normalized = term.toLowerCase().normalize('NFKC').match(/[\p{L}\p{N}]+/gu)?.join(' ');
     return normalized && searchable.includes(` ${normalized} `);
   }).length;
+}
+
+function sourceLimitations(entry: Entry) {
+  const orsCaseLimit = entry.id === 'delhi-hc-ors-2025-dr-reddys'
+    ? ' This is a case-specific judgment dated 31 October 2025: the Delhi High Court dismissed this petitioner’s challenge to the FSSAI measures and directed FSSAI to consider a representation about existing stock. It does not decide every product, party, proceeding or later order.'
+    : entry.id === 'fssai-ors-2022-direction'
+      ? ' FSSAI’s 15 October 2025 clarification states that this 8 April 2022 Section 16(5) direction remains in effect; the 2022/2024 brand-name permissions were separately withdrawn. Later case-specific orders and current product applicability still require review.'
+      : entry.id.startsWith('fssai-ors-2025-')
+        ? ' This is a dated agency instrument, not a product-specific adjudication. Check subsequent court orders, exact product category and current applicability.'
+        : '';
+  const primary = entry.publisher.includes('Food Safety and Standards Authority') || entry.publisher === 'FSSAI' || entry.publisher === 'High Court of Delhi';
+  return primary
+    ? `This primary-source extract does not establish a consolidated rule, later amendment/order, product category, authorization or package compliance. Verify all applicable Gazette text and effective dates for the relevant product and market.${orsCaseLimit}`
+    : 'General population guidance, not an additive toxicology limit, individual prescription or legal rule. The excerpt does not independently resolve this package claim.';
 }
 
 function excerptHtml(html: string, query: string) {
@@ -82,7 +100,8 @@ export async function research(data: z.infer<typeof researchInput>) {
     return { status: items.length ? 'ok' : 'empty', items, message: 'Live Europe PMC discovery, ordered by search relevance. These are candidate publications, not an evidence synthesis or personalized advice.' };
   }
   if (data.topic === 'brand' || data.topic === 'recalls') return researchRecalls(data.query);
-  const candidates = primaryRegistry.map(entry => ({ entry, score: registryScore(entry, data.query) })).filter(candidate => candidate.score > 0).sort((a, b) => b.score - a.score).slice(0, 2);
+  const sourceLimit = /\b(?:ors|oral rehydration)\b/i.test(data.query) ? 4 : 2;
+  const candidates = primaryRegistry.map(entry => ({ entry, score: registryScore(entry, data.query) })).filter(candidate => candidate.score > 0).sort((a, b) => b.score - a.score).slice(0, sourceLimit);
   if (!candidates.length) return {
     status: 'unavailable' as const,
     items: [] as ResearchItem[],
@@ -95,10 +114,8 @@ export async function research(data: z.infer<typeof researchInput>) {
       const excerpt = pdf ? excerptPlain(pdf.text, data.query) : excerptHtml(source as string, data.query);
       if (excerpt.length < 100 || /access denied|captcha|request rejected/i.test(excerpt)) throw new Error('Unusable source page');
       const pdfDisclosure = pdf ? ` PDF text extracted from ${pdf.pagesRead} of ${pdf.totalPages} pages${pdf.truncated ? ' (bounded extract)' : ''}; scanned-image content is not OCRed.` : '';
-      const limitations = entry.publisher.includes('Food Safety and Standards Authority') || entry.publisher === 'FSSAI'
-        ? 'This primary-source extract does not establish a consolidated rule, later amendment/order, product category, authorization or package compliance. Verify all applicable Gazette text and effective dates for the relevant product and market.'
-        : 'General population guidance, not an additive toxicology limit, individual prescription or legal rule. The excerpt does not independently resolve this package claim.';
-      return { ok: true as const, entry, item: { id: entry.id, title: entry.title, url: entry.url, publisher: entry.publisher, publishedAt: entry.publishedAt, ...(entry.effectiveAt ? { effectiveAt: entry.effectiveAt } : {}), retrievedAt: new Date().toISOString(), category: entry.category, summary: `${pdf ? 'Official Gazette PDF text excerpt' : 'Live page excerpt'} (truncated; not interpreted): ${excerpt}${pdfDisclosure}`, limitations } satisfies ResearchItem };
+      const sourceKind = pdf ? entry.category.includes('Gazette') ? 'Official Gazette PDF text excerpt' : 'Official PDF text excerpt' : 'Live page excerpt';
+      return { ok: true as const, entry, item: { id: entry.id, title: entry.title, url: entry.url, publisher: entry.publisher, publishedAt: entry.publishedAt, ...(entry.effectiveAt ? { effectiveAt: entry.effectiveAt } : {}), retrievedAt: new Date().toISOString(), category: entry.category, summary: `${sourceKind} (truncated; not interpreted): ${excerpt}${pdfDisclosure}`, limitations: sourceLimitations(entry) } satisfies ResearchItem };
     } catch {
       return { ok: false as const, entry };
     }
@@ -117,7 +134,7 @@ export async function research(data: z.infer<typeof researchInput>) {
       retrievedAt,
       category: `${entry.category}; direct source link`,
       summary: 'NutriScan could not retrieve usable source text. Open this official source directly to inspect its contents; no excerpt or interpretation is available from this request.',
-      limitations: 'This link card is source navigation only, not retrieved legal evidence. Verify the exact instrument, publication and effective dates, later amendments or orders, product category and jurisdiction before drawing conclusions.',
+      limitations: `This link card is source navigation only, not retrieved source text. ${sourceLimitations(entry)}`,
     } satisfies ResearchItem;
   })());
   const failedFssaiLookup = succeeded === 0 && results.some(result => result.entry.publisher === 'FSSAI' || result.entry.publisher.includes('Food Safety and Standards Authority'));
