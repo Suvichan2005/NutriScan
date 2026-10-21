@@ -6,6 +6,7 @@
   {"id":"history-out-of-domain","query":"Who wrote the Bhagavad Gita?","relevant":[]},
   {"id":"fibre-package-scope","query":"Does one packaged snack with 5 g fibre satisfy daily dietary fibre guidance?","relevant":["who-carbohydrate-2023"]},
   {"id":"sweetener-dose-scope","query":"Does this package reveal how much sucralose I consume?","relevant":["fao-955"]},
+  {"id":"fssai-allergen-wording","query":"What does May contain traces mean for cross-contamination on a food label?","relevant":["fssai-labelling-allergen-faq-2023"]},
   {"id":"diabetes-target-scope","query":"What carbohydrate amount should a person with diabetes eat each day?","relevant":["niddk-meals","who-carbohydrate-2023"]},
   {"id":"blood-pressure-sodium","query":"How can someone with high blood pressure reduce sodium from food?","relevant":["who-sodium"]},
   {"id":"free-sugar-definition","query":"What does WHO count as free sugars, including honey and fruit juice?","relevant":["who-sugars-2015"]},

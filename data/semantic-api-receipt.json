@@ -1,47 +1,58 @@
 {
   "cases": [
     {
+      "case": "allergen-wording",
+      "status": 200,
+      "mode": "hybrid-local-embedding",
+      "corpusVersion": "2026-10-21.8",
+      "firstResult": "fssai-labelling-allergen-faq-2023",
+      "latencyMs": 2082,
+      "code": null,
+      "requestId": "b6843360-6c70-41d4-80e9-217b18978146"
+    },
+    {
       "case": "exact-additive",
       "status": 200,
       "mode": "hybrid-local-embedding",
-      "model": "Xenova/all-MiniLM-L6-v2",
+      "corpusVersion": "2026-10-21.8",
       "firstResult": "fao-955",
-      "latencyMs": 43,
+      "latencyMs": 12,
       "code": null,
-      "requestId": "bc8dc280-bfeb-451a-9c17-863f4edce412"
+      "requestId": "8d6d865e-346c-4fd9-8ee2-acdcb471f982"
     },
     {
       "case": "paraphrase",
       "status": 200,
       "mode": "hybrid-local-embedding",
-      "model": "Xenova/all-MiniLM-L6-v2",
+      "corpusVersion": "2026-10-21.8",
       "firstResult": "who-sodium",
-      "latencyMs": 36,
+      "latencyMs": 18,
       "code": null,
-      "requestId": "22b8e221-2a44-4f67-9ba0-73cab33b1ee5"
+      "requestId": "f0f7472a-5463-4e4a-b8e6-34e8ecb16385"
     },
     {
       "case": "origin-rejected",
       "status": 403,
       "mode": null,
-      "model": null,
+      "corpusVersion": null,
       "firstResult": null,
       "latencyMs": null,
       "code": "origin_rejected",
-      "requestId": "321045a6-d682-41e3-8da5-53995a310632"
+      "requestId": "1fcc8933-237b-4323-ae49-9d60596e157d"
     },
     {
       "case": "invalid-bound",
       "status": 400,
       "mode": null,
-      "model": null,
+      "corpusVersion": null,
       "firstResult": null,
       "latencyMs": null,
       "code": "invalid_input",
-      "requestId": "6895881f-7afe-428e-a0de-e0196bdcd11d"
+      "requestId": "a8578d7d-e1b6-4db7-b34d-7b72ac43c240"
     }
   ],
-  "checkedAt": "2026-10-20T22:13:06.7035590Z",
-  "endpoint": "http://127.0.0.1:3400/api/evidence",
-  "environment": "real localhost Next.js HTTP requests; not browser screenshot or remote provider proof"
+  "checkedAt": "2026-10-21T17:34:32.3001274Z",
+  "endpoint": "http://127.0.0.1:3402/api/evidence",
+  "corpusVersion": "2026-10-21.8",
+  "environment": "real localhost Next.js HTTP requests; local model inference and no remote provider; rejected origins and invalid bounds included"
 }

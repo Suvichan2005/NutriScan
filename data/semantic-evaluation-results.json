@@ -1,5 +1,5 @@
 {
-  "evaluatedAt": "2026-10-21T16:13:32.066Z",
+  "evaluatedAt": "2026-10-21T17:32:23.290Z",
   "model": "Xenova/all-MiniLM-L6-v2",
   "revision": "751bff37182d3f1213fa05d7196b954e230abad9",
   "runtimeVersion": "4.3.1",
@@ -7,21 +7,21 @@
   "pooling": "mean",
   "normalized": true,
   "hybridRecipe": "0.9*cosine + 0.1*max-normalized BM25 + 1 for exact additive identity",
-  "corpusVersion": "2026-10-21.6",
-  "corpusSha256": "02d402e20205889dd452689f34242e7352e1892c8790a364d83d187e7fe54ccd",
-  "documents": 14,
+  "corpusVersion": "2026-10-21.8",
+  "corpusSha256": "1fc6f8995359978eab23e8829e0a0573a9a008bfdc1effefcb688cea8325863a",
+  "documents": 16,
   "queryCount": 18,
   "scope": "Developer-authored relevance cases; not independent clinical or open-domain evaluation. Queries versioned before measurement. Lexical and semantic rank over the entire corpus; hybrid top five.",
   "metrics": {
     "lexical": {
       "top1": 0.9444444444444444,
-      "recallAt3": 1,
-      "mrrAt5": 0.9629629629629629
+      "recallAt3": 0.9444444444444444,
+      "mrrAt5": 0.9555555555555555
     },
     "semantic": {
-      "top1": 0.9444444444444444,
+      "top1": 0.8888888888888888,
       "recallAt3": 1,
-      "mrrAt5": 0.9722222222222222
+      "mrrAt5": 0.9444444444444444
     },
     "hybrid": {
       "top1": 1,
@@ -42,21 +42,21 @@
       "hybridTop3": [
         {
           "id": "who-sodium",
-          "semanticScore": 0.7126449338655392,
+          "semanticScore": 0.6979218559301549,
           "lexicalScore": 1
         },
         {
           "id": "icmrnin-dgi-2024",
-          "semanticScore": 0.4209950971491988,
+          "semanticScore": 0.4390078958344153,
           "lexicalScore": 0
         },
         {
           "id": "who-carbohydrate-2023",
-          "semanticScore": 0.38030738206180764,
-          "lexicalScore": 0.20997098350595464
+          "semanticScore": 0.3531694821871401,
+          "lexicalScore": 0.17686470120463438
         }
       ],
-      "latencyMs": 448
+      "latencyMs": 893
     },
     {
       "id": "sodium-paraphrase",
@@ -64,22 +64,22 @@
       "relevant": [
         "who-sodium"
       ],
-      "lexicalRank": 3,
+      "lexicalRank": 5,
       "semanticRank": 1,
       "hybridRank": 1,
       "hybridTop3": [
         {
           "id": "who-sodium",
-          "semanticScore": 0.48240488821119754,
+          "semanticScore": 0.4769497493562597,
           "lexicalScore": 0
         },
         {
           "id": "niddk-meals",
-          "semanticScore": 0.2534202982336891,
+          "semanticScore": 0.24512935429694832,
           "lexicalScore": 1
         }
       ],
-      "latencyMs": 5
+      "latencyMs": 16
     },
     {
       "id": "sodium-conversion",
@@ -93,21 +93,21 @@
       "hybridTop3": [
         {
           "id": "who-sodium",
-          "semanticScore": 0.638522826885489,
+          "semanticScore": 0.6338639504377592,
           "lexicalScore": 1
         },
         {
           "id": "fao-621",
-          "semanticScore": 0.38262633912171234,
-          "lexicalScore": 0.213253108291193
+          "semanticScore": 0.3756658348072871,
+          "lexicalScore": 0.2194524808513834
         },
         {
           "id": "fao-211",
-          "semanticScore": 0.3581683123227656,
-          "lexicalScore": 0.2912923652008037
+          "semanticScore": 0.3564275448399196,
+          "lexicalScore": 0.2940377559203425
         }
       ],
-      "latencyMs": 5
+      "latencyMs": 12
     },
     {
       "id": "diabetes-exact",
@@ -121,21 +121,21 @@
       "hybridTop3": [
         {
           "id": "niddk-meals",
-          "semanticScore": 0.6789122234990785,
+          "semanticScore": 0.6894886481969298,
           "lexicalScore": 1
         },
         {
           "id": "who-nss",
-          "semanticScore": 0.3893010891753031,
-          "lexicalScore": 0.4036046698193279
+          "semanticScore": 0.38524130052935235,
+          "lexicalScore": 0.4077699543921419
         },
         {
           "id": "who-carbohydrate-2023",
-          "semanticScore": 0.33698760025304253,
-          "lexicalScore": 0.6093664075180409
+          "semanticScore": 0.36730143188497766,
+          "lexicalScore": 0.5192061976224098
         }
       ],
-      "latencyMs": 5
+      "latencyMs": 11
     },
     {
       "id": "diabetes-paraphrase",
@@ -149,21 +149,21 @@
       "hybridTop3": [
         {
           "id": "niddk-meals",
-          "semanticScore": 0.6392165704112993,
+          "semanticScore": 0.6177366052673232,
           "lexicalScore": 1
         },
         {
           "id": "who-nss",
-          "semanticScore": 0.42252620458190393,
-          "lexicalScore": 0.752829064919595
+          "semanticScore": 0.4297446283177313,
+          "lexicalScore": 0.7332192579917556
         },
         {
           "id": "who-sugars-2015",
-          "semanticScore": 0.46863569220255946,
+          "semanticScore": 0.47283827944589196,
           "lexicalScore": 0
         }
       ],
-      "latencyMs": 6
+      "latencyMs": 16
     },
     {
       "id": "diabetes-carb-counting-options",
@@ -177,21 +177,21 @@
       "hybridTop3": [
         {
           "id": "niddk-meals",
-          "semanticScore": 0.7869173979143271,
+          "semanticScore": 0.7887323168912967,
           "lexicalScore": 1
         },
         {
           "id": "who-carbohydrate-2023",
-          "semanticScore": 0.4964024215802072,
+          "semanticScore": 0.5120674182776637,
           "lexicalScore": 0
         },
         {
           "id": "who-nss",
-          "semanticScore": 0.44522315895755454,
-          "lexicalScore": 0.11948294398691216
+          "semanticScore": 0.43683326044058735,
+          "lexicalScore": 0.12046556658188268
         }
       ],
-      "latencyMs": 5
+      "latencyMs": 9
     },
     {
       "id": "fibre-paraphrase",
@@ -205,16 +205,16 @@
       "hybridTop3": [
         {
           "id": "who-carbohydrate-2023",
-          "semanticScore": 0.6556765112690297,
+          "semanticScore": 0.6289257044547437,
           "lexicalScore": 1
         },
         {
           "id": "icmrnin-dgi-2024",
-          "semanticScore": 0.40721718781796057,
+          "semanticScore": 0.4108026167447296,
           "lexicalScore": 0
         }
       ],
-      "latencyMs": 5
+      "latencyMs": 10
     },
     {
       "id": "fibre-package-limit",
@@ -228,21 +228,21 @@
       "hybridTop3": [
         {
           "id": "who-carbohydrate-2023",
-          "semanticScore": 0.5406468203582624,
+          "semanticScore": 0.5327935520061272,
           "lexicalScore": 1
         },
         {
           "id": "icmrnin-dgi-2024",
-          "semanticScore": 0.4722190923571266,
-          "lexicalScore": 0.41427360531827045
+          "semanticScore": 0.45498574691715016,
+          "lexicalScore": 0.3556172953493839
         },
         {
-          "id": "who-sugars-2015",
-          "semanticScore": 0.30954848923385686,
-          "lexicalScore": 0.4405100591066347
+          "id": "fssai-labelling-display-2020",
+          "semanticScore": 0.3486073202033673,
+          "lexicalScore": 0.1562139039467429
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 8
     },
     {
       "id": "free-sugar-definition",
@@ -256,21 +256,21 @@
       "hybridTop3": [
         {
           "id": "who-sugars-2015",
-          "semanticScore": 0.5800055783868409,
+          "semanticScore": 0.6037982435846532,
           "lexicalScore": 1
         },
         {
           "id": "who-nss",
-          "semanticScore": 0.4570961378481316,
-          "lexicalScore": 0.17634816446318113
+          "semanticScore": 0.4499282705907281,
+          "lexicalScore": 0.18452848605484584
         },
         {
           "id": "niddk-meals",
-          "semanticScore": 0.4164304845867585,
-          "lexicalScore": 0.3092475853501912
+          "semanticScore": 0.40440404264801677,
+          "lexicalScore": 0.3113097332484256
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 8
     },
     {
       "id": "free-sugar-juice",
@@ -284,21 +284,21 @@
       "hybridTop3": [
         {
           "id": "who-sugars-2015",
-          "semanticScore": 0.582051238990041,
+          "semanticScore": 0.5900740114886375,
           "lexicalScore": 1
         },
         {
           "id": "who-nss",
-          "semanticScore": 0.41394619408456734,
+          "semanticScore": 0.4164858414159924,
           "lexicalScore": 0
         },
         {
           "id": "niddk-meals",
-          "semanticScore": 0.36904591130102093,
-          "lexicalScore": 0.14196670084205606
+          "semanticScore": 0.3669270757772054,
+          "lexicalScore": 0.1418835352763052
         }
       ],
-      "latencyMs": 5
+      "latencyMs": 11
     },
     {
       "id": "free-sugar-package-scope",
@@ -312,21 +312,21 @@
       "hybridTop3": [
         {
           "id": "who-sugars-2015",
-          "semanticScore": 0.6229348918257801,
+          "semanticScore": 0.6302120958492102,
           "lexicalScore": 1
         },
         {
           "id": "who-nss",
-          "semanticScore": 0.4647869626128587,
-          "lexicalScore": 0.5382780863526546
+          "semanticScore": 0.47327650833994056,
+          "lexicalScore": 0.5342111664429071
         },
         {
           "id": "niddk-meals",
-          "semanticScore": 0.45309170977426877,
+          "semanticScore": 0.44829067746550144,
           "lexicalScore": 0
         }
       ],
-      "latencyMs": 5
+      "latencyMs": 9
     },
     {
       "id": "sweetener-exact",
@@ -340,21 +340,21 @@
       "hybridTop3": [
         {
           "id": "who-nss",
-          "semanticScore": 0.7663576541035465,
+          "semanticScore": 0.7656541440806046,
           "lexicalScore": 1
         },
         {
           "id": "who-sugars-2015",
-          "semanticScore": 0.5291086200809022,
-          "lexicalScore": 0.0856150343314604
+          "semanticScore": 0.5373125714223767,
+          "lexicalScore": 0.09195479697103603
         },
         {
           "id": "niddk-meals",
-          "semanticScore": 0.51134590849252,
-          "lexicalScore": 0.11277175688354642
+          "semanticScore": 0.5081179046475343,
+          "lexicalScore": 0.11318184137655622
         }
       ],
-      "latencyMs": 5
+      "latencyMs": 10
     },
     {
       "id": "sweetener-paraphrase",
@@ -368,21 +368,21 @@
       "hybridTop3": [
         {
           "id": "who-nss",
-          "semanticScore": 0.47592406416541166,
+          "semanticScore": 0.48177555242713144,
           "lexicalScore": 1
         },
         {
           "id": "who-sugars-2015",
-          "semanticScore": 0.5212157735597205,
+          "semanticScore": 0.5206796389464439,
           "lexicalScore": 0
         },
         {
           "id": "niddk-meals",
-          "semanticScore": 0.39065837764763256,
+          "semanticScore": 0.3880638111775103,
           "lexicalScore": 0
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 8
     },
     {
       "id": "sucralose-exact",
@@ -391,16 +391,16 @@
         "fao-955"
       ],
       "lexicalRank": 1,
-      "semanticRank": 1,
+      "semanticRank": 2,
       "hybridRank": 1,
       "hybridTop3": [
         {
           "id": "fao-955",
-          "semanticScore": 0.3083584455552761,
+          "semanticScore": 0.2939643222527606,
           "lexicalScore": 1
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 8
     },
     {
       "id": "sucralose-name",
@@ -414,21 +414,21 @@
       "hybridTop3": [
         {
           "id": "fao-955",
-          "semanticScore": 0.5748581849457893,
+          "semanticScore": 0.5702866312404699,
           "lexicalScore": 1
         },
         {
           "id": "fao-330",
-          "semanticScore": 0.4470378724567146,
-          "lexicalScore": 0.24209252953540397
+          "semanticScore": 0.4451044958905754,
+          "lexicalScore": 0.262496575289336
         },
         {
           "id": "fao-415",
-          "semanticScore": 0.3868251557924072,
-          "lexicalScore": 0.24783061432123182
+          "semanticScore": 0.39415657148193384,
+          "lexicalScore": 0.2680268615865803
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 8
     },
     {
       "id": "citric-identity",
@@ -442,21 +442,21 @@
       "hybridTop3": [
         {
           "id": "fao-330",
-          "semanticScore": 0.6004657146023177,
+          "semanticScore": 0.6056252711361064,
           "lexicalScore": 1
         },
         {
           "id": "fao-955",
-          "semanticScore": 0.4456469409948806,
-          "lexicalScore": 0.17212666605641455
+          "semanticScore": 0.44617648133327664,
+          "lexicalScore": 0.18993418727181727
         },
         {
           "id": "fao-385",
-          "semanticScore": 0.38922231153486303,
-          "lexicalScore": 0.12923117570216563
+          "semanticScore": 0.3772800086535778,
+          "lexicalScore": 0.14641473840079516
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 5
     },
     {
       "id": "msg-identity",
@@ -470,21 +470,21 @@
       "hybridTop3": [
         {
           "id": "fao-621",
-          "semanticScore": 0.6838788985609826,
+          "semanticScore": 0.6883660445067806,
           "lexicalScore": 1
         },
         {
-          "id": "fao-415",
-          "semanticScore": 0.43888619171954274,
-          "lexicalScore": 0.0584616744094912
+          "id": "fao-955",
+          "semanticScore": 0.4472861197907098,
+          "lexicalScore": 0.06270917546454277
         },
         {
-          "id": "fao-955",
-          "semanticScore": 0.43808109811119655,
-          "lexicalScore": 0.054580657035626146
+          "id": "fao-415",
+          "semanticScore": 0.4463582971776669,
+          "lexicalScore": 0.06667265224591548
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 11
     },
     {
       "id": "xanthan-identity",
@@ -498,16 +498,11 @@
       "hybridTop3": [
         {
           "id": "fao-415",
-          "semanticScore": 0.6472012549611086,
+          "semanticScore": 0.6516239436482809,
           "lexicalScore": 1
-        },
-        {
-          "id": "fao-955",
-          "semanticScore": 0.3210040725830744,
-          "lexicalScore": 0.12213918049943318
         }
       ],
-      "latencyMs": 4
+      "latencyMs": 9
     }
   ]
 }

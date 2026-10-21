@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "kind": "local-semantic-retrieval-boundary-diagnostic",
-  "generatedAt": "2026-10-21T16:13:38.036Z",
-  "queryCount": 12,
+  "generatedAt": "2026-10-21T17:33:34.036Z",
+  "queryCount": 13,
   "modelMode": "pinned local MiniLM embeddings plus lexical ranking",
   "results": [
     {
@@ -62,9 +62,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-carbohydrate-2023",
-      "semanticScore": 0.54455,
+      "semanticScore": 0.53513,
       "lexicalScore": 1,
-      "hybridScore": 0.59009,
+      "hybridScore": 0.58162,
       "expectedBehaviorMet": true
     },
     {
@@ -74,9 +74,21 @@
       ],
       "status": "ok",
       "topSourceId": "fao-955",
-      "semanticScore": 0.36147,
+      "semanticScore": 0.36656,
       "lexicalScore": 1,
-      "hybridScore": 0.42533,
+      "hybridScore": 0.4299,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "fssai-allergen-wording",
+      "relevant": [
+        "fssai-labelling-allergen-faq-2023"
+      ],
+      "status": "ok",
+      "topSourceId": "fssai-labelling-allergen-faq-2023",
+      "semanticScore": 0.66732,
+      "lexicalScore": 1,
+      "hybridScore": 0.70058,
       "expectedBehaviorMet": true
     },
     {
@@ -87,9 +99,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-carbohydrate-2023",
-      "semanticScore": 0.61979,
+      "semanticScore": 0.66793,
       "lexicalScore": 1,
-      "hybridScore": 0.65781,
+      "hybridScore": 0.70114,
       "expectedBehaviorMet": true
     },
     {
@@ -99,9 +111,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-sodium",
-      "semanticScore": 0.55612,
+      "semanticScore": 0.56054,
       "lexicalScore": 1,
-      "hybridScore": 0.60051,
+      "hybridScore": 0.60449,
       "expectedBehaviorMet": true
     },
     {
@@ -111,9 +123,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-sugars-2015",
-      "semanticScore": 0.57717,
+      "semanticScore": 0.59402,
       "lexicalScore": 1,
-      "hybridScore": 0.61945,
+      "hybridScore": 0.63461,
       "expectedBehaviorMet": true
     },
     {

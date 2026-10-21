@@ -1,5 +1,13 @@
 # Chronological decisions
 
+## 21 October 2026 — explain precautionary allergen label wording without making a safety finding
+
+- Use FSSAI's dated Labelling and Display Regulation 5(14) and FAQ Q29 to distinguish a separate “Contains” declaration for specified allergenic ingredients from “May Contains” wording about cross-contamination. The FAQ also gives similar-meaning examples such as “May contain traces” and shared-facility wording. Sources: [original Gazette notification](https://www.fssai.gov.in/upload/notifications/2020/12/5fd87c6a0f6adGazette_Notification_Labelling_Display_14_12_2020.pdf), [FSSAI FAQ](https://www.fssai.gov.in/upload/uploadfiles/files/FAQ_Labelling_Display_01_11_2023.pdf).
+- Treat this as an explanation of wording only. It establishes neither actual allergen presence, amount or exposure, individual risk or safety, nor compliance of an exact package. Route current compliance questions to live official research using the exact product and jurisdiction; static sources remain dated context.
+- Re-audit confirmed the existing consented assist contract already retains ordered OCR lines, word/layout recognition evidence, capture and session image provenance, parser rejection/conflict candidates, retrieval evidence and tentative candidates. Exact-span citations and profile-aware synthesis remain available under the existing safety boundary. No contract redesign or provider call was warranted.
+- Regenerate the existing local MiniLM index when curated sources change. The 18 unchanged developer-authored ranking cases now score 17/18 Top-1 and 17/18 Recall@3 for lexical BM25, 16/18 and 18/18 for MiniLM, and 18/18 for hybrid; the expanded corpus lowered two single-method metrics while hybrid stayed level. A separate 13-case boundary diagnostic passed, and the same-origin evidence API returned the FSSAI FAQ first for a wording question. These small developer probes do not establish independent relevance.
+- Deterministic retrieval and offline tests cover the local explanation and live-law abstention. The 314-test suite, typecheck, optimized build and synthetic Chrome/Playwright flow passed at phone and desktop sizes. This is not photographed-label accuracy or Gemini evidence; Gemini remains disabled.
+
 ## 21 October 2026 — answer age-group follow-ups from local whole-diet guidance
 
 - When a short children/adults follow-up directly follows a WHO dietary-fibre guidance question, resolve the reference from the preceding user question alone. Do not use the previous assistant response as evidence or silently send prior turns to Gemini.
