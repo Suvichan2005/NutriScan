@@ -1,5 +1,11 @@
 # Chronological decisions
 
+## 21 October 2026 — link user corrections to original OCR evidence
+
+- Keep the existing OCR-to-assist contract. It already preserves raw line order, word recognition metadata and geometry, capture/image-handle provenance, parser candidates and rejection/conflict reasons, retrieved evidence, and separate tentative structured candidates. Keep image bytes behind the existing explicit inspection consent. The response boundary already supports evidence-linked synthesis, including user-context references; exact spans provide traceability, not entailment.
+- Add optional bounded `supersedesObservationIds` for user-originated corrections. Validate that links are unique and refer to existing, different observations; retain the linked OCR rows and parser diagnostics, keep the nutrient pointed at the user correction, and remap links when package evidence is merged. Render the correction and its prior source-line excerpts in the evidence ledger.
+- Offline contract tests cover conflicting readings, schema errors and assist-boundary preservation. Chrome/Playwright on one hash-verified development photo confirmed 16 raw OCR lines remain and the correction links four prior observations at 390×844 and 1440×900; the 50 g calculation remains 1.7 g. This measures correction provenance and workflow only. OCR accuracy did not change, and Gemini remains disabled.
+
 ## 21 October 2026 — preserve multi-photo OCR evidence within a bounded assist request
 
 - Keep the existing observation-to-assist contract: complete raw OCR lines, ordered word boxes/confidence, capture metadata, parser candidates, evidence sources and tentative candidate links already cross validation. Keep labeled synthesis with exact evidence spans; traceability is not entailment. Gemini remains disabled.

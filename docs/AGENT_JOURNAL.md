@@ -1,5 +1,13 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — preserve correction lineage and audit the assist boundary
+
+- Confirmed the existing consented text-assist contract retains ordered OCR lines, word text/geometry and uncalibrated scores, capture and session-image metadata, parser rejection/conflict candidates, retrieved sources and tentative structured candidates. Exact duplicate raw text alone is compacted. Candidate readings remain separate from package facts; image bytes require separate explicit consent.
+- Confirmed the output contract already supports careful synthesis and profile-specific explanations with exact evidence spans and safety filtering. This is not a quote-only boundary, and exact spans do not prove entailment. Gemini stayed disabled and no provider call was made.
+- Added user-correction links to the prior parsed nutrient and matching parser row/value/basis observations. Original OCR evidence remains unchanged, merge preserves links, and the evidence ledger now displays the correction and source excerpts. An assist-contract test confirms the distinction survives request validation.
+- Chrome/Playwright on a hash-verified development photo passed at 390×844 and 1440×900: 16 OCR lines retained, four source observations linked to the correction, and the 50 g result remained 1.7 g. Axe violations and page errors were zero. This is workflow/provenance evidence, not OCR accuracy or model quality. Full suite: 327 tests / 34 files; typecheck passed.
+- No photos, OCR text, profile details, keys, request bodies or private chat content were written to this journal.
+
 ## 2026-10-21 — keep complete OCR context inside the consented assist bound
 
 - The assist path already carried raw ordered OCR lines, word geometry and uncalibrated recognition scores, capture/image links, parser rejections/conflicts, retrieved sources and tentative candidates. It already supported profile-aware synthesis with exact evidence spans; no quote-only policy change or provider call was needed.
