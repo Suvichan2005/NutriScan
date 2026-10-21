@@ -82,6 +82,13 @@ try {
     const whoGuidanceAnswered = /at least 25 g\/day of naturally occurring dietary fibre/i.test(whoGuidanceAnswer) && /2\.4 g fibre/i.test(whoGuidanceAnswer) && /not a product-specific threshold or individual prescription/i.test(whoGuidanceAnswer) && /not a measure of whole-day intake/i.test(whoGuidanceAnswer);
     const whoSourceVisible = await page.locator('.finding').filter({ hasText: /Reference to inspect: Carbohydrate intake for adults and children: WHO guideline/ }).isVisible();
 
+    await page.getByLabel('Ask about this package').fill('And for children?');
+    await page.getByRole('button', { name: 'Send follow-up' }).click();
+    const childGuidanceReply = page.locator('.assistant-message').filter({ hasText: /15 g\/day of naturally occurring dietary fibre from foods at ages 2–5/ }).last();
+    await childGuidanceReply.waitFor({ state: 'visible' });
+    const childGuidanceAnswer = await childGuidanceReply.innerText();
+    const childGuidanceAnswered = /15 g\/day.*ages 2–5.*21 g\/day.*ages 6–9.*25 g\/day.*ages 10 or older/i.test(childGuidanceAnswer) && /population guidance for the whole diet/i.test(childGuidanceAnswer) && /2\.4 g fibre/i.test(childGuidanceAnswer);
+
     await page.getByLabel('Ask about this package').fill('Is milk mentioned in an allergen statement?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
     await page.locator('.assistant-message').filter({ hasText: /Contains: Milk/ }).last().waitFor({ state: 'visible' });
@@ -91,10 +98,10 @@ try {
 
     await page.getByRole('checkbox', { name: /Save this local conversation on this device/ }).check();
     await page.getByRole('button', { name: /Recent scans/ }).click();
-    await page.getByRole('button', { name: /4 local turns/ }).waitFor({ state: 'visible' });
+    await page.getByRole('button', { name: /5 local turns/ }).waitFor({ state: 'visible' });
     await page.reload({ waitUntil: 'networkidle' });
     await page.getByRole('button', { name: /Recent scans/ }).click();
-    await page.getByRole('button', { name: /4 local turns/ }).click();
+    await page.getByRole('button', { name: /5 local turns/ }).click();
     await page.locator('.chat-turn').filter({ hasText: /What ingredients are listed\?/ }).waitFor({ state: 'visible' });
     const restoredTurnCount = await page.locator('.chat-turn').count();
     await page.getByRole('button', { name: 'Optional context', exact: true }).click();
@@ -172,7 +179,8 @@ try {
       multiNutrientQuestionAnswered,
       whoGuidanceAnswered,
       whoSourceVisible,
-      localConversationOptInRestored: restoredTurnCount === 4,
+      childGuidanceAnswered,
+      localConversationOptInRestored: restoredTurnCount === 5,
       savedConversationTurnCount: restoredTurnCount,
       profileRemainedSessionOnly: restoredProfileRemainedBlank,
       profileStartedEmpty,
@@ -194,12 +202,12 @@ try {
     };
     outcomes.push(outcome);
     console.log(JSON.stringify(outcome));
-    if (!observationDisclosure || !geminiHistoryStartsUnchecked || !geminiHistoryCanBeExplicitlyIncluded || !multiNutrientQuestionAnswered || !whoGuidanceAnswered || !whoSourceVisible || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
+    if (!observationDisclosure || !geminiHistoryStartsUnchecked || !geminiHistoryCanBeExplicitlyIncluded || !multiNutrientQuestionAnswered || !whoGuidanceAnswered || !whoSourceVisible || !childGuidanceAnswered || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
     await context.close();
   }
 
-  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.multiNutrientQuestionAnswered === true && outcome.whoGuidanceAnswered === true && outcome.whoSourceVisible === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.geminiHistoryStartsUnchecked === true && outcome.geminiHistoryCanBeExplicitlyIncluded === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
-  const receipt = { schemaVersion: 1, kind: 'synthetic-package-text-conversation-browser-acceptance', generatedAt: new Date().toISOString(), appOrigin: origin.origin, captureTool: 'Playwright using installed Chrome', evaluationInput: 'synthetic label text; not real-photo OCR evidence', persistence: 'explicit local opt-in restores 4 recent turns; opt-out removes saved turns; optional profile is remembered only after separate opt-in and is excluded from scan records', screenshots: 'docs/evidence/private/package-text-conversation', outcomes, passed };
+  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.multiNutrientQuestionAnswered === true && outcome.whoGuidanceAnswered === true && outcome.whoSourceVisible === true && outcome.childGuidanceAnswered === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.geminiHistoryStartsUnchecked === true && outcome.geminiHistoryCanBeExplicitlyIncluded === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
+  const receipt = { schemaVersion: 1, kind: 'synthetic-package-text-conversation-browser-acceptance', generatedAt: new Date().toISOString(), appOrigin: origin.origin, captureTool: 'Playwright using installed Chrome', evaluationInput: 'synthetic label text; not real-photo OCR evidence', persistence: 'explicit local opt-in restores 5 recent turns; opt-out removes saved turns; optional profile is remembered only after separate opt-in and is excluded from scan records', screenshots: 'docs/evidence/private/package-text-conversation', outcomes, passed };
   await writeFile('docs/evidence/package-text-conversation-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/package-text-conversation-browser.json', passed }));
   if (!passed) process.exitCode = 1;

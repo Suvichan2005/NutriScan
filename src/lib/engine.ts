@@ -239,8 +239,12 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   }else if(wholeDietCarbohydrateGuidance){
     answerIntent='whole-diet carbohydrate guidance';
     const fibreGuidance=/\bfib(?:er|re)\b/i.test(question);
+    const childFibreGuidance=fibreGuidance&&/\b(?:child(?:ren)?|kids?|adolescents?|teens?)\b|\b(?:[2-9]|1\d)\s*(?:-|–|to)\s*(?:[2-9]|1\d)\s*(?:years?|yrs?)\b|\b(?:[2-9]|1\d)-year-old\b/i.test(question);
     const recommendation='WHO’s 2023 guideline recommends that carbohydrates come primarily from whole grains, vegetables, fruits and pulses.';
-    const fibreRecommendation=fibreGuidance?' For adults, it recommends at least 25 g/day of naturally occurring dietary fibre; the guidance for children is age-specific.':'';
+    const fibreRecommendation=fibreGuidance
+      ?childFibreGuidance?' For children and adolescents, WHO suggests at least 15 g/day of naturally occurring dietary fibre from foods at ages 2–5, 21 g/day at ages 6–9, and 25 g/day at ages 10 or older.'
+        :' For adults, it recommends at least 25 g/day of naturally occurring dietary fibre; WHO suggests age-specific amounts for children and adolescents.'
+      :'';
     const fibreCalculation=calculations.find(calculation=>calculation.nutrient==='fiber');
     const packageContext=fibreGuidance
       ?fibreCalculation?` The recorded package reading calculates to ${amountText(fibreCalculation.result)} ${fibreCalculation.unit} fibre in ${amountText(portion)} ${portionUnit}, if the printed value was read correctly. This is one package portion, not a measure of whole-day intake.`:' No usable package fibre reading with a matching basis is available here, so the portion amount remains unknown.'

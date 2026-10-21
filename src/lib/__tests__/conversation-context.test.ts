@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { conversationContextForAssist } from '../conversation-context';
+import { conversationContextForAssist, resolveLocalFollowUpQuestion } from '../conversation-context';
 import type { SavedConversationTurn } from '../contracts';
 
 const turns: SavedConversationTurn[] = Array.from({ length: 6 }, (_, index) => ({
@@ -27,5 +27,23 @@ describe('conversationContextForAssist', () => {
     expect(context?.at(-1)?.question).toHaveLength(1000);
     expect(context?.at(-1)?.answer).toHaveLength(2000);
     expect(context?.every((turn) => !('at' in turn))).toBe(true);
+  });
+});
+
+describe('resolveLocalFollowUpQuestion', () => {
+  it('carries the user’s WHO fibre topic into a short age-group follow-up', () => {
+    const turns = [{ question: 'What does WHO recommend about dietary fibre?', answer: 'A previous unverified answer about something else.', at: '2026-10-21T00:00:00.000Z' }];
+    expect(resolveLocalFollowUpQuestion('And for children?', turns)).toBe('What does WHO recommend about dietary fibre? Follow-up: And for children?');
+  });
+
+  it('does not borrow assistant answers or unrelated prior questions as evidence', () => {
+    const unrelated = [{ question: 'How much sodium is in this package?', answer: 'WHO fibre guidelines say 25 g.', at: '2026-10-21T00:00:00.000Z' }];
+    expect(resolveLocalFollowUpQuestion('What about children?', unrelated)).toBe('What about children?');
+    expect(resolveLocalFollowUpQuestion('What about children?', [])).toBe('What about children?');
+  });
+
+  it('keeps explicit current questions unchanged', () => {
+    const turns = [{ question: 'What does WHO recommend about dietary fibre?', answer: 'Prior answer.', at: '2026-10-21T00:00:00.000Z' }];
+    expect(resolveLocalFollowUpQuestion('What WHO dietary fibre guidance applies to children?', turns)).toBe('What WHO dietary fibre guidance applies to children?');
   });
 });

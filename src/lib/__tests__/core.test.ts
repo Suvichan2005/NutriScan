@@ -499,7 +499,9 @@ describe('genuine local evidence retrieval',()=>{
     const fibre=retrieveEvidence('WHO adult naturally occurring dietary fibre 25 g daily');
     expect(fibre[0]?.source.id).toBe('who-carbohydrate-2023');
     expect(fibre[0]?.source.summary).toMatch(/at least 25 g\/day of naturally occurring dietary fibre/);
+    expect(fibre[0]?.source.summary).toMatch(/15 g\/day at ages 2–5, 21 g\/day at ages 6–9, and 25 g\/day at ages 10 or older/);
     expect(fibre[0]?.source.summary).toMatch(/400 g\/day of vegetables and fruits/);
+    expect(fibre[0]?.source.limitations).toMatch(/refers to fibre as consumed in foods/);
     expect(fibre[0]?.source.limitations).toMatch(/cannot be directly equated with a packaged-food fibre declaration/);
     expect(fibre[0]?.source.url).toBe('https://www.who.int/publications/i/9789240073593');
     expect(retrieveEvidence('What does WHO mean by free sugars?')[0]?.source.id).toBe('who-sugars-2015');
@@ -547,6 +549,15 @@ describe('genuine local evidence retrieval',()=>{
     expect(audit.answer).not.toMatch(/\b\d+\s*g\b/i);
     expect(audit.sources.some(source=>source.id==='who-carbohydrate-2023')).toBe(true);
     expect(audit.calculations.some(calculation=>calculation.nutrient==='fiber')).toBe(false);
+  });
+  it('answers child fibre guidance with WHO age bands and leaves a missing package amount unknown',()=>{
+    const audit=buildAudit(label('Per 100 g\nEnergy 180 kcal'),30,'g',defaultProfile,'What does WHO recommend about fibre for children?');
+    expect(audit.answer).toMatch(/children and adolescents.*15 g\/day.*ages 2–5.*21 g\/day.*ages 6–9.*25 g\/day.*ages 10 or older/i);
+    expect(audit.answer).toMatch(/naturally occurring dietary fibre from foods/i);
+    expect(audit.answer).not.toMatch(/For adults, it recommends at least 25 g\/day/i);
+    expect(audit.answer).toMatch(/no usable package fibre reading.*portion amount remains unknown/i);
+    expect(audit.calculations.some(calculation=>calculation.nutrient==='fiber')).toBe(false);
+    expect(audit.sources.find(source=>source.id==='who-carbohydrate-2023')?.limitations).toMatch(/whole-diet quality/);
   });
   it('does not attach whole-diet guidance to a simple package fibre-amount question',()=>{
     const audit=buildAudit(label('Per 100 g\nFibre 8 g'),30,'g',defaultProfile,'How much fibre is in 30 g?');
