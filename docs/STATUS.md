@@ -5,7 +5,7 @@ Updated: 2026-10-21. This is a local development application and research worksp
 ## Repository checkpoint
 
 - Repository root: this directory; branch: `main`.
-- Latest repository/evidence checkpoint before this work: `b862faa` (`Record eGazette session search timeout`); current barcode fallback work is uncommitted and has local verification below.
+- Previous checkpoint: `b862faa` (`Record eGazette session search timeout`); barcode fallback milestone: `3534b13` (`Add local barcode decoder fallback`).
 - Current local checks: typecheck passed; 219 tests passed; `npm audit` reported zero vulnerabilities; isolated Webpack production build passed; synthetic Chrome fallback decoded one generated EAN-13 with native detection absent; intake hint was visible at 390×844 and 1440×900.
 - Remote: none configured. No authorized private remote was supplied.
 - First local milestone commit: `6f7b375` (`Build generalized NutriScan product investigation`). No earlier history or remote was present.
