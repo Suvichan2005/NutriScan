@@ -230,6 +230,7 @@ describe('nutrition numerical invariants',()=>{
     expect(missing.answer).toMatch(/does not establish total carbohydrate/i);
     expect(missing.answer).toMatch(/cannot calculate a package amount or a daily target/i);
     expect(missing.answer).toMatch(/health care team/i);
+    expect(missing.answer).toMatch(/not everyone with diabetes needs to count carbs/i);
     expect(missing.findings.some(f=>f.sourceIds.includes('niddk-meals'))).toBe(true);
     expect(missing.nextQuestions).toContain('Do you have a carbohydrate amount from your health care team that you want compared with this label?');
     expect(missing.answer).not.toMatch(/\b\d+(?:\.\d+)?\s*g\s*\/\s*day/i);
@@ -237,7 +238,8 @@ describe('nutrition numerical invariants',()=>{
     const known=buildAudit(label('Per 100 g\nCarbohydrate 60 g'),50,'g',profile,'How many carbs should I eat each day with diabetes?');
     expect(known.answer).toMatch(/30 g total carbohydrate in 50 g/i);
     expect(known.answer).toMatch(/package amount, not a personal daily target/i);
-    expect(known.answer).toMatch(/NIDDK source below is general education/i);
+    expect(known.answer).toMatch(/NIDDK provides general education, not an individual allowance/i);
+    expect(known.answer).toMatch(/not everyone with diabetes needs to count carbs/i);
     expect(known.answer).not.toMatch(/\b\d+(?:\.\d+)?\s*g\s*\/\s*day/i);
   });
   it('surfaces literal allergy and intolerance mentions as separate unverified label observations',()=>{
@@ -305,6 +307,10 @@ describe('genuine local evidence retrieval',()=>{
     expect(retrieveEvidence('INS 955')[0].source.id).toBe('fao-955');
     expect(retrieveEvidence('sweeteners weight control').some(h=>h.source.id==='who-nss')).toBe(true);
     expect(retrieveEvidence('ICMR India dietary guidelines').some(h=>h.source.id==='icmrnin-dgi-2024')).toBe(true);
+    const diabetes=retrieveEvidence('Does everyone with diabetes need to count carbs? What other meal planning methods are available?');
+    expect(diabetes[0]?.source.id).toBe('niddk-meals');
+    expect(diabetes[0]?.source.summary).toMatch(/not everyone with diabetes needs to count carbs/i);
+    expect(diabetes[0]?.source.retrievedAt).toBe('2026-10-21');
     const fibre=retrieveEvidence('WHO adult naturally occurring dietary fibre 25 g daily');
     expect(fibre[0]?.source.id).toBe('who-carbohydrate-2023');
     expect(fibre[0]?.source.summary).toMatch(/at least 25 g\/day of naturally occurring dietary fibre/);

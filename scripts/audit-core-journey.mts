@@ -139,7 +139,8 @@ try {
       syntheticProfileOnly: true,
       personalizedQuestionRetained: (await personalizedUserMessage.innerText()).includes(personalizedQuestion),
       personalCarbohydrateTargetWithheld: /does not establish total carbohydrate/i.test(personalizedAnswer) && /cannot calculate a package amount or a daily target/i.test(personalizedAnswer) && !/\b\d+(?:\.\d+)?\s*g\s*\/\s*day/i.test(personalizedAnswer),
-      clinicianContextVisible: /health care team/i.test(personalizedAnswer) && /no individual allowance/i.test(personalizedAnswer),
+      clinicianContextVisible: /health care team/i.test(personalizedAnswer) && /not an individual allowance/i.test(personalizedAnswer),
+      diabetesPlanningOptionsVisible: /plate method/i.test(personalizedAnswer) && /not everyone with diabetes needs to count carbs/i.test(personalizedAnswer),
       niddkSourceLinked: niddkHref === 'https://www.niddk.nih.gov/health-information/diabetes/overview/healthy-living-with-diabetes',
       noNonLoopbackRequests: nonLoopbackRequests.length === 0,
       nonLoopbackRequestOrigins: [...new Set(nonLoopbackRequests.map(requestUrl => new URL(requestUrl).origin))],
@@ -151,7 +152,7 @@ try {
   const receipt = { schemaVersion: 1, kind: 'core-intake-to-audit-design-review', generatedAt: new Date().toISOString(), captureTool: 'Playwright using installed Chrome', appOrigin: origin.origin, acceptanceMode: process.env.NUTRISCAN_ACCEPTANCE_MODE ?? 'unspecified local server', photoFile, screenshots: 'docs/evidence/private/core-journey-audit', outcomes: results };
   await writeFile('docs/evidence/core-journey-audit.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/core-journey-audit.json', screenshotDirectory: 'docs/evidence/private/core-journey-audit', outcomes: results }, null, 2));
-  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.exactSaturatedFatObservation || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
+  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.exactSaturatedFatObservation || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
 } finally {
   await browser.close();
 }

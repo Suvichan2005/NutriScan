@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "same-photo-alternative-ocr-engine-evaluation",
   "rapidOcrModelType": "small",
-  "generatedAt": "2026-10-21T05:12:27.630Z",
+  "generatedAt": "2026-10-21T06:33:07.992Z",
   "source": "Hash-verified Open Food Facts package-photo manifest; photographs and OCR text are not written to this receipt.",
   "methods": {
     "tesseractJs": "Tesseract.js 7 English best_int, PSM.SINGLE_BLOCK, source image bytes; parsed through the production label parser.",
@@ -12,7 +12,7 @@
   },
   "photos": 5,
   "annotatedFields": 37,
-  "rapidOcrSetupAndRunMs": 58599,
+  "rapidOcrSetupAndRunMs": 57346,
   "results": {
     "tesseractJs": {
       "correct": 0,
@@ -37,7 +37,7 @@
           "ingredientLines": 0,
           "textCharacters": 573,
           "textBoxes": 0,
-          "elapsedMs": 1758
+          "elapsedMs": 1759
         },
         {
           "code": "3017620422003",
@@ -54,7 +54,7 @@
           "ingredientLines": 0,
           "textCharacters": 324,
           "textBoxes": 0,
-          "elapsedMs": 1284
+          "elapsedMs": 1350
         },
         {
           "code": "3017620422003",
@@ -71,7 +71,7 @@
           "ingredientLines": 0,
           "textCharacters": 145,
           "textBoxes": 0,
-          "elapsedMs": 900
+          "elapsedMs": 893
         },
         {
           "code": "8901088068758",
@@ -88,7 +88,7 @@
           "ingredientLines": 0,
           "textCharacters": 680,
           "textBoxes": 0,
-          "elapsedMs": 1645
+          "elapsedMs": 1832
         },
         {
           "code": "8902710100150",
@@ -105,7 +105,7 @@
           "ingredientLines": 0,
           "textCharacters": 882,
           "textBoxes": 0,
-          "elapsedMs": 3444
+          "elapsedMs": 3515
         }
       ]
     },
@@ -132,7 +132,7 @@
           "ingredientLines": 0,
           "textCharacters": 615,
           "textBoxes": 0,
-          "elapsedMs": 6275
+          "elapsedMs": 6207
         },
         {
           "code": "3017620422003",
@@ -149,7 +149,7 @@
           "ingredientLines": 0,
           "textCharacters": 300,
           "textBoxes": 0,
-          "elapsedMs": 4779
+          "elapsedMs": 4809
         },
         {
           "code": "3017620422003",
@@ -166,7 +166,7 @@
           "ingredientLines": 0,
           "textCharacters": 576,
           "textBoxes": 0,
-          "elapsedMs": 2972
+          "elapsedMs": 3047
         },
         {
           "code": "8901088068758",
@@ -183,7 +183,7 @@
           "ingredientLines": 0,
           "textCharacters": 512,
           "textBoxes": 0,
-          "elapsedMs": 5455
+          "elapsedMs": 5514
         },
         {
           "code": "8902710100150",
@@ -200,7 +200,7 @@
           "ingredientLines": 0,
           "textCharacters": 869,
           "textBoxes": 0,
-          "elapsedMs": 4897
+          "elapsedMs": 4823
         }
       ]
     },
@@ -227,7 +227,7 @@
           "ingredientLines": 0,
           "textCharacters": 455,
           "textBoxes": 32,
-          "elapsedMs": 3361
+          "elapsedMs": 2717
         },
         {
           "code": "3017620422003",
@@ -244,7 +244,7 @@
           "ingredientLines": 0,
           "textCharacters": 323,
           "textBoxes": 43,
-          "elapsedMs": 6956
+          "elapsedMs": 6938
         },
         {
           "code": "3017620422003",
@@ -261,7 +261,7 @@
           "ingredientLines": 0,
           "textCharacters": 232,
           "textBoxes": 20,
-          "elapsedMs": 10330
+          "elapsedMs": 10284
         },
         {
           "code": "8901088068758",
@@ -278,7 +278,7 @@
           "ingredientLines": 0,
           "textCharacters": 425,
           "textBoxes": 32,
-          "elapsedMs": 5902
+          "elapsedMs": 5976
         },
         {
           "code": "8902710100150",
@@ -295,7 +295,7 @@
           "ingredientLines": 0,
           "textCharacters": 502,
           "textBoxes": 52,
-          "elapsedMs": 11242
+          "elapsedMs": 11075
         }
       ]
     },
@@ -322,7 +322,7 @@
           "ingredientLines": 0,
           "textCharacters": 422,
           "textBoxes": 33,
-          "elapsedMs": 10636
+          "elapsedMs": 10375
         },
         {
           "code": "8902710100150",
@@ -339,7 +339,7 @@
           "ingredientLines": 0,
           "textCharacters": 374,
           "textBoxes": 36,
-          "elapsedMs": 8774
+          "elapsedMs": 8687
         }
       ]
     }

@@ -135,6 +135,18 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - The local audit now reports the readable package amount only when available; otherwise it says the scan cannot establish carbohydrate for the selected portion. In both cases it says no personal daily allowance is set, points to NIDDK's general education and suggests comparing against guidance from the user's health care team.
 - Chrome verified the flow with a synthetic Type 2 diabetes profile and the hash-verified Saffola photo at 390×844 and 1440×900. One nutrition value was user-corrected with original OCR retained; the 50 g calculation remained 1.7 g, the profile question and NIDDK source link were present, and no daily target or off-loopback request appeared. This is not clinical suitability evidence.
 
+## 21 October 2026 — retain conservative browser OCR pending stronger evidence
+
+- Repeated the actual Chrome/Playwright browser OCR comparison on five hash-verified package photos. Across 14 full-frame, crop and contrast cases / 118 annotated field comparisons, Tesseract matched two fields, misread two, omitted 111 and withheld three. The repeated user-selected Saffola crop recovered one exact-basis field; contrast on that crop introduced two incorrect values.
+- Repeated the local PP-OCRv6 alternative comparison: RapidOCR small matched 7/37 annotated fields full-frame and 10/17 on two manually selected crops, with no incorrect annotated match, but took about 7.4–9.5 seconds per image on this CPU. Browser WASM remains a diagnostic prototype and has not established phone performance or reliable multicolumn handling.
+- Keep Tesseract.js as the browser reader, retain explicit crop and correction controls, and preserve basis/conflict withholding. Do not make contrast automatic or add RapidOCR to the product on this sample; the evidence is too narrow and its runtime/model/licensing and phone costs are unresolved. The weak field coverage remains an acceptance blocker, not a reason to infer unreadable values.
+
+## 21 October 2026 — include NIDDK's carb-counting qualification
+
+- The current NIDDK page describes carb counting and the plate method as planning options and states that not everyone with diabetes needs to count carbs. The local source summary and both known- and missing-label follow-up answers now preserve that qualification rather than implying a universal counting plan.
+- The source was checked on 21 October 2026; its record keeps US general-education scope and does not provide an individualized target. The local evidence index is corpus version `2026-10-21.4`. Added a versioned query, source-content regression checks, and Chrome assertions for the real-photo diabetes follow-up.
+- Focused retrieval remains top-1 15/15 semantic and hybrid across the developer-authored set; full unit tests, typecheck, and mobile/desktop Chrome acceptance passed. These checks do not independently validate medical advice or general retrieval quality.
+
 ## 21 October 2026 — verify keyboard intake and result navigation
 
 - Added `npm run acceptance:keyboard-application` to traverse first-visit controls and the text-only result state with Chrome keyboard input at 390×844 and 1440×900. The test opens the label dialog with Enter, enters text, submits from the keyboard and verifies focus containment and return to its trigger.
