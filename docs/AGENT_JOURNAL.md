@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — keep complete OCR context inside the consented assist bound
+
+- The assist path already carried raw ordered OCR lines, word geometry and uncalibrated recognition scores, capture/image links, parser rejections/conflicts, retrieved sources and tentative candidates. It already supported profile-aware synthesis with exact evidence spans; no quote-only policy change or provider call was needed.
+- Removed duplicate `package.rawText` from the client/server model payload only when its lines exactly match the ordered OCR observations. Mixed or unmatched text is retained. A ten-photo offline contract fixture with 160 lines and all word metadata measured 253,902 bytes, so the assist request bound is now 300 KB; larger requests fail without truncation. This is not photo accuracy or provider acceptance. Full suite: 323 tests / 33 files; typecheck passed.
+- Reviewed the official INDB portal and repository README. The portal offers a 1,014-recipe workbook, but the reviewed materials do not establish redistribution terms and IFCT inputs must be requested from ICMR-NIN. No data was downloaded or integrated; rights confirmation is an owner action.
+- No raw OCR text, images, profile context, private conversation, keys or request body were added to the journal.
+
 ## 2026-10-21 — record unknown reuse terms instead of leaving license metadata blank
 
 - Audited all 16 curated local evidence records. Eight lacked a license/terms note. Those now state that terms were not independently verified and that NutriScan retains only an original summary and link; recorded source restrictions remain explicit.

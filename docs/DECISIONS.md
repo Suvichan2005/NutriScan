@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 21 October 2026 — preserve multi-photo OCR evidence within a bounded assist request
+
+- Keep the existing observation-to-assist contract: complete raw OCR lines, ordered word boxes/confidence, capture metadata, parser candidates, evidence sources and tentative candidate links already cross validation. Keep labeled synthesis with exact evidence spans; traceability is not entailment. Gemini remains disabled.
+- The client and server now clear duplicate `package.rawText` only when every non-empty text line matches the ordered raw OCR observations; mixed or unmatched text stays intact. A 10-photo offline fixture retained 160 raw lines, all word metadata, captures and parser diagnostics in a 253,902-byte request, under a 300 KB hard cap. Over-limit requests are rejected whole. This is a transport-contract result, not real-photo or provider evidence.
+- The official INDB portal offers a workbook describing 1,014 recipes, but the reviewed portal/repository materials did not establish dataset redistribution terms and the repository README says IFCT source tables must be requested from ICMR-NIN. Do not ingest those values until permissions for the workbook and its inputs are clear; record the owner action in `OWNER_ACTIONS.md`.
+- Full offline suite: 323 tests across 33 files; TypeScript typecheck passed. No OCR accuracy measurement, browser/provider call, or semantic-index change was made.
+
 ## 21 October 2026 — explain precautionary allergen label wording without making a safety finding
 
 - Use FSSAI's dated Labelling and Display Regulation 5(14) and FAQ Q29 to distinguish a separate “Contains” declaration for specified allergenic ingredients from “May Contains” wording about cross-contamination. The FAQ also gives similar-meaning examples such as “May contain traces” and shared-facility wording. Sources: [original Gazette notification](https://www.fssai.gov.in/upload/notifications/2020/12/5fd87c6a0f6adGazette_Notification_Labelling_Display_14_12_2020.pdf), [FSSAI FAQ](https://www.fssai.gov.in/upload/uploadfiles/files/FAQ_Labelling_Display_01_11_2023.pdf).
