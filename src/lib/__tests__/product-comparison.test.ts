@@ -34,6 +34,10 @@ describe('evidence-aligned product nutrition comparison', () => {
     expect(compareProductNutrition([reading('protein', 10, 'g', null)], [record('protein', 10, 'g')])[0].status).toBe('package-basis-unknown');
     expect(compareProductNutrition([reading('protein', 10, 'g', 100)], [record('protein', 10, 'g', null)])[0].status).toBe('record-basis-unknown');
   });
+  it('shows package nutrients omitted from the community record', () => {
+    const rows = compareProductNutrition([reading('protein', 8, 'g', 100), reading('sodium', 120, 'mg', 100)], [record('protein', 7, 'g')]);
+    expect(rows.find(row => row.key === 'sodium')).toMatchObject({ status: 'record-reading-missing', packagePer100: null, recordPer100: null, difference: null, recordReading: null });
+  });
   it('withholds normalized values when package identity is disputed', () => {
     const [row] = compareProductNutrition([reading('protein', 10, 'g', 100)], [record('protein', 10, 'g')], { identityConflict: true });
     expect(row).toMatchObject({ status: 'package-identity-conflict', packageReading: null, packagePer100: null, recordPer100: null, difference: null });

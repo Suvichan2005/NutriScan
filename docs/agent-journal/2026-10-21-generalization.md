@@ -54,8 +54,12 @@ Continued the existing local NutriScan implementation. No source history or remo
 ## Continuation checkpoint — research source-selection guard
 
 - Fixed-registry research previously selected two source cards even when the query had no registry match, and substring scoring could count incidental fragments. Replaced that with whole-token normalized term/phrase matching, removed the blanket FSSAI score, and return an explicit unavailable result with no network fetch when nothing matches.
-- Regression tests cover an unrelated query/no-fetch case and a registered hyphenated phrase. This improves source relevance only; it does not broaden or certify regulatory coverage.
-- Verification: targeted regulation tests (5 passing), TypeScript typecheck, and `git diff --check` pass. Full suite and production build remain to be run before checkpoint.
+- Regression tests cover an unrelated query/no-fetch case and a registered hyphenated phrase. This improves source relevance only; it does not broaden or certify regulatory coverage. The later full suite includes this change.
+
+## Continuation checkpoint — sparse catalog comparison
+
+- Comparison previously iterated only over nutrients present in the community record, silently hiding package-reported nutrients missing from that record. It now emits rows for the union of package and catalog nutrients and labels catalog omissions as “not reported”; no missing value is converted to zero.
+- Added a regression case for sodium reported on the package but absent from the catalog. Verification: full suite 105 passing across 13 files, TypeScript typecheck, optimized production build, and `git diff --check` pass. The updated visual row still awaits fresh browser presentation review.
 
 Additional browser acceptance is still required for photo removal/replacement, keyboard focus, camera hardware and consented image selection. OCR remains imperfect on glossy, multilingual and multi-column packaging. Product identity and changing regulatory claims need exact, dated corroboration.
 
