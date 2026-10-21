@@ -1,4 +1,4 @@
-import { sourceSchema, type EvidenceSource, type ResearchItem } from './contracts';
+import { sourceSchema, type EvidenceSource, type PackageData, type ResearchItem } from './contracts';
 
 type LocalSearchEvidence = EvidenceSource & { score: number };
 type AssistEvidenceInputs = {
@@ -9,6 +9,24 @@ type AssistEvidenceInputs = {
 
 const maxAssistSources = 15;
 const maxSummaryCharacters = 1600;
+const additionalPhotoMarker = /^--- Additional photo evidence ---$/;
+
+/**
+ * Avoid sending OCR-only label text twice. The raw OCR observations are the
+ * richer record (line order, image/run link, boxes and recognition metadata),
+ * so clear the duplicate text only when every non-empty line is represented
+ * by those observations in the same order. Mixed or ambiguous text is kept.
+ */
+export function packageForAssist(pkg: PackageData): PackageData {
+  const rawOcrLines = pkg.observations.filter(observation => observation.origin === 'ocr' && observation.field === 'ocr-line');
+  if (!rawOcrLines.length) return pkg;
+
+  const sourceLines = pkg.rawText.replace(/\r/g, '').split('\n')
+    .map(line => line.trim())
+    .filter(line => line && !additionalPhotoMarker.test(line));
+  if (sourceLines.length !== rawOcrLines.length || sourceLines.some((line, index) => line !== rawOcrLines[index].text)) return pkg;
+  return { ...pkg, rawText: '' };
+}
 
 function researchCategory(category: string): EvidenceSource['category'] {
   const value = category.toLowerCase();

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import packageInfo from '../../../package.json';
-import { assistEvidenceContext } from '../assist-evidence';
+import { assistEvidenceContext, packageForAssist } from '../assist-evidence';
 import { BROWSER_OCR_ENGINE_VERSION } from '../browser';
-import { calculationEvidenceText, defaultProfile, packageSchema } from '../contracts';
+import { calculationEvidenceText, defaultProfile, packageSchema, type PackageData } from '../contracts';
 import { retrieveEvidence } from '../knowledge';
+import { mergePackageEvidence } from '../merge-evidence';
 import { parseLabel } from '../parser';
 import { assistInput, validateClaims } from '../server/gemini';
 
@@ -111,6 +112,57 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(structuredProtein?.derivedFromObservationIds).toEqual(['line-2']);
     expect(pkg.nutrients.some(item=>item.key==='protein')).toBe(false);
     expect(pkg.nutrients.filter(item=>item.key==='sodium').every(item=>item.status==='conflict')).toBe(true);
+  });
+
+  it('removes only fully duplicated OCR text from assist payloads and preserves mixed or unmatched text',()=>{
+    const pkg=makePackage();
+    const compact=packageForAssist(pkg);
+    expect(compact.rawText).toBe('');
+    expect(compact.observations.filter(item=>item.field==='ocr-line')).toEqual(pkg.observations.filter(item=>item.field==='ocr-line'));
+    expect(compact.parserDiagnostics).toEqual(pkg.parserDiagnostics);
+    expect(pkg.rawText).toBe(lines.join('\n'));
+
+    const mixed={...pkg,rawText:`${pkg.rawText}\nUnparsed user note`};
+    expect(packageForAssist(mixed)).toBe(mixed);
+    const missingLine={...pkg,observations:pkg.observations.filter(item=>item.id!=='line-4')};
+    expect(packageForAssist(missingLine)).toBe(missingLine);
+  });
+
+  it('keeps a bounded ten-photo OCR request intact after duplicate-text compaction',()=>{
+    const sampleLines=[
+      'Nutrition information per 100 g average pack','Energy 1937 kJ and 463 kcal printed','Carbohydrate 67 g per hundred grams','Total sugars 6 g per 100 g typical','Added sugars 0 g per 100 g typical','Protein 8.8 g per 100 g typical','Total fat 17 g per 100 g typical','Saturated fat 3.4 g per 100 g typical','Trans fat 0 g per 100 g typical','Dietary fibre 6 g per 100 g typical','Sodium 850 mg per 100 g typical','Salt equivalent 2.1 g per 100 g','Serving size 30 g approximately stated','Ingredients: oats sugar palm oil salt','May contain milk soy peanuts sesame','Made by Example Foods Private Limited India'
+    ];
+    const readPhoto=(photoIndex:number):PackageData=>{
+      const imageId=`photo-${photoIndex}`,photoRunId=`ocr-run-${photoIndex}`;
+      const photoObservations=sampleLines.map((text,lineIndex)=>({
+        id:`${imageId}-line-${lineIndex}`,field:'ocr-line' as const,text,side:'back' as const,confidence:78,origin:'ocr' as const,imageId,
+        bbox:{x0:12,y0:lineIndex*40,x1:900,y1:lineIndex*40+24},
+        ocrWords:text.split(/\s+/).map((word,wordIndex)=>({wordIndex,text:word,confidence:70+(wordIndex%25),bbox:{x0:12+wordIndex*42,y0:lineIndex*40,x1:45+wordIndex*42,y1:lineIndex*40+22}})),
+        readingOrder:{runId:photoRunId,blockIndex:0,paragraphIndex:0,lineIndex}
+      }));
+      const photoCapture={runId:photoRunId,imageId,side:'back' as const,sourceImage:{width:1200,height:1800},preparedImage:{width:2000,height:3000},bboxCoordinateSpace:'prepared-image-pixels' as const,
+        engine:{name:'tesseract.js',version:'7.0.0',language:'eng',confidenceScale:'0-100' as const,segmentationMode:'single-block' as const},processing:{rotation:0 as const,contrast:false,invert:false,cropPercent:null}};
+      return parseLabel(sampleLines.join('\n'),{origin:'ocr',observations:photoObservations,ocrCaptures:[photoCapture]});
+    };
+
+    let pkg=readPhoto(0);
+    for(let photoIndex=1;photoIndex<10;photoIndex++)pkg=mergePackageEvidence(pkg,readPhoto(photoIndex));
+    const compact=packageForAssist(pkg);
+    const body={consent:true as const,question:'What can you read from all of these package photos?',package:compact,images:Array.from({length:10},(_,index)=>({handle:`photo-${index}`,side:'back' as const,width:1200,height:1800}))};
+    const bytes=new TextEncoder().encode(JSON.stringify(body)).byteLength;
+    const duplicatedBytes=new TextEncoder().encode(JSON.stringify({...body,package:pkg})).byteLength;
+    const parsed=assistInput.safeParse(body);
+
+    expect(parsed.success).toBe(true);
+    expect(compact.rawText).toBe('');
+    expect(compact.observations.filter(item=>item.field==='ocr-line')).toHaveLength(160);
+    expect(compact.observations.filter(item=>item.field==='ocr-line').reduce((sum,item)=>sum+(item.ocrWords?.length??0),0)).toBe(sampleLines.reduce((sum,line)=>sum+line.split(/\s+/).length,0)*10);
+    expect(compact.ocrCaptures).toHaveLength(10);
+    expect(compact.parserDiagnostics?.length).toBeGreaterThan(0);
+    expect(duplicatedBytes).toBeGreaterThan(250_000);
+    expect(bytes).toBeLessThan(duplicatedBytes);
+    expect(bytes).toBeLessThanOrEqual(300_000);
+    expect(bytes).toBeGreaterThan(100_000);
   });
 
   it('allows a cited paraphrase and tentative candidate without promoting either into package facts',()=>{
