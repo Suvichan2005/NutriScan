@@ -1,8 +1,8 @@
-import { packageSchema, type Nutrient, type PackageData } from './contracts';
+import { packageSchema, type Nutrient, type PackageData, type ParserDiagnostic } from './contracts';
 
 const normalized = (n: Nutrient) => n.value * (n.unit === 'mg' ? 0.001 : n.unit === 'kJ' ? 1 / 4.184 : 1);
 const observationSignature = (observation: PackageData['observations'][number]) => observation.imageId
-  ? `${observation.imageId}|${observation.field}|${observation.text.trim().toLocaleLowerCase()}`
+  ? `${observation.imageId}|${observation.field}|${observation.text.trim().toLocaleLowerCase()}${observation.readingOrder?`|${observation.readingOrder.runId}:${observation.readingOrder.lineIndex}`:''}`
   : observation.field === 'user-description' ? `user-description|${observation.text.trim().toLocaleLowerCase()}` : '';
 
 /** Adds a new package read to an investigation without replacing its established state. */
@@ -25,7 +25,7 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
     if (existing) { idMap.set(observation.id, existing.id); continue; }
     let id = observation.id;
     if (observations.some(o => o.id === id)) id = `merged-${crypto.randomUUID()}`;
-    observations.push({ ...observation, id });
+    observations.push({ ...observation, id, ...(observation.derivedFromObservationIds?{derivedFromObservationIds:observation.derivedFromObservationIds.map(sourceId=>idMap.get(sourceId)??sourceId)}:{}) });
     idMap.set(observation.id, id);
   }
   const mergedNutrients = [...current.nutrients];
@@ -44,6 +44,19 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
       if (!warnings.includes(warning)) warnings.push(warning);
     }
   }
+  const parserDiagnostics=[
+    ...(current.parserDiagnostics??[]),
+    ...(incoming.parserDiagnostics??[]).map(diagnostic=>({...diagnostic,sourceObservationIds:diagnostic.sourceObservationIds.map(id=>idMap.get(id)??id)})),
+  ];
+  for(const diagnostic of parserDiagnostics){
+    const rowObservationId=diagnostic.sourceObservationIds[0];
+    const conflict=mergedNutrients.some(nutrient=>nutrient.key===diagnostic.field&&nutrient.status==='conflict'&&nutrient.observationIds.includes(rowObservationId));
+    if(conflict&&diagnostic.decision==='accepted'){
+      diagnostic.decision='conflict';
+      diagnostic.reasonCodes=Array.from(new Set<ParserDiagnostic['reasonCodes'][number]>([...diagnostic.reasonCodes,'cross-reading-conflict']));
+    }
+  }
+  const ocrCaptures=[...(current.ocrCaptures??[]),...(incoming.ocrCaptures??[])].filter((capture,index,captures)=>captures.findIndex(item=>item.runId===capture.runId)===index);
   const incomingHasOcr = incoming.observations.some(observation => observation.origin === 'ocr');
   const sectionTitle = incomingHasOcr ? 'Additional photo evidence' : 'Additional user-entered label text';
   const rawText = `${current.rawText}${current.rawText && incoming.rawText ? `\n\n--- ${sectionTitle} ---\n` : ''}${incoming.rawText}`.slice(0, 40000);
@@ -69,6 +82,8 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
     claims: unique([...current.claims, ...incoming.claims]),
     nutrients: mergedNutrients,
     observations,
+    ...(ocrCaptures.length?{ocrCaptures}:{}),
+    ...(parserDiagnostics.length?{parserDiagnostics}:{}),
     rawText,
     warnings: unique(warnings),
     synthetic: current.synthetic && incoming.synthetic,

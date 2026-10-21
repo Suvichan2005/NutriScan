@@ -2,17 +2,60 @@ import { z } from 'zod';
 export const nutrientKeys = ['energy','carbohydrate','sugars','addedSugars','protein','fat','saturatedFat','fiber','sodium','salt'] as const;
 export type NutrientKey = typeof nutrientKeys[number];
 export const basisSchema = z.object({amount:z.number().positive().max(10000),unit:z.enum(['g','ml']),description:z.string().max(150)});
-export const observationSchema = z.object({id:z.string(),field:z.string(),text:z.string(),side:z.enum(['front','back','extra','text']),confidence:z.number().min(0).max(100).nullable(),bbox:z.object({x0:z.number(),y0:z.number(),x1:z.number(),y1:z.number()}).optional(),origin:z.enum(['ocr','barcode','user','vision','fixture']),imageId:z.string().optional(),value:z.number().optional(),unit:z.string().optional()});
+export const readingOrderSchema=z.object({runId:z.string().min(1).max(100),blockIndex:z.number().int().nonnegative(),paragraphIndex:z.number().int().nonnegative(),lineIndex:z.number().int().nonnegative()}).strict();
+export const observationSchema = z.object({id:z.string().min(1).max(160),field:z.string().min(1).max(80),text:z.string().max(40000),side:z.enum(['front','back','extra','text']),confidence:z.number().finite().min(0).max(100).nullable(),bbox:z.object({x0:z.number().finite().nonnegative(),y0:z.number().finite().nonnegative(),x1:z.number().finite().nonnegative(),y1:z.number().finite().nonnegative()}).strict().refine(box=>box.x1>=box.x0&&box.y1>=box.y0).optional(),origin:z.enum(['ocr','barcode','user','vision','fixture']),imageId:z.string().min(1).max(160).optional(),readingOrder:readingOrderSchema.optional(),derivedFromObservationIds:z.array(z.string().min(1).max(160)).max(20).optional(),value:z.number().finite().optional(),unit:z.string().max(24).optional()}).strict();
 export type Observation = z.infer<typeof observationSchema>;
+export const ocrCaptureSchema=z.object({
+  runId:z.string().min(1).max(100),imageId:z.string().min(1).max(160),side:z.enum(['front','back','extra']),
+  sourceImage:z.object({width:z.number().int().positive().max(40000),height:z.number().int().positive().max(40000)}).strict(),
+  preparedImage:z.object({width:z.number().int().positive().max(40000),height:z.number().int().positive().max(40000)}).strict(),
+  bboxCoordinateSpace:z.literal('prepared-image-pixels'),
+  engine:z.object({name:z.literal('tesseract.js'),version:z.string().min(1).max(40),language:z.string().min(2).max(20),confidenceScale:z.literal('0-100'),segmentationMode:z.enum(['auto','single-block'])}).strict(),
+  processing:z.object({rotation:z.union([z.literal(0),z.literal(90),z.literal(180),z.literal(270)]),contrast:z.boolean(),invert:z.boolean(),cropPercent:z.object({x:z.number().min(0).max(100),y:z.number().min(0).max(100),width:z.number().positive().max(100),height:z.number().positive().max(100)}).strict().nullable()}).strict()
+}).strict();
+export type OcrCapture=z.infer<typeof ocrCaptureSchema>;
+export const parserDiagnosticSchema=z.object({
+  field:z.enum(nutrientKeys),decision:z.enum(['accepted','conflict','rejected']),
+  reasonCodes:z.array(z.enum(['approximate-or-bounded','signed-or-ambiguous','no-numeric-value','multiple-values','ambiguous-basis','invalid-value','missing-unit','incompatible-unit','missing-basis','cross-reading-conflict'])).max(10),
+  sourceObservationIds:z.array(z.string().min(1).max(160)).min(1).max(20),
+  numericCandidates:z.array(z.object({rawValueText:z.string().max(40),value:z.number().finite().nullable(),unit:z.string().max(24).nullable()}).strict()).max(20),
+  basisCandidates:z.array(basisSchema).max(20)
+}).strict();
+export type ParserDiagnostic=z.infer<typeof parserDiagnosticSchema>;
 export const nutrientSchema = z.object({key:z.enum(nutrientKeys),value:z.number().finite().nonnegative().max(100000),unit:z.enum(['g','mg','kcal','kJ']),basis:basisSchema.nullable(),observationIds:z.array(z.string()),status:z.enum(['observed','corrected','conflict'])});
 export type Nutrient = z.infer<typeof nutrientSchema>;
-export const packageSchema = z.object({id:z.string(),name:z.string().max(200),brand:z.string().max(120).optional(),barcode:z.string().optional(),identityConflict:z.boolean().optional(),userDescription:z.string().max(4000).optional(),netWeight:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),serving:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),ingredients:z.array(z.string()),additives:z.array(z.string()),allergens:z.array(z.string()),claims:z.array(z.string()),license:z.string().optional(),nutrients:z.array(nutrientSchema),observations:z.array(observationSchema),rawText:z.string().max(40000),warnings:z.array(z.string()),synthetic:z.boolean(),createdAt:z.string()});
+const packageBaseSchema=z.object({id:z.string().min(1).max(160),name:z.string().max(200),brand:z.string().max(120).optional(),barcode:z.string().max(32).optional(),identityConflict:z.boolean().optional(),userDescription:z.string().max(4000).optional(),netWeight:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),serving:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),ingredients:z.array(z.string().max(4000)).max(1000),additives:z.array(z.string().max(120)).max(300),allergens:z.array(z.string().max(1000)).max(100),claims:z.array(z.string().max(1000)).max(100),license:z.string().max(40).optional(),nutrients:z.array(nutrientSchema).max(1000),observations:z.array(observationSchema).max(4000),ocrCaptures:z.array(ocrCaptureSchema).max(50).optional(),parserDiagnostics:z.array(parserDiagnosticSchema).max(2000).optional(),rawText:z.string().max(40000),warnings:z.array(z.string().max(500)).max(1000),synthetic:z.boolean(),createdAt:z.string().max(80)}).strict();
+export const packageSchema=packageBaseSchema.superRefine((pkg,context)=>{
+  const observationIds=new Set(pkg.observations.map(observation=>observation.id));
+  if(observationIds.size!==pkg.observations.length)context.addIssue({code:'custom',path:['observations'],message:'Observation identifiers must be unique.'});
+  const captureRunIds=new Set(pkg.ocrCaptures?.map(capture=>capture.runId)??[]);
+  if(captureRunIds.size!==(pkg.ocrCaptures?.length??0))context.addIssue({code:'custom',path:['ocrCaptures'],message:'Each OCR capture run identifier must be unique.'});
+  for(const [index,nutrient] of pkg.nutrients.entries())for(const id of nutrient.observationIds)if(!observationIds.has(id))context.addIssue({code:'custom',path:['nutrients',index,'observationIds'],message:'Nutrient readings must point to existing package observations.'});
+  for(const [index,observation] of pkg.observations.entries()){
+    for(const sourceId of observation.derivedFromObservationIds??[])if(sourceId===observation.id||!observationIds.has(sourceId))context.addIssue({code:'custom',path:['observations',index,'derivedFromObservationIds'],message:'Derived observations must point to a different existing source observation.'});
+    if(observation.readingOrder){
+      const capture=pkg.ocrCaptures?.find(item=>item.runId===observation.readingOrder!.runId&&item.imageId===observation.imageId);
+      if(!capture||observation.origin!=='ocr')context.addIssue({code:'custom',path:['observations',index,'readingOrder'],message:'OCR reading order must link to an OCR capture for the same image.'});
+      else if(observation.side!==capture.side||observation.bbox&&(observation.bbox.x1>capture.preparedImage.width||observation.bbox.y1>capture.preparedImage.height))context.addIssue({code:'custom',path:['observations',index,'bbox'],message:'OCR geometry must fit its recorded prepared-image coordinate space.'});
+    }
+  }
+  for(const [index,diagnostic] of (pkg.parserDiagnostics??[]).entries())for(const id of diagnostic.sourceObservationIds)if(!observationIds.has(id))context.addIssue({code:'custom',path:['parserDiagnostics',index,'sourceObservationIds'],message:'Parser diagnostics must point to recorded observations.'});
+});
 export type PackageData = z.infer<typeof packageSchema>;
 export const sourceSchema = z.object({id:z.string(),title:z.string(),publisher:z.string(),url:z.string().url(),category:z.enum(['guideline','assessment','regulation','product','literature','registry','method']),jurisdiction:z.string(),publishedAt:z.string().nullable(),effectiveAt:z.string().nullable(),retrievedAt:z.string(),summary:z.string(),limitations:z.string(),license:z.string().optional()});
 export type EvidenceSource = z.infer<typeof sourceSchema>;
-export type Calculation = {id:string;label:string;nutrient:NutrientKey;input:number;inputUnit:string;basisAmount:number;portion:number;portionUnit:'g'|'ml';result:number;unit:string;formula:string;observationIds:string[];assumptions:string[]};
+export const calculationSchema=z.object({id:z.string().min(1).max(120),label:z.string().min(1).max(300),nutrient:z.enum(nutrientKeys),input:z.number().finite().nonnegative(),inputUnit:z.string().min(1).max(24),basisAmount:z.number().finite().positive().max(10000),portion:z.number().finite().positive().max(10000),portionUnit:z.enum(['g','ml']),result:z.number().finite().nonnegative(),unit:z.string().min(1).max(24),formula:z.string().min(1).max(1000),evidenceText:z.string().min(1).max(1600).optional(),observationIds:z.array(z.string().min(1).max(160)).min(1).max(20),assumptions:z.array(z.string().max(300)).max(10)}).strict();
+export type Calculation=z.infer<typeof calculationSchema>;
+export const calculationEvidenceText=(calculation:Pick<Calculation,'label'|'formula'|'result'|'unit'>):string=>`${calculation.label}; ${calculation.formula} = ${calculation.result} ${calculation.unit}`;
 export type Finding = {id:string;title:string;detail:string;status:'observed'|'calculated'|'context'|'uncertain'|'conflict';observationIds:string[];sourceIds:string[];calculationIds:string[]};
 export type Audit = {answer:string;findings:Finding[];calculations:Calculation[];sources:EvidenceSource[];limitations:string[];nextQuestions:string[];trace:{tool:string;reason:string;status:string}[]};
+export const evidenceSpanSchema=z.object({kind:z.enum(['observation','source','calculation']),id:z.string().min(1).max(160),quote:z.string().min(1).max(1600)}).strict();
+export const tentativeStructuredCandidateSchema=z.object({
+  candidateId:z.string().min(1).max(120),kind:z.enum(['nutrient','ingredient','additive','product-identity','serving-basis']),field:z.string().min(1).max(80),
+  proposedValue:z.string().min(1).max(300),numericValue:z.number().finite().nonnegative().max(100000).nullable(),unit:z.string().max(24).nullable(),basis:basisSchema.nullable(),normalizedEntity:z.string().max(200).nullable(),
+  status:z.literal('tentative'),observationIds:z.array(z.string().min(1).max(160)).min(1).max(20),sourceIds:z.array(z.string().min(1).max(160)).max(20),supportingSpans:z.array(evidenceSpanSchema).min(1).max(10),uncertainty:z.string().min(1).max(500)
+}).strict();
+export type TentativeStructuredCandidate=z.infer<typeof tentativeStructuredCandidateSchema>;
 export const profileSchema = z.object({dietaryPattern:z.string().max(500),allergies:z.string().max(1000),intolerances:z.string().max(1000),healthConsiderations:z.string().max(1500),goals:z.string().max(1000),ageGroup:z.string().max(80),sexOrReferenceGroup:z.string().max(100),country:z.string().max(80),locality:z.string().max(100)}).strict();
 export type Profile = z.infer<typeof profileSchema>;
 export const defaultProfile:Profile = {dietaryPattern:'',allergies:'',intolerances:'',healthConsiderations:'',goals:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''};

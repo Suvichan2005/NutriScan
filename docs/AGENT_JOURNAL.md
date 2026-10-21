@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — preserve OCR-to-assist evidence and allow labeled synthesis
+
+- Extended the product package with capture metadata, explicit per-image OCR line ordering, and nutrient parser decisions linked to the observations they considered. Raw lines remain present when a parser rejects a candidate; disagreement remains a conflict.
+- The consented assist contract now includes retrieved sources and deterministic local calculations. It can return exact quotations or paraphrases with exact cited spans, plus structured suggestions marked `tentative` and tied to original OCR lines. The server does not promote suggestions into package facts, and the client never sends photo bytes on the text-assist route.
+- A synthetic offline test checked approximate protein rejection, conflicting sodium values, candidate traceability/non-promotion, calculation references and the disabled-provider boundary. 278 tests and typecheck passed at the checkpoint; no real photograph, browser interaction, provider call, accuracy result or entailment validation was established.
+- The generated response remains an unverified interpretation even when citation IDs and spans validate. The simple high-risk lexical filter is not a complete medical-safety control; Gemini stays disabled pending owner authorization and separate evaluation.
+
 ## 2026-10-21 — connect observed additive codes to official research
 
 - Added a shortcut on additive-code findings. It prepares the known local identity and observed INS code for the Indian regulation search, then focuses the search field; the user must review and submit explicitly.

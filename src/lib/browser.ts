@@ -1,5 +1,5 @@
 import { get, set, del } from 'idb-keyval';
-import { hasUserContext, profileSchema, savedScanSchema, type ImageAsset, type Observation, type Profile, type SavedScanRecord } from './contracts';
+import { hasUserContext, profileSchema, savedScanSchema, type ImageAsset, type Observation, type OcrCapture, type Profile, type SavedScanRecord } from './contracts';
 import { detectRetailBarcodes } from './barcode';
 
 export type SavedScan = SavedScanRecord;
@@ -50,7 +50,8 @@ export async function prepareImage(asset:ImageAsset,rotation=0,contrast=false,cr
  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Image preparation failed.')),'image/jpeg',0.98));
 }
 
-export async function readImages(assets:ImageAsset[],onProgress:(label:string,progress:number)=>void,signal:AbortSignal,options:{rotation:number;contrast:boolean;invert?:boolean;crop?:Crop;cropTarget?:string}):Promise<{text:string;observations:Observation[];confidence:number;barcodes:{code:string;imageId:string;side:ImageAsset['side']}[]}>{
+export const BROWSER_OCR_ENGINE_VERSION='7.0.0';
+export async function readImages(assets:ImageAsset[],onProgress:(label:string,progress:number)=>void,signal:AbortSignal,options:{rotation:number;contrast:boolean;invert?:boolean;crop?:Crop;cropTarget?:string}):Promise<{text:string;observations:Observation[];confidence:number;barcodes:{code:string;imageId:string;side:ImageAsset['side']}[];captures:OcrCapture[]}>{
  const { createWorker, PSM }=await import('tesseract.js');
  let worker:Awaited<ReturnType<typeof createWorker>>|undefined;
  let cancelled=false;
@@ -63,22 +64,31 @@ export async function readImages(assets:ImageAsset[],onProgress:(label:string,pr
   worker=await Promise.race([createWorker('eng',1,{workerPath:'/ocr/worker.min.js',corePath:'/ocr/',langPath:'/ocr/',workerBlobURL:false,logger:m=>{if(!cancelled)onProgress(m.status,Math.max(.02,m.progress||0));}}).then(w=>{if(cancelled)void w.terminate();return w;}),abortPromise]);
   if(cancelled)throw new Error('Reading stopped. Your photos are still here.');
   await worker.setParameters({preserve_interword_spaces:'1'});
-  const texts:string[]=[];const observations:Observation[]=[];const barcodes:{code:string;imageId:string;side:ImageAsset['side']}[]=[];let confidence=0;
+  const texts:string[]=[];const observations:Observation[]=[];const barcodes:{code:string;imageId:string;side:ImageAsset['side']}[]=[];const captures:OcrCapture[]=[];let confidence=0;
   for(let i=0;i<assets.length;i++){
    if(cancelled)throw new Error('Reading stopped. Your photos are still here.');
    onProgress(`Reading photo ${i+1} of ${assets.length}`,i/assets.length);
+   const runId=crypto.randomUUID();
    const barcodeValues=await Promise.race([detectRetailBarcodes(assets[i].blob),abortPromise]);
    for(const code of barcodeValues)barcodes.push({code,imageId:assets[i].id,side:assets[i].side});
-   await worker.setParameters({tessedit_pageseg_mode:assets[i].role==='nutrition'||assets[i].role==='ingredients'||assets[i].side==='back'?PSM.SINGLE_BLOCK:PSM.AUTO});
-   const image=await prepareImage(assets[i],assets[i].rotation??options.rotation,options.contrast,options.cropTarget===assets[i].id?options.crop:undefined,options.invert);
+   const segmentationMode=assets[i].role==='nutrition'||assets[i].role==='ingredients'||assets[i].side==='back'?'single-block':'auto';
+   await worker.setParameters({tessedit_pageseg_mode:segmentationMode==='single-block'?PSM.SINGLE_BLOCK:PSM.AUTO});
+   const rotation=(assets[i].rotation??options.rotation) as 0|90|180|270;
+   const crop=options.cropTarget===assets[i].id?options.crop:undefined;
+   const image=await prepareImage(assets[i],rotation,options.contrast,crop,options.invert);
+   const preparedBitmap=await createImageBitmap(image);
+   const preparedImage={width:preparedBitmap.width,height:preparedBitmap.height};
+   preparedBitmap.close();
    const result=await Promise.race([worker.recognize(image,{}, {text:true,blocks:true,tsv:true}),abortPromise]);
    texts.push(result.data.text);confidence+=result.data.confidence;
-   for(const block of result.data.blocks??[]) for(const paragraph of block.paragraphs??[]) for(const line of paragraph.lines??[]){
-    observations.push({id:crypto.randomUUID(),field:'ocr-line',text:line.text,side:assets[i].side,confidence:line.confidence,bbox:line.bbox,origin:'ocr',imageId:assets[i].id});
+   const capturesForImage:OcrCapture={runId,imageId:assets[i].id,side:assets[i].side,sourceImage:{width:assets[i].width,height:assets[i].height},preparedImage,bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'tesseract.js',version:BROWSER_OCR_ENGINE_VERSION,language:'eng',confidenceScale:'0-100',segmentationMode},processing:{rotation,contrast:options.contrast,invert:options.invert??false,cropPercent:crop?{x:crop.x,y:crop.y,width:crop.width,height:crop.height}:null}};
+   captures.push(capturesForImage);
+   for(const [blockIndex,block] of (result.data.blocks??[]).entries()) for(const [paragraphIndex,paragraph] of (block.paragraphs??[]).entries()) for(const [lineIndex,line] of (paragraph.lines??[]).entries()){
+    observations.push({id:crypto.randomUUID(),field:'ocr-line',text:line.text,side:assets[i].side,confidence:line.confidence,bbox:line.bbox,origin:'ocr',imageId:assets[i].id,readingOrder:{runId,blockIndex,paragraphIndex,lineIndex}});
    }
   }
   if(cancelled)throw new Error('Reading stopped. Your photos are still here.');
-  return {text:texts.join('\n\n'),observations,confidence:confidence/assets.length,barcodes};
+  return {text:texts.join('\n\n'),observations,confidence:confidence/assets.length,barcodes,captures};
  }catch(error){ if(cancelled)throw new Error('Reading stopped or timed out. Try a smaller, tightly cropped photo.');throw error;
  }finally{clearTimeout(timeout);signal.removeEventListener('abort',abort);await worker?.terminate().catch(()=>{});}
 }

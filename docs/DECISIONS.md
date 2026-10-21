@@ -1,5 +1,13 @@
 # Chronological decisions
 
+## 21 October 2026 — preserve OCR provenance and support cautious synthesis
+
+- Keep every captured OCR line in the package evidence ledger. Add explicit per-image reading order, source/prepared dimensions, coordinate space, Tesseract.js version/language/segmentation, and preprocessing settings so bounding boxes and confidence remain interpretable across crops and rotations.
+- Record nutrient parser outcomes separately from raw text: accepted, conflicted or rejected candidates retain the attempted numeric tokens, units, basis candidates, reason codes and linked observations. A parser rejection does not discard the line, and a model proposal never changes the package record.
+- Send the bounded evidence contract, optional user context, retrieved source records and deterministic local calculations through the existing consented assist route. Keep selectively inspectable photo handles in metadata; image bytes still require a separate explicit image-inspection action. Gemini remains disabled.
+- Permit a claim to be direct quotation or cautious paraphrase. Every citation must resolve and have an exact supporting span; paraphrases are labeled as generated interpretation because structural citation checks cannot establish entailment. Structured candidates are always tentative and must cite an original OCR line. A narrow lexical guard rejects obvious safety/medical advice; it is defense in depth, not a general safety or truth validator.
+- Offline tests use synthetic lines only. They verify traceability, a rejected approximate row, conflicting sodium readings, candidate non-promotion and calculation references. They do not measure photographic accuracy, model behavior or browser integration.
+
 ## 21 October 2026 — connect package additive findings to official-source search
 
 - Add a shortcut to additive-code findings that prepares the known additive name (when in the small local identity corpus), `INS` code and `additive` search term, and selects Indian regulation. Scroll and focus the search field so the next action is clear.

@@ -187,13 +187,13 @@ describe('provider validation, independent of provider invocation', () => {
     expect(validateClaims(valid, data).answer).not.toContain('medical assertion');
     expect(validateClaims(valid, data).answer).not.toContain('diabetes');
     expect(validateClaims(valid, data).limitations.join(' ')).not.toContain('manage diabetes');
-    expect(validateClaims(valid, data).limitations).toEqual(['Only exact text spans from the cited package observations or source summaries are shown. These quotes are not verification of truth, medical advice, or a safety assessment.']);
+    expect(validateClaims(valid, data).limitations).toEqual(['Generated explanations are not independently verified; exact cited evidence spans are provided for inspection. Tentative structured candidates never alter confirmed package observations. No diagnosis, medication advice, or safety assessment is provided.']);
     expect(() => validateClaims({ ...valid, claims: [{ text: 'Claim', observationIds: ['missing'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'missing', quote: 'Claim' }] }] }, data)).toThrow('unknown evidence');
     expect(() => validateClaims({ ...valid, inspectImage: { handle: 'not-owned', reason: 'Read label' } }, data)).toThrow('unknown browser image');
   });
   it('withholds unsupported diabetes safety advice even when it cites a real sugar observation', () => {
     const data = assistInput.parse({ consent: true, question: 'Is this safe for diabetes?', package: { id: 'test', name: 'Test', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'sugar-observation', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'ocr' }], rawText: '', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
-    const output = { answer: 'It is suitable for diabetes.', claims: [{ text: 'Sugar 3g is safe for diabetes.', observationIds: ['sugar-observation'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'sugar-observation', quote: 'sugar 3g' }] }], limitations: [], inspectImage: null };
+    const output = { answer: 'It is suitable for diabetes.', claims: [{ mode:'synthesis',text: 'Sugar 3g is safe for diabetes.', observationIds: ['sugar-observation'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'sugar-observation', quote: 'sugar 3g' }] }], limitations: [], inspectImage: null };
     const result = validateClaims(output, data);
     expect(result.claims).toEqual([]);
     expect(result.answer).not.toMatch(/safe for diabetes|suitable for diabetes/i);

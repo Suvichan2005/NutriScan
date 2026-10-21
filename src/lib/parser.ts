@@ -1,7 +1,7 @@
-import { packageSchema, type Nutrient, type NutrientKey, type Observation, type PackageData } from './contracts';
+import { packageSchema, type Nutrient, type NutrientKey, type Observation, type OcrCapture, type PackageData, type ParserDiagnostic } from './contracts';
 import { detectAdditives } from './knowledge';
 
-type ParseOptions = {side?:Observation['side'];origin?:Observation['origin'];confidence?:number|null;observations?:Observation[];synthetic?:boolean;userDescription?:string};
+type ParseOptions = {side?:Observation['side'];origin?:Observation['origin'];confidence?:number|null;observations?:Observation[];ocrCaptures?:OcrCapture[];synthetic?:boolean;userDescription?:string};
 type Basis = NonNullable<Nutrient['basis']>;
 const rows: {key:NutrientKey;pattern:RegExp}[] = [
   {key:'addedSugars',pattern:/^(?:(?:includes?|of which)\s+)?added\s+sugars?(?=\b|\d)/i},
@@ -71,7 +71,7 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   const observe=(field:string,line:string,value?:number,unit?:string)=> {
     const originals=inputObservations.get(line.trim());
     const original=originals?.shift();
-    const obs:Observation={id:`${id}-o${observations.length}`,field,text:line,side:original?.side??options.side??'text',origin:original?.origin??options.origin??'user',confidence:original?.confidence??options.confidence??null,...(original?.bbox?{bbox:original.bbox}:{}),...(original?.imageId?{imageId:original.imageId}:{}),...(value!==undefined?{value}:{}),...(unit?{unit}:{})};
+    const obs:Observation={id:`${id}-o${observations.length}`,field,text:line,side:original?.side??options.side??'text',origin:original?.origin??options.origin??'user',confidence:original?.confidence??options.confidence??null,...(original?.bbox?{bbox:original.bbox}:{}),...(original?.imageId?{imageId:original.imageId}:{}),...(original?.readingOrder?{readingOrder:original.readingOrder}:{}),...(original?{derivedFromObservationIds:[original.id]}:{}),...(value!==undefined?{value}:{}),...(unit?{unit}:{})};
     observations.push(obs); return obs.id;
   };
   const servingMatch=text.match(/(?:serving\s+size|serve\s+size|portion\s+size)\s*[:\-]?\s*(?:[^\n\d]{0,20})?(\d+(?:\.\d+)?)\s*(g|ml)\b/i);
@@ -83,6 +83,7 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   const ingredients:string[]=[]; const allergens:string[]=[]; const claims:string[]=[];
   let ingredientsOpen=false; let basis:Basis|null=null; let basisObservationIds:string[]=[]; let ambiguousBasis=false;
   const nutrients:Nutrient[]=[];
+  const parserDiagnostics:ParserDiagnostic[]=[];
   for(let lineIndex=0;lineIndex<lines.length;lineIndex++) {
     const line=lines[lineIndex];
     const ingredientLine=line.match(/^ingredients?\s*[:：]\s*(.*)/i);
@@ -124,20 +125,34 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
     const rowUnit=tail.match(/\b(kcal|kj|mg|g)\b/i)?.[1];
     const orderedEnergyUnits=nutrientRow.key==='energy'?tail.match(/^\s*[:\-]?\s*\(\s*(kJ|kcal)\s*\/\s*(kJ|kcal)\s*\)/i):null;
     const obsId=observe(nutrientRow.key,line);
-    if(/[<>≤≥~]|\b(?:trace|less than|approx)/i.test(tail)){warnings.push(`${nutrientRow.key}: bounded or approximate value retained in text; exact calculation withheld.`);continue;}
-    if(/-\s+\d/.test(tail)){warnings.push(`${nutrientRow.key}: invalid or ambiguous signed value withheld.`);continue;}
-    if(!values.length){warnings.push(`${nutrientRow.key}: no readable numerical value.`);continue;}
+    const sourceObservationIds=[obsId,...(foundBases.length===0?basisObservationIds:[])];
+    const numericCandidates=values.map((value,valueIndex)=>{
+      const n=Number(value[1]);const unit=(value[2]??(orderedEnergyUnits&&values.length===2?orderedEnergyUnits[valueIndex+1]:rowUnit))?.toLowerCase()??null;
+      return {rawValueText:value[1],value:Number.isFinite(n)?n:null,unit};
+    });
+    const basisCandidates=foundBases.length?foundBases:(basis?[basis]:[]);
+    const diagnose=(decision:ParserDiagnostic['decision'],reasonCodes:ParserDiagnostic['reasonCodes'])=>parserDiagnostics.push({field:nutrientRow.key,decision,reasonCodes:Array.from(new Set<ParserDiagnostic['reasonCodes'][number]>(reasonCodes)),sourceObservationIds,numericCandidates,basisCandidates});
+    if(/[<>≤≥~]|\b(?:trace|less than|approx)/i.test(tail)){warnings.push(`${nutrientRow.key}: bounded or approximate value retained in text; exact calculation withheld.`);diagnose('rejected',['approximate-or-bounded']);continue;}
+    if(/-\s+\d/.test(tail)){warnings.push(`${nutrientRow.key}: invalid or ambiguous signed value withheld.`);diagnose('rejected',['signed-or-ambiguous']);continue;}
+    if(!values.length){warnings.push(`${nutrientRow.key}: no readable numerical value.`);diagnose('rejected',['no-numeric-value']);continue;}
     const conflicting=ambiguousBasis||values.length>1||foundBases.length>1;
     if(values.length>1) warnings.push(`${nutrientRow.key}: multiple numeric values retained; confirm the intended column.`);
+    const reasonCodes:ParserDiagnostic['reasonCodes']=[];
+    if(values.length>1)reasonCodes.push('multiple-values');
+    if(ambiguousBasis||foundBases.length>1)reasonCodes.push('ambiguous-basis');
+    if(!basisCandidates.length)reasonCodes.push('missing-basis');
+    let emitted=0;
     for(const [valueIndex,value] of values.entries()){
       const n=Number(value[1]); const unit=(value[2]??(orderedEnergyUnits&&values.length===2?orderedEnergyUnits[valueIndex+1]:rowUnit))?.toLowerCase();
-      if(!Number.isFinite(n)||n<0||n>100000){warnings.push(`${nutrientRow.key}: invalid value withheld.`);continue;}
-      if(!unit){warnings.push(`${nutrientRow.key}: unit missing; no unit was guessed.`);continue;}
+      if(!Number.isFinite(n)||n<0||n>100000){warnings.push(`${nutrientRow.key}: invalid value withheld.`);reasonCodes.push('invalid-value');continue;}
+      if(!unit){warnings.push(`${nutrientRow.key}: unit missing; no unit was guessed.`);reasonCodes.push('missing-unit');continue;}
       const validUnit=unit==='kj'?'kJ':unit as Nutrient['unit'];
-      if((nutrientRow.key==='energy'&&!['kcal','kJ'].includes(validUnit))||(nutrientRow.key!=='energy'&&!['g','mg'].includes(validUnit))){warnings.push(`${nutrientRow.key}: incompatible unit withheld.`);continue;}
+      if((nutrientRow.key==='energy'&&!['kcal','kJ'].includes(validUnit))||(nutrientRow.key!=='energy'&&!['g','mg'].includes(validUnit))){warnings.push(`${nutrientRow.key}: incompatible unit withheld.`);reasonCodes.push('incompatible-unit');continue;}
       const usedHeaderBasis=foundBases.length===0?basisObservationIds:[];
       nutrients.push({key:nutrientRow.key,value:n,unit:validUnit,basis:conflicting?null:(foundBases[0]??basis),observationIds:[obsId,...usedHeaderBasis],status:conflicting?'conflict':'observed'});
+      emitted++;
     }
+    diagnose(emitted===0?'rejected':conflicting?'conflict':'accepted',reasonCodes);
   }
   // Preserve duplicate readings. Mark disagreement on the same explicit basis.
   for(const nutrient of nutrients){
@@ -145,6 +160,14 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
     const conflict=nutrients.some(other=>other!==nutrient&&other.key===nutrient.key&&other.basis?.amount===nutrient.basis?.amount&&other.basis?.unit===nutrient.basis?.unit&&Math.abs(other.value*(other.unit==='mg'?.001:other.unit==='kJ'?1/4.184:1)-normalized)>Math.max(.000001,normalized*.01));
     if(conflict){nutrient.status='conflict';warnings.push(`${nutrient.key}: conflicting readings retained; calculation withheld.`);}
     if(!nutrient.basis) warnings.push(`${nutrient.key}: an unambiguous mass or volume basis is required.`);
+  }
+  for(const diagnostic of parserDiagnostics){
+    const rowObservationId=diagnostic.sourceObservationIds[0];
+    const hasCrossReadingConflict=nutrients.some(nutrient=>nutrient.key===diagnostic.field&&nutrient.status==='conflict'&&nutrient.observationIds.includes(rowObservationId));
+    if(hasCrossReadingConflict&&diagnostic.decision==='accepted'){
+      diagnostic.decision='conflict';
+      diagnostic.reasonCodes=Array.from(new Set<ParserDiagnostic['reasonCodes'][number]>([...diagnostic.reasonCodes,'cross-reading-conflict']));
+    }
   }
   // Additive identifiers are meaningful here only when attached to the label's
   // ingredient section. OCR noise elsewhere (for example, `E000` misread near
@@ -162,5 +185,5 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   if(barcode)observe('barcode',barcode); if(license)observe('license',license);
   if(!nutrients.length)warnings.push('No usable nutrition values were extracted. Missing values are unknown, not zero.');
   if(brand)observe('brand',brand);
-  return packageSchema.parse({id,name:nameResult.name,...(brand?{brand}:{}),...(barcode?{barcode}:{}),...(userDescription?{userDescription}:{}),...(license?{license}:{}),...(serving?{serving}:{}),...(netWeight?{netWeight}:{}),ingredients,additives:additiveCodes,allergens,claims,nutrients,observations,rawText:text,warnings:[...new Set(warnings)],synthetic:options.synthetic??options.origin==='fixture',createdAt:new Date().toISOString()});
+  return packageSchema.parse({id,name:nameResult.name,...(brand?{brand}:{}),...(barcode?{barcode}:{}),...(userDescription?{userDescription}:{}),...(license?{license}:{}),...(serving?{serving}:{}),...(netWeight?{netWeight}:{}),ingredients,additives:additiveCodes,allergens,claims,nutrients,observations,...(options.ocrCaptures?.length?{ocrCaptures:options.ocrCaptures}:{}),parserDiagnostics,rawText:text,warnings:[...new Set(warnings)],synthetic:options.synthetic??options.origin==='fixture',createdAt:new Date().toISOString()});
 }
