@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fixedFetch, input, localGate, readBounded, route } from './http';
 import { lookupProducts, normalizeProduct, productInput } from './products';
-import { assistInput, providerStatus, validateClaims, validateImage, visionInput } from './gemini';
+import { assistInput, assistOutput, providerStatus, validateClaims, validateImage, visionInput } from './gemini';
 import { research, researchInput, researchRecalls } from './research';
 import { z } from 'zod';
 
@@ -169,6 +169,11 @@ describe('public source normalization', () => {
 });
 
 describe('provider validation, independent of provider invocation', () => {
+  it('exposes required quote spans in the structured provider response schema', () => {
+    const providerSchema = z.toJSONSchema(assistOutput);
+    expect(JSON.stringify(providerSchema)).toContain('supportingSpans');
+    expect(JSON.stringify(providerSchema)).toContain('quote');
+  });
   it('cannot enable the provider using just a key or search flag', () => {
     vi.stubEnv('ENABLE_GEMINI', 'false'); vi.stubEnv('ENABLE_GEMINI_SEARCH', 'true'); vi.stubEnv('GEMINI_API_KEY', 'test-only-placeholder'); vi.stubEnv('GEMINI_MODEL', 'gemini-test');
     expect(providerStatus()).toMatchObject({ configured: true, enabled: false, searchEnabled: false }); expect(JSON.stringify(providerStatus())).not.toContain('test-only-placeholder');
@@ -176,12 +181,31 @@ describe('provider validation, independent of provider invocation', () => {
   it('rejects forged citations and unknown browser image handles', () => {
     const data = assistInput.parse({ consent: true, question: 'What is visible?', package: { id: 'test', name: 'Test', userDescription: 'User says it is a cereal snack.', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'o1', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'user' }, { id: 'o2', field: 'user-description', text: 'User says it is a cereal snack.', side: 'text', confidence: null, origin: 'user' }], rawText: '', warnings: [], synthetic: true, createdAt: new Date().toISOString() } });
     expect(data.package.userDescription).toBe('User says it is a cereal snack.');
-    const valid = { answer: 'Unsupported extra medical assertion', claims: [{ text: 'Sugar 3g', observationIds: ['o1'], sourceIds: [] }], limitations: [], inspectImage: null };
+    const valid = { answer: 'Unsupported extra medical assertion', claims: [{ text: 'sugar 3g', observationIds: ['o1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'o1', quote: 'sugar 3g' }] }], limitations: ['Take this amount to manage diabetes.'], inspectImage: null };
     expect(validateClaims(valid, data).claims).toHaveLength(1);
-    expect(validateClaims(valid, data).answer).toBe('Sugar 3g [observation:o1]');
+    expect(validateClaims(valid, data).answer).toBe('Package observation: “sugar 3g” [observation:o1]');
     expect(validateClaims(valid, data).answer).not.toContain('medical assertion');
-    expect(() => validateClaims({ ...valid, claims: [{ text: 'Claim', observationIds: ['missing'], sourceIds: [] }] }, data)).toThrow('unknown evidence');
+    expect(validateClaims(valid, data).answer).not.toContain('diabetes');
+    expect(validateClaims(valid, data).limitations.join(' ')).not.toContain('manage diabetes');
+    expect(validateClaims(valid, data).limitations).toEqual(['Only exact text spans from the cited package observations or source summaries are shown. These quotes are not verification of truth, medical advice, or a safety assessment.']);
+    expect(() => validateClaims({ ...valid, claims: [{ text: 'Claim', observationIds: ['missing'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'missing', quote: 'Claim' }] }] }, data)).toThrow('unknown evidence');
     expect(() => validateClaims({ ...valid, inspectImage: { handle: 'not-owned', reason: 'Read label' } }, data)).toThrow('unknown browser image');
+  });
+  it('withholds unsupported diabetes safety advice even when it cites a real sugar observation', () => {
+    const data = assistInput.parse({ consent: true, question: 'Is this safe for diabetes?', package: { id: 'test', name: 'Test', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'sugar-observation', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'ocr' }], rawText: '', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
+    const output = { answer: 'It is suitable for diabetes.', claims: [{ text: 'Sugar 3g is safe for diabetes.', observationIds: ['sugar-observation'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'sugar-observation', quote: 'sugar 3g' }] }], limitations: [], inspectImage: null };
+    const result = validateClaims(output, data);
+    expect(result.claims).toEqual([]);
+    expect(result.answer).not.toMatch(/safe for diabetes|suitable for diabetes/i);
+    expect(result.answer).toContain('No supported factual conclusion');
+    expect(result.answer).toContain('does not establish personal health effects or product safety');
+  });
+  it('withholds a claim when its quoted span does not occur in the cited item', () => {
+    const data = assistInput.parse({ consent: true, question: 'What does it say?', package: { id: 'test', name: 'Test', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'o1', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'ocr' }], rawText: '', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
+    const output = { answer: 'Added sugar is 0g.', claims: [{ text: 'added sugar 0g', observationIds: ['o1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'o1', quote: 'added sugar 0g' }] }], limitations: [], inspectImage: null };
+    const result = validateClaims(output, data);
+    expect(result.claims).toEqual([]);
+    expect(result.answer).not.toContain('added sugar 0g');
   });
   it('rejects spoofed MIME and malformed image bytes before transmitting', async () => {
     await expect(validateImage({ mimeType: 'image/png', base64: Buffer.from('not an image bytes').toString('base64'), side: 'back' })).rejects.toMatchObject({ code: 'invalid_image' });

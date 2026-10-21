@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "salt-equivalent-browser-acceptance",
+  "generatedAt": "2026-10-21T07:26:23.489Z",
+  "captureTool": "Playwright using installed Chrome",
+  "origin": "loopback",
+  "input": "Synthetic text-only label: sodium 500 mg per 100 g; user asks for the salt equivalent at 30 g.",
+  "expectedCalculation": "WHO approximate relation: 500 mg/100 g × 30 g ÷ 400 mg sodium per g salt = 0.375 g salt equivalent.",
+  "limitations": [
+    "Synthetic typed text validates the user-facing conversion, not OCR or product identity.",
+    "The salt equivalent is approximate and is not a printed salt declaration or individual health guidance."
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "syntheticTextOnlyInput": true,
+      "sodiumObservationVisible": true,
+      "approximateSaltEquivalentAnswer": true,
+      "notMisrepresentedAsPrintedSalt": true,
+      "calculationVisible": true,
+      "calculationDetails": "See the label & calculation maths\nNutrient\tLabel reading\tLabel basis\tCalculation amount\nSodium\t500 mg\t100 g\t150 mg\n\nSodium in 30 g: 500 mg × 30 g ÷ 100 g\nThe label reading and its stated basis are correct. · The portion has the same composition as the labelled product.\n\nApproximate salt equivalent in 30 g: 500 mg sodium × 30 g ÷ 100 g ÷ 400 mg sodium per g salt\nThe label reading and its stated basis are correct. · The portion has the same composition as the labelled product. · WHO reports approximately 400 mg sodium per gram of salt; this is an approximate salt equivalent, not a declared salt amount.",
+      "intakeAxeViolationIds": [],
+      "resultAxeViolationIds": [],
+      "pageErrors": [],
+      "externalRequests": [],
+      "screenshots": [
+        "docs/evidence/private/salt-equivalent/mobile-intake.png",
+        "docs/evidence/private/salt-equivalent/mobile-result.png"
+      ]
+    },
+    {
+      "viewport": "1440x900",
+      "syntheticTextOnlyInput": true,
+      "sodiumObservationVisible": true,
+      "approximateSaltEquivalentAnswer": true,
+      "notMisrepresentedAsPrintedSalt": true,
+      "calculationVisible": true,
+      "calculationDetails": "See the label & calculation maths\nNutrient\tLabel reading\tLabel basis\tCalculation amount\nSodium\t500 mg\t100 g\t150 mg\n\nSodium in 30 g: 500 mg × 30 g ÷ 100 g\nThe label reading and its stated basis are correct. · The portion has the same composition as the labelled product.\n\nApproximate salt equivalent in 30 g: 500 mg sodium × 30 g ÷ 100 g ÷ 400 mg sodium per g salt\nThe label reading and its stated basis are correct. · The portion has the same composition as the labelled product. · WHO reports approximately 400 mg sodium per gram of salt; this is an approximate salt equivalent, not a declared salt amount.",
+      "intakeAxeViolationIds": [],
+      "resultAxeViolationIds": [],
+      "pageErrors": [],
+      "externalRequests": [],
+      "screenshots": [
+        "docs/evidence/private/salt-equivalent/desktop-intake.png",
+        "docs/evidence/private/salt-equivalent/desktop-result.png"
+      ]
+    }
+  ]
+}

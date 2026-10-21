@@ -188,6 +188,35 @@ describe('nutrition numerical invariants',()=>{
     expect(audit.calculations.find(c=>c.nutrient==='sodium')?.result).toBe(200);
     expect(audit.findings.find(f=>f.title.includes('equivalent'))?.sourceIds).toContain('who-sodium');
   });
+  it('answers a sodium-only salt-amount question with a sourced approximate equivalent',()=>{
+    const pkg=label('Per 100 g\nSodium 500 mg');
+    const sodiumObservation=pkg.observations.find(o=>o.field==='sodium')!;
+    for(const portion of [15,30,60]){
+      const audit=buildAudit(pkg,portion,'g',defaultProfile,'How much salt?');
+      const equivalent=audit.calculations.find(c=>c.id==='calc-salt-from-sodium');
+      expect(equivalent?.result).toBeCloseTo(portion*5/400,8);
+      expect(equivalent).toMatchObject({nutrient:'salt',unit:'g',input:500,inputUnit:'mg',basisAmount:100,portion,portionUnit:'g'});
+      expect(equivalent?.observationIds).toContain(sodiumObservation.id);
+      expect(equivalent?.observationIds.every(id=>pkg.observations.some(observation=>observation.id===id))).toBe(true);
+      expect(equivalent?.formula).toContain('500 mg sodium');
+      const finding=audit.findings.find(f=>f.title==='Approximate salt equivalent from declared sodium');
+      expect(finding).toMatchObject({sourceIds:['who-sodium'],calculationIds:['calc-sodium','calc-salt-from-sodium']});
+      expect(finding?.observationIds).toContain(sodiumObservation.id);
+      expect(audit.sources.map(s=>s.id)).toContain('who-sodium');
+      expect(audit.answer).toMatch(/approximately .* g salt equivalent.*not a printed salt declaration/i);
+    }
+    expect(pkg.nutrients.map(n=>n.key)).toEqual(['sodium']);
+  });
+  it('withholds sodium-derived salt when basis dimensions mismatch and never overrides declared salt',()=>{
+    const volumeOnly=label('Per 100 ml\nSodium 500 mg');
+    expect(buildAudit(volumeOnly,30,'g',defaultProfile,'How much salt?').calculations).toHaveLength(0);
+
+    const declared=label('Per 100 g\nSalt 2 g\nSodium 800 mg');
+    const audit=buildAudit(declared,30,'g',defaultProfile,'How much salt?');
+    expect(audit.calculations.find(c=>c.id==='calc-salt-from-sodium')).toBeUndefined();
+    expect(audit.calculations.find(c=>c.id==='calc-salt')?.result).toBeCloseTo(.6);
+    expect(audit.findings.some(f=>f.title==='Approximate salt equivalent from declared sodium')).toBe(false);
+  });
   it('withholds inconsistent salt/sodium and incompatible mass-volume conversions',()=>{
     expect(calc('Per 100 g\nSalt 1 g\nSodium 800 mg').calculations).toHaveLength(0);
     expect(calc('Per 100 ml\nSugars 10 g',30,'g').calculations).toHaveLength(0);

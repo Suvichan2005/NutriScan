@@ -108,6 +108,15 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     calculations.push(converted);
     finding({title:converted.label,detail:`Approximately ${amountText(converted.result)} mg sodium for this portion. Derived from salt, not a separate measured sodium value.`,status:'calculated',observationIds:converted.observationIds,sourceIds:['who-sodium'],calculationIds:[saltCalc.id,converted.id]});
   }
+  const asksSaltAmount=/\bsalt\b/i.test(question)&&/\b(?:how much|amount|equivalent|convert|compare|contain|in this|per serving|per portion)\b/i.test(question);
+  if(asksSaltAmount&&!pkg.nutrients.some(n=>n.key==='salt')&&candidates.has('sodium')){
+    const sodiumCalc=calculations.find(c=>c.nutrient==='sodium');
+    if(sodiumCalc){
+      const converted:Calculation={...sodiumCalc,id:'calc-salt-from-sodium',label:`Approximate salt equivalent in ${portion} ${portionUnit}`,nutrient:'salt',input:sodiumCalc.input,inputUnit:'mg',result:sodiumCalc.result/400,unit:'g',formula:`${sodiumCalc.input} mg sodium × ${portion} ${portionUnit} ÷ ${sodiumCalc.basisAmount} ${sodiumCalc.portionUnit} ÷ 400 mg sodium per g salt`,assumptions:[...sodiumCalc.assumptions,'WHO reports approximately 400 mg sodium per gram of salt; this is an approximate salt equivalent, not a declared salt amount.']};
+      calculations.push(converted);
+      finding({title:'Approximate salt equivalent from declared sodium',detail:`Approximately ${amountText(converted.result)} g salt equivalent for this portion, calculated from the declared sodium value. This is not a printed salt declaration.`,status:'calculated',observationIds:converted.observationIds,sourceIds:['who-sodium'],calculationIds:[sodiumCalc.id,converted.id]});
+    }
+  }
   const sodiumCalc=calculations.find(c=>c.nutrient==='sodium');
   if(sodiumCalc&&deep&&explicitlyUnder18){
     finding({title:'Adult sodium reference not applied',detail:'The profile identifies an under-18 age group, so this audit does not apply a general-adult sodium reference. The package-derived amount remains available; age-appropriate guidance requires a source for the relevant age and jurisdiction.',status:'context',observationIds:sodiumCalc.observationIds,sourceIds:['who-sodium'],calculationIds:[sodiumCalc.id]});
@@ -190,7 +199,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     const requested: NutrientKey|undefined=(['addedSugars','saturatedFat',...nutrientKeys] as NutrientKey[]).find(key=>new RegExp(key==='sugars'?'sugars?':key==='addedSugars'?'added sugars?':key==='fiber'?'fib(?:er|re)':key==='fat'?'\\bfat\\b':key==='saturatedFat'?'saturated':key==='carbohydrate'?'carbs?|carbohydrate':key,'i').test(question));
     if(requested&&!dietRelevant){
       answerIntent='specific nutrient quantity';const result=calculations.find(c=>c.nutrient===requested);
-      answer=result?`For ${amountText(portion)} ${portionUnit}, the readable label gives ${amountText(result.result)} ${result.unit} ${display[requested].toLowerCase()}.`:`${display[requested]} for this portion is unknown. Confirm the printed amount, unit and serving basis; missing is not zero.`;
+      answer=result?.id==='calc-salt-from-sodium'?`For ${amountText(portion)} ${portionUnit}, the declared sodium corresponds to approximately ${amountText(result.result)} g salt equivalent using WHO's approximate relation. This is calculated from sodium, not a printed salt declaration.`:result?`For ${amountText(portion)} ${portionUnit}, the readable label gives ${amountText(result.result)} ${result.unit} ${display[requested].toLowerCase()}.`:`${display[requested]} for this portion is unknown. Confirm the printed amount, unit and serving basis; missing is not zero.`;
     }else if(!/label|portion|packet|nutrition|mean|audit|analyse|analyze|how much|how many|daily|diet|safe|suitable|reasonable|eat|allerg|intoler/i.test(question)){
       answerIntent='unsupported local question';answer='The package alone does not establish an answer to that question. This local rule engine can explain label amounts, additive identities and portion scenarios; a question-specific authoritative source or more context is needed.';
     }
