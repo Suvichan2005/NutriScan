@@ -17,6 +17,13 @@ describe('conservative package extraction',()=>{
     expect(context?.observationIds).toEqual([pkg.observations.find(o=>o.field==='user-description')?.id]);
     expect(context?.detail).toMatch(/not been verified/i);
   });
+  it('does not promote OCR codes outside the ingredient section into additive findings',()=>{
+    const noisy=parseLabel('Coca-Cola\nNutrition information per 100 ml\nSugars 10.6 g\nhy E000\nProtein 0 g',{origin:'ocr'});
+    expect(noisy.additives).toEqual([]);
+    expect(noisy.observations.some(observation=>observation.field==='additive:000')).toBe(false);
+    const declared=parseLabel('Coca-Cola\nIngredients: Carbonated water, colour (INS 955)\nNutrition information per 100 ml\nSugars 10.6 g',{origin:'ocr'});
+    expect(declared.additives).toEqual(['955']);
+  });
   it('preserves explicit zero and leaves missing fields unknown',()=>{
     const pkg=label('Nutrition per 100 g\nSugars 0 g\nSodium 500 mg');
     expect(pkg.nutrients.find(n=>n.key==='sugars')?.value).toBe(0);

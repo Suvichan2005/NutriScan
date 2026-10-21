@@ -1,6 +1,6 @@
 # NutriScan
 
-Local-first packaged-food evidence workspace. A standalone Next.js / React / TypeScript application. Built from the owner's October 2026 mission; no teammate source implementation existed in this folder at bootstrap. Historical team assignments remain in the owner's ignored handoff bundle.
+Local-first packaged-food evidence workspace. A standalone Next.js / React / TypeScript application for reading labels, checking calculations and inspecting supporting sources.
 
 ## Run on Windows
 

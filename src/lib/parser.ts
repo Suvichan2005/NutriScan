@@ -122,8 +122,11 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
     if(conflict){nutrient.status='conflict';warnings.push(`${nutrient.key}: conflicting readings retained; calculation withheld.`);}
     if(!nutrient.basis) warnings.push(`${nutrient.key}: an unambiguous mass or volume basis is required.`);
   }
-  const additiveCodes=detectAdditives(text);
-  for(const code of additiveCodes){const line=lines.find(l=>detectAdditives(`Ingredients: ${l}`).includes(code));observe(`additive:${code}`,line??code);}
+  // Additive identifiers are meaningful here only when attached to the label's
+  // ingredient section. OCR noise elsewhere (for example, `E000` misread near
+  // a barcode or nutrition table) must not become a product ingredient.
+  const additiveCodes=detectAdditives(ingredients.join('\n'));
+  for(const code of additiveCodes){const line=ingredients.find(l=>detectAdditives(`Ingredients: ${l}`).includes(code));observe(`additive:${code}`,line??code);}
   const name=labelName(lines);observe('name',name);
   const userDescription=options.userDescription?.trim().slice(0,4000);
   if(userDescription)observations.push({id:`${id}-user-description`,field:'user-description',text:userDescription,side:'text',origin:'user',confidence:null});

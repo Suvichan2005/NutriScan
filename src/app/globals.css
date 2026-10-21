@@ -41,3 +41,4 @@ footer{border-top:1px solid var(--line);margin-top:35px;padding:22px 0 25px;disp
 .comparison-normalized{display:block;margin-top:4px;color:#304f30;font-weight:600;white-space:nowrap}
 .comparison-unavailable{color:#80634a}
 .comparison .table-scroll table{min-width:640px}
+@media(max-width:700px){.scan-guide{grid-template-columns:1fr;gap:0}.scan-guide>.eyebrow,.scan-guide h2,.example-action{grid-column:1}.scan-guide h2{font-size:21px;margin:10px 0 12px}.guide-step{margin:10px 0;gap:11px}.guide-step p{max-width:none}.example-action{margin-top:14px}}
