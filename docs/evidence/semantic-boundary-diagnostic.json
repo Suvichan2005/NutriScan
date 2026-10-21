@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "local-semantic-retrieval-boundary-diagnostic",
-  "generatedAt": "2026-10-21T11:26:35.828Z",
+  "generatedAt": "2026-10-21T16:13:38.036Z",
   "queryCount": 12,
   "modelMode": "pinned local MiniLM embeddings plus lexical ranking",
   "results": [
@@ -62,9 +62,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-carbohydrate-2023",
-      "semanticScore": 0.54017,
+      "semanticScore": 0.54455,
       "lexicalScore": 1,
-      "hybridScore": 0.58616,
+      "hybridScore": 0.59009,
       "expectedBehaviorMet": true
     },
     {
@@ -74,9 +74,9 @@
       ],
       "status": "ok",
       "topSourceId": "fao-955",
-      "semanticScore": 0.36571,
+      "semanticScore": 0.36147,
       "lexicalScore": 1,
-      "hybridScore": 0.42914,
+      "hybridScore": 0.42533,
       "expectedBehaviorMet": true
     },
     {
@@ -87,9 +87,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-carbohydrate-2023",
-      "semanticScore": 0.61433,
+      "semanticScore": 0.61979,
       "lexicalScore": 1,
-      "hybridScore": 0.6529,
+      "hybridScore": 0.65781,
       "expectedBehaviorMet": true
     },
     {
@@ -99,9 +99,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-sodium",
-      "semanticScore": 0.57539,
+      "semanticScore": 0.55612,
       "lexicalScore": 1,
-      "hybridScore": 0.61785,
+      "hybridScore": 0.60051,
       "expectedBehaviorMet": true
     },
     {
@@ -111,9 +111,9 @@
       ],
       "status": "ok",
       "topSourceId": "who-sugars-2015",
-      "semanticScore": 0.57669,
+      "semanticScore": 0.57717,
       "lexicalScore": 1,
-      "hybridScore": 0.61902,
+      "hybridScore": 0.61945,
       "expectedBehaviorMet": true
     },
     {

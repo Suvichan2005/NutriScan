@@ -35,18 +35,23 @@ try {
     await page.getByRole('textbox', { name: 'Label text' }).fill('Ingredients: oats, water.');
     await page.getByRole('button', { name: 'Read label text' }).click();
     await page.locator('.results-section').waitFor({ state: 'visible' });
-    await page.getByLabel('Public search terms').fill('INS 955');
+    await page.getByRole('textbox', { name: 'Ask about this package' }).fill('What is potassium sorbate?');
+    await page.getByRole('button', { name: 'Send follow-up' }).click();
+    const additiveFollowup = page.locator('.chat-turn').last();
+    await additiveFollowup.getByText(/INS 202 is Potassium Sorbate/).waitFor({ state: 'visible' });
+    const additiveFollowupText = await additiveFollowup.innerText();
+    const additiveQuestionDoesNotAssertPresence = /does not establish that this package contains it/i.test(additiveFollowupText);
+    const additiveAnswerSourceVisible = await page.locator('.sources-section').getByText('JECFA additive identity: Potassium Sorbate (202)').count() > 0;
+
+    await page.getByLabel('Public search terms').fill('INS 211');
+    const exactIdentifierQuery = await page.getByLabel('Public search terms').inputValue() === 'INS 211';
     await page.getByRole('button', { name: 'Local evidence search' }).click();
-    const evidenceCard = page.locator('.research-results article').filter({ hasText: 'Sucralose (955)' }).first();
-    await evidenceCard.waitFor({ state: 'visible', timeout: 30_000 });
-    const sourceLink = evidenceCard.getByRole('link').first();
-    const sourceHref = await sourceLink.getAttribute('href');
-    const sourceText = await evidenceCard.innerText();
-    const exactCodexQuery = await page.getByLabel('Public search terms').inputValue() === 'INS 955';
-    const exactCodexSourceVisible = /Sucralose \(955\)/.test(sourceText);
-    const exactCodexSourceLink = sourceHref === 'https://www.fao.org/gsfaonline/additives/details.html?id=137';
-    const codexPublisherAndJurisdictionVisible = /FAO\/WHO Codex Alimentarius/.test(sourceText) && /International Codex; not national authorization/.test(sourceText);
-    const codexSourceLimitationsVisible = /does not establish dose, exposure, safety for an individual, or current Indian permission/i.test(sourceText);
+    const sodiumBenzoateCard = page.locator('.research-results article').filter({ hasText: 'Sodium Benzoate (211)' }).first();
+    await sodiumBenzoateCard.waitFor({ state: 'visible', timeout: 30_000 });
+    const sodiumBenzoateText = await sodiumBenzoateCard.innerText();
+    const sodiumBenzoateHref = await sodiumBenzoateCard.getByRole('link').first().getAttribute('href');
+    const sodiumBenzoateLimitVisible = /does not establish ingredient presence, amount, food-category permission/i.test(sodiumBenzoateText);
+    const sodiumBenzoatePublisherAndJurisdictionVisible = /Joint FAO\/WHO Expert Committee on Food Additives/.test(sodiumBenzoateText) && /International JECFA specifications; not national authorization/.test(sodiumBenzoateText);
 
     await page.getByLabel('Public search terms').fill('WHO adult naturally occurring dietary fibre 25 g daily');
     const whoFibreQuery = await page.getByLabel('Public search terms').inputValue() === 'WHO adult naturally occurring dietary fibre 25 g daily';
@@ -90,11 +95,14 @@ try {
 
     const outcome = {
       viewport: `${viewport.width}x${viewport.height}`,
-      exactIdentifierQuery: exactCodexQuery,
-      officialCodexSourceVisible: exactCodexSourceVisible,
-      officialSourceLink: exactCodexSourceLink,
-      publisherAndJurisdictionVisible: codexPublisherAndJurisdictionVisible,
-      sourceLimitationsVisible: codexSourceLimitationsVisible,
+      exactIdentifierQuery,
+      officialJecfaSourceVisible: /Sodium Benzoate \(211\)/.test(sodiumBenzoateText),
+      officialSourceLink: sodiumBenzoateHref === 'https://www.fao.org/food/food-safety-quality/scientific-advice/jecfa/jecfa-additives/details-simple/en/?ins_id=211',
+      publisherAndJurisdictionVisible: sodiumBenzoatePublisherAndJurisdictionVisible,
+      sourceLimitationsVisible: sodiumBenzoateLimitVisible,
+      additiveNameFollowupGrounded: /INS 202 is Potassium Sorbate/.test(additiveFollowupText),
+      additiveQuestionDoesNotAssertPresence,
+      additiveAnswerSourceVisible,
       whoFibreQuery,
       whoGuidelineVisible: /at least 25 g\/day of naturally occurring dietary fibre/.test(whoSourceText) && /400 g\/day of vegetables and fruits/.test(whoSourceText),
       whoOfficialSourceLink: whoHref === 'https://www.who.int/publications/i/9789240073593',
@@ -126,11 +134,11 @@ const receipt = {
   generatedAt: new Date().toISOString(),
   browser: 'Chrome via Playwright, headless',
   origin: 'loopback',
-  query: 'INS 955; WHO free-sugars guidance; WHO dietary-fibre guidance',
-  sourceExpected: 'FAO/WHO Codex additive identity record, WHO carbohydrate-quality guidance and WHO free-sugars guideline.',
+  query: 'Potassium sorbate conversational follow-up; INS 211; WHO free-sugars guidance; WHO dietary-fibre guidance',
+  sourceExpected: 'FAO/WHO JECFA additive identity record, WHO carbohydrate-quality guidance and WHO free-sugars guideline.',
   limitations: ['Uses explicitly typed queries and a small curated source corpus.', 'The development relevance floor and query-intent guard are not calibrated on independent user queries.', 'Source retrieval is not proof of product ingredients, dose, exposure, safety for an individual or current Indian permission.'],
   outcomes,
 };
 await writeFile('docs/evidence/local-evidence-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
 console.log(JSON.stringify({ receipt: 'docs/evidence/local-evidence-browser.json', outcomes }, null, 2));
-if (outcomes.length !== 2 || outcomes.some((outcome) => !outcome.exactIdentifierQuery || !outcome.officialCodexSourceVisible || !outcome.officialSourceLink || !outcome.publisherAndJurisdictionVisible || !outcome.sourceLimitationsVisible || !outcome.whoFibreQuery || !outcome.whoGuidelineVisible || !outcome.whoOfficialSourceLink || !outcome.whoPackageScopeLimitVisible || !outcome.whoSugarQuery || !outcome.whoFreeSugarGuidelineVisible || !outcome.whoSugarOfficialSourceLink || !outcome.whoSugarPackageScopeLimitVisible || !outcome.unrelatedQueryAbstained || !outcome.currentLawQueryAbstained || !outcome.fssaiQueryAbstained || outcome.evidenceRouteStatuses.length < 6 || outcome.evidenceRouteStatuses.some((status) => status !== 200) || !outcome.noNonLoopbackRequests || outcome.axeViolationIds.length || outcome.pageErrors.length)) process.exitCode = 1;
+if (outcomes.length !== 2 || outcomes.some((outcome) => !outcome.exactIdentifierQuery || !outcome.officialJecfaSourceVisible || !outcome.officialSourceLink || !outcome.publisherAndJurisdictionVisible || !outcome.sourceLimitationsVisible || !outcome.additiveNameFollowupGrounded || !outcome.additiveQuestionDoesNotAssertPresence || !outcome.additiveAnswerSourceVisible || !outcome.whoFibreQuery || !outcome.whoGuidelineVisible || !outcome.whoOfficialSourceLink || !outcome.whoPackageScopeLimitVisible || !outcome.whoSugarQuery || !outcome.whoFreeSugarGuidelineVisible || !outcome.whoSugarOfficialSourceLink || !outcome.whoSugarPackageScopeLimitVisible || !outcome.unrelatedQueryAbstained || !outcome.currentLawQueryAbstained || !outcome.fssaiQueryAbstained || outcome.evidenceRouteStatuses.length !== 6 || outcome.evidenceRouteStatuses.some((status) => status !== 200) || !outcome.noNonLoopbackRequests || outcome.axeViolationIds.length || outcome.pageErrors.length)) process.exitCode = 1;

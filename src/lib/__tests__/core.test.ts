@@ -415,12 +415,26 @@ describe('genuine local evidence retrieval',()=>{
   it('uses exact additive identities, never substring codes or aliases',()=>{
     expect(lookupAdditive('INS 955')?.name).toBe('Sucralose');expect(lookupAdditive('E-955')?.code).toBe('955');
     expect(lookupAdditive('msg')?.code).toBe('621');expect(lookupAdditive('9550')).toBeUndefined();expect(lookupAdditive('sucralose syrup')).toBeUndefined();
+    expect(lookupAdditive('potassium sorbate')?.code).toBe('202');
+    expect(lookupAdditive('sodium benzoate')?.sourceIds).toEqual(['fao-211']);
+    expect(lookupAdditive('FD&C Yellow No. 5')?.code).toBe('102');
+    expect(lookupAdditive('calcium disodium edetate')?.code).toBe('385');
     expect(detectAdditives('Ingredients: flour, sweetener (955), xanthan gum (INS 415), E9550')).toEqual(expect.arrayContaining(['955','415']));
+    expect(detectAdditives('Ingredients: potassium sorbate, sodium benzoate, tartrazine, calcium disodium EDTA')).toEqual(expect.arrayContaining(['102','202','211','385']));
     expect(detectAdditives('Barcode 9550000000000')).toEqual([]);
+  });
+  it('answers an additive-name question without implying the package contains it',()=>{
+    const audit=buildAudit(label('Per 100 g\nEnergy 100 kcal'),30,'g',defaultProfile,'What is potassium sorbate?');
+    expect(audit.answer).toMatch(/INS 202 is Potassium Sorbate/);
+    expect(audit.answer).toMatch(/does not establish that this package contains it/);
+    expect(audit.sources.map(source=>source.id)).toContain('fao-202');
   });
   it('retrieves named authoritative sources with bounded inspectable scores',()=>{
     expect(retrieveEvidence('high blood pressure salty snack')[0].source.id).toBe('who-sodium');
     expect(retrieveEvidence('INS 955')[0].source.id).toBe('fao-955');
+    expect(retrieveEvidence('INS 211')[0].source.id).toBe('fao-211');
+    expect(retrieveEvidence('INS 202')[0].source.id).toBe('fao-202');
+    expect(retrieveEvidence('INS 102')[0].source.id).toBe('fao-102');
     expect(retrieveEvidence('sweeteners weight control').some(h=>h.source.id==='who-nss')).toBe(true);
     expect(retrieveEvidence('ICMR India dietary guidelines').some(h=>h.source.id==='icmrnin-dgi-2024')).toBe(true);
     const diabetes=retrieveEvidence('Does everyone with diabetes need to count carbs? What other meal planning methods are available?');

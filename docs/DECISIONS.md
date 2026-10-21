@@ -314,6 +314,14 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - Review confirmed that synthesis mode already supports concise profile-specific paraphrases, with exact evidence spans and an explicit non-entailment disclosure. Citation matching establishes traceability, not that a claim follows from its evidence. No synthesis or safety behavior changed; Gemini remains disabled.
 - The focused assist contract test passed (10 tests), the full suite passed 284 tests across 31 files, and TypeScript typecheck passed. No provider call or live model claim was made.
 
+## 21 October 2026 — keep noisy OCR and additive identity evidence inspectable
+
+- Re-audit found the existing bounded assist contract already carries every OCR line, order, line/word geometry and uncalibrated confidence, capture engine/settings and session image provenance, plus parser-rejected/conflicting numeric and basis candidates. Retrieved sources can accompany the request. Tentative candidates require exact spans to original OCR lines, remain explicitly tentative and never enter package facts; image bytes require a separate explicit inspection action. The contract has line geometry rather than annotated table cells and does not retain a durable image digest.
+- Keep the existing synthesis mode for conversational, profile-aware explanations. Every factual claim still needs validated IDs and exact cited spans; validation establishes traceability, not entailment. Keep Gemini disabled. No schema rewrite or provider call was warranted.
+- Expanded the small identity corpus with official FAO/WHO Tartrazine (102), Potassium Sorbate (202), Sodium Benzoate (211) and Calcium Disodium EDTA (385) records. Treat them as identity/synonym references only, not proof of ingredient presence, dose, national permission or individual safety.
+- Offline assist tests and the 18-case developer retrieval evaluation remain distinct from provider or held-out evidence. Chrome/Playwright checked the local source journey at phone and desktop sizes; all 12 evidence-route calls returned HTTP 200, with no Axe violations, page errors or off-loopback requests.
+- A focused offline regression exercises the noisy OCR + retrieved JECFA synonym + tentative candidate path; it passed with the full 298-test suite across 33 files and TypeScript typecheck. This is contract evidence only.
+
 ## 21 October 2026 — let users add package evidence from unresolved results
 
 - When the package name is unidentified or no ingredients were read, show a direct action to add a front, ingredients, or barcode photo. It reuses the existing local multi-photo input, returns attention to capture, and stays hidden at the ten-photo limit; it does not infer a missing fact or invoke a remote service.

@@ -141,6 +141,41 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-1',role:'value',wordIndexes:[0]}]}]},data).tentativeCandidates).toEqual([]);
   });
 
+  it('keeps a noisy OCR entity normalization tentative while linking both retrieved knowledge and original words',()=>{
+    const noisyLine={
+      id:'line-additive',field:'ocr-line' as const,text:'Calciurn disodium edetate',side:'back' as const,confidence:58,origin:'ocr' as const,imageId,
+      bbox:{x0:12,y0:240,x1:258,y1:262},
+      ocrWords:[
+        {wordIndex:0,text:'Calciurn',confidence:54,bbox:{x0:12,y0:240,x1:105,y1:262}},
+        {wordIndex:1,text:'disodium',confidence:83,bbox:{x0:112,y0:240,x1:182,y1:262}},
+        {wordIndex:2,text:'edetate',confidence:91,bbox:{x0:189,y0:240,x1:258,y1:262}}
+      ],
+      readingOrder:{runId,blockIndex:0,paragraphIndex:0,lineIndex:5}
+    };
+    const rawText=[...lines,noisyLine.text].join('\n');
+    const pkg=parseLabel(rawText,{origin:'ocr',observations:[...observations,noisyLine],ocrCaptures:[capture]});
+    const hit=retrieveEvidence('INS 385',4).find(item=>item.source.id==='fao-385');
+    expect(hit).toBeDefined();
+    const evidence=assistEvidenceContext({auditSources:[],localSearch:hit?[{...hit.source,score:hit.score}]:[],research:[]});
+    const data=assistInput.parse({consent:true,question:'Could this noisy ingredient line be calcium disodium EDTA?',package:pkg,evidence});
+    const source=data.evidence?.find(item=>item.id==='fao-385')!;
+    const sourceSpan='The FAO JECFA entry identifies Calcium Disodium Ethylenediaminetetraacetate and lists calcium disodium edetate and calcium disodium EDTA as synonyms; it links Codex GSFA INS number 385.';
+    const candidate={
+      candidateId:'candidate-additive-1',kind:'additive' as const,field:'additive',proposedValue:'Calcium Disodium EDTA (INS 385)',numericValue:null,unit:null,basis:null,
+      normalizedEntity:'Calcium Disodium EDTA',status:'tentative' as const,observationIds:[noisyLine.id],sourceIds:[source.id],
+      supportingSpans:[{kind:'observation' as const,id:noisyLine.id,quote:noisyLine.text},{kind:'source' as const,id:source.id,quote:sourceSpan}],
+      ocrWordEvidence:[{observationId:noisyLine.id,role:'identity' as const,wordIndexes:[0,1,2]}],
+      uncertainty:'The OCR spelling is uncertain. This source supports an entity-name match, not a confirmed package ingredient or amount.'
+    };
+    const result=validateClaims({answer:'ignored',claims:[],tentativeCandidates:[candidate],limitations:[],inspectImage:null},data);
+
+    expect(source.summary).toContain(sourceSpan);
+    expect(data.package.observations.find(item=>item.id===noisyLine.id)?.ocrWords).toEqual(noisyLine.ocrWords);
+    expect(pkg.additives).not.toContain('385');
+    expect(result.tentativeCandidates).toEqual([candidate]);
+    expect(result.answer).toContain('Not verified and not added to package facts.');
+  });
+
   it('supports careful profile-aware paraphrases with exact user-context and OCR spans',()=>{
     const pkg=makePackage();
     const profile={...defaultProfile,goals:'compare quick breakfast options'};
