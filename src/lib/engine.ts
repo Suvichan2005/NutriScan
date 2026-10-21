@@ -1,5 +1,5 @@
 import { packageSchema, profileSchema, nutrientKeys, type Audit, type Calculation, type Finding, type Nutrient, type NutrientKey, type PackageData, type Profile } from './contracts';
-import { detectAdditives, evidenceSources, lookupAdditive, retrieveEvidence } from './knowledge';
+import { detectAdditives, evidenceSources, lookupAdditive, resolveTentativeAdditiveIdentity, retrieveEvidence } from './knowledge';
 import { findDeclaredFoodMentions } from './ingredient-context';
 
 const display:Record<NutrientKey,string>={energy:'Energy',carbohydrate:'Carbohydrate',sugars:'Total sugars',addedSugars:'Added sugars',protein:'Protein',fat:'Fat',saturatedFat:'Saturated fat',fiber:'Fibre',sodium:'Sodium',salt:'Salt'};
@@ -74,6 +74,32 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|\bfree sugars?\b|\badded sugars?\b|ICMR|\bNIN\b/i.test(question)||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
   const trace:Audit['trace']=[{tool:'reuse_package_observations',reason:'Use the current label evidence for this question; no rescan required.',status:`${pkg.observations.length} observations`},{tool:'calculate_portions',reason:'Scale only unambiguous values with compatible explicit bases.',status:'local deterministic calculation'}];
   const finding=(data:Omit<Finding,'id'>)=> {data.sourceIds.forEach(s=>sourceIds.add(s));findings.push({...data,id:`finding-${findings.length+1}`});};
+  let examinedRawOcrLines=0;let tentativeAdditiveCount=0;
+  for(const observation of pkg.observations){
+    if(observation.field!=='ocr-line'||observation.origin!=='ocr')continue;
+    if(examinedRawOcrLines>=32)break;
+    examinedRawOcrLines++;
+    // Evaluate the complete, bounded raw line; never truncate a longer line
+    // into a misleading prefix that could look like an exact identity phrase.
+    if(observation.text.length>160||/[\r\n]/.test(observation.text))continue;
+    const candidate=resolveTentativeAdditiveIdentity(observation.text);
+    if(!candidate)continue;
+    const lineTokenCount=new Set(observation.text.toLowerCase().match(/[a-z0-9]{3,}/g)??[]).size;
+    const matchedTokenCount=candidate.exactTokens.length+candidate.fuzzyTokens.length;
+    // Reject matches embedded in unrelated line prefixes/suffixes. The
+    // resolver's own phrase threshold remains useful for direct queries;
+    // package observations require near-complete coverage of the OCR line.
+    if(lineTokenCount<2||matchedTokenCount/lineTokenCount<0.8)continue;
+    const sourceIds=candidate.sourceIds.filter(id=>evidenceSources.some(item=>item.id===id&&item.category==='registry'));
+    if(!sourceIds.length)continue;
+    tentativeAdditiveCount++;
+    finding({
+      title:`Tentative additive identity candidate: INS ${candidate.code} ${candidate.name}`,
+      detail:`The original OCR line ${JSON.stringify(observation.text)} may be a noisy reading of ${candidate.name} (INS ${candidate.code}), based on the token match and linked identity source. This is a tentative identity only; it does not confirm that this ingredient or code is present on the package. Check the original label before relying on it.`,
+      status:'uncertain',observationIds:[observation.id],sourceIds,calculationIds:[],
+    });
+  }
+  if(examinedRawOcrLines)trace.push({tool:'resolve_tentative_additive_identity',reason:'Inspect only the first 32 raw OCR-line observations, evaluating complete lines up to 160 characters; candidate identity never changes package facts.',status:`${tentativeAdditiveCount} source-backed tentative candidate(s) from ${examinedRawOcrLines} bounded OCR line(s)`});
   if(pkg.userDescription){
     const descriptionIds=pkg.observations.filter(o=>o.field==='user-description').map(o=>o.id);
     finding({title:'User-provided product details',detail:`${pkg.userDescription} These details were supplied by the user and have not been verified against the package or an external product record.`,status:'context',observationIds:descriptionIds,sourceIds:[],calculationIds:[]});

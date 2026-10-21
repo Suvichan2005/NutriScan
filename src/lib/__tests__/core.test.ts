@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseLabel } from '../parser';
 import { buildAudit } from '../engine';
 import { defaultProfile, packageSchema, profileSchema, sourceSchema } from '../contracts';
-import { detectAdditives, evidenceSources, lookupAdditive, retrieveEvidence } from '../knowledge';
+import { detectAdditives, evidenceSources, lookupAdditive, resolveTentativeAdditiveIdentity, retrieveEvidence } from '../knowledge';
 
 const label=(body:string)=>parseLabel(`Synthetic test snack\n${body}`,{origin:'fixture',synthetic:true});
 const calc=(body:string,portion=30,unit:'g'|'ml'='g')=>buildAudit(label(body),portion,unit,defaultProfile,'How much sugar?');
@@ -422,6 +422,61 @@ describe('genuine local evidence retrieval',()=>{
     expect(detectAdditives('Ingredients: flour, sweetener (955), xanthan gum (INS 415), E9550')).toEqual(expect.arrayContaining(['955','415']));
     expect(detectAdditives('Ingredients: potassium sorbate, sodium benzoate, tartrazine, calcium disodium EDTA')).toEqual(expect.arrayContaining(['102','202','211','385']));
     expect(detectAdditives('Barcode 9550000000000')).toEqual([]);
+  });
+  it('keeps a noisy multi-token additive match tentative and source-linked',()=>{
+    const candidate=resolveTentativeAdditiveIdentity('Calciurn disodium edetate');
+    expect(candidate).toMatchObject({
+      status:'tentative',kind:'additive-identity-candidate',code:'385',name:'Calcium Disodium EDTA',
+      observedText:'Calciurn disodium edetate',matchedAlias:'calcium disodium edetate',
+      exactTokens:['disodium','edetate'],fuzzyTokens:[{observed:'calciurn',canonical:'calcium'}],
+      sourceIds:['fao-385'],interpretation:'possible-identity-only; package-presence-not-established',
+    });
+    expect(candidate?.margin).toBeGreaterThanOrEqual(0.15);
+    const hit=retrieveEvidence('Calciurn disodium edetate',4).find(item=>item.source.id==='fao-385');
+    expect(hit?.method).toBe('local-concept-keyword+lexical+exact+tentative-additive-candidate');
+    expect(hit?.tentativeAdditiveCandidate).toEqual(candidate);
+    expect(hit?.tentativeCandidateScore).toBe(1);
+    // The fuzzy resolver is additive-only: exact package-text detection remains unchanged.
+    expect(detectAdditives('Ingredients: Calciurn disodium edetate')).toEqual([]);
+  });
+  it('surfaces noisy OCR additive identity only as an uncertain source-backed finding',()=>{
+    const line='Calciurn disodium edetate';
+    const pkg=parseLabel('Nutrition information\nPer 100 g\nSaturated fat 3.4 g',{origin:'ocr',observations:[
+      {id:'raw-additive-385',field:'ocr-line',text:line,side:'back',origin:'ocr',confidence:48,imageId:'photo-back-1'},
+    ]});
+    const original=structuredClone(pkg);
+    const audit=buildAudit(pkg,50,'g',defaultProfile,'What is uncertain?');
+    const finding=audit.findings.find(item=>item.title==='Tentative additive identity candidate: INS 385 Calcium Disodium EDTA');
+    expect(finding).toMatchObject({status:'uncertain',observationIds:['raw-additive-385'],sourceIds:['fao-385'],calculationIds:[]});
+    expect(finding?.detail).toContain(line);
+    expect(finding?.detail).toMatch(/tentative identity only/i);
+    expect(audit.sources.map(source=>source.id)).toContain('fao-385');
+    expect(audit.trace.find(item=>item.tool==='resolve_tentative_additive_identity')?.status).toContain('1 source-backed tentative candidate');
+    expect(pkg).toEqual(original);
+    expect(pkg.additives).toEqual([]);
+    expect(pkg.nutrients).toEqual(original.nutrients);
+  });
+  it('does not match OCR phrase prefixes, overlong lines, non-OCR text or lines beyond the scan bound',()=>{
+    const observations=[
+      {id:'prefixed',field:'ocr-line',text:'Ingredients: Calciurn disodium edetate',side:'back' as const,origin:'ocr' as const,confidence:48},
+      {id:'overlong',field:'ocr-line',text:`Calciurn disodium edetate ${'x'.repeat(140)}`,side:'back' as const,origin:'ocr' as const,confidence:48},
+      {id:'derived-ingredients',field:'ingredients',text:'Calciurn disodium edetate',side:'back' as const,origin:'ocr' as const,confidence:48},
+      {id:'user-entered',field:'ocr-line',text:'Calciurn disodium edetate',side:'back' as const,origin:'user' as const,confidence:48},
+      ...Array.from({length:32},(_,index)=>({id:`noise-${index}`,field:'ocr-line',text:'No additive identity here',side:'back' as const,origin:'ocr' as const,confidence:40})),
+      {id:'after-bound',field:'ocr-line',text:'Calciurn disodium edetate',side:'back' as const,origin:'ocr' as const,confidence:48},
+    ];
+    const pkg=parseLabel('Nutrition information\nPer 100 g\nSaturated fat 3.4 g',{origin:'ocr',observations});
+    const audit=buildAudit(pkg,50,'g',defaultProfile);
+    expect(audit.findings.some(item=>item.title.startsWith('Tentative additive identity candidate:'))).toBe(false);
+    expect(pkg.additives).toEqual([]);
+  });
+  it('fails closed on single-token, short, unrelated, ambiguous and oversized phrases',()=>{
+    expect(resolveTentativeAdditiveIdentity('calciurn')).toBeUndefined();
+    expect(resolveTentativeAdditiveIdentity('sodium sulfate')).toBeUndefined();
+    expect(resolveTentativeAdditiveIdentity('sodium benzoate potassium sorbate')).toBeUndefined();
+    expect(resolveTentativeAdditiveIdentity('Calciurn disodium edetate '.padEnd(161,'x'))).toBeUndefined();
+    expect(resolveTentativeAdditiveIdentity('sodium benzoate potassium sorbate tartrazine xanthan gum sucralose citric acid msg')).toBeUndefined();
+    expect(resolveTentativeAdditiveIdentity('potassium sorbate')).toBeUndefined();
   });
   it('answers an additive-name question without implying the package contains it',()=>{
     const audit=buildAudit(label('Per 100 g\nEnergy 100 kcal'),30,'g',defaultProfile,'What is potassium sorbate?');

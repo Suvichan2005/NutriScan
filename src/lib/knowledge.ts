@@ -40,6 +40,101 @@ export function lookupAdditive(query:string): AdditiveRecord | undefined {
   const code = q.match(/^(?:(?:ins|e)\s*[-:]?\s*)?(\d{3,4}(?:[a-z]|\([ivx]+\))?)$/i)?.[1];
   return additives.find(a => (code && a.code === code) || a.aliases.some(alias=> normal(alias) === q));
 }
+
+export type TentativeAdditiveIdentityCandidate = {
+  status: 'tentative';
+  kind: 'additive-identity-candidate';
+  observedText: string;
+  code: string;
+  name: string;
+  matchedAlias: string;
+  exactTokens: string[];
+  fuzzyTokens: Array<{ observed: string; canonical: string }>;
+  sourceIds: string[];
+  interpretation: 'possible-identity-only; package-presence-not-established';
+  score: number;
+  margin: number;
+};
+
+const candidateTokens = (value:string):string[] => [...new Set(normal(value).match(/[a-z0-9]{3,}/g) ?? [])];
+const canonicalOcrToken = (value:string):string => value.replace(/rn/g,'m');
+function withinOneEdit(left:string,right:string):boolean {
+  if (Math.abs(left.length-right.length)>1) return false;
+  let i=0,j=0,mismatches=0;
+  while(i<left.length && j<right.length){
+    if(left[i]===right[j]){i++;j++;continue;}
+    if(++mismatches>1)return false;
+    if(left.length>right.length)i++;
+    else if(right.length>left.length)j++;
+    else {i++;j++;}
+  }
+  return mismatches + (i<left.length || j<right.length ? 1 : 0) <= 1;
+}
+
+/**
+ * Conservatively suggests an additive identity from a noisy multi-token phrase.
+ * This is an interpretation candidate only: it never records package presence.
+ */
+export function resolveTentativeAdditiveIdentity(query:string):TentativeAdditiveIdentityCandidate|undefined {
+  if(query.length>160)return undefined;
+  const queryTokens=candidateTokens(query);
+  if(queryTokens.length<2 || queryTokens.length>8 || lookupAdditive(query))return undefined;
+
+  const sourceIdsAvailable=new Set(evidenceSources.map(item=>item.id));
+  const candidates:Array<TentativeAdditiveIdentityCandidate>=[];
+  for(const additive of additives){
+    const sourceIds=additive.sourceIds.filter(id=>sourceIdsAvailable.has(id));
+    if(!sourceIds.length)continue;
+    let bestForAdditive:TentativeAdditiveIdentityCandidate|undefined;
+    for(const alias of additive.aliases){
+      const aliasTokens=candidateTokens(alias);
+      if(aliasTokens.length<2)continue;
+      const remainingAlias=new Set(aliasTokens);
+      const unmatchedQuery=new Set(queryTokens);
+      const exactTokens:string[]=[];
+      for(const token of queryTokens){
+        if(remainingAlias.has(token)){
+          exactTokens.push(token);remainingAlias.delete(token);unmatchedQuery.delete(token);
+        }
+      }
+      const fuzzyTokens:Array<{observed:string;canonical:string}>=[];
+      if(exactTokens.length<2)continue;
+      for(const observed of queryTokens){
+        if(!unmatchedQuery.has(observed))continue;
+        const normalizedObserved=canonicalOcrToken(observed);
+        const match=[...remainingAlias].find(canonical=>{
+          if(canonical.length<6 || observed.length<6)return false;
+          const normalizedCanonical=canonicalOcrToken(canonical);
+          return normalizedObserved===normalizedCanonical || withinOneEdit(normalizedObserved,normalizedCanonical);
+        });
+        if(match){
+          fuzzyTokens.push({observed,canonical:match});
+          remainingAlias.delete(match);unmatchedQuery.delete(observed);
+          if(fuzzyTokens.length>1)break;
+        }
+      }
+      const matchedCount=exactTokens.length+fuzzyTokens.length;
+      const aliasCoverage=matchedCount/aliasTokens.length;
+      const queryCoverage=matchedCount/queryTokens.length;
+      if(fuzzyTokens.length>1 || aliasCoverage<2/3 || queryCoverage<0.5)continue;
+      const score=Number((0.6*aliasCoverage+0.4*queryCoverage-0.15*fuzzyTokens.length).toFixed(4));
+      const candidate:TentativeAdditiveIdentityCandidate={
+        status:'tentative',kind:'additive-identity-candidate',observedText:query,
+        code:additive.code,name:additive.name,matchedAlias:alias,
+        exactTokens,fuzzyTokens,sourceIds,
+        interpretation:'possible-identity-only; package-presence-not-established',
+        score,margin:0,
+      };
+      if(!bestForAdditive || candidate.score>bestForAdditive.score)bestForAdditive=candidate;
+    }
+    if(bestForAdditive)candidates.push(bestForAdditive);
+  }
+  candidates.sort((a,b)=>b.score-a.score);
+  const best=candidates[0],runnerUp=candidates[1];
+  if(!best || (runnerUp && best.score-runnerUp.score<0.15))return undefined;
+  return {...best,margin:Number((best.score-(runnerUp?.score ?? 0)).toFixed(4))};
+}
+
 export function detectAdditives(text:string): string[] {
   const found = new Set<string>();
   for (const m of text.matchAll(/\b(?:INS\s*[-:]?\s*|E\s*[-:]?\s*)(\d{3,4}(?:[a-z]|\([ivx]+\))?)(?![\w])/gi)) found.add(m[1].toLowerCase());
@@ -71,16 +166,19 @@ export function embedEvidence(text:string):number[] {
   return vector.map(v=>v/norm);
 }
 const tokens = (s:string) => new Set(normal(s).match(/[a-z0-9]{3,}/g) ?? []);
-export type RetrievalHit = {source:EvidenceSource;score:number;semanticScore:number;lexicalScore:number;method:'local-concept-keyword+lexical+exact';corpusVersion:string};
+export type RetrievalHit = {source:EvidenceSource;score:number;semanticScore:number;lexicalScore:number;method:'local-concept-keyword+lexical+exact'|'local-concept-keyword+lexical+exact+tentative-additive-candidate';corpusVersion:string;tentativeAdditiveCandidate?:TentativeAdditiveIdentityCandidate;tentativeCandidateScore?:number};
 export function retrieveEvidence(query:string,limit=4):RetrievalHit[] {
   if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error('Evidence result limit must be 1–20.');
   if (query.length > 4000) throw new Error('Evidence query is too long.');
   const qv = embedEvidence(query); const qt = tokens(query); const exact = lookupAdditive(query);
+  const tentativeAdditive=resolveTentativeAdditiveIdentity(query);
   return evidenceSources.map(s=> {
     const content = `${s.title} ${s.summary} ${s.jurisdiction}`; const sv = embedEvidence(content); const st = tokens(content);
     const semanticScore = qv.reduce((sum,v,i)=>sum+v*sv[i],0);
     const lexicalScore = [...qt].filter(t=>st.has(t)).length / Math.max(1,qt.size);
-    const score = .55*semanticScore+.45*lexicalScore+(exact?.sourceIds.includes(s.id)?2:0);
-    return {source:s,score,semanticScore,lexicalScore,method:'local-concept-keyword+lexical+exact' as const,corpusVersion};
+    const hasTentativeCandidate=tentativeAdditive?.sourceIds.includes(s.id) ?? false;
+    const tentativeCandidateScore=hasTentativeCandidate?1:0;
+    const score = .55*semanticScore+.45*lexicalScore+(exact?.sourceIds.includes(s.id)?2:0)+tentativeCandidateScore;
+    return {source:s,score,semanticScore,lexicalScore,method:hasTentativeCandidate?'local-concept-keyword+lexical+exact+tentative-additive-candidate' as const:'local-concept-keyword+lexical+exact' as const,corpusVersion,...(hasTentativeCandidate?{tentativeAdditiveCandidate:tentativeAdditive,tentativeCandidateScore}:{})};
   }).filter(hit=>hit.score > .05).sort((a,b)=>b.score-a.score).slice(0,limit);
 }
