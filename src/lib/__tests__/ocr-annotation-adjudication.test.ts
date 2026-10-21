@@ -71,6 +71,12 @@ describe('offline OCR annotation adjudication',()=>{
     delete untraced.annotations.review.adjudication;
     const dataset=ocrAnnotatedDatasetSchema.parse({schemaVersion:2,datasetVersion:'missing-provenance',records:[untraced]});
     expect(()=>assertOcrDatasetSemantics(dataset)).toThrow(/requires source-pass and field-decision provenance/);
+
+    const promoted=structuredClone(record);
+    promoted.annotations.nutrients[1].numericValue=50;
+    promoted.annotations.nutrients[1].printedNumericText='50';
+    const promotedDataset=ocrAnnotatedDatasetSchema.parse({schemaVersion:2,datasetVersion:'promoted-ambiguity',records:[promoted]});
+    expect(()=>assertOcrDatasetSemantics(promotedDataset)).toThrow(/promotes numeric content from an unresolved disposition/);
   });
 
   it('rejects silent omissions, reused source fields and a disputed value promoted as clear',()=>{

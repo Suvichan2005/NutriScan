@@ -62,12 +62,33 @@ export function assertOcrDatasetSemantics(dataset: OcrAnnotatedDataset): void {
         if(provenance.sourcePasses.length!==2||provenance.sourcePasses[0].annotatorCode===provenance.sourcePasses[1].annotatorCode||new Set(provenance.sourcePasses.map(pass=>pass.reader)).size!==2){
           failures.push(`human-verified record ${record.imageId} requires two distinct source passes`);
         }
+        if(new Set(provenance.sourcePasses.map(pass=>pass.sha256.toLowerCase())).size!==2){
+          failures.push(`human-verified record ${record.imageId} requires distinct source-pass hashes`);
+        }
         const decisionIds=provenance.decisions.map(decision=>decision.fieldId);
         if(new Set(decisionIds).size!==decisionIds.length||decisionIds.length!==record.annotations.nutrients.length||record.annotations.nutrients.some(field=>!decisionIds.includes(field.fieldId))){
           failures.push(`human-verified record ${record.imageId} requires one traceable adjudication decision per final field`);
         }
         if(provenance.decisions.some(decision=>decision.readerAFieldId===null&&decision.readerBFieldId===null)){
           failures.push(`human-verified record ${record.imageId} contains an adjudication decision without source-field links`);
+        }
+        const canonicalRegionIds=provenance.regions.map(region=>region.canonicalRegionId);
+        const sourceRegionKeys=provenance.regions.map(region=>`${region.reader}:${region.sourceRegionId}`);
+        if(canonicalRegionIds.length!==record.annotations.tableRegions.length||new Set(canonicalRegionIds).size!==canonicalRegionIds.length||new Set(sourceRegionKeys).size!==sourceRegionKeys.length||record.annotations.tableRegions.some(region=>!canonicalRegionIds.includes(region.regionId))){
+          failures.push(`human-verified record ${record.imageId} requires one-to-one source-region mappings`);
+        }
+        const fieldsById=new Map(record.annotations.nutrients.map(field=>[field.fieldId,field]));
+        for(const decision of provenance.decisions){
+          const field=fieldsById.get(decision.fieldId);
+          if(!field)continue;
+          if(decision.disposition==='reader-a'&&decision.readerAFieldId===null)failures.push(`human-verified field ${record.imageId}/${field.fieldId} selects reader A without a source field`);
+          if(decision.disposition==='reader-b'&&decision.readerBFieldId===null)failures.push(`human-verified field ${record.imageId}/${field.fieldId} selects reader B without a source field`);
+          if(decision.disposition==='manual'&&field.status!=='clear')failures.push(`human-verified field ${record.imageId}/${field.fieldId} has a manual disposition but is unresolved`);
+          if(decision.disposition==='ambiguous'||decision.disposition==='not-visible'){
+            if(field.status!==decision.disposition||(field.printedNumericText??null)!==null||field.numericValue!==null||field.numericOperator!==null||field.unit!==null||field.basis!==null||field.basisText!==null){
+              failures.push(`human-verified field ${record.imageId}/${field.fieldId} promotes numeric content from an unresolved disposition`);
+            }
+          }
         }
       }
     }
