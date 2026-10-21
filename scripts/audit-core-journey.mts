@@ -130,7 +130,7 @@ try {
     const exportChunks: Buffer[] = [];
     for await (const chunk of exportedStream) exportChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     const exported = JSON.parse(Buffer.concat(exportChunks).toString('utf8')) as { package: {
-      observations: Array<{ field: string; imageId?: string; ocrWords?: Array<{ bbox: { x0: number; y0: number; x1: number; y1: number } }> }>;
+      observations: Array<{ id: string; field: string; imageId?: string; ocrWords?: Array<{ bbox: { x0: number; y0: number; x1: number; y1: number } }> }>;
       ocrCaptures?: Array<{ imageId: string; preparedImage: { width: number; height: number } }>;
       nutrients: Array<{ key: string; value: number; unit: string; basis: { amount: number; unit: string } | null; status: 'observed'|'corrected'|'conflict' }>;
       parserDiagnostics?: Array<{
@@ -202,7 +202,10 @@ try {
     const corrected = page.locator('.details-block table tbody tr').filter({ hasText: 'Saturated fat' });
     const correctedText = await corrected.innerText();
     const calculation = await corrected.locator('td').nth(2).innerText();
-    const retainedObservations = await page.locator('.observations-list p').count() === observations;
+    if (!(await originalObservations.evaluate((details) => (details as HTMLDetailsElement).open))) await originalObservations.locator('summary').click();
+    const renderedOriginalOcrIds = await originalObservations.locator('.observations-list .observation-entry:not(.correction-observation)').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-observation-id')).filter((id): id is string => id !== null));
+    const originalOcrIds = exported.package.observations.filter((item) => item.field === 'ocr-line').map((item) => item.id);
+    const retainedObservations = originalOcrIds.length === exportedOcrLines.length && originalOcrIds.every((id) => renderedOriginalOcrIds.includes(id));
     await page.locator('.nutrition-card').screenshot({ path: path.join(captureDir, `${prefix}-06-calculation.png`) });
     await axe('corrected calculation');
 

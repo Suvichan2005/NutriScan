@@ -1,5 +1,17 @@
 # Chronological decisions
 
+## 22 October 2026 — correct OCR browser scorer display-label aliases
+
+- The previous browser scorer looked for “Fat” and “Fiber,” while the result table renders “Total fat” and “Fibre.” Update only the evaluator labels and rerun the same 14 Chrome cases on the same two hash-verified development photos; keep the OCR engine, parsing policy and images unchanged.
+- Counts changed from 2 correct, 2 incorrect, 111 omitted and 3 withheld to 4 correct, 2 incorrect, 105 omitted and 7 withheld across 118 repeated field-case comparisons. Two repeated Saffola fat readings became exact matches; four rows previously counted as omitted are now correctly withheld because no comparable basis was established. The two exact Saffola fields recur across image conditions, so these are not four independent sample outcomes. Axe violations and page errors remained zero.
+- Keep the corrected receipt and update current summaries. Treat this as evaluation accounting correction, not OCR improvement or population accuracy. No reader, parser or architecture change is justified by this replay.
+
+## 22 October 2026 — verify corrected photo readings by preserving OCR source IDs
+
+- A correction creates a new user-originated observation, so acceptance must not require the total observation count to remain constant. Check instead that each OCR-line observation ID present in the pre-correction export still appears in the evidence ledger after correction.
+- Re-run the hash-verified development Saffola photo at 390×844 and 1440×900. All 16 original OCR-line IDs remained visible; the new correction stayed linked, and the 50 g calculation remained 1.7 g.
+- The same single-reader reference still yielded 1/9 exact fields, 0 incorrect, 5 omitted and 3 withheld. This revalidates the current product journey and provenance; it does not improve OCR or add an independent sample. The check and receipt are `scripts/audit-core-journey.mts` and `docs/evidence/core-journey-audit.json`.
+
 ## 22 October 2026 — explain dated FSSAI nutrient-content claim wording locally
 
 - Add a deterministic explanation for recorded high/rich-protein, high/rich-fibre and low-sugars wording, grounded in FSSAI's Version IV Advertising and Claims compendium and dated amendment index. Keep matching package lines as unverified observations. Do not infer an RDA/reference group, classify a product as solid or liquid, choose a serving basis, calculate claim eligibility or make a current-law finding.

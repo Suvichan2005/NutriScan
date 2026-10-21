@@ -1,5 +1,18 @@
 # Sanitized engineering journal
 
+## 2026-10-22 — repair scorer labels and re-audit the assist evidence contract
+
+- Corrected the browser evaluator's “Fat” and “Fiber” label map to match the UI's “Total fat” and “Fibre,” then reran the same 14 cases on the same two hash-verified photos. Counts moved from 2 correct / 2 incorrect / 111 omitted / 3 withheld to 4 / 2 / 105 / 7 across 118 field-case comparisons; OCR output was unchanged. Two exact Saffola fields repeat across conditions. Zero Axe violations and page errors. This is a scoring correction, not a reader improvement or independent accuracy estimate.
+- Rechecked the existing text-assist contract: ordered raw lines, OCR word text/boxes/scores, source image/run IDs, capture preprocessing and engine metadata, parser numeric/basis candidates and rejection/conflict decisions, and retrieved evidence all survive payload compaction. Only exact duplicate raw text is removed; mixed or unmatched text remains. Tentative candidates cite OCR spans and word indexes and cannot mutate package facts. Image bytes remain behind separate explicit inspection consent.
+- Confirmed the response supports evidence-linked synthesis and user-profile context, not verbatim-only output. Exact citation spans provide traceability, not entailment; existing safety rejection remains. Eighteen focused offline assist-contract tests passed. Gemini remained disabled; no provider call or live model behavior is claimed, and no schema change was needed.
+- Screenshots and source photos remain in ignored private storage. The tracked scorer receipt contains aggregate and per-field outcomes only.
+
+## 2026-10-22 — recheck OCR provenance through correction in the real-photo journey
+
+- Replayed the same hash-verified development photo through browser OCR, crop, calculation, uncertainty follow-up and an optional synthetic-profile follow-up at 390×844 and 1440×900. It retained 16 OCR lines and 95 word boxes, with 1/9 exact numeric/unit/basis fields, 0 incorrect, 5 omitted and 3 withheld. This remains one unadjudicated development image; viewport repeats are not independent samples.
+- The acceptance initially compared total observation counts before and after correction. Since a correction is a separate user observation, changed the assertion to verify every original OCR-line ID remains in the ledger. The rerun confirmed preservation and the 1.7 g calculation for 50 g. Axe violations, page errors, off-loopback requests and assist/vision route calls were zero.
+- No OCR engine or photo accuracy changed. Screenshots remain in the ignored private evidence folder; the tracked receipt contains sanitized counts and per-field outcomes only.
+
 ## 2026-10-22 — explain dated nutrient-content claim wording from local sources
 
 - Added concise FSSAI Version IV compendium and amendment-index records plus deterministic wording explanations for high/rich protein, high/rich fibre and low sugars. A matching package line remains an uncertain observation; the engine does not infer RDA, product category, basis, OCR correctness or compliance. Current-law questions abstain for current official research.
