@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 22 October 2026 — preserve unparsed label lines and explain trans-fat evidence
+
+- Keep the existing OCR record and consent boundary. The text-entry parser now also represents otherwise-unparsed user-entered label lines as bounded `raw-text-line` observations, retaining repeated lines and their order in the observation array. Keep them unverified and leave raw text unchanged.
+- Add concise deterministic trans-fat context from the WHO fact sheet and the dated 2021 FSSAI Gazette amendment. Link literal OCR/user lines when present, but do not create a trans-fat nutrient, amount, portion calculation, current-law conclusion or compliance finding. Current legal questions still require live official research.
+- Regenerate the 18-source local index from cached model files. The same 18 developer-authored ranking cases retain their hybrid and semantic metrics; lexical MRR fell from 0.9556 to 0.9444 because one relevant source moved from rank 5 to 7 inside a zero-score tie. Keep this disclosed as development evidence, not held-out relevance.
+- A synthetic typed-label follow-up passed at phone and desktop sizes with both source cards visible, no structured trans-fat nutrient, no accessibility violations, page errors, external requests or Gemini routes. Full suite and typecheck passed. This validates the local product flow, not photograph accuracy, current law or model behavior.
+
 ## 21 October 2026 — link user corrections to original OCR evidence
 
 - Keep the existing OCR-to-assist contract. It already preserves raw line order, word recognition metadata and geometry, capture/image-handle provenance, parser candidates and rejection/conflict reasons, retrieved evidence, and separate tentative structured candidates. Keep image bytes behind the existing explicit inspection consent. The response boundary already supports evidence-linked synthesis, including user-context references; exact spans provide traceability, not entailment.

@@ -1,6 +1,6 @@
 # UX and browser evidence
 
-Updated: 2026-10-21. The owner confirms the Codex in-app browser is enabled, but the CUA adapter denied direct tab attachment. This review used the locally installed Google Chrome through Playwright 1.64 against the running local NutriScan app. Screenshots came from the actual browser at 390 × 844 and 1440 × 1000 CSS pixels. The Next.js development badge was hidden in the saved captures; product UI was not altered for the screenshots.
+Updated: 2026-10-22. The CUA inventory did not expose the ambient in-app localhost tab, but a fresh visible tab opened successfully at `http://127.0.0.1:3400/`. Acceptance runs used locally installed Google Chrome through Playwright 1.64 against the running NutriScan app at phone and desktop sizes. Screenshots came from actual browser sessions; the Next.js development badge was hidden in saved captures, and product UI was not altered for the screenshots.
 
 ## Verified journeys
 
@@ -53,6 +53,10 @@ The CUA adapter continued to deny direct in-app tab attachment despite the owner
 6. **Real photo added after analysis** — a genuine public Coca-Cola label photo was read into a text-started investigation. Two existing questions and the selected 25 ml calculation remained available. OCR still contained noisy text (`hy E000` at 41% confidence) outside a recognized ingredient section; it was previously surfaced as a possible additive. The parser now only extracts additive codes from the parsed ingredient section. A unit regression test and repeated Chrome run confirm that the code no longer appears as a finding, while the raw OCR remains available for inspection. This proves incremental workflow and false-positive suppression, not package identity or OCR accuracy.
 
 The current visual audit supports the existing green-toned design direction. Remaining checks include full keyboard-order traversal, camera hardware permissions, replacement under slow/failed file reads, real-device layout and performance, and live Gemini behavior. The Codex `@Browser` surface is unavailable in this environment, so the requested in-app browser itself could not be used; Chrome was the available local-browser fallback.
+
+## Local evidence follow-up — 22 October 2026
+
+The ambient in-app browser tab was absent from the CUA tab inventory, but a newly created visible tab loaded the local app successfully. A separate fresh Chrome/Playwright acceptance used a synthetic pasted label at 390 × 844 and 1440 × 900. The trans-fat line remained a user-entered observation, appeared in the evidence-linked local answer, and did not become a nutrient or portion amount. WHO and dated FSSAI source cards were visible; a present-day legal question abstained. Axe, page errors, off-loopback requests and `/api/assist`/`/api/vision` requests were all zero. This is typed-text flow evidence, not real-photo OCR, held-out retrieval, legal or Gemini acceptance. Receipt: [trans-fat browser acceptance](evidence/trans-fat-browser.json); private screenshots remain under the ignored evidence folder.
 
 ## Crop intake and real-photo OCR — 21 October 2026
 

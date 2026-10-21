@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-22 — retain unparsed text lines and ground a trans-fat follow-up locally
+
+- The browser acceptance caught that a typed “Trans fat 0 g” line remained in `rawText` but was not surfaced to the deterministic audit. The parser now adds otherwise-unrepresented user text lines as `raw-text-line` observations, retains repeated lines and order, and does not parse trans fat as a nutrient. The full original text remains unchanged.
+- Added WHO trans-fat guidance and a dated FSSAI industrial-trans-fat amendment to the curated evidence corpus. The follow-up links literal OCR/user observations as unverified; missing text stays unknown, no portion amount is calculated, and present-day legal/compliance questions abstain for live official review. Gemini stayed disabled.
+- Refreshed the 18-source local index from cached model assets. The unchanged 18-query developer evaluation retained its semantic and hybrid metrics; lexical MRR moved 0.9556→0.9444 because the sodium paraphrase's relevant record shifted within a zero-score tie. The separate 13-case boundary diagnostic remained 13/13. These are development measurements, not held-out relevance evidence.
+- The synthetic typed-label browser flow passed at 390×844 and 1440×900, with both source cards shown, the line retained as unverified text, and no trans-fat nutrient. Axe violations, page errors, off-loopback requests and `/api/assist`/`/api/vision` calls were zero. Full suite: 338 tests across 36 files; TypeScript passed. This does not establish photographed-label accuracy, legal compliance or model behavior.
+
 ## 2026-10-21 — preserve correction lineage and audit the assist boundary
 
 - Confirmed the existing consented text-assist contract retains ordered OCR lines, word text/geometry and uncalibrated scores, capture and session-image metadata, parser rejection/conflict candidates, retrieved sources and tentative structured candidates. Exact duplicate raw text alone is compacted. Candidate readings remain separate from package facts; image bytes require separate explicit consent.
