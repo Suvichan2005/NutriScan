@@ -71,9 +71,13 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const explicitlyUnder18=isExplicitlyUnder18(profile.ageGroup);
   const askedAdditives=detectAdditives(question);
   const asksUncertainty=uncertaintyQuestionPattern.test(question);
+  const asksAllergenLabelMeaning=/\b(?:may\s+contain|cross[- ]?(?:contamination|contact)|precautionary allergen)\b/i.test(question)&&/\b(?:mean|meaning|explain|interpret|why|difference|different|according|FSSAI|label|warning)\b/i.test(question);
+  const asksCurrentRegulatoryStatus=/\b(?:today|current(?:ly)?|compliance|compliant|legally required|mandatory|must|enforc|is it legal|legal to|lawful|permitted|allowed)\b/i.test(question);
+  const mentionsCurrentRegulatoryTopic=/\bORS\b|oral rehydration|legal|regulat|recall|banned|licen[cs]e|current/i.test(question);
+  const currentRegulatoryQuestion=(mentionsCurrentRegulatoryTopic||/\bfssai\b/i.test(question))&&(!asksAllergenLabelMeaning||asksCurrentRegulatoryStatus);
   const wholeDietCarbohydrateTopic=/\b(?:fib(?:er|re)|whole[- ]grains?|pulses?|legumes?|carbohydrate quality|quality of carbohydrates?)\b/i.test(question);
   const wholeDietCarbohydrateGuidance=wholeDietCarbohydrateTopic&&/\b(?:recommend\w*|guidelines?|guidance|whole[- ]diet|daily|per day|intake|quality)\b/i.test(question);
-  const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|\bfree sugars?\b|\badded sugars?\b|ICMR|\bNIN\b/i.test(question)||wholeDietCarbohydrateGuidance||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
+  const deep=/diet|allerg|intoler|may\s+contain|cross[- ]?(?:contamination|contact)|precautionary|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|\bfree sugars?\b|\badded sugars?\b|ICMR|\bNIN\b/i.test(question)||wholeDietCarbohydrateGuidance||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
   const trace:Audit['trace']=[{tool:'reuse_package_observations',reason:'Use the current label evidence for this question; no rescan required.',status:`${pkg.observations.length} observations`},{tool:'calculate_portions',reason:'Scale only unambiguous values with compatible explicit bases.',status:'local deterministic calculation'}];
   const finding=(data:Omit<Finding,'id'>)=> {data.sourceIds.forEach(s=>sourceIds.add(s));findings.push({...data,id:`finding-${findings.length+1}`});};
   let examinedRawOcrLines=0;let tentativeAdditiveCount=0;
@@ -195,7 +199,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     if(profile.intolerances)nextQuestions.push('Which ingredient or declared amount should I compare with your stated intolerance?');
     limitations.push('Personal suitability is not established by a label calculation; only the context you chose to provide was considered.');
   }
-  if(/\bORS\b|oral rehydration|legal|regulat|recall|banned|fssai|licen[cs]e|current/i.test(`${question} ${pkg.claims.join(' ')}`)){
+  if(currentRegulatoryQuestion||/\bORS\b|oral rehydration|legal|regulat|recall|banned|licen[cs]e|current/i.test(pkg.claims.join(' '))){
     limitations.push('Current regulatory status requires dated official documents, exact product/jurisdiction matching, and checks for later orders. Static corpus entries do not establish current law.');
     nextQuestions.push('Which exact product/variant and jurisdiction should be checked against current official notices?');
     trace.push({tool:'check_regulatory_updates',reason:'The question depends on current official documents and later orders.',status:'live research required; not performed locally'});
@@ -213,6 +217,8 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       {id:'who-carbohydrate-2023',matches:wholeDietCarbohydrateGuidance},
       {id:'niddk-meals',matches:/\b(diabetes|diabetic|blood[- ]glucose)\b/i.test(question)},
       {id:'icmrnin-dgi-2024',matches:/\b(icmr|nin|indian dietary guidelines?|dietary guidelines? for india)\b/i.test(question)},
+      {id:'fssai-labelling-display-2020',matches:asksAllergenLabelMeaning||(/\bfssai\b/i.test(question)&&/allerg|may\s+contain|cross[- ]?(?:contamination|contact)/i.test(question))},
+      {id:'fssai-labelling-allergen-faq-2023',matches:asksAllergenLabelMeaning||(/\bfssai\b/i.test(question)&&/allerg|may\s+contain|cross[- ]?(?:contamination|contact)/i.test(question))},
     ];
     const candidateIds=new Set(intentSources.filter(x=>x.matches).map(x=>x.id));
     for(const code of askedAdditives){const additive=lookupAdditive(code);for(const id of additive?.sourceIds??[])candidateIds.add(id);}
@@ -232,10 +238,12 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const asksDiabetesCarbohydrateAmount=/\b(diabetes|diabetic|blood glucose)\b/i.test(question)&&/\b(carbs?|carbohydrates?)\b/i.test(question)&&/\b(daily|day|amount|how many|how much|allowance|target)\b/i.test(question);
   let answer=important.length?`For ${amountText(portion)} ${portionUnit}: ${important.join(', ')} from the readable label values.`:`A reliable ${amountText(portion)} ${portionUnit} calculation needs readable nutrient amounts, units and a matching basis.`;
   let answerIntent='label overview';
-  if(/\bORS\b|oral rehydration|legal|regulat|recall|banned|fssai|licen[cs]e|current/i.test(question)){
+  if(currentRegulatoryQuestion){
     answerIntent='current regulatory question';answer='Current legal or regulatory status is unresolved. The next evidence is a dated official notice for the exact product and jurisdiction, checked for later amendments or orders.';
   }else if(/alternativ|stock|available|reviews?|brand|controvers/i.test(question)){
     answerIntent='current product context';answer='This local audit has not checked current alternatives, stock, reviews or brand events. A current source matching the product and your location is the decisive next evidence.';
+  }else if(asksAllergenLabelMeaning){
+    answerIntent='precautionary allergen label wording';answer='FSSAI distinguishes a separate “Contains [allergen]” declaration for specified allergenic ingredients from a separate “May Contains [allergen]” declaration for allergen presence due to cross-contamination. Its FAQ says similar-meaning wording may also be used, such as “May contain traces of [allergen]” or a statement that the product is made in a facility that processes it. This explains label wording only: it does not establish actual allergen presence, amount or exposure, individual risk or safety, or package compliance. Current applicability to an exact package requires live checking of official regulations and later directions.';
   }else if(wholeDietCarbohydrateGuidance){
     answerIntent='whole-diet carbohydrate guidance';
     const fibreGuidance=/\bfib(?:er|re)\b/i.test(question);

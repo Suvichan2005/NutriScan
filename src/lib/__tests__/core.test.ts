@@ -405,6 +405,26 @@ describe('nutrition numerical invariants',()=>{
       expect(audit.trace.find(entry=>entry.tool==='local_rule_answer')?.status).toContain('no language model');
     }
   });
+  it('explains precautionary allergen wording separately from a Contains declaration and package facts',()=>{
+    const pkg=label('Ingredients: Oats\nContains: Milk\nMay contain: Peanuts');
+    const audit=buildAudit(pkg,30,'g',defaultProfile,'What does “May contain peanuts” mean according to FSSAI?');
+    expect(audit.answer).toMatch(/separate “Contains \[allergen\]” declaration.*specified allergenic ingredients/i);
+    expect(audit.answer).toMatch(/“May Contains \[allergen\]” declaration.*cross-contamination/i);
+    expect(audit.answer).toMatch(/does not establish actual allergen presence, amount or exposure, individual risk or safety, or package compliance/i);
+    expect(audit.answer).toMatch(/Current applicability to an exact package requires live checking/i);
+    expect(audit.answer).not.toMatch(/this package contains peanuts|peanuts are present/i);
+    expect(audit.sources.map(source=>source.id)).toEqual(expect.arrayContaining(['fssai-labelling-display-2020','fssai-labelling-allergen-faq-2023']));
+    const reference=audit.findings.find(finding=>finding.sourceIds.includes('fssai-labelling-allergen-faq-2023'));
+    expect(reference?.title).toMatch(/^Reference to inspect:/);
+    expect(reference?.detail).toMatch(/does not establish that a particular allergen is actually present/i);
+    expect(audit.trace.find(entry=>entry.tool==='local_rule_answer')?.status).toContain('no language model');
+  });
+  it('keeps current FSSAI allergen-compliance questions unresolved for live research',()=>{
+    const audit=buildAudit(label('Ingredients: Oats\nMay contain: Peanuts'),30,'g',defaultProfile,'Is a “May contain peanuts” label compliant under current FSSAI rules?');
+    expect(audit.answer).toMatch(/Current legal or regulatory status is unresolved/i);
+    expect(audit.limitations.join(' ')).toMatch(/Static corpus entries do not establish current law/i);
+    expect(audit.sources.map(source=>source.id)).toContain('fssai-labelling-allergen-faq-2023');
+  });
   it('keeps missing label text unknown instead of inferring its absence',()=>{
     const audit=buildAudit(label('Per 100 g\nSugars 10 g'),30,'g',defaultProfile,'What ingredients are listed?');
     expect(audit.answer).toMatch(/No readable ingredient text is recorded.*does not establish that the package has none/i);
@@ -504,6 +524,11 @@ describe('genuine local evidence retrieval',()=>{
     expect(fibre[0]?.source.limitations).toMatch(/refers to fibre as consumed in foods/);
     expect(fibre[0]?.source.limitations).toMatch(/cannot be directly equated with a packaged-food fibre declaration/);
     expect(fibre[0]?.source.url).toBe('https://www.who.int/publications/i/9789240073593');
+    const allergen=retrieveEvidence('What does May contain mean for cross contamination and allergen labels?');
+    expect(allergen[0]?.source.id).toBe('fssai-labelling-allergen-faq-2023');
+    expect(allergen[0]?.source.summary).toMatch(/“Contains \[allergen\]”.*“May Contains \[allergen\]”/);
+    expect(allergen[0]?.source.limitations).toMatch(/current regulation, subsequent amendments or directions/);
+    expect(retrieveEvidence('FSSAI regulation May contain allergen cross contamination',5).some(hit=>hit.source.id==='fssai-labelling-display-2020')).toBe(true);
     expect(retrieveEvidence('What does WHO mean by free sugars?')[0]?.source.id).toBe('who-sugars-2015');
     expect(evidenceSources.every(s=>sourceSchema.safeParse(s).success)).toBe(true);
     expect(()=>retrieveEvidence('query',0)).toThrow();

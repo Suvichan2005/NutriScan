@@ -23,6 +23,7 @@ const labelText = [
   'Fibre 8 g',
   'Ingredients: Oats, milk powder, salt',
   'Contains: Milk',
+  'May contain traces of peanuts',
   'High protein',
 ].join('\n');
 
@@ -93,15 +94,23 @@ try {
     await page.getByRole('button', { name: 'Send follow-up' }).click();
     await page.locator('.assistant-message').filter({ hasText: /Contains: Milk/ }).last().waitFor({ state: 'visible' });
     await page.getByText('Recorded allergen statement').waitFor({ state: 'visible' });
+
+    await page.getByLabel('Ask about this package').fill('How should I interpret the May contain traces of peanuts statement?');
+    await page.getByRole('button', { name: 'Send follow-up' }).click();
+    const crossContactReply = page.locator('.assistant-message').filter({ hasText: /FSSAI distinguishes a separate “Contains \[allergen\]” declaration/ }).last();
+    await crossContactReply.waitFor({ state: 'visible' });
+    const crossContactAnswer = await crossContactReply.innerText();
+    const crossContactGuidanceAnswered = /cross-contamination/i.test(crossContactAnswer) && /does not establish actual allergen presence, amount or exposure, individual risk or safety, or package compliance/i.test(crossContactAnswer);
+    const crossContactSourceVisible = await page.locator('.finding').filter({ hasText: /Reference to inspect: FAQ on Food Safety and Standards \(Labelling & Display\) Regulations, 2020/ }).isVisible();
     const conversationAxe = await new AxeBuilder({ page }).analyze();
     await page.screenshot({ path: path.join(captureDir, `${prefix}-02-grounded-conversation.png`), fullPage: true });
 
     await page.getByRole('checkbox', { name: /Save this local conversation on this device/ }).check();
     await page.getByRole('button', { name: /Recent scans/ }).click();
-    await page.getByRole('button', { name: /5 local turns/ }).waitFor({ state: 'visible' });
+    await page.getByRole('button', { name: /6 local turns/ }).waitFor({ state: 'visible' });
     await page.reload({ waitUntil: 'networkidle' });
     await page.getByRole('button', { name: /Recent scans/ }).click();
-    await page.getByRole('button', { name: /5 local turns/ }).click();
+    await page.getByRole('button', { name: /6 local turns/ }).click();
     await page.locator('.chat-turn').filter({ hasText: /What ingredients are listed\?/ }).waitFor({ state: 'visible' });
     const restoredTurnCount = await page.locator('.chat-turn').count();
     await page.getByRole('button', { name: 'Optional context', exact: true }).click();
@@ -176,11 +185,13 @@ try {
       syntheticLabelInput: true,
       observedIngredientQuestionAnswered: true,
       allergenFollowUpAnsweredFromRecordedText: true,
+      crossContactGuidanceAnswered,
+      crossContactSourceVisible,
       multiNutrientQuestionAnswered,
       whoGuidanceAnswered,
       whoSourceVisible,
       childGuidanceAnswered,
-      localConversationOptInRestored: restoredTurnCount === 5,
+      localConversationOptInRestored: restoredTurnCount === 6,
       savedConversationTurnCount: restoredTurnCount,
       profileRemainedSessionOnly: restoredProfileRemainedBlank,
       profileStartedEmpty,
@@ -202,12 +213,12 @@ try {
     };
     outcomes.push(outcome);
     console.log(JSON.stringify(outcome));
-    if (!observationDisclosure || !geminiHistoryStartsUnchecked || !geminiHistoryCanBeExplicitlyIncluded || !multiNutrientQuestionAnswered || !whoGuidanceAnswered || !whoSourceVisible || !childGuidanceAnswered || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
+    if (!observationDisclosure || !geminiHistoryStartsUnchecked || !geminiHistoryCanBeExplicitlyIncluded || !multiNutrientQuestionAnswered || !whoGuidanceAnswered || !whoSourceVisible || !childGuidanceAnswered || !crossContactGuidanceAnswered || !crossContactSourceVisible || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
     await context.close();
   }
 
-  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.multiNutrientQuestionAnswered === true && outcome.whoGuidanceAnswered === true && outcome.whoSourceVisible === true && outcome.childGuidanceAnswered === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.geminiHistoryStartsUnchecked === true && outcome.geminiHistoryCanBeExplicitlyIncluded === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
-  const receipt = { schemaVersion: 1, kind: 'synthetic-package-text-conversation-browser-acceptance', generatedAt: new Date().toISOString(), appOrigin: origin.origin, captureTool: 'Playwright using installed Chrome', evaluationInput: 'synthetic label text; not real-photo OCR evidence', persistence: 'explicit local opt-in restores 5 recent turns; opt-out removes saved turns; optional profile is remembered only after separate opt-in and is excluded from scan records', screenshots: 'docs/evidence/private/package-text-conversation', outcomes, passed };
+  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.crossContactGuidanceAnswered === true && outcome.crossContactSourceVisible === true && outcome.multiNutrientQuestionAnswered === true && outcome.whoGuidanceAnswered === true && outcome.whoSourceVisible === true && outcome.childGuidanceAnswered === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.geminiHistoryStartsUnchecked === true && outcome.geminiHistoryCanBeExplicitlyIncluded === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
+  const receipt = { schemaVersion: 1, kind: 'synthetic-package-text-conversation-browser-acceptance', generatedAt: new Date().toISOString(), appOrigin: origin.origin, captureTool: 'Playwright using installed Chrome', evaluationInput: 'synthetic label text; not real-photo OCR evidence', persistence: 'explicit local opt-in restores 6 recent turns; opt-out removes saved turns; optional profile is remembered only after separate opt-in and is excluded from scan records', screenshots: 'docs/evidence/private/package-text-conversation', outcomes, passed };
   await writeFile('docs/evidence/package-text-conversation-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/package-text-conversation-browser.json', passed }));
   if (!passed) process.exitCode = 1;
