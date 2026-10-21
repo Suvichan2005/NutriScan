@@ -63,6 +63,7 @@ Continued the existing local NutriScan implementation. No source history or remo
 - Fresh mobile Chrome acceptance entered a non-personal question before attaching the hash-verified photo, confirmed it appeared in the conversation after OCR, and found zero axe violations on both the initial intake and result view.
 - Scoped source audit found no chapati/roti-specific production flow or seeded health profile. The only active product example remains behind “Explore a sample label,” and is visibly labeled synthetic/no real product verdict. Health sources are selected by question matching; the Gemini instruction describes limits but does not assert a user diagnosis. Existing tests cover empty-profile behavior and reject the obsolete chapati field.
 - Verification after the intake change: typecheck, 107 tests, optimized build, browser OCR evaluation and `git diff --check` pass. The small OCR crop result remains 1 correct / 0 incorrect / 8 omitted in two repeats; no OCR policy changed.
+- Checkpoint: `e8bb1477c4cfabe02fbba7430d8f18b77cd4cb77` (`Move question-first prompt ahead of photo intake`).
 - Local evidence checkpoint: `8c05d488550d644d0243dcc882b55c866f25644e` (`Add reproducible browser OCR crop evaluation`). Typecheck, all 107 tests, optimized build, the repeatable browser command and `git diff --check` passed; private screenshots remain ignored.
 
 ## Continuation checkpoint — research source-selection guard
