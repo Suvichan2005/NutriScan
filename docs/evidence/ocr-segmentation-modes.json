@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "kind": "tesseract-segmentation-mode-diagnostic",
+  "generatedAt": "2026-10-21T07:39:22.340Z",
+  "browser": "Local Node Tesseract.js 7 diagnostic; not an end-user browser acceptance run.",
+  "inputs": [
+    {
+      "id": "saffola-panel",
+      "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+      "basis": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "expectedFields": 9
+    },
+    {
+      "id": "bagrrys-panel",
+      "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+      "basis": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "expectedFields": 8
+    }
+  ],
+  "method": "Hash-verified public package photos, human-selected nutrition-panel crops, four Tesseract page segmentation modes, same production parser; only aggregate field outcomes persisted.",
+  "outcomes": [
+    {
+      "photo": "saffola-panel",
+      "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+      "mode": "auto",
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 9,
+      "withheld": 0,
+      "parsedRows": 0,
+      "confidence": 60,
+      "elapsedMs": 271
+    },
+    {
+      "photo": "saffola-panel",
+      "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+      "mode": "single-block",
+      "correct": 0,
+      "incorrect": 1,
+      "omitted": 7,
+      "withheld": 1,
+      "parsedRows": 3,
+      "confidence": 53,
+      "elapsedMs": 839
+    },
+    {
+      "photo": "saffola-panel",
+      "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+      "mode": "single-column",
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 9,
+      "withheld": 0,
+      "parsedRows": 0,
+      "confidence": 56,
+      "elapsedMs": 277
+    },
+    {
+      "photo": "saffola-panel",
+      "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+      "mode": "sparse-text",
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 9,
+      "withheld": 0,
+      "parsedRows": 0,
+      "confidence": 55,
+      "elapsedMs": 563
+    },
+    {
+      "photo": "bagrrys-panel",
+      "sha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+      "mode": "auto",
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "parsedRows": 0,
+      "confidence": 77,
+      "elapsedMs": 2749
+    },
+    {
+      "photo": "bagrrys-panel",
+      "sha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+      "mode": "single-block",
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "parsedRows": 0,
+      "confidence": 69,
+      "elapsedMs": 2859
+    },
+    {
+      "photo": "bagrrys-panel",
+      "sha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+      "mode": "single-column",
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "parsedRows": 0,
+      "confidence": 79,
+      "elapsedMs": 1758
+    },
+    {
+      "photo": "bagrrys-panel",
+      "sha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+      "mode": "sparse-text",
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "parsedRows": 0,
+      "confidence": 68,
+      "elapsedMs": 2532
+    }
+  ],
+  "limits": [
+    "Two images and human-selected crops are not representative.",
+    "No OCR text or image bytes are persisted.",
+    "A better result here still requires repeatable real Chrome acceptance before changing the shipped reader."
+  ]
+}

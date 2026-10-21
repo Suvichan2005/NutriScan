@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nutriscan:ocr-annotated-dataset:1",
+  "title": "NutriScan annotated package-photo record",
+  "description": "Metadata and independent human annotations for local/OCR research. The schema does not contain image bytes. Keep product families in one split and do not publish records until source/license review is complete.",
+  "type": "object",
+  "required": ["schemaVersion", "datasetVersion", "records"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "datasetVersion": { "type": "string", "minLength": 1 },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["imageId", "productGroupId", "split", "image", "source", "annotations"],
+        "properties": {
+          "imageId": { "type": "string", "minLength": 1 },
+          "productGroupId": { "type": "string", "description": "Stable family key for split grouping; use the same value for package revisions, language views, and crops from the same product family." },
+          "split": { "enum": ["development", "held-out"] },
+          "image": {
+            "type": "object",
+            "required": ["sha256", "width", "height"],
+            "properties": {
+              "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+              "width": { "type": "integer", "minimum": 1 },
+              "height": { "type": "integer", "minimum": 1 }
+            },
+            "additionalProperties": false
+          },
+          "source": {
+            "type": "object",
+            "required": ["url", "publisher", "uploader", "licenseUrl", "retrievedAt"],
+            "properties": {
+              "url": { "type": "string", "format": "uri" },
+              "publisher": { "type": "string" },
+              "uploader": { "type": "string" },
+              "licenseUrl": { "type": "string", "format": "uri" },
+              "retrievedAt": { "type": "string", "format": "date" },
+              "redistributionReview": { "enum": ["pending", "approved", "not-approved", "unknown"] }
+            },
+            "additionalProperties": false
+          },
+          "annotations": {
+            "type": "object",
+            "required": ["language", "tableRegions", "nutrients", "review"],
+            "properties": {
+              "language": { "type": "string" },
+              "tableRegions": { "type": "array", "items": { "$ref": "#/$defs/region" } },
+              "nutrients": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["fieldId", "key", "numericValue", "unit", "basis", "labelRegionId", "valueRegionId", "status"],
+                  "properties": {
+                    "fieldId": { "type": "string" },
+                    "key": { "type": "string" },
+                    "numericValue": { "type": ["number", "null"] },
+                    "unit": { "type": ["string", "null"] },
+                    "basis": {
+                      "type": ["object", "null"],
+                      "required": ["amount", "unit"],
+                      "properties": { "amount": { "type": "number", "exclusiveMinimum": 0 }, "unit": { "enum": ["g", "ml"] } },
+                      "additionalProperties": false
+                    },
+                    "labelRegionId": { "type": ["string", "null"] },
+                    "valueRegionId": { "type": ["string", "null"] },
+                    "columnId": { "type": ["string", "null"] },
+                    "status": { "enum": ["clear", "ambiguous", "not-visible"] }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "review": {
+                "type": "object",
+                "required": ["annotatorCount", "adjudicated", "method"],
+                "properties": {
+                  "annotatorCount": { "type": "integer", "minimum": 1 },
+                  "adjudicated": { "type": "boolean" },
+                  "agreementMetric": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+                  "method": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "region": {
+      "type": "object",
+      "required": ["regionId", "role", "polygon"],
+      "properties": {
+        "regionId": { "type": "string" },
+        "role": { "enum": ["table", "row", "label", "value", "unit", "basis", "other-text"] },
+        "columnId": { "type": ["string", "null"] },
+        "polygon": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "type": "array",
+            "prefixItems": [{ "type": "number", "minimum": 0, "maximum": 1 }, { "type": "number", "minimum": 0, "maximum": 1 }],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

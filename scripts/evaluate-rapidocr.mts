@@ -89,23 +89,30 @@ function rapidOcrLines(boxes: OcrTextBox[]) {
   return groups.sort((a, b) => a.y - b.y).map((group) => group.fragments.sort((a, b) => a.x - b.x).map((fragment) => fragment.text).join(' ')).join('\n');
 }
 
-function score(pkg: PackageData, photo: Photo): Record<Outcome, number> {
+function score(pkg: PackageData, photo: Photo): Record<Outcome, number> & { fieldOutcomes: Array<Record<string, unknown>> } {
   const counts: Record<Outcome, number> = { correct: 0, incorrect: 0, omitted: 0, withheld: 0 };
-  for (const expected of photo.manualAnnotation.nutrients) {
-    const rows = pkg.nutrients.filter((nutrient) => nutrient.key === expected.key
-      && nutrient.basis?.amount === photo.manualAnnotation.basis.amount
+  const fieldOutcomes = photo.manualAnnotation.nutrients.map((expected) => {
+    const candidates = pkg.nutrients.filter((nutrient) => nutrient.key === expected.key);
+    const rows = candidates.filter((nutrient) => nutrient.basis?.amount === photo.manualAnnotation.basis.amount
       && nutrient.basis?.unit === photo.manualAnnotation.basis.unit);
     const usable = rows.filter((nutrient) => nutrient.status !== 'conflict');
-    if (rows.some((nutrient) => nutrient.status === 'conflict')) counts.withheld++;
-    else if (!usable.length) counts[pkg.nutrients.some((nutrient) => nutrient.key === expected.key) ? 'withheld' : 'omitted']++;
-    else {
-      const target = normalized(expected.key, expected.value, expected.unit);
-      const correct = usable.some((nutrient) => Math.abs(normalized(expected.key, nutrient.value, nutrient.unit) - target)
-        <= Math.max(.015, Math.abs(target) * .005));
-      counts[correct ? 'correct' : 'incorrect']++;
-    }
-  }
-  return counts;
+    const target = normalized(expected.key, expected.value, expected.unit);
+    const numericExact = usable.some((nutrient) => Math.abs(normalized(expected.key, nutrient.value, nutrient.unit) - target)
+      <= Math.max(.015, Math.abs(target) * .005));
+    const outcome: Outcome = rows.some((nutrient) => nutrient.status === 'conflict') ? 'withheld'
+      : !usable.length ? (candidates.length ? 'withheld' : 'omitted')
+        : numericExact ? 'correct' : 'incorrect';
+    counts[outcome]++;
+    return {
+      key: expected.key, outcome,
+      numericExact,
+      unitExact: usable.some((nutrient) => nutrient.unit.toLowerCase() === expected.unit.toLowerCase()),
+      basisExact: rows.some((nutrient) => nutrient.basis?.amount === photo.manualAnnotation.basis.amount && nutrient.basis?.unit === photo.manualAnnotation.basis.unit),
+      parserCandidateEmitted: candidates.length > 0,
+      parserCandidateOnDeclaredBasis: rows.length > 0,
+    };
+  });
+  return { ...counts, fieldOutcomes };
 }
 
 function summarize(photosWithText: Array<{ photo: Photo; text: string; elapsedMs: number; boxes?: number }>) {
@@ -119,7 +126,8 @@ function summarize(photosWithText: Array<{ photo: Photo; text: string; elapsedMs
       file: photo.file,
       language: photo.type.match(/English|French|Spanish/i)?.[0] ?? 'unspecified',
       fields: photo.manualAnnotation.nutrients.length,
-      ...counts,
+      correct: counts.correct, incorrect: counts.incorrect, omitted: counts.omitted, withheld: counts.withheld,
+      fieldOutcomes: counts.fieldOutcomes,
       parsedNutrients: pkg.nutrients.length,
       explicitBasisNutrients: pkg.nutrients.filter((nutrient) => nutrient.basis).length,
       unconflictedBasisNutrients: pkg.nutrients.filter((nutrient) => nutrient.basis && nutrient.status !== 'conflict').length,

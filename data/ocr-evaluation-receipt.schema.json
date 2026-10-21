@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nutriscan:ocr-evaluation-receipt:1",
+  "title": "NutriScan OCR evaluation receipt",
+  "description": "Sanitized common result contract for browser, local/server, and explicitly authorized remote OCR experiments. Never persist image bytes or raw OCR text in tracked receipts.",
+  "type": "object",
+  "required": ["schemaVersion", "experimentId", "split", "input", "engine", "metrics", "fields"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "experimentId": { "type": "string", "minLength": 1 },
+    "split": { "enum": ["development", "held-out", "not-assigned"] },
+    "input": {
+      "type": "object",
+      "required": ["imageId", "sha256", "width", "height", "preprocessing"],
+      "properties": {
+        "imageId": { "type": "string" },
+        "productGroupId": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "preprocessing": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "engine": {
+      "type": "object",
+      "required": ["name", "version", "mode", "configuration"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "mode": { "enum": ["browser", "local", "server", "remote", "hybrid"] },
+        "configuration": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["coldStartMs", "inferenceMs", "networkBytes", "modelBytes", "memory", "fieldScoring"],
+      "properties": {
+        "coldStartMs": { "type": ["number", "null"], "minimum": 0 },
+        "inferenceMs": { "type": ["number", "null"], "minimum": 0 },
+        "networkBytes": { "type": ["integer", "null"], "minimum": 0 },
+        "modelBytes": { "type": ["integer", "null"], "minimum": 0 },
+        "fieldScoring": {
+          "type": "object",
+          "required": ["expected", "emitted", "exact", "incorrect", "omitted", "abstained", "unscorable", "exactFieldPrecision", "exactFieldRecall"],
+          "properties": {
+            "expected": { "type": "integer", "minimum": 0 },
+            "emitted": { "type": "integer", "minimum": 0 },
+            "exact": { "type": "integer", "minimum": 0 },
+            "incorrect": { "type": "integer", "minimum": 0 },
+            "omitted": { "type": "integer", "minimum": 0 },
+            "abstained": { "type": "integer", "minimum": 0 },
+            "unscorable": { "type": "integer", "minimum": 0 },
+            "exactFieldPrecision": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "exactFieldRecall": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+          },
+          "additionalProperties": false
+        },
+        "memory": {
+          "type": "object",
+          "required": ["valueBytes", "scope"],
+          "properties": {
+            "valueBytes": { "type": ["integer", "null"], "minimum": 0 },
+            "scope": { "enum": ["browser-js-heap", "browser-process-rss", "wasm-linear-memory", "process-rss", "unavailable"] }
+          },
+          "additionalProperties": false
+        },
+        "estimatedCostPer1000Images": { "type": ["number", "null"], "minimum": 0 },
+        "costAssumptionDate": { "type": ["string", "null"], "format": "date" }
+      },
+      "additionalProperties": false
+    },
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fieldId", "stage", "outcome", "numericExact", "unitExact", "basisExact"],
+        "properties": {
+          "fieldId": { "type": "string" },
+          "stage": {
+            "type": "object",
+            "required": ["regionDetected", "labelRecognized", "valueRecognized", "rowColumnAssociated", "basisRecognized", "parserAccepted"],
+            "properties": {
+              "regionDetected": { "type": ["boolean", "null"] },
+              "labelRecognized": { "type": ["boolean", "null"] },
+              "valueRecognized": { "type": ["boolean", "null"] },
+              "rowColumnAssociated": { "type": ["boolean", "null"] },
+              "unitTextRecognized": { "type": ["boolean", "null"] },
+              "basisRecognized": { "type": ["boolean", "null"] },
+              "parserAccepted": { "type": ["boolean", "null"] }
+            },
+            "additionalProperties": false
+          },
+          "outcome": { "enum": ["exact", "incorrect", "omitted", "abstained", "unscorable"] },
+          "numericExact": { "type": ["boolean", "null"] },
+          "unitExact": { "type": ["boolean", "null"] },
+          "basisExact": { "type": ["boolean", "null"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

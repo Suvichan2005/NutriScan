@@ -20,6 +20,8 @@
     "ocr:evaluate:upscale": "tsx scripts/evaluate-ocr-upscale.mts",
     "ocr:evaluate:guided-crops": "tsx scripts/evaluate-ocr-guided-crops.mts",
     "ocr:evaluate:browser-ui": "tsx scripts/evaluate-ocr-browser-ui.mts",
+    "ocr:evaluate:segmentation": "tsx scripts/evaluate-ocr-segmentation.mts",
+    "ocr:evaluate:paddleocr-v5": "tsx scripts/evaluate-paddleocr-v5-browser.mts",
     "ocr:evaluate:name-retention": "tsx scripts/evaluate-ocr-name-retention.mts",
     "acceptance:label-correction": "tsx scripts/evaluate-label-correction.mts",
     "acceptance:keyboard-dialog": "tsx scripts/evaluate-keyboard-dialog.mts",
@@ -63,6 +65,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
+    "@paddleocr/paddleocr-js": "0.4.2",
     "@playwright/test": "1.64.1",
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",

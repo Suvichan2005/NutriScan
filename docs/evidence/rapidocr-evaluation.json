@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "same-photo-alternative-ocr-engine-evaluation",
   "rapidOcrModelType": "small",
-  "generatedAt": "2026-10-21T06:33:07.992Z",
+  "generatedAt": "2026-10-21T08:00:20.478Z",
   "source": "Hash-verified Open Food Facts package-photo manifest; photographs and OCR text are not written to this receipt.",
   "methods": {
     "tesseractJs": "Tesseract.js 7 English best_int, PSM.SINGLE_BLOCK, source image bytes; parsed through the production label parser.",
@@ -12,7 +12,7 @@
   },
   "photos": 5,
   "annotatedFields": 37,
-  "rapidOcrSetupAndRunMs": 57346,
+  "rapidOcrSetupAndRunMs": 29890,
   "results": {
     "tesseractJs": {
       "correct": 0,
@@ -31,13 +31,69 @@
           "incorrect": 0,
           "omitted": 6,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "salt",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 0,
           "explicitBasisNutrients": 0,
           "unconflictedBasisNutrients": 0,
           "ingredientLines": 0,
           "textCharacters": 573,
           "textBoxes": 0,
-          "elapsedMs": 1759
+          "elapsedMs": 957
         },
         {
           "code": "3017620422003",
@@ -48,13 +104,78 @@
           "incorrect": 0,
           "omitted": 7,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "salt",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 0,
           "explicitBasisNutrients": 0,
           "unconflictedBasisNutrients": 0,
           "ingredientLines": 0,
           "textCharacters": 324,
           "textBoxes": 0,
-          "elapsedMs": 1350
+          "elapsedMs": 684
         },
         {
           "code": "3017620422003",
@@ -65,13 +186,78 @@
           "incorrect": 0,
           "omitted": 7,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sodium",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 0,
           "explicitBasisNutrients": 0,
           "unconflictedBasisNutrients": 0,
           "ingredientLines": 0,
           "textCharacters": 145,
           "textBoxes": 0,
-          "elapsedMs": 893
+          "elapsedMs": 377
         },
         {
           "code": "8901088068758",
@@ -82,13 +268,96 @@
           "incorrect": 1,
           "omitted": 7,
           "withheld": 1,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "addedSugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fiber",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "withheld",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "incorrect",
+              "numericExact": false,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "sodium",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 3,
           "explicitBasisNutrients": 1,
           "unconflictedBasisNutrients": 1,
           "ingredientLines": 0,
           "textCharacters": 680,
           "textBoxes": 0,
-          "elapsedMs": 1832
+          "elapsedMs": 780
         },
         {
           "code": "8902710100150",
@@ -99,13 +368,87 @@
           "incorrect": 0,
           "omitted": 7,
           "withheld": 1,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fiber",
+              "outcome": "withheld",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sodium",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 1,
           "explicitBasisNutrients": 0,
           "unconflictedBasisNutrients": 0,
           "ingredientLines": 0,
           "textCharacters": 882,
           "textBoxes": 0,
-          "elapsedMs": 3515
+          "elapsedMs": 2135
         }
       ]
     },
@@ -126,13 +469,69 @@
           "incorrect": 0,
           "omitted": 6,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "salt",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 0,
           "explicitBasisNutrients": 0,
           "unconflictedBasisNutrients": 0,
           "ingredientLines": 0,
           "textCharacters": 615,
           "textBoxes": 0,
-          "elapsedMs": 6207
+          "elapsedMs": 3628
         },
         {
           "code": "3017620422003",
@@ -143,13 +542,78 @@
           "incorrect": 0,
           "omitted": 7,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "salt",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 0,
           "explicitBasisNutrients": 0,
           "unconflictedBasisNutrients": 0,
           "ingredientLines": 0,
           "textCharacters": 300,
           "textBoxes": 0,
-          "elapsedMs": 4809
+          "elapsedMs": 2593
         },
         {
           "code": "3017620422003",
@@ -160,13 +624,78 @@
           "incorrect": 0,
           "omitted": 7,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sodium",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 0,
           "explicitBasisNutrients": 0,
           "unconflictedBasisNutrients": 0,
           "ingredientLines": 0,
           "textCharacters": 576,
           "textBoxes": 0,
-          "elapsedMs": 3047
+          "elapsedMs": 1274
         },
         {
           "code": "8901088068758",
@@ -177,13 +706,96 @@
           "incorrect": 0,
           "omitted": 7,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "addedSugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fiber",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "sodium",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 2,
           "explicitBasisNutrients": 2,
           "unconflictedBasisNutrients": 2,
           "ingredientLines": 0,
           "textCharacters": 512,
           "textBoxes": 0,
-          "elapsedMs": 5514
+          "elapsedMs": 3135
         },
         {
           "code": "8902710100150",
@@ -194,13 +806,87 @@
           "incorrect": 0,
           "omitted": 7,
           "withheld": 1,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "withheld",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fiber",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sodium",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 1,
           "explicitBasisNutrients": 0,
           "unconflictedBasisNutrients": 0,
           "ingredientLines": 0,
           "textCharacters": 869,
           "textBoxes": 0,
-          "elapsedMs": 4823
+          "elapsedMs": 2540
         }
       ]
     },
@@ -221,13 +907,69 @@
           "incorrect": 0,
           "omitted": 4,
           "withheld": 1,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "withheld",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "salt",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 2,
           "explicitBasisNutrients": 1,
           "unconflictedBasisNutrients": 1,
           "ingredientLines": 0,
           "textCharacters": 455,
           "textBoxes": 32,
-          "elapsedMs": 2717
+          "elapsedMs": 2208
         },
         {
           "code": "3017620422003",
@@ -238,13 +980,78 @@
           "incorrect": 0,
           "omitted": 7,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "salt",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 0,
           "explicitBasisNutrients": 0,
           "unconflictedBasisNutrients": 0,
           "ingredientLines": 0,
           "textCharacters": 323,
           "textBoxes": 43,
-          "elapsedMs": 6938
+          "elapsedMs": 3224
         },
         {
           "code": "3017620422003",
@@ -255,13 +1062,78 @@
           "incorrect": 0,
           "omitted": 7,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sodium",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 0,
           "explicitBasisNutrients": 0,
           "unconflictedBasisNutrients": 0,
           "ingredientLines": 0,
           "textCharacters": 232,
           "textBoxes": 20,
-          "elapsedMs": 10284
+          "elapsedMs": 4427
         },
         {
           "code": "8901088068758",
@@ -272,13 +1144,96 @@
           "incorrect": 0,
           "omitted": 3,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "addedSugars",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "fiber",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "fat",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "sodium",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            }
+          ],
           "parsedNutrients": 6,
           "explicitBasisNutrients": 6,
           "unconflictedBasisNutrients": 6,
           "ingredientLines": 0,
           "textCharacters": 425,
           "textBoxes": 32,
-          "elapsedMs": 5976
+          "elapsedMs": 2903
         },
         {
           "code": "8902710100150",
@@ -289,13 +1244,87 @@
           "incorrect": 0,
           "omitted": 3,
           "withheld": 5,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "withheld",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "withheld",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "withheld",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fiber",
+              "outcome": "withheld",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fat",
+              "outcome": "withheld",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sodium",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 9,
           "explicitBasisNutrients": 0,
           "unconflictedBasisNutrients": 0,
           "ingredientLines": 0,
           "textCharacters": 502,
           "textBoxes": 52,
-          "elapsedMs": 11075
+          "elapsedMs": 5245
         }
       ]
     },
@@ -316,13 +1345,96 @@
           "incorrect": 0,
           "omitted": 4,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "protein",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "addedSugars",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "fiber",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "fat",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "sodium",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            }
+          ],
           "parsedNutrients": 5,
           "explicitBasisNutrients": 5,
           "unconflictedBasisNutrients": 5,
           "ingredientLines": 0,
           "textCharacters": 422,
           "textBoxes": 33,
-          "elapsedMs": 10375
+          "elapsedMs": 5876
         },
         {
           "code": "8902710100150",
@@ -333,13 +1445,87 @@
           "incorrect": 0,
           "omitted": 3,
           "withheld": 0,
+          "fieldOutcomes": [
+            {
+              "key": "energy",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "protein",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "carbohydrate",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "sugars",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "fiber",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "fat",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            },
+            {
+              "key": "saturatedFat",
+              "outcome": "correct",
+              "numericExact": true,
+              "unitExact": true,
+              "basisExact": true,
+              "parserCandidateEmitted": true,
+              "parserCandidateOnDeclaredBasis": true
+            },
+            {
+              "key": "sodium",
+              "outcome": "omitted",
+              "numericExact": false,
+              "unitExact": false,
+              "basisExact": false,
+              "parserCandidateEmitted": false,
+              "parserCandidateOnDeclaredBasis": false
+            }
+          ],
           "parsedNutrients": 5,
           "explicitBasisNutrients": 5,
           "unconflictedBasisNutrients": 5,
           "ingredientLines": 0,
           "textCharacters": 374,
           "textBoxes": 36,
-          "elapsedMs": 8687
+          "elapsedMs": 4885
         }
       ]
     }
