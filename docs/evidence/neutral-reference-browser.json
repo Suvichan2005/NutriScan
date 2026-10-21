@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "neutral-reference-browser-acceptance",
+  "generatedAt": "2026-10-21T05:20:26.519Z",
+  "browser": "Chrome via Playwright, headless",
+  "origin": "loopback",
+  "input": "Synthetic text-only ingredients with no nutrient values, basis or serving declaration.",
+  "limitations": [
+    "Verifies the user-facing neutral fallback and missing-value behavior only.",
+    "Does not establish real-package OCR, a personalized serving recommendation, or nutrition accuracy."
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "textOnlyInput": true,
+      "noNutrientValuesInvented": true,
+      "noCalculationRows": true,
+      "referenceAmount": "100",
+      "referenceUnit": "g",
+      "referenceIsDisclosedAsNonPersonal": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/neutral-reference/mobile.png"
+    },
+    {
+      "viewport": "1440x900",
+      "textOnlyInput": true,
+      "noNutrientValuesInvented": true,
+      "noCalculationRows": true,
+      "referenceAmount": "100",
+      "referenceUnit": "g",
+      "referenceIsDisclosedAsNonPersonal": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/neutral-reference/desktop.png"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "front-photo-browser-runtime-diagnostic",
+  "generatedAt": "2026-10-21T04:47:50.253Z",
+  "captureTool": "Chrome via Playwright",
+  "origin": "loopback",
+  "sourceFile": "coca-cola-front-off-5449000000996.jpg",
+  "hashVerified": true,
+  "samples": [
+    {
+      "elapsedSeconds": 5,
+      "stage": "not processing",
+      "progress": 0
+    }
+  ],
+  "assetResponses": [
+    {
+      "asset": "worker.min.js",
+      "status": 200
+    },
+    {
+      "asset": "tesseract-core-relaxedsimd-lstm.wasm.js",
+      "status": 200
+    },
+    {
+      "asset": "eng.traineddata.gz",
+      "status": 200
+    }
+  ],
+  "failedAssetRequests": [],
+  "resultsVisible": false,
+  "errorVisible": true,
+  "errorMessage": "There is not enough readable text yet. Try a closer photograph, add a clear label close-up, or enter a product barcode in the details field.",
+  "pageErrors": 0,
+  "userDetailsJourney": {
+    "suppliedDetailsAccepted": true,
+    "detailsRemainExplicitlyUnverified": true,
+    "packageTitleStillUnidentified": true,
+    "photoStillAttached": true,
+    "pageErrors": 0
+  },
+  "limits": [
+    "One public source photo and one browser session.",
+    "Stores stage labels and progress only; no OCR text, image bytes, or user data."
+  ]
+}

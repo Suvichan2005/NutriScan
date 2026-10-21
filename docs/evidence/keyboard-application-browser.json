@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "kind": "application-keyboard-browser-acceptance",
+  "generatedAt": "2026-10-21T05:47:16.630Z",
+  "browser": "Chrome via Playwright, headless",
+  "origin": "loopback",
+  "fixture": "Synthetic text-only ingredients; no nutrient values or product identity.",
+  "limitations": [
+    "Tests keyboard traversal on the first-visit page and text-only result view plus text-intake dialog.",
+    "Does not establish full screen-reader support, switch/speech input, touch-device behavior or complete WCAG conformance."
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "firstVisitFocusStops": 11,
+      "firstVisitExpectedTabbables": 11,
+      "firstVisitTabbablesCovered": true,
+      "firstVisitUnnamedStops": 0,
+      "pasteDialogOpenedByKeyboard": true,
+      "dialogFocusStops": 2,
+      "focusStayedInsideDialog": true,
+      "labelEnteredByKeyboardFlow": true,
+      "textReadActivatedByKeyboard": true,
+      "focusReturnedToPasteTrigger": true,
+      "resultFocusStops": 22,
+      "resultExpectedTabbables": 22,
+      "observedResultFocus": [
+        {
+          "tag": "a",
+          "name": "NutriScan home"
+        },
+        {
+          "tag": "button",
+          "name": "Recent scans"
+        },
+        {
+          "tag": "button",
+          "name": "Optional context"
+        },
+        {
+          "tag": "button",
+          "name": "+ Add optional context"
+        },
+        {
+          "tag": "input",
+          "name": "Add one or more product photos"
+        },
+        {
+          "tag": "input",
+          "name": "Take product photo"
+        },
+        {
+          "tag": "button",
+          "name": "Paste label text"
+        },
+        {
+          "tag": "button",
+          "name": "Explore a sample label"
+        },
+        {
+          "tag": "button",
+          "name": "Export evidence report"
+        },
+        {
+          "tag": "button",
+          "name": "Correct a value"
+        },
+        {
+          "tag": "input",
+          "name": "Amount"
+        },
+        {
+          "tag": "select",
+          "name": "Amount unit"
+        },
+        {
+          "tag": "summary",
+          "name": "See the label & calculation maths"
+        },
+        {
+          "tag": "button",
+          "name": "Add optional context"
+        },
+        {
+          "tag": "input",
+          "name": "Keep this scan on this device Label text and corrections only. Photos and health context are not saved."
+        },
+        {
+          "tag": "input",
+          "name": "Public search terms"
+        },
+        {
+          "tag": "select",
+          "name": "Research topic"
+        },
+        {
+          "tag": "summary",
+          "name": "Optional Gemini investigation Not enabled"
+        },
+        {
+          "tag": "summary",
+          "name": "Original label observations 1 observations · entered text"
+        },
+        {
+          "tag": "summary",
+          "name": "What was checked"
+        },
+        {
+          "tag": "input",
+          "name": "Ask about this package"
+        },
+        {
+          "tag": "button",
+          "name": "How your data is used"
+        }
+      ],
+      "resultTabbablesCovered": true,
+      "resultUnnamedStops": 0,
+      "axeViolations": [],
+      "noNonLoopbackRequests": true,
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/keyboard-application/mobile.png"
+    },
+    {
+      "viewport": "1440x900",
+      "firstVisitFocusStops": 13,
+      "firstVisitExpectedTabbables": 13,
+      "firstVisitTabbablesCovered": true,
+      "firstVisitUnnamedStops": 0,
+      "pasteDialogOpenedByKeyboard": true,
+      "dialogFocusStops": 2,
+      "focusStayedInsideDialog": true,
+      "labelEnteredByKeyboardFlow": true,
+      "textReadActivatedByKeyboard": true,
+      "focusReturnedToPasteTrigger": true,
+      "resultFocusStops": 24,
+      "resultExpectedTabbables": 24,
+      "observedResultFocus": [
+        {
+          "tag": "a",
+          "name": "NutriScan home"
+        },
+        {
+          "tag": "button",
+          "name": "New investigation"
+        },
+        {
+          "tag": "button",
+          "name": "Recent scans"
+        },
+        {
+          "tag": "button",
+          "name": "Optional context"
+        },
+        {
+          "tag": "button",
+          "name": "Privacy & data"
+        },
+        {
+          "tag": "button",
+          "name": "+ Add optional context"
+        },
+        {
+          "tag": "input",
+          "name": "Add one or more product photos"
+        },
+        {
+          "tag": "input",
+          "name": "Take product photo"
+        },
+        {
+          "tag": "button",
+          "name": "Paste label text"
+        },
+        {
+          "tag": "button",
+          "name": "Explore a sample label"
+        },
+        {
+          "tag": "button",
+          "name": "Export evidence report"
+        },
+        {
+          "tag": "button",
+          "name": "Correct a value"
+        },
+        {
+          "tag": "input",
+          "name": "Amount"
+        },
+        {
+          "tag": "select",
+          "name": "Amount unit"
+        },
+        {
+          "tag": "summary",
+          "name": "See the label & calculation maths"
+        },
+        {
+          "tag": "button",
+          "name": "Add optional context"
+        },
+        {
+          "tag": "input",
+          "name": "Keep this scan on this device Label text and corrections only. Photos and health context are not saved."
+        },
+        {
+          "tag": "input",
+          "name": "Public search terms"
+        },
+        {
+          "tag": "select",
+          "name": "Research topic"
+        },
+        {
+          "tag": "summary",
+          "name": "Optional Gemini investigation Not enabled"
+        },
+        {
+          "tag": "summary",
+          "name": "Original label observations 1 observations · entered text"
+        },
+        {
+          "tag": "summary",
+          "name": "What was checked"
+        },
+        {
+          "tag": "input",
+          "name": "Ask about this package"
+        },
+        {
+          "tag": "button",
+          "name": "How your data is used"
+        }
+      ],
+      "resultTabbablesCovered": true,
+      "resultUnnamedStops": 0,
+      "axeViolations": [],
+      "noNonLoopbackRequests": true,
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/keyboard-application/desktop.png"
+    }
+  ]
+}

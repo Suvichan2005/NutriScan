@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "product-alternatives-browser-acceptance",
+  "generatedAt": "2026-10-21T05:37:08.880Z",
+  "browser": "Chrome via Playwright, headless",
+  "origin": "loopback; product records fetched server-side from Open Food Facts",
+  "fixture": "Synthetic Nutella label text and barcode; nutrient readings are rounded values derived from the live community record for deterministic basis-normalization testing.",
+  "excludedBarcode": "3017620422003",
+  "limitations": [
+    "The typed fixture does not establish a real Nutella package, barcode scan, printed label, or regional formulation.",
+    "Open Food Facts is a community catalog; search candidates do not establish stock, suitability, or a better formulation.",
+    "This is a comparison workflow check, not validation of catalog accuracy or an alternative-product recommendation."
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "initialLookupIsPackageBarcode": true,
+      "liveBarcodeRecordVisible": true,
+      "packageRecordRegionalLimitVisible": true,
+      "comparisonBasisNormalizationVisible": true,
+      "comparableNutrientRows": 9,
+      "explicitlyNotComparableRows": 1,
+      "exactLookupIdentityCaveatVisible": true,
+      "candidateSearchExcludesCurrentBarcode": true,
+      "candidateCount": 4,
+      "candidateStockAndIdentityCaveatsVisible": true,
+      "noHealthRankingClaim": true,
+      "alternativeComparisonKeepsCommunityDisclosure": true,
+      "productRouteStatuses": [
+        200,
+        200
+      ],
+      "noNonLoopbackBrowserRequests": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/product-alternatives/mobile.png"
+    },
+    {
+      "viewport": "1440x900",
+      "initialLookupIsPackageBarcode": true,
+      "liveBarcodeRecordVisible": true,
+      "packageRecordRegionalLimitVisible": true,
+      "comparisonBasisNormalizationVisible": true,
+      "comparableNutrientRows": 9,
+      "explicitlyNotComparableRows": 1,
+      "exactLookupIdentityCaveatVisible": true,
+      "candidateSearchExcludesCurrentBarcode": true,
+      "candidateCount": 4,
+      "candidateStockAndIdentityCaveatsVisible": true,
+      "noHealthRankingClaim": true,
+      "alternativeComparisonKeepsCommunityDisclosure": true,
+      "productRouteStatuses": [
+        200,
+        200
+      ],
+      "noNonLoopbackBrowserRequests": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/product-alternatives/desktop.png"
+    }
+  ]
+}

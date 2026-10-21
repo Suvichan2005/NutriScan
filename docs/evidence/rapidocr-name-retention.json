@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "kind": "rapidocr-product-name-candidate-probe",
+  "generatedAt": "2026-10-21T04:53:12.814Z",
+  "photos": 5,
+  "models": {
+    "small": {
+      "engine": "RapidOCR PP-OCRv6 small on local CPU",
+      "expectedBrandObserved": 1,
+      "lineLevelExpectedBrandMatch": 1,
+      "results": [
+        {
+          "file": "coca-cola-front-off-5449000000996.jpg",
+          "role": "front",
+          "hashVerified": true,
+          "lines": 2,
+          "expectedBrandObserved": false,
+          "matchingLineConfidence": null
+        },
+        {
+          "file": "nutella-label-off-3017620422003.jpg",
+          "role": "front",
+          "hashVerified": true,
+          "lines": 3,
+          "expectedBrandObserved": true,
+          "matchingLineConfidence": 0.95952
+        },
+        {
+          "file": "heinz-beans-front-off-5000157024671.jpg",
+          "role": "front",
+          "hashVerified": true,
+          "lines": 6,
+          "expectedBrandObserved": false,
+          "matchingLineConfidence": null
+        },
+        {
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "role": "nutrition",
+          "hashVerified": true,
+          "lines": 32,
+          "expectedBrandObserved": false,
+          "matchingLineConfidence": null
+        },
+        {
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "role": "nutrition",
+          "hashVerified": true,
+          "lines": 52,
+          "expectedBrandObserved": false,
+          "matchingLineConfidence": null
+        }
+      ]
+    },
+    "tiny": {
+      "engine": "RapidOCR PP-OCRv6 tiny on local CPU",
+      "expectedBrandObserved": 0,
+      "lineLevelExpectedBrandMatch": 0,
+      "results": [
+        {
+          "file": "coca-cola-front-off-5449000000996.jpg",
+          "role": "front",
+          "hashVerified": true,
+          "lines": 3,
+          "expectedBrandObserved": false,
+          "matchingLineConfidence": null
+        },
+        {
+          "file": "nutella-label-off-3017620422003.jpg",
+          "role": "front",
+          "hashVerified": true,
+          "lines": 4,
+          "expectedBrandObserved": false,
+          "matchingLineConfidence": null
+        },
+        {
+          "file": "heinz-beans-front-off-5000157024671.jpg",
+          "role": "front",
+          "hashVerified": true,
+          "lines": 6,
+          "expectedBrandObserved": false,
+          "matchingLineConfidence": null
+        },
+        {
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "role": "nutrition",
+          "hashVerified": true,
+          "lines": 33,
+          "expectedBrandObserved": false,
+          "matchingLineConfidence": null
+        },
+        {
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "role": "nutrition",
+          "hashVerified": true,
+          "lines": 48,
+          "expectedBrandObserved": false,
+          "matchingLineConfidence": null
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Five curated public package photographs only; brand-token matching is not package identity verification.",
+    "OCR text and image bytes are not stored in this receipt.",
+    "No phone runtime, formulation, variant or product-record match is established."
+  ]
+}

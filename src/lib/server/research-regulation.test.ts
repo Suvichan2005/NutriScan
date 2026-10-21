@@ -10,7 +10,8 @@ vi.mock('./http', () => ({
 import { research } from './research';
 
 function textPdf(text: string) {
-  const stream = `BT /F1 12 Tf 72 720 Td (${text}) Tj ET`;
+  const chunks = text.match(/.{1,80}/g) ?? [];
+  const stream = `BT /F1 12 Tf 72 720 Td ${chunks.map((chunk, index) => `${index ? '0 -16 Td ' : ''}(${chunk}) Tj`).join(' ')} ET`;
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
@@ -64,14 +65,36 @@ describe('official regulation PDF discovery', () => {
 
     expect(result.status).toBe('ok');
     expect(history.map(item => item.id)).toEqual(expect.arrayContaining([
-      'fssai-ors-2022-direction', 'fssai-ors-2025-withdrawal', 'fssai-ors-2025-clarification', 'delhi-hc-ors-2025-dr-reddys',
+      'fssai-ors-2022-direction', 'fssai-ors-2024-order', 'fssai-ors-2025-withdrawal', 'fssai-ors-2025-clarification', 'delhi-hc-ors-2025-dr-reddys',
     ]));
     expect(history.find(item => item.id === 'fssai-ors-2025-withdrawal')).toMatchObject({ publishedAt: '2025-10-14' });
     expect(history.find(item => item.id === 'fssai-ors-2025-clarification')).toMatchObject({ publishedAt: '2025-10-15' });
+    expect(history.find(item => item.id === 'fssai-ors-2024-order')?.category).toMatch(/superseded historical order/i);
     expect(history.find(item => item.id === 'delhi-hc-ors-2025-dr-reddys')?.limitations).toMatch(/case-specific judgment.*does not decide every product/i);
     expect(history.find(item => item.id === 'fssai-ors-2025-withdrawal')?.category).toMatch(/regulatory withdrawal of prior permissions/i);
     expect(history.find(item => item.id === 'fssai-ors-2025-withdrawal')?.limitations).toMatch(/not retrieved source text.*not a product-specific adjudication/i);
-    expect(fixedFetchMock).toHaveBeenCalledTimes(4);
+    const historicalDirectionCall = fixedFetchMock.mock.calls.find(([url]) => new URL(String(url)).pathname.includes('6253ddfde2161Direction'));
+    expect(historicalDirectionCall?.slice(1)).toEqual(['pdf', 2_000_000]);
+    expect(fixedFetchMock).toHaveBeenCalledTimes(5);
+  });
+
+  it('returns an extractable superseded 2024 ORS order as history when later PDFs are image-only', async () => {
+    fixedFetchMock.mockImplementation(async (url: URL, format: string) => {
+      if (format !== 'pdf') return '<html><body>Official FSSAI regulations index for food labeling and claims.</body></html>';
+      if (url.pathname.includes('65c0d35e786e4Order')) return textPdf('Food Safety and Standards Authority of India. Dated 02nd February, 2024. FSSAI order on usage of the term ORS with brand names. All concerned businesses shall ensure compliance with these directions from 01st April, 2024.');
+      return textPdf('');
+    });
+
+    const result = await research({ query: 'Is this ORS legal in India today?', topic: 'regulation' });
+    const historical = result.items.find(item => item.id === 'fssai-ors-2024-order');
+
+    expect(result.status).toBe('ok');
+    expect(historical).toMatchObject({ publishedAt: '2024-02-02', category: 'superseded historical order; prior permissions withdrawn 14 October 2025' });
+    expect(historical?.summary).toContain('02nd February, 2024');
+    expect(historical?.limitations).toMatch(/does not establish a consolidated rule/i);
+    expect(result.items.find(item => item.id === 'fssai-ors-2025-clarification')?.summary).toMatch(/could not retrieve usable source text/i);
+    expect(result.message).toMatch(/Current legal status and package compliance remain unverified/);
+    expect(fixedFetchMock).toHaveBeenCalledTimes(5);
   });
 
   it('keeps primary-source links visible when only a client-rendered shell is retrieved', async () => {

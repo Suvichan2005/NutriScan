@@ -1,6 +1,6 @@
 import { chromium } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const baseUrl = process.env.NUTRISCAN_BASE_URL ?? 'http://127.0.0.1:3415';
@@ -29,6 +29,9 @@ try {
     await page.getByLabel('Add one or more product photos').setInputFiles(path.join('docs/evidence/private', photos[0]));
     await page.getByRole('button', { name: /Read these photos/ }).click();
     await page.locator('.results-section').waitFor({ state: 'visible', timeout: 120_000 });
+    const initialOcrObservationCount = await page.locator('.observations-list p').count();
+    const initialParsedNutrientCount = await page.locator('.details-block table tbody tr').count();
+    const initialCalculatedNutrientCount = await page.locator('.nutrient strong').evaluateAll((nodes) => nodes.filter((node) => (node.textContent ?? '').trim() !== '—').length);
     await page.getByLabel('Ask about this package').fill('What is still uncertain?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
     await page.locator('.conversation .user-message').filter({ hasText: 'What is still uncertain?' }).waitFor({ state: 'visible', timeout: 20_000 });
@@ -37,9 +40,15 @@ try {
     await page.getByRole('button', { name: /Read 1 new or updated photo/ }).click();
     await page.getByText(/Added evidence from 1 photo/).waitFor({ state: 'visible', timeout: 120_000 });
     const userMessages = await page.locator('.conversation .user-message').allTextContents();
+    const totalOcrObservationCount = await page.locator('.observations-list p').count();
     const outcome = {
       viewport: `${viewport.width}x${viewport.height}`,
       photosAdded: 2,
+      initialOcrObservationCount,
+      initialParsedNutrientCount,
+      initialCalculatedNutrientCount,
+      totalOcrObservationCount,
+      genuineImageOcrRan: initialOcrObservationCount > 0,
       portionRetained: await page.locator('#portion').inputValue() === '50',
       initialQuestionRetained: userMessages.filter((message) => message === 'What can you read from this package?').length === 1,
       followupRetained: userMessages.filter((message) => message === 'What is still uncertain?').length === 1,
@@ -47,11 +56,15 @@ try {
       pageErrors,
     };
     console.log(JSON.stringify(outcome));
-    if (!outcome.portionRetained || !outcome.initialQuestionRetained || !outcome.followupRetained || !outcome.addedPhotoNotice || pageErrors.length) process.exitCode = 1;
+    if (!outcome.genuineImageOcrRan || !outcome.portionRetained || !outcome.initialQuestionRetained || !outcome.followupRetained || !outcome.addedPhotoNotice || pageErrors.length) process.exitCode = 1;
     await page.close();
     outcomes.push(outcome);
   }
-  console.log(JSON.stringify({ allViewportsPassed: outcomes.length === 2 && outcomes.every((item) => item.portionRetained && item.initialQuestionRetained && item.followupRetained && item.addedPhotoNotice && item.pageErrors.length === 0) }));
+  const allViewportsPassed = outcomes.length === 2 && outcomes.every((item) => item.genuineImageOcrRan && item.portionRetained && item.initialQuestionRetained && item.followupRetained && item.addedPhotoNotice && item.pageErrors.length === 0);
+  const receipt = { schemaVersion: 1, kind: 'incremental-genuine-photo-intake-browser-acceptance', generatedAt: new Date().toISOString(), origin: 'local loopback', photos: ['saffola-veggie-oats-nutrition-off-8901088068758.jpg', 'bagrrys-white-oats-nutrition-off-8902710100150.jpg'], outcomes, allViewportsPassed };
+  await writeFile('docs/evidence/incremental-intake-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
+  console.log(JSON.stringify({ output: 'docs/evidence/incremental-intake-browser.json', allViewportsPassed }));
+  if (!allViewportsPassed) process.exitCode = 1;
 } finally {
   await browser.close();
 }

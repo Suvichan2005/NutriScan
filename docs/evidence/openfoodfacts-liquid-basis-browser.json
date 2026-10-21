@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "off-liquid-basis-browser-acceptance",
+  "generatedAt": "2026-10-21T05:08:39.674Z",
+  "captureTool": "Playwright using installed Chrome",
+  "origin": "loopback",
+  "publicBarcode": "5449000000996",
+  "screenshots": "docs/evidence/private/openfoodfacts-liquid-basis",
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "catalogDidNotChangePackageTitle": true,
+      "queryWasPublicBarcodeOnly": true,
+      "productRouteStatuses": [
+        200
+      ],
+      "matchedCommunityRecord": true,
+      "basisWarningVisible": true,
+      "communitySugarValueShownPer100ml": true,
+      "packageValueStillMissing": true,
+      "differenceWithheldWithoutPackageValue": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/openfoodfacts-liquid-basis/mobile.png"
+    },
+    {
+      "viewport": "1440x900",
+      "catalogDidNotChangePackageTitle": true,
+      "queryWasPublicBarcodeOnly": true,
+      "productRouteStatuses": [
+        200
+      ],
+      "matchedCommunityRecord": true,
+      "basisWarningVisible": true,
+      "communitySugarValueShownPer100ml": true,
+      "packageValueStillMissing": true,
+      "differenceWithheldWithoutPackageValue": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/openfoodfacts-liquid-basis/desktop.png"
+    }
+  ],
+  "limitations": [
+    "The app input contained no label values; the comparison deliberately withholds the difference.",
+    "This verifies the live catalog route and responsive disclosure, not package identity or regional formulation.",
+    "Product data is community reported; current stock is unverified."
+  ]
+}

@@ -39,6 +39,9 @@ const cases: CaseSpec[] = [
   { id: 'bagrrys-nutrition-role-full-image', sourceId: 'bagrrys', role: 'nutrition' },
   { id: 'bagrrys-nutrition-role-user-crop', sourceId: 'bagrrys', role: 'nutrition', crop: sources[1].crop },
   { id: 'bagrrys-nutrition-role-user-crop-repeat', sourceId: 'bagrrys', role: 'nutrition', crop: sources[1].crop },
+  { id: 'bagrrys-first-column-76', sourceId: 'bagrrys', role: 'nutrition', crop: { x: 0, y: 8, width: 76, height: 84 } },
+  { id: 'bagrrys-first-column-80', sourceId: 'bagrrys', role: 'nutrition', crop: { x: 0, y: 8, width: 80, height: 84 } },
+  { id: 'bagrrys-first-column-82', sourceId: 'bagrrys', role: 'nutrition', crop: { x: 0, y: 8, width: 82, height: 84 } },
   { id: 'saffola-nutrition-role-full-image-contrast', sourceId: 'saffola', role: 'nutrition', contrast: true },
   { id: 'saffola-nutrition-role-user-crop-contrast', sourceId: 'saffola', role: 'nutrition', crop: sources[0].crop, contrast: true },
   { id: 'bagrrys-nutrition-role-full-image-contrast', sourceId: 'bagrrys', role: 'nutrition', contrast: true },
@@ -99,9 +102,9 @@ async function scorePage(page: Page, record: ManifestRecord) {
         outcome = 'incorrect';
       }
     }
-    return { field: expected.key, outcome };
+    return { field: expected.key, outcome, calculated: Boolean(row && row.calculation.toLowerCase() !== 'withheld') };
   });
-  return { expected: fields.length, correct, incorrect, omitted, withheld, fields };
+  return { expected: fields.length, correct, incorrect, omitted, withheld, calculatedFields: fields.filter((field) => field.calculated).length, fields };
 }
 
 async function main() {
@@ -206,7 +209,7 @@ async function main() {
     results,
   };
   await writeFile(resultPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
-  console.log(JSON.stringify({ resultPath: path.relative(root, resultPath), results: results.map(({ id, correct, incorrect, omitted, withheld, parsedNutrientRows, initialQuestionJourney, axeViolationIds, pageErrorCount }) => ({ id, correct, incorrect, omitted, withheld, parsedNutrientRows, initialQuestionJourney, axeViolationIds, pageErrorCount })) }, null, 2));
+  console.log(JSON.stringify({ resultPath: path.relative(root, resultPath), results: results.map(({ id, correct, incorrect, omitted, withheld, parsedNutrientRows, calculatedFields, initialQuestionJourney, axeViolationIds, pageErrorCount }) => ({ id, correct, incorrect, omitted, withheld, parsedNutrientRows, calculatedFields, initialQuestionJourney, axeViolationIds, pageErrorCount })) }, null, 2));
 }
 
 main().catch((error: unknown) => {

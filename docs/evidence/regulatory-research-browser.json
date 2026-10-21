@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "kind": "live-fssai-regulatory-research-browser-acceptance",
+  "generatedAt": "2026-10-21T06:07:13.841Z",
+  "browser": "Chrome via Playwright, headless",
+  "origin": "loopback; public FSSAI and court sources retrieved server-side",
+  "query": "Is this ORS legal in India today?",
+  "limitations": [
+    "The extractable 2024 FSSAI order is superseded historical context, not current permission.",
+    "The 2025 scanned FSSAI PDFs did not yield usable text; court-PDF extraction can vary across route attempts.",
+    "The 2022 direction is historical evidence, and the 2024 order is superseded; neither establishes current legal status.",
+    "This journey does not establish current law, exact product category or package compliance."
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "candidateCount": 5,
+      "firstCandidateCategory": "superseded historical order; prior permissions withdrawn 14 October 2025 · published 2024-02-02",
+      "historicalExcerptVisible": true,
+      "historicalDirectionRetrieved": true,
+      "supersededLimitVisible": true,
+      "failedSourcesRemainExplicit": true,
+      "unavailableScanned2025Count": 2,
+      "directOnlyCount": 3,
+      "sourceOutcomes": [
+        {
+          "title": "FSSAI order on ORS use with brand names (historical; later withdrawn)",
+          "textRetrieved": true,
+          "sourceTextUnavailable": false
+        },
+        {
+          "title": "FSSAI withdrawal of prior ORS brand-name permissions",
+          "textRetrieved": false,
+          "sourceTextUnavailable": true
+        },
+        {
+          "title": "FSSAI clarification on ORS in food-product names",
+          "textRetrieved": false,
+          "sourceTextUnavailable": true
+        },
+        {
+          "title": "Delhi High Court: Dr Reddy’s Laboratories v Union of India, W.P.(C) 16303/2025",
+          "textRetrieved": false,
+          "sourceTextUnavailable": true
+        },
+        {
+          "title": "FSSAI direction on ORS-substitute advertising and marketing",
+          "textRetrieved": true,
+          "sourceTextUnavailable": false
+        }
+      ],
+      "currentLawAndProductComplianceUnverified": true,
+      "directSourcesNotRenderedAsHtml": true,
+      "researchRouteStatuses": [
+        200
+      ],
+      "noNonLoopbackBrowserRequests": true,
+      "horizontalOverflow": false,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/regulatory-research/mobile.png"
+    },
+    {
+      "viewport": "1440x900",
+      "candidateCount": 5,
+      "firstCandidateCategory": "superseded historical order; prior permissions withdrawn 14 October 2025 · published 2024-02-02",
+      "historicalExcerptVisible": true,
+      "historicalDirectionRetrieved": true,
+      "supersededLimitVisible": true,
+      "failedSourcesRemainExplicit": true,
+      "unavailableScanned2025Count": 2,
+      "directOnlyCount": 3,
+      "sourceOutcomes": [
+        {
+          "title": "FSSAI order on ORS use with brand names (historical; later withdrawn)",
+          "textRetrieved": true,
+          "sourceTextUnavailable": false
+        },
+        {
+          "title": "FSSAI withdrawal of prior ORS brand-name permissions",
+          "textRetrieved": false,
+          "sourceTextUnavailable": true
+        },
+        {
+          "title": "FSSAI clarification on ORS in food-product names",
+          "textRetrieved": false,
+          "sourceTextUnavailable": true
+        },
+        {
+          "title": "Delhi High Court: Dr Reddy’s Laboratories v Union of India, W.P.(C) 16303/2025",
+          "textRetrieved": false,
+          "sourceTextUnavailable": true
+        },
+        {
+          "title": "FSSAI direction on ORS-substitute advertising and marketing",
+          "textRetrieved": true,
+          "sourceTextUnavailable": false
+        }
+      ],
+      "currentLawAndProductComplianceUnverified": true,
+      "directSourcesNotRenderedAsHtml": true,
+      "researchRouteStatuses": [
+        200
+      ],
+      "noNonLoopbackBrowserRequests": true,
+      "horizontalOverflow": false,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/regulatory-research/desktop.png"
+    }
+  ]
+}

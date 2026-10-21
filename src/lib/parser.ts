@@ -4,12 +4,12 @@ import { detectAdditives } from './knowledge';
 type ParseOptions = {side?:Observation['side'];origin?:Observation['origin'];confidence?:number|null;observations?:Observation[];synthetic?:boolean;userDescription?:string};
 type Basis = NonNullable<Nutrient['basis']>;
 const rows: {key:NutrientKey;pattern:RegExp}[] = [
-  {key:'addedSugars',pattern:/^(?:(?:includes?|of which)\s+)?added\s+sugars?\b/i},
+  {key:'addedSugars',pattern:/^(?:(?:includes?|of which)\s+)?added\s+sugars?(?=\b|\d)/i},
   {key:'saturatedFat',pattern:/^(?:(?:total|of which)\s+)?saturat(?:ed|es)\s*(?:fat)?\b|^(?:dont\s+acides gras satur[ée]s|waarvan\s+verzadigd(?:e|e vetzuren)?|de las cuales saturadas)\b/i},
   {key:'energy',pattern:/^(?:total\s+)?(?:energy|calories)\b|^(?:[ée]nergie|energ[ií]a|valor energ[ée]tico)\b/i},
-  {key:'carbohydrate',pattern:/^(?:total\s+|available\s+)?carbohydrates?\b|^(?:glucides|koolhydraten|hidratos de carbono)\b/i},
-  {key:'sugars',pattern:/^(?:(?:total|of which)\s+)?sugars?\b|^(?:dont sucres|waarvan suikers|de los cuales az[úu]cares)\b/i},
-  {key:'protein',pattern:/^proteins?\b|^(?:prot[ée]ines?|prote[ií]nas?|eiwitten)\b/i}, {key:'fat',pattern:/^(?:total\s+)?fat\b|^(?:mati[èe]res grasses|vetten|grasas)\b/i},
+  {key:'carbohydrate',pattern:/^(?:total\s+|available\s+)?carbohydrates?(?=\b|\d)|^(?:glucides|koolhydraten|hidratos de carbono)\b/i},
+  {key:'sugars',pattern:/^(?:(?:total|of which)\s+)?sugars?(?=\b|\d)|^(?:dont sucres|waarvan suikers|de los cuales az[úu]cares)\b/i},
+  {key:'protein',pattern:/^proteins?(?=\b|\d)|^(?:prot[ée]ines?|prote[ií]nas?|eiwitten)\b/i}, {key:'fat',pattern:/^(?:total\s+)?fat\b|^(?:mati[èe]res grasses|vetten|grasas)\b/i},
   {key:'fiber',pattern:/^(?:dietary\s+)?fib(?:er|re)\b/i},
   {key:'sodium',pattern:/^(?:sodium|sodio)\b/i}, {key:'salt',pattern:/^(?:salt|sel|zout|sal)\b/i},
 ];
@@ -36,7 +36,27 @@ function basesIn(line:string,serving?:PackageData['serving']):Basis[] {
   if(servingInline) result.push({amount:Number(servingInline[1]),unit:servingInline[2].toLowerCase() as 'g'|'ml',description:servingInline[0]});
   return result;
 }
-const labelName = (lines:string[]) => (lines.find(line=>line.length>=3&&!rows.some(row=>row.pattern.test(line))&&!/^(?:nutrition|nutritional|valeurs nutrition|per\b|pour\b|para\b|ingredients?|contains|allergen|net\b|serving\b|fssai\b|licen[cs]e|barcode|total\b|synthetic)/i.test(line)) ?? 'Unidentified package').slice(0,200);
+const nonNamePrefix=/^(?:nutrition|nutritional|valeurs nutrition|per\b|pour\b|para\b|ingredients?|contains|allergen|net\b|serving\b|no\.?\s*of\s+servings?\b|soluble\b|insoluble\b|of\s+which\b|energy\b|calories\b|carbohyd|carbs?\b|sugars?\b|added sugars?\b|protein\b|fat\b|saturated\b|trans fat\b|cholesterol\b|sodium\b|salt\b|fssai\b|licen[cs]e|barcode|total\b|synthetic)/i;
+const labelMetadata=/\b(?:servings?\s+per\s+(?:pack|package|container)|serving\s+size|portion\s+size|per\s*\d+(?:\.\d+)?\s*(?:g|ml)|approximate\s+values?)\b/i;
+const referenceIntake=/\b(?:reference\s+intake|adult[-\s]type|daily\s+value|valeur\s+quotidienne|apport\s+de\s+r[eé]f[eé]rence|assunzioni\s+di\s+riferimento|ingesta\s+de\s+referencia)\b/i;
+const nutritionRowTerm=/\b(?:nutrition|information|typical\s+value|energy|calories|carbohydrates?|glucides|koolhydraten|hidratos|sugars?|sucres|suikers|az[uú]cares|protein|prot[eé]ines?|prote[ií]nas?|eiwitten|fat|gras|vetten|saturat(?:ed|es)|fiber|fibre|vezels|fatty|acids?|sodium|sodio|salt|sel|zout|cholesterol|vitamins?|minerals?)\b/i;
+const slogan=/^(?:[®™]\s*)?(?:taste(?:\s+the\s+feeling)?|feel\s+good|great\s+taste)\b|\b(?:delicious(?:ly)?|tasty)\b/i;
+function isNameCandidate(line:string){
+  const measuredTableValue=/\d/.test(line)&&(/[()]/.test(line)||/\(\s*(?:kcal|kj|mg|g|ml)\s*\)/i.test(line));
+  const nutrientValueLine=/\d/.test(line)&&nutritionRowTerm.test(line);
+  const nutritionHeading=/\b(?:nutrition|information|typical\s+value)\b/i.test(line);
+  const hasReadableWord=/\p{L}{3,}/u.test(line);
+  return line.length>=3&&hasReadableWord&&!rows.some(row=>row.pattern.test(line))&&!nonNamePrefix.test(line)&&!labelMetadata.test(line)&&!referenceIntake.test(line)&&!nutritionHeading&&!nutrientValueLine&&!slogan.test(line)&&!measuredTableValue;
+}
+const nameConfidenceThreshold=80;
+function labelName(lines:string[],inputObservations:Observation[],origin:Observation['origin']|undefined){
+  const candidates=lines.filter(isNameCandidate);
+  if(origin==='ocr'){
+    const selected=candidates.find(line=>inputObservations.some(observation=>observation.text.trim()===line&&observation.origin==='ocr'&&observation.confidence!==null&&observation.confidence>=nameConfidenceThreshold));
+    return {name:selected?.slice(0,200)??'Unidentified package',withheld:!selected};
+  }
+  return {name:candidates[0]?.slice(0,200)??'Unidentified package',withheld:false};
+}
 
 /** A conservative text parser: an OCR reading remains an observation. */
 export function parseLabel(text:string,options:ParseOptions={}):PackageData {
@@ -69,8 +89,12 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
     if(ingredientLine){ingredientsOpen=true;ingredients.push(ingredientLine[1]);observe('ingredients',line);continue;}
     if(/^(?:contains|may contain|allergen)/i.test(line)){ingredientsOpen=false;allergens.push(line);observe('allergens',line);continue;}
     if(/\b(?:sugar[ -]free|no added sugar|high protein|organic|ORS|oral rehydration)\b/i.test(line)){claims.push(line);observe('claim',line);}
-    const nutrientRow=rows.find(row=>row.pattern.test(line));
-    const basisText=/^(?:per|pour|para)\s*:?\s*$/i.test(line)?`${line} ${lines[lineIndex+1]??''}`:line;
+    // OCR frequently glues an all-caps column heading to a title-cased basis,
+    // e.g. "NUTRIENTSPer 100g". Normalize only the parser view; keep the
+    // original observation text unchanged for user review and provenance.
+    const parserLine=line.replace(/([A-Z]{4,})(?=(?:Per|PER|Pour|POUR|Para|PARA)\s*:?\s*\d)/,'$1 ');
+    const nutrientRow=rows.find(row=>row.pattern.test(parserLine));
+    const basisText=/^(?:per|pour|para)\s*:?\s*$/i.test(parserLine)?`${parserLine} ${lines[lineIndex+1]??''}`:parserLine;
     const foundBases=basesIn(basisText,serving);
     const hasBasis=/\b(?:per|pour|para)\s*:?\s*(?:\d|serv|port)/i.test(basisText)||/\/\s*\d+\s*(?:g|ml)\b/i.test(basisText);
     if(!nutrientRow&&hasBasis){
@@ -127,7 +151,9 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   // a barcode or nutrition table) must not become a product ingredient.
   const additiveCodes=detectAdditives(ingredients.join('\n'));
   for(const code of additiveCodes){const line=ingredients.find(l=>detectAdditives(`Ingredients: ${l}`).includes(code));observe(`additive:${code}`,line??code);}
-  const name=labelName(lines);observe('name',name);
+  const nameResult=labelName(lines,options.observations??[],options.origin);
+  if(nameResult.withheld)warnings.push('Product name was not established from readable label text; enter a name or check a verified product identifier.');
+  if(nameResult.name!=='Unidentified package')observe('name',nameResult.name);
   const userDescription=options.userDescription?.trim().slice(0,4000);
   if(userDescription)observations.push({id:`${id}-user-description`,field:'user-description',text:userDescription,side:'text',origin:'user',confidence:null});
   const brand=text.match(/^brand\s*[:：]\s*([^\n]{1,120})/im)?.[1];
@@ -136,5 +162,5 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   if(barcode)observe('barcode',barcode); if(license)observe('license',license);
   if(!nutrients.length)warnings.push('No usable nutrition values were extracted. Missing values are unknown, not zero.');
   if(brand)observe('brand',brand);
-  return packageSchema.parse({id,name,...(brand?{brand}:{}),...(barcode?{barcode}:{}),...(userDescription?{userDescription}:{}),...(license?{license}:{}),...(serving?{serving}:{}),...(netWeight?{netWeight}:{}),ingredients,additives:additiveCodes,allergens,claims,nutrients,observations,rawText:text,warnings:[...new Set(warnings)],synthetic:options.synthetic??options.origin==='fixture',createdAt:new Date().toISOString()});
+  return packageSchema.parse({id,name:nameResult.name,...(brand?{brand}:{}),...(barcode?{barcode}:{}),...(userDescription?{userDescription}:{}),...(license?{license}:{}),...(serving?{serving}:{}),...(netWeight?{netWeight}:{}),ingredients,additives:additiveCodes,allergens,claims,nutrients,observations,rawText:text,warnings:[...new Set(warnings)],synthetic:options.synthetic??options.origin==='fixture',createdAt:new Date().toISOString()});
 }

@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "kind": "keyboard-native-dialog-browser-acceptance",
+  "generatedAt": "2026-10-21T04:01:32.586Z",
+  "origin": "local loopback",
+  "allViewportsPassed": true,
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "triggerFocusedBeforeOpen": true,
+      "openedByEnter": true,
+      "modalSemantics": true,
+      "focusInsideOnOpen": true,
+      "tabStopsTested": 12,
+      "tabStopsInside": 12,
+      "tabTrace": [
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "SUMMARY",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "BUTTON",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "BUTTON",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "BUTTON",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        }
+      ],
+      "escapeClosedDialog": true,
+      "focusRestoredOnClose": true,
+      "axeViolationIds": [],
+      "pageErrors": []
+    },
+    {
+      "viewport": "1440x900",
+      "triggerFocusedBeforeOpen": true,
+      "openedByEnter": true,
+      "modalSemantics": true,
+      "focusInsideOnOpen": true,
+      "tabStopsTested": 12,
+      "tabStopsInside": 12,
+      "tabTrace": [
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "SUMMARY",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "BUTTON",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "BUTTON",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "BUTTON",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        },
+        {
+          "insideDialog": true,
+          "tagName": "TEXTAREA",
+          "id": ""
+        }
+      ],
+      "escapeClosedDialog": true,
+      "focusRestoredOnClose": true,
+      "axeViolationIds": [],
+      "pageErrors": []
+    }
+  ]
+}

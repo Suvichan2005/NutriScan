@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T02:27:04.446Z",
+  "generatedAt": "2026-10-21T05:15:31.900Z",
   "baseUrl": "http://127.0.0.1:3400",
   "browser": "Chrome via Playwright, headless; viewport 390x844",
   "sources": [
@@ -43,42 +43,52 @@
       "incorrect": 0,
       "omitted": 9,
       "withheld": 0,
+      "calculatedFields": 0,
       "fields": [
         {
           "field": "energy",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "protein",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "carbohydrate",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "addedSugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fiber",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "saturatedFat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sodium",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         }
       ],
       "parsedNutrientRows": 0,
@@ -98,42 +108,52 @@
       "incorrect": 0,
       "omitted": 8,
       "withheld": 1,
+      "calculatedFields": 0,
       "fields": [
         {
           "field": "energy",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "protein",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "carbohydrate",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "addedSugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fiber",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "saturatedFat",
-          "outcome": "withheld"
+          "outcome": "withheld",
+          "calculated": false
         },
         {
           "field": "sodium",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         }
       ],
       "parsedNutrientRows": 2,
@@ -159,42 +179,52 @@
       "incorrect": 0,
       "omitted": 8,
       "withheld": 0,
+      "calculatedFields": 1,
       "fields": [
         {
           "field": "energy",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "protein",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "carbohydrate",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "addedSugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fiber",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "saturatedFat",
-          "outcome": "correct"
+          "outcome": "correct",
+          "calculated": true
         },
         {
           "field": "sodium",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         }
       ],
       "parsedNutrientRows": 1,
@@ -220,42 +250,52 @@
       "incorrect": 0,
       "omitted": 8,
       "withheld": 0,
+      "calculatedFields": 1,
       "fields": [
         {
           "field": "energy",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "protein",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "carbohydrate",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "addedSugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fiber",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "saturatedFat",
-          "outcome": "correct"
+          "outcome": "correct",
+          "calculated": true
         },
         {
           "field": "sodium",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         }
       ],
       "parsedNutrientRows": 1,
@@ -275,38 +315,47 @@
       "incorrect": 0,
       "omitted": 8,
       "withheld": 0,
+      "calculatedFields": 0,
       "fields": [
         {
           "field": "energy",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "protein",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "carbohydrate",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fiber",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "saturatedFat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sodium",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         }
       ],
       "parsedNutrientRows": 0,
@@ -332,38 +381,47 @@
       "incorrect": 0,
       "omitted": 8,
       "withheld": 0,
+      "calculatedFields": 0,
       "fields": [
         {
           "field": "energy",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "protein",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "carbohydrate",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fiber",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "saturatedFat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sodium",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         }
       ],
       "parsedNutrientRows": 0,
@@ -389,44 +447,251 @@
       "incorrect": 0,
       "omitted": 8,
       "withheld": 0,
+      "calculatedFields": 0,
       "fields": [
         {
           "field": "energy",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "protein",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "carbohydrate",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fiber",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "saturatedFat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sodium",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         }
       ],
       "parsedNutrientRows": 0,
       "axeViolationIds": [],
       "pageErrorCount": 0,
       "screenshot": "docs/evidence/private/browser-ocr-bagrrys-nutrition-role-user-crop-repeat.png"
+    },
+    {
+      "id": "bagrrys-first-column-76",
+      "sourceId": "bagrrys",
+      "role": "nutrition",
+      "crop": {
+        "x": 0,
+        "y": 8,
+        "width": 76,
+        "height": 84
+      },
+      "contrast": false,
+      "cropSelection": "pointer-drag",
+      "initialQuestionJourney": null,
+      "expected": 8,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "calculatedFields": 0,
+      "fields": [
+        {
+          "field": "energy",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "protein",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "carbohydrate",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "sugars",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "fiber",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "fat",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "saturatedFat",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "sodium",
+          "outcome": "omitted",
+          "calculated": false
+        }
+      ],
+      "parsedNutrientRows": 0,
+      "axeViolationIds": [],
+      "pageErrorCount": 0,
+      "screenshot": "docs/evidence/private/browser-ocr-bagrrys-first-column-76.png"
+    },
+    {
+      "id": "bagrrys-first-column-80",
+      "sourceId": "bagrrys",
+      "role": "nutrition",
+      "crop": {
+        "x": 0,
+        "y": 8,
+        "width": 80,
+        "height": 84
+      },
+      "contrast": false,
+      "cropSelection": "pointer-drag",
+      "initialQuestionJourney": null,
+      "expected": 8,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "calculatedFields": 0,
+      "fields": [
+        {
+          "field": "energy",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "protein",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "carbohydrate",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "sugars",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "fiber",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "fat",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "saturatedFat",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "sodium",
+          "outcome": "omitted",
+          "calculated": false
+        }
+      ],
+      "parsedNutrientRows": 1,
+      "axeViolationIds": [],
+      "pageErrorCount": 0,
+      "screenshot": "docs/evidence/private/browser-ocr-bagrrys-first-column-80.png"
+    },
+    {
+      "id": "bagrrys-first-column-82",
+      "sourceId": "bagrrys",
+      "role": "nutrition",
+      "crop": {
+        "x": 0,
+        "y": 8,
+        "width": 82,
+        "height": 84
+      },
+      "contrast": false,
+      "cropSelection": "pointer-drag",
+      "initialQuestionJourney": null,
+      "expected": 8,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "calculatedFields": 0,
+      "fields": [
+        {
+          "field": "energy",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "protein",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "carbohydrate",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "sugars",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "fiber",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "fat",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "saturatedFat",
+          "outcome": "omitted",
+          "calculated": false
+        },
+        {
+          "field": "sodium",
+          "outcome": "omitted",
+          "calculated": false
+        }
+      ],
+      "parsedNutrientRows": 1,
+      "axeViolationIds": [],
+      "pageErrorCount": 0,
+      "screenshot": "docs/evidence/private/browser-ocr-bagrrys-first-column-82.png"
     },
     {
       "id": "saffola-nutrition-role-full-image-contrast",
@@ -440,42 +705,52 @@
       "incorrect": 0,
       "omitted": 8,
       "withheld": 1,
+      "calculatedFields": 0,
       "fields": [
         {
           "field": "energy",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "protein",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "carbohydrate",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "addedSugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fiber",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "saturatedFat",
-          "outcome": "withheld"
+          "outcome": "withheld",
+          "calculated": false
         },
         {
           "field": "sodium",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         }
       ],
       "parsedNutrientRows": 3,
@@ -501,42 +776,52 @@
       "incorrect": 2,
       "omitted": 7,
       "withheld": 0,
+      "calculatedFields": 2,
       "fields": [
         {
           "field": "energy",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "protein",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "carbohydrate",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "addedSugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fiber",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "saturatedFat",
-          "outcome": "incorrect"
+          "outcome": "incorrect",
+          "calculated": true
         },
         {
           "field": "sodium",
-          "outcome": "incorrect"
+          "outcome": "incorrect",
+          "calculated": true
         }
       ],
       "parsedNutrientRows": 3,
@@ -556,38 +841,47 @@
       "incorrect": 0,
       "omitted": 7,
       "withheld": 1,
+      "calculatedFields": 0,
       "fields": [
         {
           "field": "energy",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "protein",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "carbohydrate",
-          "outcome": "withheld"
+          "outcome": "withheld",
+          "calculated": false
         },
         {
           "field": "sugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fiber",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "saturatedFat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sodium",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         }
       ],
       "parsedNutrientRows": 2,
@@ -613,38 +907,47 @@
       "incorrect": 0,
       "omitted": 8,
       "withheld": 0,
+      "calculatedFields": 0,
       "fields": [
         {
           "field": "energy",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "protein",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "carbohydrate",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sugars",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fiber",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "fat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "saturatedFat",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         },
         {
           "field": "sodium",
-          "outcome": "omitted"
+          "outcome": "omitted",
+          "calculated": false
         }
       ],
       "parsedNutrientRows": 0,

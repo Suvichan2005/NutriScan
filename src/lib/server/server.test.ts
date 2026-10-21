@@ -78,9 +78,30 @@ describe('public source normalization', () => {
     expect(product.nutrients).toEqual([{ key: 'sugars', value: 0, unit: 'g', basis: { amount: 100, unit: 'ml' } }, { key: 'sodium', value: 20, unit: 'mg', basis: { amount: 100, unit: 'ml' } }]);
     expect(product.match).toBe('barcode'); expect(product.availability).toBe('local stock unverified');
   });
+  it('uses a per-100ml basis for a volume-packaged product in an explicit beverage category', () => {
+    const product = normalizeProduct({ code: '5449000000996', product_name: 'Cola', nutrition_data_per: '100g', product_quantity_unit: 'ml', categories_tags: ['en:beverages'], nutriments: { 'energy-kcal_100g': 42.4, sugars_100g: 10.6 } }, '5449000000996')!;
+    expect(product.nutrients).toEqual([
+      { key: 'energy', value: 42.4, unit: 'kcal', basis: { amount: 100, unit: 'ml' } },
+      { key: 'sugars', value: 10.6, unit: 'g', basis: { amount: 100, unit: 'ml' } },
+    ]);
+    expect(product.warnings?.join(' ')).toContain('basis was inferred from the volume unit and beverage category; check it against the exact package');
+    expect(product.warnings?.join(' ')).not.toContain('basis could not be established');
+  });
+  it('withholds basis and comparability for a volume package outside a recognized beverage category', () => {
+    const product = normalizeProduct({ code: '8901234567890', product_name: 'Unclassified product', nutrition_data_per: '100g', product_quantity_unit: 'ml', categories_tags: ['en:food-products'], nutriments: { sugars_100g: 8, fat_100g: 0 } })!;
+    expect(product.nutrients).toEqual([
+      { key: 'sugars', value: 8, unit: 'g', basis: null },
+      { key: 'fat', value: 0, unit: 'g', basis: null },
+    ]);
+    expect(product.warnings?.join(' ')).toContain('basis could not be established. Do not compare these values');
+  });
   it('does not invent a mass/volume basis from package volume', () => {
     const product = normalizeProduct({ code: '8901234567890', product_name: 'Drink', product_quantity_unit: 'ml', nutriments: { sugars_100g: 8 } })!;
     expect(product.nutrients[0].basis).toBeNull(); expect(product.warnings?.join(' ')).toContain('could not be established');
+  });
+  it('uses mass for an explicitly declared 100g basis when the package unit is not volume', () => {
+    const product = normalizeProduct({ code: '8901234567890', product_name: 'Oats', nutrition_data_per: '100g', product_quantity_unit: 'g', nutriments: { sugars_100g: 0 } })!;
+    expect(product.nutrients[0]).toEqual({ key: 'sugars', value: 0, unit: 'g', basis: { amount: 100, unit: 'g' } });
   });
   it('filters candidates to an explicitly selected country without asserting stock', async () => {
     expect(productInput.safeParse({query:'oats',alternatives:true,country:'France'}).success).toBe(true);

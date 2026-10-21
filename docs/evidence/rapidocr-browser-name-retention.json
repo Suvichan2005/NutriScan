@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 1,
+  "kind": "browser-local-pp-ocrv6-name-retention-probe",
+  "generatedAt": "2026-10-21T04:58:03.435Z",
+  "source": "Chrome headless, local-loopback-only asset server, 5 public hash-verified benchmark front and nutrition-panel photos; text is reduced to field-match totals and no OCR string is persisted.",
+  "models": {
+    "type": "small",
+    "detector": {
+      "file": "PP-OCRv6_det_small.onnx",
+      "bytes": 9929594
+    },
+    "recognizer": {
+      "file": "PP-OCRv6_rec_small.onnx",
+      "bytes": 21234383
+    }
+  },
+  "runtimeAssets": {
+    "javascript": 368094,
+    "wasm": 14264838,
+    "wasmModule": 24381
+  },
+  "crops": [
+    {
+      "code": "5449000000996",
+      "file": "coca-cola-front-off-5449000000996.jpg",
+      "panel": "full front photo",
+      "manuallySelectedRecognizerRow": false
+    },
+    {
+      "code": "3017620422003",
+      "file": "nutella-label-off-3017620422003.jpg",
+      "panel": "full front photo",
+      "manuallySelectedRecognizerRow": false
+    },
+    {
+      "code": "5000157024671",
+      "file": "heinz-beans-front-off-5000157024671.jpg",
+      "panel": "full front photo",
+      "manuallySelectedRecognizerRow": false
+    },
+    {
+      "code": "8901088068758",
+      "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+      "panel": "full nutrition photo",
+      "manuallySelectedRecognizerRow": false
+    },
+    {
+      "code": "8902710100150",
+      "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+      "panel": "full nutrition photo",
+      "manuallySelectedRecognizerRow": false
+    }
+  ],
+  "configurations": [
+    {
+      "configuration": {
+        "name": "baseline",
+        "detectorThreshold": 0.3,
+        "minimumRowPixels": 3,
+        "bandGap": 3,
+        "minimumBandHeight": 5,
+        "minimumConfidence": 0.4
+      },
+      "expectedBrandsObserved": 1,
+      "lineLevelBrandMatches": 1,
+      "photos": [
+        {
+          "configuration": "baseline",
+          "code": "5449000000996",
+          "file": "coca-cola-front-off-5449000000996.jpg",
+          "role": "front",
+          "expectedBrandObserved": false,
+          "lineLevelExpectedBrandMatch": false,
+          "matchingLineConfidence": null,
+          "modelLoadMs": 562,
+          "detectorMs": 1637,
+          "detectorActivated": true,
+          "detectedBands": 2,
+          "recognizedRows": 2,
+          "rowRecognizerMs": 217,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "baseline",
+          "code": "3017620422003",
+          "file": "nutella-label-off-3017620422003.jpg",
+          "role": "front",
+          "expectedBrandObserved": false,
+          "lineLevelExpectedBrandMatch": false,
+          "matchingLineConfidence": null,
+          "modelLoadMs": 562,
+          "detectorMs": 11070,
+          "detectorActivated": true,
+          "detectedBands": 3,
+          "recognizedRows": 3,
+          "rowRecognizerMs": 776,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "baseline",
+          "code": "5000157024671",
+          "file": "heinz-beans-front-off-5000157024671.jpg",
+          "role": "front",
+          "expectedBrandObserved": true,
+          "lineLevelExpectedBrandMatch": true,
+          "matchingLineConfidence": 0.9999,
+          "modelLoadMs": 562,
+          "detectorMs": 12184,
+          "detectorActivated": true,
+          "detectedBands": 6,
+          "recognizedRows": 5,
+          "rowRecognizerMs": 953,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "baseline",
+          "code": "8901088068758",
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "role": "nutrition",
+          "expectedBrandObserved": false,
+          "lineLevelExpectedBrandMatch": false,
+          "matchingLineConfidence": null,
+          "modelLoadMs": 562,
+          "detectorMs": 3881,
+          "detectorActivated": true,
+          "detectedBands": 17,
+          "recognizedRows": 17,
+          "rowRecognizerMs": 11457,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "baseline",
+          "code": "8902710100150",
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "role": "nutrition",
+          "expectedBrandObserved": false,
+          "lineLevelExpectedBrandMatch": false,
+          "matchingLineConfidence": null,
+          "modelLoadMs": 562,
+          "detectorMs": 7364,
+          "detectorActivated": true,
+          "detectedBands": 7,
+          "recognizedRows": 5,
+          "rowRecognizerMs": 1292,
+          "pageErrors": 0
+        }
+      ]
+    },
+    {
+      "configuration": {
+        "name": "connected-components",
+        "extractionMode": "components",
+        "detectorThreshold": 0.3,
+        "minimumRowPixels": 3,
+        "bandGap": 3,
+        "minimumBandHeight": 5,
+        "minimumConfidence": 0.4
+      },
+      "expectedBrandsObserved": 1,
+      "lineLevelBrandMatches": 1,
+      "photos": [
+        {
+          "configuration": "connected-components",
+          "code": "5449000000996",
+          "file": "coca-cola-front-off-5449000000996.jpg",
+          "role": "front",
+          "expectedBrandObserved": false,
+          "lineLevelExpectedBrandMatch": false,
+          "matchingLineConfidence": null,
+          "modelLoadMs": 562,
+          "detectorMs": 12534,
+          "detectorActivated": true,
+          "detectedBands": 3,
+          "recognizedRows": 3,
+          "rowRecognizerMs": 623,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "connected-components",
+          "code": "3017620422003",
+          "file": "nutella-label-off-3017620422003.jpg",
+          "role": "front",
+          "expectedBrandObserved": false,
+          "lineLevelExpectedBrandMatch": false,
+          "matchingLineConfidence": null,
+          "modelLoadMs": 562,
+          "detectorMs": 2463,
+          "detectorActivated": true,
+          "detectedBands": 4,
+          "recognizedRows": 4,
+          "rowRecognizerMs": 708,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "connected-components",
+          "code": "5000157024671",
+          "file": "heinz-beans-front-off-5000157024671.jpg",
+          "role": "front",
+          "expectedBrandObserved": true,
+          "lineLevelExpectedBrandMatch": true,
+          "matchingLineConfidence": 0.9998,
+          "modelLoadMs": 562,
+          "detectorMs": 12283,
+          "detectorActivated": true,
+          "detectedBands": 7,
+          "recognizedRows": 5,
+          "rowRecognizerMs": 982,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "connected-components",
+          "code": "8901088068758",
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "role": "nutrition",
+          "expectedBrandObserved": false,
+          "lineLevelExpectedBrandMatch": false,
+          "matchingLineConfidence": null,
+          "modelLoadMs": 562,
+          "detectorMs": 9516,
+          "detectorActivated": true,
+          "detectedBands": 17,
+          "recognizedRows": 17,
+          "rowRecognizerMs": 8826,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "connected-components",
+          "code": "8902710100150",
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "role": "nutrition",
+          "expectedBrandObserved": false,
+          "lineLevelExpectedBrandMatch": false,
+          "matchingLineConfidence": null,
+          "modelLoadMs": 562,
+          "detectorMs": 11577,
+          "detectorActivated": true,
+          "detectedBands": 33,
+          "recognizedRows": 33,
+          "rowRecognizerMs": 10053,
+          "pageErrors": 0
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "The browser diagnostic uses vertical-projection and threshold-connected-component approximations; neither is the full RapidOCR DB contour/box post-processor with polygon scoring and unclip.",
+    "Five selected public package photographs and brand-token matches are not a held-out identity benchmark.",
+    "Model assets were served from local disk through an ephemeral loopback server. No image or OCR text left the machine.",
+    "The probe is not general OCR validation or a production decision."
+  ]
+}

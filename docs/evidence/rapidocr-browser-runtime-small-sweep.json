@@ -1,0 +1,411 @@
+{
+  "schemaVersion": 1,
+  "kind": "browser-local-pp-ocrv6-row-extraction-sweep",
+  "generatedAt": "2026-10-21T03:53:08.552Z",
+  "source": "Chrome headless, local-loopback-only asset server, two public hash-verified benchmark photos; text is reduced to field-match totals and no OCR string is persisted.",
+  "models": {
+    "type": "small",
+    "detector": {
+      "file": "PP-OCRv6_det_small.onnx",
+      "bytes": 9929594
+    },
+    "recognizer": {
+      "file": "PP-OCRv6_rec_small.onnx",
+      "bytes": 21234383
+    }
+  },
+  "runtimeAssets": {
+    "javascript": 368094,
+    "wasm": 14264838,
+    "wasmModule": 24381
+  },
+  "crops": [
+    {
+      "code": "8901088068758",
+      "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+      "panel": "3/0/93/99 percent",
+      "manuallySelectedRecognizerRow": true
+    },
+    {
+      "code": "8902710100150",
+      "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+      "panel": "2/2/74/96 percent",
+      "manuallySelectedRecognizerRow": false
+    }
+  ],
+  "configurations": [
+    {
+      "configuration": {
+        "name": "baseline",
+        "detectorThreshold": 0.3,
+        "minimumRowPixels": 3,
+        "bandGap": 3,
+        "minimumBandHeight": 5,
+        "minimumConfidence": 0.4
+      },
+      "correct": 3,
+      "incorrect": 0,
+      "omitted": 10,
+      "withheld": 4,
+      "expectedFields": 17,
+      "photos": [
+        {
+          "configuration": "baseline",
+          "code": "8901088068758",
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "fields": 9,
+          "correct": 3,
+          "incorrect": 0,
+          "omitted": 6,
+          "withheld": 0,
+          "parsedNutrients": 3,
+          "explicitBasisNutrients": 3,
+          "modelLoadMs": 439,
+          "detectorMs": 773,
+          "detectorActivated": true,
+          "detectedBands": 17,
+          "recognizedRows": 17,
+          "rowRecognizerMs": 9093,
+          "targetRowFound": true,
+          "targetRowConfidence": 0.9754,
+          "targetRowMs": 439,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "baseline",
+          "code": "8902710100150",
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "fields": 8,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 4,
+          "withheld": 4,
+          "parsedNutrients": 4,
+          "explicitBasisNutrients": 0,
+          "modelLoadMs": 439,
+          "detectorMs": 14801,
+          "detectorActivated": true,
+          "detectedBands": 21,
+          "recognizedRows": 21,
+          "rowRecognizerMs": 5100,
+          "targetRowFound": null,
+          "targetRowConfidence": null,
+          "targetRowMs": null,
+          "pageErrors": 0
+        }
+      ]
+    },
+    {
+      "configuration": {
+        "name": "lower-detector-threshold",
+        "detectorThreshold": 0.2,
+        "minimumRowPixels": 3,
+        "bandGap": 3,
+        "minimumBandHeight": 5,
+        "minimumConfidence": 0.4
+      },
+      "correct": 3,
+      "incorrect": 0,
+      "omitted": 9,
+      "withheld": 5,
+      "expectedFields": 17,
+      "photos": [
+        {
+          "configuration": "lower-detector-threshold",
+          "code": "8901088068758",
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "fields": 9,
+          "correct": 3,
+          "incorrect": 0,
+          "omitted": 6,
+          "withheld": 0,
+          "parsedNutrients": 3,
+          "explicitBasisNutrients": 3,
+          "modelLoadMs": 439,
+          "detectorMs": 2574,
+          "detectorActivated": true,
+          "detectedBands": 17,
+          "recognizedRows": 17,
+          "rowRecognizerMs": 12026,
+          "targetRowFound": true,
+          "targetRowConfidence": 0.9754,
+          "targetRowMs": 412,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "lower-detector-threshold",
+          "code": "8902710100150",
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "fields": 8,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 3,
+          "withheld": 5,
+          "parsedNutrients": 5,
+          "explicitBasisNutrients": 0,
+          "modelLoadMs": 439,
+          "detectorMs": 4917,
+          "detectorActivated": true,
+          "detectedBands": 20,
+          "recognizedRows": 20,
+          "rowRecognizerMs": 5085,
+          "targetRowFound": null,
+          "targetRowConfidence": null,
+          "targetRowMs": null,
+          "pageErrors": 0
+        }
+      ]
+    },
+    {
+      "configuration": {
+        "name": "higher-detector-threshold",
+        "detectorThreshold": 0.4,
+        "minimumRowPixels": 3,
+        "bandGap": 3,
+        "minimumBandHeight": 5,
+        "minimumConfidence": 0.4
+      },
+      "correct": 3,
+      "incorrect": 0,
+      "omitted": 10,
+      "withheld": 4,
+      "expectedFields": 17,
+      "photos": [
+        {
+          "configuration": "higher-detector-threshold",
+          "code": "8901088068758",
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "fields": 9,
+          "correct": 3,
+          "incorrect": 0,
+          "omitted": 6,
+          "withheld": 0,
+          "parsedNutrients": 3,
+          "explicitBasisNutrients": 3,
+          "modelLoadMs": 439,
+          "detectorMs": 2835,
+          "detectorActivated": true,
+          "detectedBands": 17,
+          "recognizedRows": 17,
+          "rowRecognizerMs": 11856,
+          "targetRowFound": true,
+          "targetRowConfidence": 0.9754,
+          "targetRowMs": 437,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "higher-detector-threshold",
+          "code": "8902710100150",
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "fields": 8,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 4,
+          "withheld": 4,
+          "parsedNutrients": 4,
+          "explicitBasisNutrients": 0,
+          "modelLoadMs": 439,
+          "detectorMs": 2880,
+          "detectorActivated": true,
+          "detectedBands": 22,
+          "recognizedRows": 22,
+          "rowRecognizerMs": 5212,
+          "targetRowFound": null,
+          "targetRowConfidence": null,
+          "targetRowMs": null,
+          "pageErrors": 0
+        }
+      ]
+    },
+    {
+      "configuration": {
+        "name": "wider-row-gap",
+        "detectorThreshold": 0.3,
+        "minimumRowPixels": 3,
+        "bandGap": 6,
+        "minimumBandHeight": 5,
+        "minimumConfidence": 0.4
+      },
+      "correct": 3,
+      "incorrect": 0,
+      "omitted": 10,
+      "withheld": 4,
+      "expectedFields": 17,
+      "photos": [
+        {
+          "configuration": "wider-row-gap",
+          "code": "8901088068758",
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "fields": 9,
+          "correct": 3,
+          "incorrect": 0,
+          "omitted": 6,
+          "withheld": 0,
+          "parsedNutrients": 3,
+          "explicitBasisNutrients": 3,
+          "modelLoadMs": 439,
+          "detectorMs": 7437,
+          "detectorActivated": true,
+          "detectedBands": 17,
+          "recognizedRows": 17,
+          "rowRecognizerMs": 11812,
+          "targetRowFound": true,
+          "targetRowConfidence": 0.9754,
+          "targetRowMs": 408,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "wider-row-gap",
+          "code": "8902710100150",
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "fields": 8,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 4,
+          "withheld": 4,
+          "parsedNutrients": 4,
+          "explicitBasisNutrients": 0,
+          "modelLoadMs": 439,
+          "detectorMs": 3412,
+          "detectorActivated": true,
+          "detectedBands": 20,
+          "recognizedRows": 20,
+          "rowRecognizerMs": 4938,
+          "targetRowFound": null,
+          "targetRowConfidence": null,
+          "targetRowMs": null,
+          "pageErrors": 0
+        }
+      ]
+    },
+    {
+      "configuration": {
+        "name": "tighter-row-gap",
+        "detectorThreshold": 0.3,
+        "minimumRowPixels": 3,
+        "bandGap": 1,
+        "minimumBandHeight": 5,
+        "minimumConfidence": 0.4
+      },
+      "correct": 3,
+      "incorrect": 0,
+      "omitted": 12,
+      "withheld": 2,
+      "expectedFields": 17,
+      "photos": [
+        {
+          "configuration": "tighter-row-gap",
+          "code": "8901088068758",
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "fields": 9,
+          "correct": 3,
+          "incorrect": 0,
+          "omitted": 6,
+          "withheld": 0,
+          "parsedNutrients": 3,
+          "explicitBasisNutrients": 3,
+          "modelLoadMs": 439,
+          "detectorMs": 4853,
+          "detectorActivated": true,
+          "detectedBands": 17,
+          "recognizedRows": 17,
+          "rowRecognizerMs": 11949,
+          "targetRowFound": true,
+          "targetRowConfidence": 0.9754,
+          "targetRowMs": 399,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "tighter-row-gap",
+          "code": "8902710100150",
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "fields": 8,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 6,
+          "withheld": 2,
+          "parsedNutrients": 2,
+          "explicitBasisNutrients": 0,
+          "modelLoadMs": 439,
+          "detectorMs": 2608,
+          "detectorActivated": true,
+          "detectedBands": 24,
+          "recognizedRows": 24,
+          "rowRecognizerMs": 5449,
+          "targetRowFound": null,
+          "targetRowConfidence": null,
+          "targetRowMs": null,
+          "pageErrors": 0
+        }
+      ]
+    },
+    {
+      "configuration": {
+        "name": "connected-components",
+        "extractionMode": "components",
+        "detectorThreshold": 0.3,
+        "minimumRowPixels": 3,
+        "bandGap": 3,
+        "minimumBandHeight": 5,
+        "minimumConfidence": 0.4
+      },
+      "correct": 6,
+      "incorrect": 0,
+      "omitted": 11,
+      "withheld": 0,
+      "expectedFields": 17,
+      "photos": [
+        {
+          "configuration": "connected-components",
+          "code": "8901088068758",
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "fields": 9,
+          "correct": 6,
+          "incorrect": 0,
+          "omitted": 3,
+          "withheld": 0,
+          "parsedNutrients": 6,
+          "explicitBasisNutrients": 6,
+          "modelLoadMs": 439,
+          "detectorMs": 6233,
+          "detectorActivated": true,
+          "detectedBands": 17,
+          "recognizedRows": 17,
+          "rowRecognizerMs": 8574,
+          "targetRowFound": true,
+          "targetRowConfidence": 0.9754,
+          "targetRowMs": 344,
+          "pageErrors": 0
+        },
+        {
+          "configuration": "connected-components",
+          "code": "8902710100150",
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "fields": 8,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 8,
+          "withheld": 0,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "modelLoadMs": 439,
+          "detectorMs": 7566,
+          "detectorActivated": true,
+          "detectedBands": 34,
+          "recognizedRows": 34,
+          "rowRecognizerMs": 9742,
+          "targetRowFound": null,
+          "targetRowConfidence": null,
+          "targetRowMs": null,
+          "pageErrors": 0
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "The browser diagnostic uses vertical-projection and threshold-connected-component approximations; neither is the full RapidOCR DB contour/box post-processor with polygon scoring and unclip.",
+    "Two manually selected nutrition-panel crops from English labels are not representative. The separately selected Saffola row validates the recognizer input path, not automatic panel selection.",
+    "Model assets were served from local disk through an ephemeral loopback server. No image or OCR text left the machine.",
+    "The probe uses two public photos and a tiny model; not a held-out accuracy estimate, general OCR validation, or production decision."
+  ]
+}

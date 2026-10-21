@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "kind": "openfoodfacts-liquid-nutrient-basis-route-check",
+  "generatedAt": "2026-10-21T05:04:03.756Z",
+  "origin": "same-origin HTTP call to local NutriScan route; public barcode only",
+  "source": "Open Food Facts canonical v2 product API",
+  "barcode": "5449000000996",
+  "name": "Coca-Cola Original",
+  "sourceRecordModifiedAt": "2026-10-20T06:35:45Z",
+  "before": {
+    "requestId": "cfe88cf3-372f-40c3-b248-4ba2504926c1",
+    "status": "ok",
+    "nutritionBasis": "100 g",
+    "sugars": { "value": 10.6, "unit": "g", "basis": "100 g" },
+    "energy": { "value": 42.4, "unit": "kcal", "basis": "100 g" }
+  },
+  "after": {
+    "requestId": "43a33e42-5e63-4b95-8888-9d30e7b55550",
+    "status": "ok",
+    "categoryEvidence": ["en:beverages"],
+    "packageQuantityUnit": "ml",
+    "sugars": { "value": 10.6, "unit": "g", "basis": "100 ml" },
+    "energy": { "value": 42.4, "unit": "kcal", "basis": "100 ml" },
+    "basisWarningPresent": true,
+    "localStock": "unverified"
+  },
+  "limitations": [
+    "The inference follows Open Food Facts normalized-field documentation and its community beverage category; it does not verify a photographed regional package.",
+    "No package image, OCR text, personal data or credentials were transmitted by this probe.",
+    "A community product record is not manufacturer verification."
+  ]
+}

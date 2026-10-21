@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "incremental-genuine-photo-intake-browser-acceptance",
+  "generatedAt": "2026-10-21T03:36:44.351Z",
+  "origin": "local loopback",
+  "photos": [
+    "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+    "bagrrys-white-oats-nutrition-off-8902710100150.jpg"
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "photosAdded": 2,
+      "initialOcrObservationCount": 16,
+      "initialParsedNutrientCount": 0,
+      "initialCalculatedNutrientCount": 0,
+      "totalOcrObservationCount": 40,
+      "genuineImageOcrRan": true,
+      "portionRetained": true,
+      "initialQuestionRetained": true,
+      "followupRetained": true,
+      "addedPhotoNotice": true,
+      "pageErrors": []
+    },
+    {
+      "viewport": "1440x900",
+      "photosAdded": 2,
+      "initialOcrObservationCount": 16,
+      "initialParsedNutrientCount": 0,
+      "initialCalculatedNutrientCount": 0,
+      "totalOcrObservationCount": 40,
+      "genuineImageOcrRan": true,
+      "portionRetained": true,
+      "initialQuestionRetained": true,
+      "followupRetained": true,
+      "addedPhotoNotice": true,
+      "pageErrors": []
+    }
+  ],
+  "allViewportsPassed": true
+}

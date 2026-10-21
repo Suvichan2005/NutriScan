@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-identity-conflict-browser-acceptance",
+  "generatedAt": "2026-10-21T05:23:02.994Z",
+  "browser": "Chrome via Playwright, headless",
+  "origin": "loopback",
+  "syntheticInput": "Two pasted label-text entries with conflicting brand and barcode values; neither is a real product claim.",
+  "manuallySearchedPublicBarcode": "5449000000996",
+  "limitations": [
+    "Verifies conflict handling and disabled comparison in the browser, not OCR conflict recognition or real-package identity.",
+    "Manual public catalog search is explicit and does not clear the package conflict."
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "conflictingPastedEvidenceDetected": true,
+      "originalBarcodePrefilledBeforeConflict": true,
+      "conflictingEvidenceClearedDefaultSearch": true,
+      "catalogRecordReturnedForExplicitManualSearch": true,
+      "comparisonRemainsDisabled": true,
+      "catalogRouteStatuses": [
+        200
+      ],
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/identity-conflict/mobile.png"
+    },
+    {
+      "viewport": "1440x900",
+      "conflictingPastedEvidenceDetected": true,
+      "originalBarcodePrefilledBeforeConflict": true,
+      "conflictingEvidenceClearedDefaultSearch": true,
+      "catalogRecordReturnedForExplicitManualSearch": true,
+      "comparisonRemainsDisabled": true,
+      "catalogRouteStatuses": [
+        200
+      ],
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/identity-conflict/desktop.png"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-evidence-search-browser-acceptance",
+  "generatedAt": "2026-10-21T05:31:13.733Z",
+  "browser": "Chrome via Playwright, headless",
+  "origin": "loopback",
+  "query": "INS 955",
+  "sourceExpected": "FAO/WHO Codex additive identity record for sucralose (955).",
+  "limitations": [
+    "Uses an explicitly typed evidence query and a small curated source corpus.",
+    "Source retrieval is not proof of product ingredients, dose, exposure, safety for an individual or current Indian permission."
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "exactIdentifierQuery": true,
+      "officialCodexSourceVisible": true,
+      "officialSourceLink": true,
+      "publisherAndJurisdictionVisible": true,
+      "sourceLimitationsVisible": true,
+      "whoFibreQuery": true,
+      "whoGuidelineVisible": true,
+      "whoOfficialSourceLink": true,
+      "whoPackageScopeLimitVisible": true,
+      "evidenceRouteStatuses": [
+        200,
+        200
+      ],
+      "noNonLoopbackRequests": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/local-evidence/mobile.png"
+    },
+    {
+      "viewport": "1440x900",
+      "exactIdentifierQuery": true,
+      "officialCodexSourceVisible": true,
+      "officialSourceLink": true,
+      "publisherAndJurisdictionVisible": true,
+      "sourceLimitationsVisible": true,
+      "whoFibreQuery": true,
+      "whoGuidelineVisible": true,
+      "whoOfficialSourceLink": true,
+      "whoPackageScopeLimitVisible": true,
+      "evidenceRouteStatuses": [
+        200,
+        200
+      ],
+      "noNonLoopbackRequests": true,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/local-evidence/desktop.png"
+    }
+  ]
+}

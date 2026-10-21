@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-intake-to-audit-design-review",
+  "generatedAt": "2026-10-21T06:11:39.593Z",
+  "captureTool": "Playwright using installed Chrome",
+  "appOrigin": "http://127.0.0.1:3411",
+  "acceptanceMode": "optimized production build",
+  "photoFile": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+  "screenshots": "docs/evidence/private/core-journey-audit",
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "initialQuestionRetained": true,
+      "realPhotoHashVerified": true,
+      "cropCoordinates": [
+        3,
+        0,
+        93,
+        99
+      ],
+      "selectedNameLineConfidence": null,
+      "packageName": "Unidentified package",
+      "ocrObservations": 22,
+      "parsedNutrientRows": 1,
+      "calculatedNutrients": 1,
+      "exactSaturatedFatObservation": true,
+      "followUpMessages": 2,
+      "correctionApplied": true,
+      "originalObservationsRetained": true,
+      "portion": "50",
+      "fiftyGramCalculation": true,
+      "axeViolationIds": {
+        "intake": [],
+        "photo and crop": [],
+        "findings": [],
+        "correction dialog": [],
+        "corrected calculation": []
+      },
+      "pageErrors": []
+    },
+    {
+      "viewport": "1440x900",
+      "initialQuestionRetained": true,
+      "realPhotoHashVerified": true,
+      "cropCoordinates": [
+        3,
+        0,
+        93,
+        99
+      ],
+      "selectedNameLineConfidence": null,
+      "packageName": "Unidentified package",
+      "ocrObservations": 22,
+      "parsedNutrientRows": 1,
+      "calculatedNutrients": 1,
+      "exactSaturatedFatObservation": true,
+      "followUpMessages": 2,
+      "correctionApplied": true,
+      "originalObservationsRetained": true,
+      "portion": "50",
+      "fiftyGramCalculation": true,
+      "axeViolationIds": {
+        "intake": [],
+        "photo and crop": [],
+        "findings": [],
+        "correction dialog": [],
+        "corrected calculation": []
+      },
+      "pageErrors": []
+    }
+  ]
+}

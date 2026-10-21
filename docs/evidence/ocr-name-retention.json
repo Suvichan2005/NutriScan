@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "browser-ocr-name-retention-benchmark",
+  "generatedAt": "2026-10-21T04:47:36.512Z",
+  "captureTool": "Chrome via Playwright",
+  "origin": "loopback",
+  "photos": 5,
+  "nameSelected": 0,
+  "namesMatchingExpectedProduct": 0,
+  "falseOrUnverifiedNames": 0,
+  "namesWithheld": 3,
+  "lowTextGuarded": 2,
+  "pageErrors": 0,
+  "results": [
+    {
+      "file": "coca-cola-front-off-5449000000996.jpg",
+      "hint": "unknown",
+      "hashVerified": true,
+      "outcome": "low-text-guard",
+      "expectedBrandObserved": null,
+      "nameConfidence": null,
+      "pageErrors": 0
+    },
+    {
+      "file": "nutella-label-off-3017620422003.jpg",
+      "hint": "unknown",
+      "hashVerified": true,
+      "outcome": "low-text-guard",
+      "expectedBrandObserved": null,
+      "nameConfidence": null,
+      "pageErrors": 0
+    },
+    {
+      "file": "heinz-beans-front-off-5000157024671.jpg",
+      "hint": "unknown",
+      "hashVerified": true,
+      "outcome": "unidentified",
+      "expectedBrandObserved": false,
+      "nameConfidence": null,
+      "pageErrors": 0
+    },
+    {
+      "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+      "hint": "nutrition",
+      "hashVerified": true,
+      "outcome": "unidentified",
+      "expectedBrandObserved": false,
+      "nameConfidence": null,
+      "pageErrors": 0
+    },
+    {
+      "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+      "hint": "nutrition",
+      "hashVerified": true,
+      "outcome": "unidentified",
+      "expectedBrandObserved": false,
+      "nameConfidence": null,
+      "pageErrors": 0
+    }
+  ],
+  "limitations": [
+    "Small curated benchmark, not a population accuracy estimate.",
+    "Expected names are checked by brand token only across mixed front and nutrition-panel photos.",
+    "No OCR text, image bytes, or user data are stored in this receipt."
+  ]
+}

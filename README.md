@@ -20,6 +20,7 @@ npm test
 npm run evaluate
 npm run ocr:evaluate
 npm run embeddings:evaluate
+npm run acceptance:core-journey
 npm run build
 npm start
 ```
@@ -28,7 +29,7 @@ Stop the dev server before `npm start` because both bind port 3400. `npm start` 
 
 `npm run ocr:evaluate` reruns a local diagnostic on five real packaging photos provisioned under ignored `docs/evidence/private/`. It verifies their manifest hashes and writes field-level results without storing photo bytes or raw OCR text. See [the evaluation report](docs/REAL_OCR_EVALUATION.md) for the measured limits; this Node diagnostic is not browser acceptance.
 
-An optional French/Spanish model probe is available as `npm run ocr:evaluate:languages`. It requires separately installing the two language packages with the command in the evaluation report. They are not normal project dependencies and are not included in the browser app.
+An optional French/Spanish model probe is available as `npm run ocr:evaluate:languages`. It requires separately installing the two language packages with the command in the evaluation report. They are not normal project dependencies and are not included in the browser app. A separate `npm run ocr:evaluate:regulatory-pdf` diagnostic checks local OCR on public scanned FSSAI PDFs; it requires Poppler (`pdftoppm`) on `PATH` or an explicit `NUTRISCAN_POPPLER_BIN` path. Its aggregate receipt is not integrated into the product or a verified legal transcript.
 
 `npm run ocr:evaluate:preprocessing` compares local upscaling, grayscale and channel-isolation variants on one real label. See the recorded results before changing the production image pipeline.
 
@@ -36,7 +37,7 @@ An optional French/Spanish model probe is available as `npm run ocr:evaluate:lan
 
 Add up to 10 JPG, PNG or WebP images, use the camera affordance, describe a product, paste label text, or combine these. No image side is required. OCR reads the selected images locally at up to 3,000 px with progress and cancellation; optional per-image hints can guide it. Rotate, improve contrast, invert dark-pack text, or crop a chosen image. Ask a question in your own words before or after reading. The sample label is clearly synthetic. Values with unclear bases, columns or conflicting readings are withheld; manual correction remains available when a photo or record cannot resolve them.
 
-Ask an amount in your first question or in a follow-up to set the portion without rescanning. Product comparisons normalize compatible package and community-record values only when both bases are explicit; missing or conflicting values remain incomparable. Evidence expands to original observations, coordinates, assumptions, formulae and sources. Public product and scientific queries are user initiated. Country filters use an explicitly entered country and community country tags; they never establish local retail stock. FDA records are US historical candidate reports, never a global brand verdict. FSSAI discovery can extract bounded selectable text from allowlisted Gazette PDFs and displays publication and effective dates separately. The official host currently returns HTML instead of PDF to this local research fetch, so no present legal clearance is inferred.
+Ask an amount in your first question or in a follow-up to set the portion without rescanning. Product comparisons normalize compatible package and community-record values only when both bases are explicit; missing or conflicting values remain incomparable. Evidence expands to original observations, coordinates, assumptions, formulae and sources. Public product and scientific queries are user initiated. Country filters use an explicitly entered country and community country tags; they never establish local retail stock. FDA records are US historical candidate reports, never a global brand verdict. FSSAI research uses bounded selectable-text extraction for allowlisted official PDFs and displays publication and effective dates separately. The live ORS route retrieves the 2022 direction and superseded 2024 order; the scanned 2025 PDFs need OCR, and current legal status remains unresolved. Separately, the listed 2026 Gazette amendment PDF currently returns HTML to the local research fetch and remains navigation-only.
 
 Gemini is off. Copy `.env.example` to `.env.local` and configure an owner-authorized key, selected compatible model and explicit enable flag only when API usage/cost is approved. The UI requires per-investigation consent. Model-requested image handles/crops are resolved by the browser, with a separate visible send action. Provider paths have not been accepted against a real Gemini account. See [integrations](docs/INTEGRATIONS.md).
 

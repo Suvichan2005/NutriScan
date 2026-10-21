@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-scanned-regulatory-pdf-ocr-diagnostic",
+  "generatedAt": "2026-10-21T06:06:46.225Z",
+  "engines": "Poppler page rendering at 200 DPI; local Tesseract.js English OCR",
+  "limits": [
+    "OCR outputs are observations from public documents and were not stored; receipt contains page-level character counts, confidence and broad token checks only.",
+    "This is a diagnostic, not integrated source retrieval, a manually verified transcription or a legal interpretation.",
+    "The 2025 source PDFs were rendered locally; no source text, user image, profile, key or paid provider request was sent to an OCR service."
+  ],
+  "outcomes": [
+    {
+      "sourceId": "fssai-ors-2025-clarification",
+      "httpStatus": 200,
+      "pdfBytes": 385660,
+      "expectedPages": 2,
+      "pageCount": 2,
+      "pages": [
+        {
+          "characters": 2462,
+          "confidence": 89,
+          "detectedChecks": {
+            "ors": true,
+            "year": true,
+            "remove": false
+          }
+        },
+        {
+          "characters": 839,
+          "confidence": 91,
+          "detectedChecks": {
+            "ors": true,
+            "year": true,
+            "remove": true
+          }
+        }
+      ]
+    },
+    {
+      "sourceId": "fssai-ors-2025-withdrawal",
+      "httpStatus": 200,
+      "pdfBytes": 267802,
+      "expectedPages": 1,
+      "pageCount": 1,
+      "pages": [
+        {
+          "characters": 1317,
+          "confidence": 81,
+          "detectedChecks": {
+            "ors": true,
+            "year": true,
+            "withdrawal": true
+          }
+        }
+      ]
+    }
+  ]
+}

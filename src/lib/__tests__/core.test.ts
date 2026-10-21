@@ -24,6 +24,83 @@ describe('conservative package extraction',()=>{
     const declared=parseLabel('Coca-Cola\nIngredients: Carbonated water, colour (INS 955)\nNutrition information per 100 ml\nSugars 10.6 g',{origin:'ocr'});
     expect(declared.additives).toEqual(['955']);
   });
+  it('withholds a low-confidence OCR line from the package title without dropping its observation',()=>{
+    const noisyLine='NMUIRNMIVITAL BIv a TARPPIVAIC LC VALUE)S) |';
+    const pkg=parseLabel(`${noisyLine}\nPer 100 g\nSaturated fat 3.4 g`,{origin:'ocr',observations:[{id:'low-name',field:'ocr-line',text:noisyLine,side:'back',origin:'ocr',confidence:22,imageId:'photo-1'}]});
+    expect(pkg.name).toBe('Unidentified package');
+    expect(pkg.rawText).toContain(noisyLine);
+    expect(pkg.observations.find(observation=>observation.id==='low-name')?.text).toBe(noisyLine);
+    expect(pkg.observations.some(observation=>observation.field==='name'&&observation.text===noisyLine)).toBe(false);
+    expect(pkg.warnings.join(' ')).toMatch(/Product name was not established/);
+  });
+  it('allows a higher-confidence OCR name line while preserving its OCR provenance',()=>{
+    const name='NutriScan oats';
+    const pkg=parseLabel(`${name}\nPer 100 g\nProtein 8.8 g`,{origin:'ocr',observations:[{id:'clear-name',field:'ocr-line',text:name,side:'back',origin:'ocr',confidence:82,imageId:'photo-1'}]});
+    expect(pkg.name).toBe(name);
+    expect(pkg.observations.find(observation=>observation.field==='name')).toMatchObject({text:name,origin:'ocr',confidence:82,imageId:'photo-1'});
+    expect(pkg.warnings.join(' ')).not.toMatch(/Product name was not established/);
+  });
+  it('withholds an otherwise plausible OCR name below the conservative 80% display threshold',()=>{
+    const name='Heinz Baked Beans';
+    const pkg=parseLabel(`${name}\nPer 100 g\nProtein 4.8 g`,{origin:'ocr',observations:[{id:'moderate-name',field:'ocr-line',text:name,side:'front',origin:'ocr',confidence:79}]});
+    expect(pkg.name).toBe('Unidentified package');
+    expect(pkg.observations.find(observation=>observation.id==='moderate-name')?.text).toBe(name);
+    expect(pkg.observations.some(observation=>observation.field==='name')).toBe(false);
+  });
+  it('does not promote a high-confidence serving declaration to the package title',()=>{
+    const servingLine='No. of Servings per pack: 4, Serving measure: 38 g (1/2 cup)';
+    const pkg=parseLabel(`${servingLine}\nNutrition Information\nPer 100 g\nProtein 8.8 g`,{origin:'ocr',observations:[{id:'serving-line',field:'ocr-line',text:servingLine,side:'back',origin:'ocr',confidence:88}]});
+    expect(pkg.name).toBe('Unidentified package');
+    expect(pkg.observations.some(observation=>observation.field==='name'&&observation.text===servingLine)).toBe(false);
+    expect(pkg.warnings.join(' ')).toMatch(/Product name was not established/);
+  });
+  it('does not promote a high-confidence nutrient sub-row to the package title',()=>{
+    const nutrientLine='Soluble Dietary Fibre (g) 5.0 |';
+    const pkg=parseLabel(`${nutrientLine}\nPer 100 g\nProtein 8.8 g`,{origin:'ocr',observations:[{id:'nutrient-line',field:'ocr-line',text:nutrientLine,side:'back',origin:'ocr',confidence:71}]});
+    expect(pkg.name).toBe('Unidentified package');
+    expect(pkg.observations.some(observation=>observation.field==='name'&&observation.text===nutrientLine)).toBe(false);
+    expect(pkg.warnings.join(' ')).toMatch(/Product name was not established/);
+  });
+  it('does not promote an OCR-misspelled nutrient row to the package title',()=>{
+    const nutrientLine='Cholesterol (me 0';
+    const pkg=parseLabel(`${nutrientLine}\nPer 100 g\nProtein 8.8 g`,{origin:'ocr',observations:[{id:'misspelled-row',field:'ocr-line',text:nutrientLine,side:'back',origin:'ocr',confidence:65}]});
+    expect(pkg.name).toBe('Unidentified package');
+    expect(pkg.observations.some(observation=>observation.field==='name'&&observation.text===nutrientLine)).toBe(false);
+  });
+  it('does not promote a high-confidence nutrition reference statement or slogan to the package title',()=>{
+    const reference='Apport de référence pour un adulte-type';
+    const slogan='® TASTE';
+    const pkg=parseLabel(`${slogan}\n${reference}\nPer 100 ml\nSugars 10.6 g`,{origin:'ocr',observations:[
+      {id:'slogan',field:'ocr-line',text:slogan,side:'back',origin:'ocr',confidence:70},
+      {id:'reference',field:'ocr-line',text:reference,side:'back',origin:'ocr',confidence:83},
+    ]});
+    expect(pkg.name).toBe('Unidentified package');
+    expect(pkg.observations.some(observation=>observation.field==='name')).toBe(false);
+    expect(pkg.rawText).toContain(reference);
+    expect(pkg.warnings.join(' ')).toMatch(/Product name was not established/);
+  });
+  it('does not promote a noisy nutrient row with a leading OCR fragment to the package title',()=>{
+    const nutrientLine='EF Soluble Dietary Fibre 4.49 1.50';
+    const pkg=parseLabel(`${nutrientLine}\nPer 100 g\nProtein 8.8 g`,{origin:'ocr',observations:[{id:'noisy-nutrient',field:'ocr-line',text:nutrientLine,side:'back',origin:'ocr',confidence:71}]});
+    expect(pkg.name).toBe('Unidentified package');
+    expect(pkg.observations.some(observation=>observation.field==='name')).toBe(false);
+    expect(pkg.rawText).toContain(nutrientLine);
+  });
+  it('withholds partial OCR fragments from nutrition headings and nutrient rows',()=>{
+    for (const line of ['$klng Soft Drink with NUTRITION INFORMATION TYPICAL VALUE |','iy | t','Trans Fatly Acids 0g 09']) {
+      const pkg=parseLabel(`${line}\nPer 100 g\nProtein 8.8 g`,{origin:'ocr',observations:[{id:`line-${line.length}`,field:'ocr-line',text:line,side:'back',origin:'ocr',confidence:90}]});
+      expect(pkg.name).toBe('Unidentified package');
+      expect(pkg.observations.some(observation=>observation.field==='name'&&observation.text===line)).toBe(false);
+    }
+  });
+  it('does not promote marketing copy on a package front to product identity',()=>{
+    const marketingLine='Baked Beans in a deliciously rich tomato sauce';
+    const pkg=parseLabel(`${marketingLine}\nNutrition information per 100 g\nProtein 4.8 g`,{origin:'ocr',observations:[{id:'marketing-copy',field:'ocr-line',text:marketingLine,side:'front',origin:'ocr',confidence:69}]});
+    expect(pkg.name).toBe('Unidentified package');
+    expect(pkg.rawText).toContain(marketingLine);
+    expect(pkg.observations.find(observation=>observation.id==='marketing-copy')?.text).toBe(marketingLine);
+    expect(pkg.observations.some(observation=>observation.field==='name')).toBe(false);
+  });
   it('preserves explicit zero and leaves missing fields unknown',()=>{
     const pkg=label('Nutrition per 100 g\nSugars 0 g\nSodium 500 mg');
     expect(pkg.nutrients.find(n=>n.key==='sugars')?.value).toBe(0);
@@ -77,6 +154,16 @@ describe('conservative package extraction',()=>{
     const french=calc('Pour 100 g\nGlucides 57,5 g\ndont sucres 56,3 g\nSel 0,107 g',15);
     expect(french.calculations.find(c=>c.nutrient==='sugars')?.result).toBeCloseTo(8.445);
     expect(french.calculations.find(c=>c.nutrient==='salt')?.result).toBeCloseTo(.01605);
+  });
+  it('recovers OCR-glued basis and nutrient label boundaries without rewriting observations',()=>{
+    const raw='NUTRIEMTSPer 100g\nProtein8.8 g\nDietary Fibre (g)12.4\nTotal Fat (g)9.9';
+    const pkg=parseLabel(raw,{origin:'ocr'});
+    expect(pkg.nutrients.map(n=>[n.key,n.value,n.basis?.amount,n.basis?.unit])).toEqual([
+      ['protein',8.8,100,'g'],['fiber',12.4,100,'g'],['fat',9.9,100,'g'],
+    ]);
+    expect(pkg.rawText).toBe(raw);
+    expect(pkg.observations.find(observation=>observation.field==='basis')?.text).toBe('NUTRIEMTSPer 100g');
+    expect(pkg.nutrients.every(n=>n.observationIds.every(id=>pkg.observations.some(observation=>observation.id===id)))).toBe(true);
   });
   it('retains energy header unit pairs without assigning both numbers the first unit',()=>{
     const pkg=label('Per 100 ml\nEnergy (kJ/kcal) 180/42');
@@ -202,6 +289,12 @@ describe('genuine local evidence retrieval',()=>{
     expect(retrieveEvidence('INS 955')[0].source.id).toBe('fao-955');
     expect(retrieveEvidence('sweeteners weight control').some(h=>h.source.id==='who-nss')).toBe(true);
     expect(retrieveEvidence('ICMR India dietary guidelines').some(h=>h.source.id==='icmrnin-dgi-2024')).toBe(true);
+    const fibre=retrieveEvidence('WHO adult naturally occurring dietary fibre 25 g daily');
+    expect(fibre[0]?.source.id).toBe('who-carbohydrate-2023');
+    expect(fibre[0]?.source.summary).toMatch(/at least 25 g\/day of naturally occurring dietary fibre/);
+    expect(fibre[0]?.source.summary).toMatch(/400 g\/day of vegetables and fruits/);
+    expect(fibre[0]?.source.limitations).toMatch(/cannot be directly equated with a packaged-food fibre declaration/);
+    expect(fibre[0]?.source.url).toBe('https://www.who.int/publications/i/9789240073593');
     expect(evidenceSources.every(s=>sourceSchema.safeParse(s).success)).toBe(true);
     expect(()=>retrieveEvidence('query',0)).toThrow();
   });

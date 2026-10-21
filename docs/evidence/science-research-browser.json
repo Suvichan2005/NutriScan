@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "kind": "live-science-research-browser-acceptance",
+  "generatedAt": "2026-10-21T05:39:39.943Z",
+  "browser": "Chrome via Playwright, headless",
+  "origin": "loopback; public Europe PMC requests are made server-side",
+  "query": "oat beta glucan",
+  "upstream": "Europe PMC REST API",
+  "limitations": [
+    "Live literature discovery returns candidates, not a checked evidence synthesis.",
+    "This query and its results do not establish study quality, dose, population applicability, consensus, or a personal recommendation."
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "query": "oat beta glucan",
+      "liveCandidateCount": 6,
+      "officialEuropePmcSourceLink": true,
+      "abstractPreviewLength": 350,
+      "longAbstractAvailableOnDemand": true,
+      "publicationMetadataVisible": true,
+      "candidateScopeVisible": true,
+      "studyQualityLimitVisible": true,
+      "noRawHtmlRendered": true,
+      "researchRouteStatuses": [
+        200
+      ],
+      "noNonLoopbackBrowserRequests": true,
+      "horizontalOverflow": false,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/science-research/mobile.png"
+    },
+    {
+      "viewport": "1440x900",
+      "query": "oat beta glucan",
+      "liveCandidateCount": 6,
+      "officialEuropePmcSourceLink": true,
+      "abstractPreviewLength": 350,
+      "longAbstractAvailableOnDemand": true,
+      "publicationMetadataVisible": true,
+      "candidateScopeVisible": true,
+      "studyQualityLimitVisible": true,
+      "noRawHtmlRendered": true,
+      "researchRouteStatuses": [
+        200
+      ],
+      "noNonLoopbackBrowserRequests": true,
+      "horizontalOverflow": false,
+      "axeViolationIds": [],
+      "pageErrors": [],
+      "screenshot": "docs/evidence/private/science-research/desktop.png"
+    }
+  ]
+}
