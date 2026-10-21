@@ -16,7 +16,7 @@ Updated: 2026-10-21. This is a local development application and research worksp
 
 | Capability | Current evidence level | Limits |
 |---|---|---|
-| Nutrition parsing and deterministic arithmetic | Unit-tested; synthetic evaluation executed | Nutrient calculations cite both observed values and separate basis/serving declarations; identical readings retain links to each photo. Developer-authored fixtures are not an independent or photo benchmark. |
+| Nutrition parsing and deterministic arithmetic | Unit-tested; synthetic evaluation executed | At this checkpoint 93 tests pass. Nutrient calculations cite both observed values and separate basis/serving declarations; identical readings retain links to each photo. Developer-authored fixtures are not an independent or photo benchmark. |
 | Exact additive/source corpus and retrieval | Unit-tested; prepared local-model evaluation executed in prior checkpoint | Small corpus; not scientific or clinical answer validation |
 | Local OCR on genuine packaging | Real browser-tested in earlier and current checkpoints | Current client-side runs covered 4 genuine photos in 3 investigations; none yielded a usable nutrient calculation. The app withheld garbled, conflicting or basis/unit-incomplete readings. A prior Nutella scan required human correction. |
 | Repeatable OCR comparison on genuine packaging | Node diagnostic executed | 5 photos / 37 annotated fields; best 3,000 px pass 2 correct, 0 incorrect, 34 omitted and 1 withheld; prepared AUTO 0 usable-basis rows, prepared SINGLE_BLOCK 2 usable-basis rows on one photo. Not held-out or browser accuracy. |
