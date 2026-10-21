@@ -1,0 +1,716 @@
+{
+  "schemaVersion": 1,
+  "kind": "real-photo-upscale-probe",
+  "generatedAt": "2026-10-21T00:22:28.999Z",
+  "source": "Hash-verified Open Food Facts photo manifest; source photos remain ignored by Git.",
+  "photos": 5,
+  "annotatedFields": 37,
+  "method": "Node Tesseract.js English, PSM.SINGLE_BLOCK, JPEG quality 98; only maximum long-edge size varied.",
+  "results": {
+    "3000": {
+      "expected": 37,
+      "correct": 2,
+      "incorrect": 0,
+      "omitted": 34,
+      "withheld": 1,
+      "photos": [
+        {
+          "file": "coca-cola-label-off-5449000000996.jpg",
+          "code": "5449000000996",
+          "expected": 6,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 6,
+          "withheld": 0,
+          "characters": 615,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "salt",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "nutella-nutrition-nl-off-3017620422003.jpg",
+          "code": "3017620422003",
+          "expected": 7,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 7,
+          "withheld": 0,
+          "characters": 300,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "salt",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "nutella-nutrition-es-off-3017620422003.jpg",
+          "code": "3017620422003",
+          "expected": 7,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 7,
+          "withheld": 0,
+          "characters": 576,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "sodium",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "code": "8901088068758",
+          "expected": 9,
+          "correct": 2,
+          "incorrect": 0,
+          "omitted": 7,
+          "withheld": 0,
+          "characters": 512,
+          "parsedNutrients": 2,
+          "explicitBasisNutrients": 2,
+          "unconflictedBasisNutrients": 2,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "addedSugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fiber",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "correct"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "correct"
+            },
+            {
+              "key": "sodium",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "code": "8902710100150",
+          "expected": 8,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 7,
+          "withheld": 1,
+          "characters": 869,
+          "parsedNutrients": 1,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "withheld"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fiber",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "omitted"
+            },
+            {
+              "key": "sodium",
+              "result": "omitted"
+            }
+          ]
+        }
+      ],
+      "fieldAccuracy": 0.0541
+    },
+    "4500": {
+      "expected": 37,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 35,
+      "withheld": 2,
+      "photos": [
+        {
+          "file": "coca-cola-label-off-5449000000996.jpg",
+          "code": "5449000000996",
+          "expected": 6,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 6,
+          "withheld": 0,
+          "characters": 576,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "salt",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "nutella-nutrition-nl-off-3017620422003.jpg",
+          "code": "3017620422003",
+          "expected": 7,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 7,
+          "withheld": 0,
+          "characters": 337,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "salt",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "nutella-nutrition-es-off-3017620422003.jpg",
+          "code": "3017620422003",
+          "expected": 7,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 7,
+          "withheld": 0,
+          "characters": 6547,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "sodium",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "code": "8901088068758",
+          "expected": 9,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 7,
+          "withheld": 2,
+          "characters": 544,
+          "parsedNutrients": 3,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "addedSugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fiber",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "withheld"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "withheld"
+            },
+            {
+              "key": "sodium",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "code": "8902710100150",
+          "expected": 8,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 8,
+          "withheld": 0,
+          "characters": 928,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fiber",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "omitted"
+            },
+            {
+              "key": "sodium",
+              "result": "omitted"
+            }
+          ]
+        }
+      ],
+      "fieldAccuracy": 0
+    },
+    "6000": {
+      "expected": 37,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 36,
+      "withheld": 1,
+      "photos": [
+        {
+          "file": "coca-cola-label-off-5449000000996.jpg",
+          "code": "5449000000996",
+          "expected": 6,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 6,
+          "withheld": 0,
+          "characters": 599,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "salt",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "nutella-nutrition-nl-off-3017620422003.jpg",
+          "code": "3017620422003",
+          "expected": 7,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 7,
+          "withheld": 0,
+          "characters": 306,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "salt",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "nutella-nutrition-es-off-3017620422003.jpg",
+          "code": "3017620422003",
+          "expected": 7,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 7,
+          "withheld": 0,
+          "characters": 10210,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "sodium",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+          "code": "8901088068758",
+          "expected": 9,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 8,
+          "withheld": 1,
+          "characters": 581,
+          "parsedNutrients": 2,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "addedSugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fiber",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "withheld"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "omitted"
+            },
+            {
+              "key": "sodium",
+              "result": "omitted"
+            }
+          ]
+        },
+        {
+          "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+          "code": "8902710100150",
+          "expected": 8,
+          "correct": 0,
+          "incorrect": 0,
+          "omitted": 8,
+          "withheld": 0,
+          "characters": 288,
+          "parsedNutrients": 0,
+          "explicitBasisNutrients": 0,
+          "unconflictedBasisNutrients": 0,
+          "fields": [
+            {
+              "key": "energy",
+              "result": "omitted"
+            },
+            {
+              "key": "protein",
+              "result": "omitted"
+            },
+            {
+              "key": "carbohydrate",
+              "result": "omitted"
+            },
+            {
+              "key": "sugars",
+              "result": "omitted"
+            },
+            {
+              "key": "fiber",
+              "result": "omitted"
+            },
+            {
+              "key": "fat",
+              "result": "omitted"
+            },
+            {
+              "key": "saturatedFat",
+              "result": "omitted"
+            },
+            {
+              "key": "sodium",
+              "result": "omitted"
+            }
+          ]
+        }
+      ],
+      "fieldAccuracy": 0
+    }
+  },
+  "limitations": [
+    "Exploratory comparison on five selected package images; not a held-out or population accuracy estimate.",
+    "Image scaling is the only intended variable; Node evaluation is not browser end-to-end validation.",
+    "Only human-annotated nutrient fields at the declared basis are scored; no source image or raw OCR text is written to this result.",
+    "A matching OCR value does not establish package identity, formulation, label truth or clinical relevance."
+  ]
+}
