@@ -4,7 +4,7 @@ All services are for local development. The application binds to `127.0.0.1:3400
 
 ## Explicit remote actions
 
-Local OCR, package editing, numerical analysis and browser storage do not use these routes. Clicking a disclosed public search sends its query to the named public service. Gemini routes require a separate consented action; images and profile context must not be sent automatically.
+Local OCR, package editing, numerical analysis and browser storage do not use these routes. Clicking a disclosed public search sends its query to the named public service; product-candidate lookup may also send the selected country as a catalog-tag filter. Gemini routes require a separate consented action; images and profile context must not be sent automatically.
 
 | Route | Strict request | Result |
 | --- | --- | --- |
