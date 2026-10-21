@@ -284,3 +284,9 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - Local Q/A history may help a future assistant resolve follow-up references, but it is not scientific or package evidence. Keep it out of Gemini requests unless the user checks a separate option; send at most four newest turns and cap question/answer lengths in both the browser payload builder and server schema.
 - Conversation turns cannot be cited through the evidence schema. The provider instruction says prior assistant answers are unverified and may resolve intent only. Exact-span citation checks and safety constraints still govern factual claims. Gemini stays disabled pending owner authorization.
 - Chrome acceptance confirms the default-off control and explicit toggle at phone and desktop viewports, with no provider/network side effect. Offline tests cover payload bounds and evidence rejection; these checks do not demonstrate model-backed follow-up quality.
+
+## 21 October 2026 — answer all requested label nutrients locally
+
+- A multi-field nutrient question should surface each requested value already supported by the same package record, rather than selecting only the first matching field. Use explicit aliases such as calories/kcal for energy and preserve the existing evidence-linked calculations.
+- For a requested field with no usable value, state that it is unknown; do not fill it with zero. Keep specialized diabetes guidance, sugar-claim handling and sodium-to-salt wording on their existing paths.
+- Regression tests cover multi-field values, calories-only, unknown sugars and observation links. Synthetic Chrome acceptance at mobile and desktop sizes confirmed 114 kcal, 18 g carbohydrate and 1.2 g total sugars for the declared 30 g serving. This measures text-input product behavior, not photographed-label accuracy.

@@ -131,3 +131,8 @@
 
 - Added a separate unchecked control for including no more than four recent local Q/A turns in a consented assist request. Client shaping and strict server validation bound text lengths; prior replies may resolve references but are excluded from the evidence/citation contract.
 - Installed-Chrome acceptance at 390×844 and 1440×900 recorded the default-off state and toggle, with zero provider calls, Axe violations, page errors or off-loopback requests. This is consent/UI evidence only. Focused offline tests and TypeScript validation pass; Gemini remains disabled and no model-backed behavior is claimed.
+
+## 2026-10-21 — return every requested label nutrient in the local answer
+
+- Fixed the local nutrient response to collect all requested numeric fields, including calories as energy, and to say when any requested field is unknown. Existing calculation and observation provenance remains attached; safety-specific response branches were left intact.
+- The full suite passed 288 tests across 32 files and TypeScript typecheck passed. Chrome/Playwright verified the three-field answer from synthetic typed label text on phone and desktop, with zero Axe violations, page errors, provider calls or off-loopback requests. This does not change the real-photo OCR score or establish live Gemini behavior.

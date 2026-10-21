@@ -316,6 +316,25 @@ describe('nutrition numerical invariants',()=>{
     expect(audit.answer).toMatch(/^For 33 g:/);expect(audit.answer).not.toMatch(/000000000/);
     expect(audit.calculations.find(c=>c.nutrient==='sugars')?.result).toBe(10.6*33/100);
   });
+  it('answers every requested nutrient and maps calories to energy while keeping missing values unknown',()=>{
+    const pkg=label('Per 100 g\nEnergy 180 kcal\nCarbohydrate 30 g\nSugars 4 g');
+    const audit=buildAudit(pkg,30,'g',defaultProfile,'What does this nutrition label report for calories, carbohydrates, and sugars per serving?');
+    expect(audit.answer).toContain('54 kcal energy');
+    expect(audit.answer).toContain('9 g carbohydrate');
+    expect(audit.answer).toContain('1.2 g total sugars');
+    for(const key of ['energy','carbohydrate','sugars'] as const){
+      const calc=audit.calculations.find(calculation=>calculation.nutrient===key)!;
+      expect(audit.findings.some(finding=>finding.calculationIds.includes(calc.id)&&finding.observationIds.some(id=>calc.observationIds.includes(id)))).toBe(true);
+    }
+
+    const caloriesOnly=buildAudit(pkg,30,'g',defaultProfile,'How many calories are in this portion?');
+    expect(caloriesOnly.answer).toContain('54 kcal energy');
+    expect(caloriesOnly.answer).not.toContain('9 g carbohydrate');
+
+    const missing=buildAudit(label('Per 100 g\nEnergy 180 kcal'),30,'g',defaultProfile,'How much sugar?');
+    expect(missing.answer).toMatch(/total sugars for this portion is unknown.*Missing is not zero/i);
+    expect(missing.answer).not.toMatch(/0 g total sugars/);
+  });
   it('answers sugar claims and additive questions directly with the decisive limit',()=>{
     const pkg=label('Sugar-free example\nPer 100 g\nCarbohydrate 50 g\nSugars 0 g\nIngredients: flour, INS 955');
     const sugarClaim=buildAudit(pkg,30,'g',defaultProfile,'Does sugar-free mean no carbs?');

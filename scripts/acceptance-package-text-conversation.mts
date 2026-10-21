@@ -15,9 +15,11 @@ const outcomes: Array<Record<string, unknown>> = [];
 const viewports = [{ width: 390, height: 844 }, { width: 1440, height: 900 }];
 const labelText = [
   'Synthetic evaluation label, not a real product',
+  'Serving size 30 g',
   'Nutrition information per 100 g',
   'Energy 380 kcal',
   'Carbohydrate 60 g',
+  'Sugars 4 g',
   'Ingredients: Oats, milk powder, salt',
   'Contains: Milk',
   'High protein',
@@ -64,6 +66,13 @@ try {
     await page.locator('.provider-details > summary').click();
     const firstAnswerAxe = await new AxeBuilder({ page }).analyze();
 
+    await page.getByLabel('Ask about this package').fill('How many calories, carbohydrates, and sugars are in this serving?');
+    await page.getByRole('button', { name: 'Send follow-up' }).click();
+    const multiNutrientReply = page.locator('.assistant-message').filter({ hasText: /114 kcal energy/ }).last();
+    await multiNutrientReply.waitFor({ state: 'visible' });
+    const multiNutrientAnswer = await multiNutrientReply.innerText();
+    const multiNutrientQuestionAnswered = /114 kcal energy/.test(multiNutrientAnswer) && /18 g carbohydrate/.test(multiNutrientAnswer) && /1\.2 g total sugars/.test(multiNutrientAnswer);
+
     await page.getByLabel('Ask about this package').fill('Is milk mentioned in an allergen statement?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
     await page.locator('.assistant-message').filter({ hasText: /Contains: Milk/ }).last().waitFor({ state: 'visible' });
@@ -73,10 +82,10 @@ try {
 
     await page.getByRole('checkbox', { name: /Save this local conversation on this device/ }).check();
     await page.getByRole('button', { name: /Recent scans/ }).click();
-    await page.getByRole('button', { name: /2 local turns/ }).waitFor({ state: 'visible' });
+    await page.getByRole('button', { name: /3 local turns/ }).waitFor({ state: 'visible' });
     await page.reload({ waitUntil: 'networkidle' });
     await page.getByRole('button', { name: /Recent scans/ }).click();
-    await page.getByRole('button', { name: /2 local turns/ }).click();
+    await page.getByRole('button', { name: /3 local turns/ }).click();
     await page.locator('.chat-turn').filter({ hasText: /What ingredients are listed\?/ }).waitFor({ state: 'visible' });
     const restoredTurnCount = await page.locator('.chat-turn').count();
     await page.getByRole('button', { name: 'Optional context', exact: true }).click();
@@ -151,7 +160,8 @@ try {
       syntheticLabelInput: true,
       observedIngredientQuestionAnswered: true,
       allergenFollowUpAnsweredFromRecordedText: true,
-      localConversationOptInRestored: restoredTurnCount === 2,
+      multiNutrientQuestionAnswered,
+      localConversationOptInRestored: restoredTurnCount === 3,
       savedConversationTurnCount: restoredTurnCount,
       profileRemainedSessionOnly: restoredProfileRemainedBlank,
       profileStartedEmpty,
@@ -173,12 +183,12 @@ try {
     };
     outcomes.push(outcome);
     console.log(JSON.stringify(outcome));
-    if (!observationDisclosure || !geminiHistoryStartsUnchecked || !geminiHistoryCanBeExplicitlyIncluded || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
+    if (!observationDisclosure || !geminiHistoryStartsUnchecked || !geminiHistoryCanBeExplicitlyIncluded || !multiNutrientQuestionAnswered || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
     await context.close();
   }
 
-  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.geminiHistoryStartsUnchecked === true && outcome.geminiHistoryCanBeExplicitlyIncluded === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
-  const receipt = { schemaVersion: 1, kind: 'synthetic-package-text-conversation-browser-acceptance', generatedAt: new Date().toISOString(), appOrigin: origin.origin, captureTool: 'Playwright using installed Chrome', evaluationInput: 'synthetic label text; not real-photo OCR evidence', persistence: 'explicit local opt-in restores 2 recent turns; opt-out removes saved turns; optional profile is remembered only after separate opt-in and is excluded from scan records', screenshots: 'docs/evidence/private/package-text-conversation', outcomes, passed };
+  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.multiNutrientQuestionAnswered === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.geminiHistoryStartsUnchecked === true && outcome.geminiHistoryCanBeExplicitlyIncluded === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
+  const receipt = { schemaVersion: 1, kind: 'synthetic-package-text-conversation-browser-acceptance', generatedAt: new Date().toISOString(), appOrigin: origin.origin, captureTool: 'Playwright using installed Chrome', evaluationInput: 'synthetic label text; not real-photo OCR evidence', persistence: 'explicit local opt-in restores 3 recent turns; opt-out removes saved turns; optional profile is remembered only after separate opt-in and is excluded from scan records', screenshots: 'docs/evidence/private/package-text-conversation', outcomes, passed };
   await writeFile('docs/evidence/package-text-conversation-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/package-text-conversation-browser.json', passed }));
   if (!passed) process.exitCode = 1;

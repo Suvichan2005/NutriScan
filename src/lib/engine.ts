@@ -3,6 +3,18 @@ import { detectAdditives, evidenceSources, lookupAdditive, retrieveEvidence } fr
 import { findDeclaredFoodMentions } from './ingredient-context';
 
 const display:Record<NutrientKey,string>={energy:'Energy',carbohydrate:'Carbohydrate',sugars:'Total sugars',addedSugars:'Added sugars',protein:'Protein',fat:'Fat',saturatedFat:'Saturated fat',fiber:'Fibre',sodium:'Sodium',salt:'Salt'};
+const nutrientQuestionPatterns:Record<NutrientKey,RegExp>={
+  energy:/\b(?:energy|calories?|kilocalories?|kcal)\b/i,
+  carbohydrate:/\b(?:carbohydrates?|carbs?)\b/i,
+  sugars:/\b(?<!added\s)(?:total\s+)?sugars?\b/i,
+  addedSugars:/\badded\s+sugars?\b/i,
+  protein:/\bprotein\b/i,
+  fat:/\b(?<!saturated\s)fat\b/i,
+  saturatedFat:/\bsaturated(?:\s+fat)?\b/i,
+  fiber:/\b(?:fiber|fibre)\b/i,
+  sodium:/\bsodium\b/i,
+  salt:/\bsalt\b/i,
+};
 const rounded=(n:number)=>Math.round((n+Number.EPSILON)*10000)/10000;
 const amountText=(n:number)=>n!==0&&Math.abs(n)<.0001?'<0.0001':String(rounded(n));
 const unique=<T,>(values:T[])=>[...new Set(values)];
@@ -215,10 +227,15 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
         answer=`No readable ${textIntent.label} is recorded for this package. That does not establish that the package has none; add or check a clear photo of the relevant panel.`;
       }
     }else{
-      const requested: NutrientKey|undefined=(['addedSugars','saturatedFat',...nutrientKeys] as NutrientKey[]).find(key=>new RegExp(key==='sugars'?'sugars?':key==='addedSugars'?'added sugars?':key==='fiber'?'fib(?:er|re)':key==='fat'?'\\bfat\\b':key==='saturatedFat'?'saturated':key==='carbohydrate'?'carbs?|carbohydrate':key,'i').test(question));
-      if(requested&&!dietRelevant){
-        answerIntent='specific nutrient quantity';const result=calculations.find(c=>c.nutrient===requested);
-        answer=result?.id==='calc-salt-from-sodium'?`For ${amountText(portion)} ${portionUnit}, the declared sodium corresponds to approximately ${amountText(result.result)} g salt equivalent using WHO's approximate relation. This is calculated from sodium, not a printed salt declaration.`:result?`For ${amountText(portion)} ${portionUnit}, the readable label gives ${amountText(result.result)} ${result.unit} ${display[requested].toLowerCase()}.`:`${display[requested]} for this portion is unknown. Confirm the printed amount, unit and serving basis; missing is not zero.`;
+      const requested=nutrientKeys.filter(key=>nutrientQuestionPatterns[key].test(question));
+      if(requested.length&&!dietRelevant){
+        answerIntent='specific nutrient quantity';
+        const requestedAmounts=requested.map(key=>{
+          const result=calculations.find(c=>c.nutrient===key);
+          if(result?.id==='calc-salt-from-sodium')return `approximately ${amountText(result.result)} g salt equivalent, calculated from declared sodium; this is not a printed salt declaration`;
+          return result?`${amountText(result.result)} ${result.unit} ${display[key].toLowerCase()}`:`${display[key]} for this portion is unknown; confirm the printed amount, unit and serving basis. Missing is not zero`;
+        });
+        answer=`For ${amountText(portion)} ${portionUnit}: ${requestedAmounts.join('; ')}.`;
       }else if(!/label|portion|packet|nutrition|mean|audit|analyse|analyze|how much|how many|daily|diet|safe|suitable|reasonable|eat|allerg|intoler/i.test(question)){
         answerIntent='unsupported local question';answer='The package alone does not establish an answer to that question. This local rule engine can explain label amounts, additive identities and portion scenarios; a question-specific authoritative source or more context is needed.';
       }
