@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "kind": "real-photo-guided-crop-probe",
+  "generatedAt": "2026-10-21T00:35:55.227Z",
+  "method": "Hash-verified source images, English Tesseract.js, PSM_SINGLE_BLOCK, JPEG quality 98, 3000 px fit-inside proxy; one documented crop variant per image.",
+  "runs": [
+    {
+      "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+      "mode": "full-frame",
+      "confidence": 48,
+      "parsedNutrientRows": 2,
+      "correct": 2,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "result": "omitted"
+        },
+        {
+          "key": "addedSugars",
+          "result": "omitted"
+        },
+        {
+          "key": "fiber",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "result": "correct"
+        },
+        {
+          "key": "saturatedFat",
+          "result": "correct"
+        },
+        {
+          "key": "sodium",
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+      "mode": "panel-interior",
+      "cropPercent": {
+        "left": 3,
+        "top": 0,
+        "width": 93,
+        "height": 99
+      },
+      "confidence": 55,
+      "parsedNutrientRows": 2,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 2,
+      "fields": [
+        {
+          "key": "energy",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "result": "omitted"
+        },
+        {
+          "key": "addedSugars",
+          "result": "omitted"
+        },
+        {
+          "key": "fiber",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "result": "withheld"
+        },
+        {
+          "key": "saturatedFat",
+          "result": "omitted"
+        },
+        {
+          "key": "sodium",
+          "result": "withheld"
+        }
+      ]
+    },
+    {
+      "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+      "mode": "full-frame",
+      "confidence": 66,
+      "parsedNutrientRows": 1,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 7,
+      "withheld": 1,
+      "fields": [
+        {
+          "key": "energy",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "result": "withheld"
+        },
+        {
+          "key": "sugars",
+          "result": "omitted"
+        },
+        {
+          "key": "fiber",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "result": "omitted"
+        },
+        {
+          "key": "sodium",
+          "result": "omitted"
+        }
+      ]
+    },
+    {
+      "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+      "mode": "first-nutrition-column",
+      "cropPercent": {
+        "left": 2,
+        "top": 2,
+        "width": 74,
+        "height": 96
+      },
+      "confidence": 70,
+      "parsedNutrientRows": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "omitted": 8,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "result": "omitted"
+        },
+        {
+          "key": "protein",
+          "result": "omitted"
+        },
+        {
+          "key": "carbohydrate",
+          "result": "omitted"
+        },
+        {
+          "key": "sugars",
+          "result": "omitted"
+        },
+        {
+          "key": "fiber",
+          "result": "omitted"
+        },
+        {
+          "key": "fat",
+          "result": "omitted"
+        },
+        {
+          "key": "saturatedFat",
+          "result": "omitted"
+        },
+        {
+          "key": "sodium",
+          "result": "omitted"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Two selected public Open Food Facts images; not a representative or held-out benchmark.",
+    "Node diagnostic only; does not exercise browser Canvas, app role hints, browser OCR workers, or rendered user flow.",
+    "Human annotations are compared only at their explicitly annotated basis; no raw OCR text or source image bytes are written.",
+    "A crop can remove serving, unit, or product-identity context; this probe does not justify automatic cropping or a default OCR policy change."
+  ]
+}

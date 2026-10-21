@@ -12,6 +12,14 @@ The benchmark also covers the browser-prepared image in automatic, single-column
 
 The low yield is useful evidence: preprocessing alone did not make these five photos reliably machine-readable, and false numeric readings remain a material risk. The segmentation comparison is exploratory and does not support a population accuracy estimate or a claim that one image mode is generally better. Keep uncertain values withheld and ask for a closer, flatter, well-lit photo or exact-product corroboration where warranted.
 
+## User-directed crop diagnostic
+
+`npm run ocr:evaluate:guided-crops` compares a full-frame 3,000 px proxy with one user-selected-style crop on two difficult Indian English labels: Saffola Veggie Twist Oats and Bagrry's White Oats. Both variants use English Tesseract `SINGLE_BLOCK`, matching the app's existing nutrition-panel role; only the image crop changes. Crops are expressed as percentages of the EXIF-oriented original. Saffola's interior crop removes a narrow outer border (x 3%, y 0%, width 93%, height 99%). Bagrry's crop keeps the label heading and first `per 100 g` column while excluding the adjacent `per 35 g` column (x 2%, y 2%, width 74%, height 96%). Each crop retains the basis header; the Bagrry's crop also drops the serving-size footer.
+
+On the 17 annotated fields, full-frame scored 2 correct, 0 incorrect, 14 omitted and 1 withheld. The two matches were Saffola fat and saturated fat; Bagrry's matched none. The two crops together scored 0 correct, 0 incorrect, 15 omitted and 2 withheld. The tighter Bagrry's crop did not resolve the two-column label, while the Saffola crop removed readings that the full frame recovered. Do not promote either crop to an automatic default. Machine-readable results, including field-level outcomes and exact crop bounds, are in [the guided-crop probe](evidence/real-ocr-guided-crop-probe.json).
+
+This is a Node experiment, not browser acceptance. It does not exercise canvas crop selection, UI role assignment, the browser worker, or image geometry correction. It covers only two selected photos and must not be generalized into a crop or OCR-accuracy claim.
+
 ## Method and limits
 
 - Sources: the five public product photographs listed in the local semantic photo manifest, selected with explicit human-read values and bases. The local image copies are ignored by Git.
