@@ -51,6 +51,12 @@ Continued the existing local NutriScan implementation. No source history or remo
 
 ## Limits
 
+## Continuation checkpoint — research source-selection guard
+
+- Fixed-registry research previously selected two source cards even when the query had no registry match, and substring scoring could count incidental fragments. Replaced that with whole-token normalized term/phrase matching, removed the blanket FSSAI score, and return an explicit unavailable result with no network fetch when nothing matches.
+- Regression tests cover an unrelated query/no-fetch case and a registered hyphenated phrase. This improves source relevance only; it does not broaden or certify regulatory coverage.
+- Verification: targeted regulation tests (5 passing), TypeScript typecheck, and `git diff --check` pass. Full suite and production build remain to be run before checkpoint.
+
 Additional browser acceptance is still required for photo removal/replacement, keyboard focus, camera hardware and consented image selection. OCR remains imperfect on glossy, multilingual and multi-column packaging. Product identity and changing regulatory claims need exact, dated corroboration.
 
 ## Continuation checkpoint — incremental multimodal input

@@ -13,6 +13,15 @@ export const primaryRegistry: Entry[] = [
   { id: 'who-sweeteners-live', title: 'WHO guideline: use of non-sugar sweeteners', url: 'https://www.who.int/publications/i/item/9789240073616', publisher: 'World Health Organization', terms: ['sweetener', 'sweeteners', 'aspartame', 'sucralose', 'weight'], publishedAt: '2023-05-15', category: 'population guideline' },
 ];
 
+function registryScore(entry: Entry, query: string) {
+  const queryTokens = query.toLowerCase().normalize('NFKC').match(/[\p{L}\p{N}]+/gu) ?? [];
+  const searchable = ` ${queryTokens.join(' ')} `;
+  return entry.terms.filter(term => {
+    const normalized = term.toLowerCase().normalize('NFKC').match(/[\p{L}\p{N}]+/gu)?.join(' ');
+    return normalized && searchable.includes(` ${normalized} `);
+  }).length;
+}
+
 function excerptHtml(html: string, query: string) {
   const text = html.replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
   const words = query.toLowerCase().split(/\W+/).filter(x => x.length > 3);
@@ -61,8 +70,12 @@ export async function research(data: z.infer<typeof researchInput>) {
     return { status: items.length ? 'ok' : 'empty', items, message: 'Live Europe PMC discovery, ordered by search relevance. These are candidate publications, not an evidence synthesis or personalized advice.' };
   }
   if (data.topic === 'brand' || data.topic === 'recalls') return researchRecalls(data.query);
-  const words = data.query.toLowerCase();
-  const candidates = primaryRegistry.map(entry => ({ entry, score: entry.terms.filter(t => words.includes(t)).length + (entry.publisher === 'FSSAI' ? 1 : 0) })).sort((a, b) => b.score - a.score).slice(0, 2);
+  const candidates = primaryRegistry.map(entry => ({ entry, score: registryScore(entry, data.query) })).filter(candidate => candidate.score > 0).sort((a, b) => b.score - a.score).slice(0, 2);
+  if (!candidates.length) return {
+    status: 'unavailable' as const,
+    items: [] as ResearchItem[],
+    message: 'No source in NutriScan’s fixed primary-source registry matched the terms in this question. This is not evidence that no relevant rule or guidance exists; refine the query or inspect an authoritative source directly.',
+  };
   const results = await Promise.all(candidates.map(async ({ entry }) => {
     try {
       const source = await fixedFetch(new URL(entry.url), entry.format ?? 'html', 1_200_000);

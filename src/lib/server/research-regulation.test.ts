@@ -62,5 +62,18 @@ describe('official regulation PDF discovery', () => {
     expect(result.items.every(item => /navigation only/i.test(item.limitations))).toBe(true);
     expect(result.message).toMatch(/no source text or current-law verdict is available/i);
   });
+
+  it('does not return unrelated registry sources or match terms as substrings', async () => {
+    const result = await research({ query: 'almond manufacture', topic: 'regulation' });
+    expect(fixedFetchMock).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ status: 'unavailable', items: [] });
+    expect(result.message).toMatch(/not evidence that no relevant rule or guidance exists/i);
+  });
+
+  it('matches a registered phrase as whole normalized tokens', async () => {
+    fixedFetchMock.mockResolvedValue('<html><body>Official guidance for non sugar sweeteners and product labelling. This page contains enough content to inspect safely.</body></html>');
+    const result = await research({ query: 'non-sugar sweeteners', topic: 'regulation' });
+    expect(result.items.some(item => item.id === 'who-sweeteners-live')).toBe(true);
+  });
 });
 
