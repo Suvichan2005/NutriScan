@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-21 — make uncertainty follow-ups package-specific
+
+- A real-photo browser review found that the follow-up “What remains uncertain?” returned a generic local fallback even though the package record contained parser rejections and unresolved product identity.
+- The deterministic response now brings together uncertain/conflicting findings, rejected rows, identity gaps and missing ingredient/allergen records, with raw OCR excerpts and observation IDs where retained. It explains that parser rejection is not proof that the printed information is absent and keeps recognition unverified.
+- Offline cases cover conflicting values, a rejected bounded row and a clean record. Fresh Chrome/Playwright with the same development-only Saffola photograph passed at 390×844 and 1440×900: 22 OCR observations, 16 exported raw lines, 95 word boxes, one usable nutrient row, and successful uncertainty follow-up, correction and 50 g calculation. Axe violations, page errors and off-loopback requests were zero. This is integration evidence for one photo, not an OCR accuracy result.
+- Full suite passed (295 tests across 33 files), typecheck passed. Gemini remained disabled; no provider call occurred.
+
 ## 2026-10-21 — link tentative candidates to recognized OCR words
 
 - The audit found that text assist already carries ordered OCR lines, line/word geometry and uncalibrated recognition scores, capture settings and session image IDs, plus parser rejected/conflicting candidates and retrieved evidence. It omits image bytes; the package has no durable image digest. Image inspection remains a separate action.

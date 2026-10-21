@@ -119,6 +119,8 @@ try {
     await page.getByLabel('Ask about this package').fill('What remains uncertain?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
     await page.locator('.conversation .user-message').filter({ hasText: 'What remains uncertain?' }).waitFor({ state: 'visible', timeout: 20_000 });
+    const uncertaintyAnswer = (await page.locator('.conversation .assistant-message').last().innerText()).trim();
+    const uncertaintyFollowUpUsesPackageEvidence = /unresolved points/i.test(uncertaintyAnswer) && /product name was not established/i.test(uncertaintyAnswer) && /OCR readings remain unverified/i.test(uncertaintyAnswer);
     await page.locator('.conversation').screenshot({ path: path.join(captureDir, `${prefix}-04-follow-up.png`) });
 
     await page.getByRole('button', { name: 'Correct a value' }).click();
@@ -176,6 +178,7 @@ try {
       labelNotesDisclosure,
       labelNotesPreserveParserDetails,
       exactSaturatedFatObservation: exactSatFatMatch,
+      uncertaintyFollowUpUsesPackageEvidence,
       followUpMessages: await page.locator('.conversation .assistant-message').count(),
       correctionApplied: correctedText.toLowerCase().includes('corrected'),
       originalObservationsRetained: retainedObservations,
@@ -197,7 +200,7 @@ try {
   const receipt = { schemaVersion: 1, kind: 'core-intake-to-audit-design-review', generatedAt: new Date().toISOString(), captureTool: 'Playwright using installed Chrome', appOrigin: origin.origin, acceptanceMode: process.env.NUTRISCAN_ACCEPTANCE_MODE ?? 'loopback local application', photoFile, screenshots: 'docs/evidence/private/core-journey-audit', outcomes: results };
   await writeFile('docs/evidence/core-journey-audit.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/core-journey-audit.json', screenshotDirectory: 'docs/evidence/private/core-journey-audit', outcomes: results }, null, 2));
-  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.ocrWordGeometryWithinCapture || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
+  if (results.length !== 2 || results.some((item) => !item.realPhotoHashVerified || !item.initialQuestionRetained || item.packageName !== 'Unidentified package' || !item.summaryHidesParserJargon || !item.addPhotoActionVisible || !item.addPhotoPickerOpened || !item.labelNotesInitiallyCollapsed || !String(item.labelNotesDisclosure).startsWith('Label-reading notes') || !item.labelNotesPreserveParserDetails || !item.exactSaturatedFatObservation || !item.uncertaintyFollowUpUsesPackageEvidence || !item.ocrWordGeometryWithinCapture || !item.fiftyGramCalculation || !item.originalObservationsRetained || !item.personalizedQuestionRetained || !item.personalCarbohydrateTargetWithheld || !item.clinicianContextVisible || !item.diabetesPlanningOptionsVisible || !item.niddkSourceLinked || !item.noNonLoopbackRequests || item.pageErrors.length || Object.values(item.axeViolationIds).some((ids) => ids.length))) process.exitCode = 1;
 } finally {
   await browser.close();
 }

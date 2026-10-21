@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 21 October 2026 — answer package uncertainty questions from retained evidence
+
+- Route explicit “what is unknown/uncertain?” follow-ups through the deterministic package audit. Summarize existing uncertain/conflicting findings, parser-rejected nutrition rows and identity or ingredient/allergen record gaps; retain original OCR line excerpts and observation IDs where present.
+- Describe parser rejection as a local parsing decision, and state that missing text in the record does not prove absence from the printed package. Keep OCR unverified and do not promote tentative candidate interpretations into confirmed package facts.
+- Use this as a useful local response path while Gemini is disabled. Keep exact-span citation checks and the existing direct-quote or labeled-synthesis boundary for any later consented model response; structural traceability does not establish entailment.
+- Offline tests cover conflicting readings, a rejected bounded value and a clear extraction. Fresh Chrome/Playwright verified the real-photo follow-up at mobile and desktop sizes. This does not change OCR accuracy evidence or establish model behavior.
+
 ## 21 October 2026 — link tentative interpretation to OCR tokens
 
 - Keep the complete raw OCR line, capture provenance, geometry, confidence metadata and parser candidates as the authoritative observations. Add optional role-tagged word-index references to tentative structured candidates so an inferred label, value, unit, basis or identity can point to the recognized tokens without duplicating or promoting them.

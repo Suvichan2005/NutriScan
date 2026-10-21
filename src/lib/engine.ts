@@ -3,6 +3,19 @@ import { detectAdditives, evidenceSources, lookupAdditive, retrieveEvidence } fr
 import { findDeclaredFoodMentions } from './ingredient-context';
 
 const display:Record<NutrientKey,string>={energy:'Energy',carbohydrate:'Carbohydrate',sugars:'Total sugars',addedSugars:'Added sugars',protein:'Protein',fat:'Fat',saturatedFat:'Saturated fat',fiber:'Fibre',sodium:'Sodium',salt:'Salt'};
+const uncertaintyQuestionPattern=/\b(?:what remains uncertain|what(?:'s| is) still uncertain|what is uncertain|what remains unclear|what is unclear|what(?:'s| is) still unclear|what is unknown|what remains unknown|what is not known|what don't we know|what do we not know|what needs checking|what should be checked|what remains to be checked|any uncertainties|what are the uncertainties)\b/i;
+const parserReasonText:Record<string,string>={
+  'approximate-or-bounded':'an approximate or bounded amount was not accepted as an exact value',
+  'signed-or-ambiguous':'the sign or numeric reading is ambiguous',
+  'no-numeric-value':'no numeric amount was recognized on the row',
+  'multiple-values':'multiple numeric values were retained without choosing a column',
+  'ambiguous-basis':'more than one serving basis may apply',
+  'invalid-value':'the numeric candidate was rejected as invalid',
+  'missing-unit':'a unit was not recognized',
+  'incompatible-unit':'the recognized unit is not compatible with this nutrient',
+  'missing-basis':'a mass or volume basis was not recognized',
+  'cross-reading-conflict':'this row conflicts with another retained reading',
+};
 const nutrientQuestionPatterns:Record<NutrientKey,RegExp>={
   energy:/\b(?:energy|calories?|kilocalories?|kcal)\b/i,
   carbohydrate:/\b(?:carbohydrates?|carbs?)\b/i,
@@ -57,6 +70,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const userContext=profileText(profile);
   const explicitlyUnder18=isExplicitlyUnder18(profile.ageGroup);
   const askedAdditives=detectAdditives(question);
+  const asksUncertainty=uncertaintyQuestionPattern.test(question);
   const deep=/diet|allerg|intoler|health|daily|safe|reasonable|sucralose|sweetener|ORS|regulat|legal|recall|brand|reviews?|alternativ|sodium|salt|blood pressure|hypertension|diabetes|carbohydrate|\bcarbs\b|sugar claim|\bfree sugars?\b|\badded sugars?\b|ICMR|\bNIN\b/i.test(question)||(/label|mean|audit|suitab/i.test(question)&&!!userContext);
   const trace:Audit['trace']=[{tool:'reuse_package_observations',reason:'Use the current label evidence for this question; no rescan required.',status:`${pkg.observations.length} observations`},{tool:'calculate_portions',reason:'Scale only unambiguous values with compatible explicit bases.',status:'local deterministic calculation'}];
   const finding=(data:Omit<Finding,'id'>)=> {data.sourceIds.forEach(s=>sourceIds.add(s));findings.push({...data,id:`finding-${findings.length+1}`});};
@@ -241,8 +255,59 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       }
     }
   }
+  if(asksUncertainty){
+    answerIntent='package uncertainty review';
+    const unresolved=findings.filter(item=>item.status==='uncertain'||item.status==='conflict');
+    const summaryLines:string[]=[];
+    const summaryObservationIds=new Set<string>();
+    const coveredObservationIds=new Set<string>();
+    const observationsById=new Map(pkg.observations.map(observation=>[observation.id,observation]));
+    for(const item of unresolved){
+      for(const id of item.observationIds){summaryObservationIds.add(id);coveredObservationIds.add(id);}
+      const detail=item.detail.replace(/\s+/g,' ').trim();
+      const excerpts=unique(item.observationIds.map(id=>observationsById.get(id)).filter((observation):observation is NonNullable<typeof observation>=>!!observation).sort((a,b)=>Number(a.field==='basis')-Number(b.field==='basis')).map(observation=>observation.text.trim())).slice(0,3).map(text=>`“${text.slice(0,100)}${text.length>100?'…':''}”`);
+      summaryLines.push(`${item.title}: ${detail.length>180?`${detail.slice(0,177)}…`:detail}${excerpts.length?` Recorded line${excerpts.length>1?'s':''}: ${excerpts.join('; ')}.`:''}`);
+    }
+    for(const diagnostic of pkg.parserDiagnostics??[]){
+      if(diagnostic.decision==='accepted'||diagnostic.sourceObservationIds.every(id=>coveredObservationIds.has(id)))continue;
+      const reasons=diagnostic.reasonCodes.map(code=>parserReasonText[code]??'the row needs review');
+      const lines=unique(diagnostic.sourceObservationIds.map(id=>observationsById.get(id)?.text.trim()).filter((text):text is string=>!!text));
+      const excerpt=lines[0]?` Recorded line: “${lines[0].slice(0,140)}${lines[0].length>140?'…':''}”`:'';
+      summaryLines.push(`${display[diagnostic.field]} row: ${unique(reasons).join('; ')}.${excerpt}`);
+      diagnostic.sourceObservationIds.forEach(id=>summaryObservationIds.add(id));
+    }
+    if(pkg.identityConflict){
+      const identityIds=pkg.observations.filter(observation=>observation.field==='barcode'||observation.field==='name').map(observation=>observation.id);
+      identityIds.forEach(id=>summaryObservationIds.add(id));
+      summaryLines.push('Product identity is flagged as conflicting in this package record; no single product identity is selected.');
+    }else if(pkg.name==='Unidentified package'){
+      const nameIds=pkg.observations.filter(observation=>observation.field==='name'||observation.field==='ocr-line').slice(0,4).map(observation=>observation.id);
+      nameIds.forEach(id=>summaryObservationIds.add(id));
+      summaryLines.push('The product name was not established from the recorded text; the package identity remains unconfirmed.');
+    }
+    if(pkg.ingredients.length===0){
+      summaryLines.push('No readable ingredient list is recorded, so ingredient-based questions remain unanswered. This record gap does not establish that the package contains no ingredients.');
+    }
+    if(pkg.allergens.length===0){
+      summaryLines.push('No allergen statement is recorded; that is not a safety clearance or evidence that the package is allergen-free.');
+    }
+    if(pkg.ingredients.length===0||pkg.allergens.length===0){
+      // When available, cite the OCR lines that were retained for this package;
+      // their presence does not imply that the relevant panel was captured.
+      pkg.observations.filter(observation=>observation.field==='ocr-line').slice(0,4).forEach(observation=>summaryObservationIds.add(observation.id));
+    }
+    const summary=summaryLines.slice(0,6);
+    const omitted=summaryLines.length>summary.length;
+    answer=summary.length
+      ?`In this package record, the unresolved points are: ${summary.join(' ')}${omitted?` ${summaryLines.length-summary.length} additional item(s) are available in the findings.`:''} These are extraction or record uncertainties, not proof that information is absent from the printed package. OCR readings remain unverified.`
+      :'I do not see a recorded nutrient conflict, rejected nutrition row, missing nutrient basis, or identity/ingredient gap in the current package record. This is only an internal consistency check: OCR can still misread text, and any panel not captured remains unknown.';
+    if(summaryObservationIds.size){
+      const ids=[...summaryObservationIds];
+      finding({title:'Unresolved package evidence',detail:'This summary points to the original package observations associated with the displayed unresolved items. Parser rejection describes the local parser decision, not whether the printed text itself is correct.',status:unresolved.some(item=>item.status==='conflict')||(pkg.parserDiagnostics??[]).some(diagnostic=>diagnostic.decision==='conflict')?'conflict':'uncertain',observationIds:ids,sourceIds:[],calculationIds:[]});
+    }
+  }
   trace.push({tool:'local_rule_answer',reason:`Select a transparent template for ${answerIntent}.`,status:'deterministic local response; no language model invoked'});
-  if(conflict)answer+=' Some readings conflict and need checking before a dietary decision.';
+  if(conflict&&!asksUncertainty)answer+=' Some readings conflict and need checking before a dietary decision.';
   if(personalSuitability)answer+=userContext?' I considered the context you chose to share, but this label review cannot establish individual suitability.':' No personal context was provided, so this is a label reading rather than an assessment of individual suitability.';
   return {answer,findings,calculations,sources:evidenceSources.filter(s=>sourceIds.has(s.id)),limitations:unique(limitations),nextQuestions:unique(nextQuestions),trace};
 }
