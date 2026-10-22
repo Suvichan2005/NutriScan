@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "kind": "india-product-record-browser-acceptance",
+  "generatedAt": "2026-10-22T04:11:50.478Z",
+  "browser": "Installed Chrome via Playwright",
+  "application": "Local loopback NutriScan; explicit product lookup action",
+  "buildMode": "fresh isolated Next.js production build",
+  "source": "Open Food Facts current v3 product endpoint; community data with source link and variant caveat",
+  "sourceLicense": "Database: ODbL; individual contents: Database Contents License. Product images were not used.",
+  "sample": {
+    "barcode": "8901088068758",
+    "marketTag": "en:india",
+    "sourceRecordOnly": true
+  },
+  "fixture": "Typed barcode only; no package photograph, OCR, personal profile, or copied ingredient text was used as input.",
+  "limitations": [
+    "This verifies display and provenance behavior for a live community record, not the correctness of the record or package-photo identification.",
+    "The returned ingredient text has not been independently checked against the physical package.",
+    "Open Food Facts database records are community supplied; local stock and regional formulation remain unverified."
+  ],
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "typedBarcodeFixture": true,
+      "realPhotoOrOcrTest": false,
+      "exactIndiaRecordVisible": true,
+      "sourceIngredientTextPresent": true,
+      "sourceAllergenTagsPresent": true,
+      "initialSearchUsesOnlyBarcode": true,
+      "communityDetailsCollapsedInitially": true,
+      "ingredientTextMatchesLiveCommunityRecord": true,
+      "allergenTagsVisible": true,
+      "sourceAttributionLinkVisible": true,
+      "communityDataCaveatVisible": true,
+      "communityRecordNotPromotedToPackageFacts": true,
+      "sourceLastModified": "2026-10-10T04:54:14.000Z",
+      "productRecordUrl": "https://world.openfoodfacts.org/product/8901088068758",
+      "productResponseStatus": 200,
+      "noExternalBrowserRequests": true,
+      "axeViolationIds": [],
+      "noHorizontalOverflow": true,
+      "pageErrors": [],
+      "screenshot": ".data/indian-product-record-browser/mobile.png"
+    },
+    {
+      "viewport": "1440x900",
+      "typedBarcodeFixture": true,
+      "realPhotoOrOcrTest": false,
+      "exactIndiaRecordVisible": true,
+      "sourceIngredientTextPresent": true,
+      "sourceAllergenTagsPresent": true,
+      "initialSearchUsesOnlyBarcode": true,
+      "communityDetailsCollapsedInitially": true,
+      "ingredientTextMatchesLiveCommunityRecord": true,
+      "allergenTagsVisible": true,
+      "sourceAttributionLinkVisible": true,
+      "communityDataCaveatVisible": true,
+      "communityRecordNotPromotedToPackageFacts": true,
+      "sourceLastModified": "2026-10-10T04:54:14.000Z",
+      "productRecordUrl": "https://world.openfoodfacts.org/product/8901088068758",
+      "productResponseStatus": 200,
+      "noExternalBrowserRequests": true,
+      "axeViolationIds": [],
+      "noHorizontalOverflow": true,
+      "pageErrors": [],
+      "screenshot": ".data/indian-product-record-browser/desktop.png"
+    }
+  ]
+}

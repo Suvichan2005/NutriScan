@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "kind": "gemini-free-synthetic-extraction-smoke",
+  "date": "2026-10-22",
+  "model": "gemini-3.8-flash",
+  "tier": "free",
+  "selectedProviderKey": "FREE_GEMINI_API_KEY",
+  "paidKeySelectedOrTransmitted": false,
+  "modelAvailability": {
+    "listed": true,
+    "supportsGenerateContent": true,
+    "stableModelId": "gemini-3.8-flash",
+    "listPageSize": 100
+  },
+  "calls": [],
+  "failedAttempt": {
+    "arm": "text-only",
+    "status": "http-error",
+    "reason": "http_503",
+    "elapsedMs": 1930,
+    "modelVersion": null,
+    "usage": {
+      "promptTokens": null,
+      "outputTokens": null,
+      "thoughtTokens": null,
+      "totalTokens": null
+    },
+    "retryCount": 0,
+    "modelResponseReceived": false
+  },
+  "budget": {
+    "modelListRequests": 1,
+    "generationRequestsAttempted": 1,
+    "generationRequestsCompleted": 0,
+    "maxGenerationRequests": 2,
+    "retries": 0,
+    "visionOnlyArmAttempted": false,
+    "maxOutputTokensPerGeneration": 500,
+    "providerEstimatedCostUsd": 0,
+    "pricingBasis": "Google lists Gemini 3.8 Flash free-tier input and output as no-charge. This failed response did not return token usage. Active per-project quotas are shown in AI Studio."
+  },
+  "privacy": {
+    "syntheticTextOnly": true,
+    "realPackageImages": 0,
+    "userProfiles": 0,
+    "personalConversations": 0,
+    "paidProviderCalls": 0
+  },
+  "modelSelection": {
+    "reason": "Gemini 3.8 Flash is the current stable general-purpose candidate available for a free-tier multimodal smoke. Google lists Gemini 4 Argon as newer and more capable, but it is paid-only and owner-approved paid spend is zero.",
+    "gemini4ArgonTested": false
+  },
+  "limitations": [
+    "Synthetic fixture only; this is not packaged-food accuracy evidence.",
+    "The free-project model list confirmed Gemini 3.8 Flash and generateContent support, but the first text-only generation request returned HTTP 503 before a model output. No response tokens or structured extraction scores are available.",
+    "No retry, second generation request, paid fallback, or vision-only arm was run.",
+    "Free-tier prompts may be used to improve Google products; only synthetic text was sent."
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "kind": "india-first-real-package-two-column-browser-acceptance",
+  "generatedAt": "2026-10-22T03:51:28.778Z",
+  "commitUnderTest": "6bbff54",
+  "sample": {
+    "id": "bagrrys-white-oats-nutrition-off-8902710100150",
+    "market": "India",
+    "productCategory": "oats",
+    "split": "development",
+    "heldOut": false,
+    "sourceManifest": "data/semantic-photo-manifest.json",
+    "imageSha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+    "referenceStatus": "single visual read; not independently adjudicated",
+    "imageRights": "redistribution rights not independently verified; source image is not included"
+  },
+  "method": {
+    "capture": "Installed Chrome via Playwright against the local loopback application",
+    "viewports": ["390x844", "1440x900"],
+    "crop": null,
+    "readers": [
+      { "name": "tesseract.js", "language": "eng" },
+      { "name": "@paddleocr/paddleocr-js/PP-OCRv6-small", "language": "en" }
+    ],
+    "fieldMatch": "Score each nutrient at each printed basis. Require matching numeric value within max(0.015, 0.5% of reference), normalized unit, and exact basis.",
+    "manualCorrectionsIncludedInScore": false
+  },
+  "extraction": {
+    "ocrLines": 44,
+    "ocrWordBoxes": 173,
+    "parsedNutrientRows": 16,
+    "evidenceLedgerInitiallyVisibleLines": 40,
+    "evidenceLedgerExpandedVisibleLines": 44,
+    "expectedFields": 16,
+    "exact": 14,
+    "incorrect": 0,
+    "omitted": 0,
+    "withheld": 2,
+    "per100g": { "expected": 8, "exact": 7, "withheld": 1 },
+    "per35g": { "expected": 8, "exact": 7, "withheld": 1 },
+    "withheldFields": [
+      { "nutrient": "saturatedFat", "basis": "100 g", "reason": "cross-reader conflict" },
+      { "nutrient": "saturatedFat", "basis": "35 g", "reason": "cross-reader conflict" }
+    ],
+    "productNameEstablished": false,
+    "ingredientsEstablished": false
+  },
+  "productJourney": {
+    "printedServing": "35 g",
+    "automaticPortionCalculationsVisibleBeforeCorrection": true,
+    "examples": ["138.95 kcal per 35 g", "23.1 g carbohydrate per 35 g", "1.72 mg sodium per 35 g"],
+    "conflictingSaturatedFatExcludedFromCalculation": true,
+    "followUpSurfacedUnknownProductIdentityAndOriginalObservations": true,
+    "manualCorrectionWasExercisedAfterScoring": true,
+    "originalOcrObservationsRetainedAfterCorrection": true
+  },
+  "privacyAndAcceptance": {
+    "profileContext": "No real user profile; automated optional-context checks used a synthetic fixture only.",
+    "photoUploadObserved": false,
+    "geminiRouteRequests": 0,
+    "externalPackageRequests": 0,
+    "paddleModelAssetGetsPerViewport": 2,
+    "pageErrors": 0,
+    "automatedAxeViolations": 0,
+    "screenshots": ".data/bagrrys-mobile-desktop-final (ignored local files)"
+  },
+  "limitations": [
+    "One Indian oats development photo with one visual reference read; not held out, independently adjudicated, representative, or a population accuracy estimate.",
+    "No extraction change is claimed from this run: the complete per-basis scoring corrects measurement scope, and the evidence-ledger expansion changes reviewability only.",
+    "The nutrition-only photograph did not establish product identity or ingredients.",
+    "Source image redistribution rights remain unverified. Hindi/Devanagari and other Indian categories are not evaluated here."
+  ]
+}

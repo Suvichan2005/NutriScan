@@ -1,0 +1,680 @@
+{
+  "schemaVersion": 1,
+  "kind": "india-first-real-package-two-column-browser-acceptance",
+  "generatedAt": "2026-10-22T05:58:30.696Z",
+  "commitUnderTest": "6bbff54 + uncommitted working tree",
+  "sample": {
+    "id": "bagrrys-white-oats-nutrition-off-8902710100150",
+    "market": "India",
+    "productCategory": "oats",
+    "split": "development",
+    "heldOut": false,
+    "sourceManifest": "data/semantic-photo-manifest.json",
+    "imageSha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+    "referenceStatus": "single visual read; not independently adjudicated",
+    "imageRights": "redistribution rights not independently verified; source image is not included"
+  },
+  "method": {
+    "capture": "Installed Chrome via Playwright against the local loopback application",
+    "viewports": [
+      "390x844",
+      "1440x900"
+    ],
+    "crop": null,
+    "readers": [
+      {
+        "name": "tesseract.js",
+        "language": "eng"
+      },
+      {
+        "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+        "language": "en"
+      }
+    ],
+    "fieldMatch": "Score each nutrient at each printed basis. Require matching numeric value within max(0.015, 0.5% of reference), normalized unit, and exact basis.",
+    "manualCorrectionsIncludedInScore": false,
+    "scoringPoint": "Automatic score recorded before the separate correction interaction."
+  },
+  "extraction": {
+    "ocrLines": 44,
+    "ocrWordBoxes": 173,
+    "parsedNutrientRows": 16,
+    "evidenceLedgerInitiallyVisibleLines": 40,
+    "evidenceLedgerExpandedVisibleLines": 44,
+    "expectedFields": 16,
+    "exact": 16,
+    "incorrect": 0,
+    "omitted": 0,
+    "withheld": 0,
+    "per100g": {
+      "expected": 8,
+      "exact": 8,
+      "incorrect": 0,
+      "omitted": 0,
+      "withheld": 0
+    },
+    "per35g": {
+      "expected": 8,
+      "exact": 8,
+      "incorrect": 0,
+      "omitted": 0,
+      "withheld": 0
+    },
+    "withheldFields": [],
+    "productNameEstablished": false,
+    "ingredientsEstablished": false,
+    "totalUnusable": 0,
+    "fields": [
+      {
+        "nutrient": "energy",
+        "expected": {
+          "value": 397,
+          "unit": "kcal",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 397,
+          "unit": "kcal",
+          "basis": {
+            "amount": 100,
+            "unit": "g",
+            "description": "Per 100g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 2,
+          "parserReasons": [
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "protein",
+        "expected": {
+          "value": 14.2,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 14.2,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g",
+            "description": "Per 100g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 4,
+          "parserReasons": [
+            "multiple-values",
+            "missing-unit",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "carbohydrate",
+        "expected": {
+          "value": 66,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 66,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g",
+            "description": "Per 100g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 4,
+          "parserReasons": [
+            "multiple-values",
+            "missing-unit",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "sugars",
+        "expected": {
+          "value": 0,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 0,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g",
+            "description": "Per 100g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 1,
+          "parserReasons": [
+            "multiple-values",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "fiber",
+        "expected": {
+          "value": 10.2,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 10.2,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g",
+            "description": "Per 100g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 4,
+          "parserReasons": [
+            "multiple-values",
+            "missing-unit",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "fat",
+        "expected": {
+          "value": 8.5,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 8.5,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g",
+            "description": "Per 100g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 4,
+          "parserReasons": [
+            "multiple-values",
+            "missing-unit",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "saturatedFat",
+        "expected": {
+          "value": 1.3,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 1.3,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g",
+            "description": "Per 100g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 4,
+          "parserReasons": [
+            "multiple-values",
+            "missing-unit",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "sodium",
+        "expected": {
+          "value": 4.9,
+          "unit": "mg",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 4.9,
+          "unit": "mg",
+          "basis": {
+            "amount": 100,
+            "unit": "g",
+            "description": "Per 100g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 2,
+          "parserReasons": [
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "energy",
+        "expected": {
+          "value": 139,
+          "unit": "kcal",
+          "basis": {
+            "amount": 35,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 139,
+          "unit": "kcal",
+          "basis": {
+            "amount": 35,
+            "unit": "g",
+            "description": "Per 35g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 2,
+          "parserReasons": [
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "protein",
+        "expected": {
+          "value": 5,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 5,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g",
+            "description": "Per 35g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 4,
+          "parserReasons": [
+            "multiple-values",
+            "missing-unit",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "carbohydrate",
+        "expected": {
+          "value": 23.1,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 23.1,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g",
+            "description": "Per 35g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 4,
+          "parserReasons": [
+            "multiple-values",
+            "missing-unit",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "sugars",
+        "expected": {
+          "value": 0,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 0,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g",
+            "description": "Per 35g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 1,
+          "parserReasons": [
+            "multiple-values",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "fiber",
+        "expected": {
+          "value": 3.6,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 3.6,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g",
+            "description": "Per 35g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 4,
+          "parserReasons": [
+            "multiple-values",
+            "missing-unit",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "fat",
+        "expected": {
+          "value": 3,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 3,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g",
+            "description": "Per 35g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 4,
+          "parserReasons": [
+            "multiple-values",
+            "missing-unit",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "saturatedFat",
+        "expected": {
+          "value": 0.5,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 0.5,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g",
+            "description": "Per 35g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 4,
+          "parserReasons": [
+            "multiple-values",
+            "missing-unit",
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      },
+      {
+        "nutrient": "sodium",
+        "expected": {
+          "value": 1.7,
+          "unit": "mg",
+          "basis": {
+            "amount": 35,
+            "unit": "g"
+          }
+        },
+        "accepted": {
+          "value": 1.7,
+          "unit": "mg",
+          "basis": {
+            "amount": 35,
+            "unit": "g",
+            "description": "Per 35g"
+          }
+        },
+        "outcome": "exact",
+        "candidateRecovery": {
+          "exactNumericCandidate": true,
+          "exactUnitCandidate": true,
+          "exactBasisCandidate": true,
+          "numericCandidateCount": 2,
+          "parserReasons": [
+            "multiple-values",
+            "ambiguous-basis"
+          ]
+        }
+      }
+    ],
+    "stageDiagnostics": {
+      "referenceStatus": "single human visual read; not independently adjudicated",
+      "textDetection": {
+        "observedLineBoxes": 44,
+        "observedWordBoxes": 173,
+        "precisionRecall": null,
+        "limitation": "No independently annotated text-region boxes are available; observed boxes are not detection precision or recall."
+      },
+      "recognition": {
+        "annotatedFieldsWithExactNumericCandidate": 16,
+        "annotatedFieldsWithExactUnitCandidate": 16,
+        "annotatedFieldsWithExactBasisCandidate": 16,
+        "expectedFields": 16
+      },
+      "tableStructure": {
+        "annotatedFieldsWithMultipleNumericCandidates": 14,
+        "annotatedFieldsWithoutParserDiagnostic": 0,
+        "rowColumnAssociationScored": false,
+        "limitation": "Line and word geometry are retained, but no gold row or column regions exist for independent association scoring."
+      },
+      "parser": {
+        "annotatedFieldsWithDiagnostic": 16,
+        "rejectedFieldCount": 10,
+        "rejectionReasonOccurrences": {
+          "multiple-values": 10,
+          "missing-unit": 10
+        }
+      }
+    },
+    "priorWithheldRecovery": [
+      {
+        "nutrient": "saturatedFat",
+        "basis": "100 g",
+        "before": "withheld: cross-reader conflict",
+        "after": "correct-accepted",
+        "emitted": {
+          "value": 1.3,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        }
+      },
+      {
+        "nutrient": "saturatedFat",
+        "basis": "35 g",
+        "before": "withheld: cross-reader conflict",
+        "after": "correct-accepted",
+        "emitted": {
+          "value": 0.5,
+          "unit": "g",
+          "basis": {
+            "amount": 35,
+            "unit": "g"
+          }
+        }
+      }
+    ]
+  },
+  "productJourney": {
+    "printedServing": "35 g",
+    "automaticPortionCalculationsVisibleBeforeCorrection": true,
+    "examples": [
+      "138.95 kcal per 35 g",
+      "23.1 g carbohydrate per 35 g",
+      "1.72 mg sodium per 35 g"
+    ],
+    "conflictingSaturatedFatExcludedFromCalculation": false,
+    "followUpSurfacedUnknownProductIdentityAndOriginalObservations": true,
+    "manualCorrectionWasExercisedAfterScoring": true,
+    "originalOcrObservationsRetainedAfterCorrection": true,
+    "automaticallyUsableNutrientsBeforeCorrection": 16,
+    "portionCalculationVerified": true
+  },
+  "privacyAndAcceptance": {
+    "profileContext": "No real user profile; automated optional-context checks used a synthetic fixture only.",
+    "photoUploadObserved": false,
+    "geminiRouteRequests": 0,
+    "externalPackageRequests": 0,
+    "paddleModelAssetGetsPerViewport": 2,
+    "pageErrors": 0,
+    "automatedAxeViolations": 0,
+    "screenshots": ".data\\bagrrys-current-after-geometry-capture",
+    "externalModelAssetGetsPerViewport": 2
+  },
+  "limitations": [
+    "One Indian oats development photo with one visual reference read; not held out, independently adjudicated, representative, or a population accuracy estimate.",
+    "The prior 14/16 receipt is preserved separately. The current full-frame run recovers both saturated-fat fields automatically; it does not establish independent accuracy.",
+    "The nutrition-only photograph does not establish product identity or ingredients. Ingredient accuracy is unscored.",
+    "Source image redistribution rights remain unverified. Hindi/Devanagari and other Indian categories are not evaluated here.",
+    "Prior receipt preserved byte-for-byte at docs/evidence/india-first-bagrrys-browser-acceptance-before-merge-recovery.json; backup SHA-256 dfed9d08f4da2bf837b6c22fd91c2f74c531a3f82d5cb73b9be8e1935f5b7755."
+  ]
+}

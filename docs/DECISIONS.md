@@ -1,5 +1,29 @@
 # Chronological decisions
 
+## 22 October 2026 — expose community ingredient evidence without promoting it
+
+- Render Open Food Facts ingredient text and allergen tags only inside a collapsed, attributed community-record disclosure after the user explicitly requests a product lookup. Keep these fields separate from photographed observations, confirmed package facts, calculations and exported package data; empty community fields do not establish absence on the package.
+- The live India-tagged Saffola record contains a 453-character ingredient string and three allergen tags. Browser checks confirm those values display verbatim from the source, but the string has not been checked against the physical package and may contain errors. This is source-data access, not photo extraction or label verification.
+- Move exact barcode and canonical record reads to Open Food Facts `/api/v3/product/{code}`. The official API documentation labels v2 deprecated and v3 current; candidate text search remains on Search-a-licious. Preserve the record link, retrieval/modified dates, market and variant caveats, and license attribution. Product images were not requested or reused.
+- Mobile and desktop acceptance ran against the fresh isolated Next.js production build with only a typed barcode fixture; it verified one exact India-tagged record, source text disclosure, no promotion into package facts, no browser-side external requests, no Axe findings, no overflow and no page errors. Do not describe this as a photo-identity result. Full suite (1,235/125), TypeScript and the isolated optimized build pass.
+- Sources: [Open Food Facts API documentation](https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/) and [official license guidance](https://openfoodfacts.github.io/openfoodfacts-server/api/tutorials/license-be-on-the-legal-side/).
+
+## 22 October 2026 — score Indian multi-column labels at each printed basis
+
+- For the Bagrry's browser acceptance, count each nutrient at each printed basis as its own complete value-unit-basis field. This yields 14/16 exact matches (7/8 per 100 g and 7/8 per 35 g), with both saturated-fat readings withheld for cross-reader conflict. Do not interpret the corrected scoring scope as an OCR or parser gain; the photo is a single visual-read development sample.
+- Keep the readable product outcome honest: a 35-g serving supports calculations for accepted readings, but the nutrition-only photo does not establish product identity or ingredients. Preserve all original OCR observations, including lines beyond the former 40-line collapsed view; the new expand control changes reviewability only.
+- Continue India-first development across product categories. Treat French/Spanish examples as secondary regressions, evaluate English/Hindi only when rights-reviewed package photographs are available, and leave product-group held-out examples untouched.
+- The acceptance exercised the browser application without image upload or Gemini calls. Saturated-fat conflicts remain excluded from calculations; the later manual correction is outside the automatic score. The source image's redistribution rights remain unverified.
+
+## 22 October 2026 — prioritize Indian packages and preserve table-level value qualifiers
+
+- Treat Indian packaged foods as the primary target. The current five-photo OCR matrix has two Indian examples, both oats; French/Spanish labels and Coca-Cola stay secondary regression examples. Do not tune on the familiar Nutella photos absent a broad regression reason. Current Indian category coverage is too narrow for a market-level claim, and no independently annotated English/Hindi package is available.
+- Keep the authorized Table Transformer as a local structure reference, not the production reader. It predicted 14 rows/2 columns on Saffola and 17 rows/4 columns on Bagrry's; the latter visibly includes overlapping/extra left-column regions. There are no gold table boxes or text-cell mappings, and CPU peak RSS was 886 MB with a 115.4 MB checkpoint. These results do not establish structured-field accuracy or a feasible mobile deployment.
+- Preserve the Saffola `(Approximate Values)` heading as a package qualifier. The parser now reports it in label notes and the uncertainty summary; portion calculations use the printed readings as estimates. This does not change extracted field counts. A fresh mobile/desktop run returned 6/9 exact, 0 incorrect, 1 omitted and 2 withheld before a separate manual-correction check.
+- Official PP-OCRv5 includes a small Devanagari recognition model, and PaddleOCR.js supports custom ONNX model assets. Evaluate that route only on rights-reviewed English/Hindi package photos with value-unit-basis and ingredient labels; no Devanagari integration or accuracy result is claimed yet.
+- Raise the local retrieval candidate floor from 0.30 to 0.40 after reproducing an unrelated NIDDK match at 0.3966 for the beta-glucan-in-oats question. Keep the floor explicitly uncalibrated; current developer probes retain all 21 authored ranking cases and meet 16/16 boundary expectations. Extract and exact-boost a single prefixed additive identifier inside natural-language questions, while leaving multiple identifiers to ordinary hybrid ranking. Chrome verified the resolved source and abstention at mobile and desktop sizes with no UI or request-boundary findings.
+- Verification: 387 tests/41 files, TypeScript and the full local mobile/desktop Chrome journey pass. The acceptance showed no page errors, Axe findings, off-loopback requests or Gemini routes. The qualifier change is a transparency fix, not an OCR gain; no optimized build was run while the local dev server was active.
+
 ## 22 October 2026 — recognize localized package-basis prepositions
 
 - Extend the shared parser's nutrition-basis vocabulary to include French `par` and Spanish `por`, including geometry tokenization and parser-only removal so basis text is not mistaken for a nutrient value. This is a narrow language-coverage fix, not an OCR-engine or routing change.
@@ -520,3 +544,58 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 ## 22 October 2026 — map only clearly aligned OCR values to a recognized basis
 
 - Keep Tesseract and production OCR configuration unchanged: targeted row and word-crop retries did not improve the same development photographs. The parser may skip at most two short, very low-confidence leading OCR tokens before a recognized nutrient label, then select one numeric reading only when its unit is explicit, its word box is uniquely aligned to one recognized basis, and both lines share the same image and OCR capture. Preserve all other readings as unassigned candidates; missing units, ambiguous bases, weak geometry and cross-capture layouts remain unresolved. This is a narrow parser recovery, not a held-out accuracy claim or a reason to enable Gemini.
+
+## 22 October 2026 — make Indian packaged food the primary OCR target
+
+- Prioritize Indian-market English labels, serving quantities, ingredients and allergens; evaluate English/Hindi and Devanagari next when rights-cleared examples are available. Keep the French and Spanish photos as secondary regression cases.
+- The Table Transformer probe is not integrated: it gave useful row geometry on one Indian oats label but over-split columns on the other, with no gold geometry or text-to-cell annotations and 886 MB peak CPU RSS. Reconsider only with broader Indian development images and measured structured-field gains at feasible runtime and memory.
+- Retain a global printed “Approximate Values” qualifier through uncertainty summaries and portion calculations. Readings remain usable as estimates; this correction does not increase OCR recovery.
+
+## 22 October 2026 — bound split-header reconstruction to explicit Indian label evidence
+
+- Preserve Tesseract and PaddleOCRv6 as the current recognizers. Pair split nutrition headers only when their adjacent lines belong to the same OCR run and image, explicitly show two `Per` columns, a printed serving basis, and a GDA/RDA marker. Use printed text order only when there are exactly two clean numeric values and two bases with clear separators; retain fused or ambiguous values as conflicts. Keep both original header lines and their provenance.
+- Compare repeated nutrient readings using their printed decimal precision as well as the existing tolerance. This avoids flagging values consistent with independent label rounding, while larger disagreements remain conflicts.
+- Do not integrate Table Transformer from this probe: full-frame CPU use was 843.6 MB peak RSS and 4.13 s, its table box extended into adjacent copy, and its row/column detections have no independent geometry labels or OCR-cell associations. The human-cropped result is exploratory only.
+
+## 22 October 2026 — make missing coverage and non-nutrient recovery first-class
+
+- Every real-package evaluation reports per-product-group and per-basis denominators with correct accepted, incorrect accepted, omitted, withheld, total unusable and usable coverage counts. Two photos, repeated scans, serving columns or crops from one product do not increase the independent product count.
+- For every unusable field, record whether usable label/unit/value/basis evidence exists in raw OCR, parser candidates or alternate reads, and name the blocking stage. A tentative or conflicted candidate is not recovered. Score product identity, serving declarations, ingredients and allergens separately; mark ingredient accuracy unscored when no adjudicated transcript exists.
+- The current Maggi receipt demonstrates the format, not representative accuracy. Ingredient geometry recovery exposes raw text for review but does not establish that the transcribed ingredient list is correct. No acceptance threshold is relaxed to improve coverage.
+
+## 22 October 2026 — recover a uniquely aligned fused nutrition token
+
+- A numeric token may be split into printed values only when the same photo and OCR run expose both declared serving headers, both header-derived value centers fall inside the fused token box, and exactly one numeric split aligns to those centers and its split boundary. Keep the original OCR token untouched and link the tentative reconstructed row to it. If geometry, headers or split uniqueness is absent, retain the prior conflict/withholding behavior.
+- This recovered both Maggi sodium bases on the same two photo bytes without an accepted error: 14/16 to 16/16 exact fields, 0 wrong, 0 omitted, and 2 to 0 withheld. This remains a one-product exploratory result against a same-source single-reviewer read.
+- Do not accept a package name from OCR candidates found only in images with multiple recognized nutrition rows. A separate image without the nutrition-panel signal can still supply the identity; absent that evidence, retain the raw line but leave identity unresolved. This prevented one demonstrated false product name on the Maggi back-panel photos and does not claim successful product identification.
+
+## 22 October 2026 — accept narrowly evidenced serving-measure normalization
+
+- Normalize the OCR label variant `Serveasure` only in the bounded serving-measure parser, retaining the original OCR observation and parsed evidence link. Keep `servings per pack` counts distinct from serving mass. This recovered 38 g on one Indian development photo and populated the real flow's default portion; nutrition-field coverage did not change.
+- Do not retain an OCR-geometry automatic crop retry from this run: it remained at 5/9 nutrition fields and changed a visible `g` to `9`. Keep crop-free production behavior until another generalizable method demonstrates a coverage gain without incorrect accepted fields.
+
+## 22 October 2026 — pin the current Gemini candidate and keep model interpretations separate
+
+- Use exact stable `gemini-3.8-flash` as the initial free-tier general candidate; do not use `gemini-flash-latest`, 3.7, or 2.5 for new integration work. Google still lists 2.5 Flash for some existing projects (so it is not accurately described as shut down), but restricts new-project access. Gemini 3.7 is replaced by 3.8. Gemini 4 Argon is now the newest flagship and supports images plus structured output, but is paid-only and substantially higher priced; benchmark it only after explicit paid authorization and adapter updates.
+- Set low thinking for the 3.8 path, bound output, remove temperature/candidate-count parameters, and retain SDK usage accounting for prompt, candidate, thinking, total tokens, model version and latency. Current free project availability does not establish response quality.
+- Render validated `tentativeCandidates` as structured interpretation data alongside the generated answer. Keep each candidate separate from `PackageData`, the OCR parser and calculations; model interpretation is not independent verification.
+- The authorized 3.8 synthetic text request returned HTTP 503 after model listing succeeded. Stop the bounded run on this response; no retry, vision request or paid fallback. Keep Gemini application calls disabled until the owner enables the chosen project and the live service is available.
+
+## 22 October 2026 — use one consented OCR-plus-image interpretation request
+
+- Keep the local OCR and evidence package as the default input. If the user separately opts into photo transfer, attach up to three automatically selected, locally resized package photos to the same assist call; do not require a second image-selection/call for the first visual pass. Text-only remains the default, and no photo is transmitted without that explicit choice.
+- Keep all returned package readings tentative, linked to original OCR observations and separate from `PackageData` facts and deterministic calculations. Vision observations are stored as `origin: vision` with their capture provenance only. Never round-trip model output through the OCR parser.
+- Bound the path to 900 KB per client-compressed image, three images, 2.7 MB combined sanitized bytes, 4.3 MB application body, 4.5 MB provider contents and the existing response/output/deadline limits. Preserve explicit paid authorization and do not retry the observed free-tier HTTP 503.
+- This is a feasible integration path, not an accuracy finding. It remains unverified with a live model until the provider returns a response; model candidate quality and photo-assisted recovery must be compared on the same annotated products before changing confirmed-read policy.
+
+## 22 October 2026 — keep image-only model readings tentative and image-bound
+
+- Extend the existing assist output contract to allow a candidate or claim to reference either exact OCR spans or an image whose bytes were included in that same provider request. Validate image IDs at both the provider boundary and the inference validator; metadata-only local handles do not authorize visual claims.
+- Preserve model-reported visible text and optional normalized image region as unverified evidence. Numeric checks can compare the model's stated number against that same reported text, but this is not independent visual verification. Keep model candidates out of confirmed package facts, the OCR parser, and deterministic calculations.
+- A single free-tier `gemini-3.8-flash` text-only run on the real Maggi OCR transcript returned HTTP 503 after 10.012 seconds, with no output or token usage. No image, profile, conversation or paid project was sent. Keep the current 16/16 local nutrition baseline as the scored result; Gemini is not scored. The app stays disabled until its owner enables it.
+
+## 22 October 2026 — bound retries to free-tier 503 recovery
+
+- The current `@google/genai` SDK counts `retryOptions.attempts` including the original request; `1` means no retry. Google's API guidance classifies 503 as temporary service overload/unavailability and recommends exponential backoff.
+- Permit at most two total attempts for a free-tier application request, retrying only HTTP 503 once after a short jittered delay. Keep paid application calls and synthetic benchmark probes single-attempt. The paid path stays single-attempt so the local spend ledger's one-call reservation cannot undercount a duplicated paid provider attempt.
+- This change does not enable Gemini or make another provider request. Verify retry behavior offline with a stubbed fetch; don't count a mocked 503→success as live provider acceptance.

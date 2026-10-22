@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "kind": "local-semantic-retrieval-boundary-diagnostic",
-  "generatedAt": "2026-10-21T21:25:56.482Z",
-  "queryCount": 13,
+  "generatedAt": "2026-10-22T03:22:04.526Z",
+  "queryCount": 16,
   "modelMode": "pinned local MiniLM embeddings plus lexical ranking",
   "results": [
     {
@@ -146,6 +146,38 @@
       "semanticScore": null,
       "lexicalScore": null,
       "hybridScore": null,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "beta-glucan-oats-unsupported-effect",
+      "relevant": [],
+      "status": "no_match",
+      "topSourceId": null,
+      "semanticScore": null,
+      "lexicalScore": null,
+      "hybridScore": null,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "beta-glucan-oats-minimal-query",
+      "relevant": [],
+      "status": "no_match",
+      "topSourceId": null,
+      "semanticScore": null,
+      "lexicalScore": null,
+      "hybridScore": null,
+      "expectedBehaviorMet": true
+    },
+    {
+      "id": "narrative-ins-322-identity",
+      "relevant": [
+        "fao-322"
+      ],
+      "status": "ok",
+      "topSourceId": "fao-322",
+      "semanticScore": 0.27049,
+      "lexicalScore": 1,
+      "hybridScore": 1.34344,
       "expectedBehaviorMet": true
     }
   ],

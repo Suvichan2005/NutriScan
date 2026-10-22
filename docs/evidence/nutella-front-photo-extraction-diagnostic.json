@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-real-photo-extraction-diagnostic",
+  "generatedAt": "2026-10-22T02:23:35.860Z",
+  "captureTool": "Playwright using installed Chrome",
+  "appOrigin": "http://127.0.0.1:3413",
+  "acceptanceMode": "loopback local application",
+  "photoFile": "nutella-label-off-3017620422003.jpg",
+  "limitations": [
+    "OCR field measurements use one source image and a single human visual read, not independent adjudication or a held-out accuracy estimate.",
+    "Axe results are automated checks, not full accessibility conformance.",
+    "The browser receipt counts Gemini route invocations, not downstream provider calls or provider cost."
+  ],
+  "screenshots": "docs\\evidence\\private\\nutella-front-photo-extraction-diagnostic",
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "realPhotoHashVerified": true,
+      "packageName": "nutella 339KJ",
+      "brand": null,
+      "ingredients": [],
+      "nutrientCount": 0,
+      "nutrients": [],
+      "observationCount": 21,
+      "ocrLineCount": 20,
+      "wordBoxCount": 53,
+      "ocrEngineSelections": [
+        {
+          "name": "tesseract.js",
+          "language": "eng",
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "preparedImage": {
+            "width": 1688,
+            "height": 3000
+          },
+          "cropPercent": null
+        },
+        {
+          "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+          "language": "en",
+          "runId": "f8965c55-c34d-414a-8805-50240f08abe8",
+          "preparedImage": {
+            "width": 1688,
+            "height": 3000
+          },
+          "cropPercent": null
+        }
+      ],
+      "ocrLines": [
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "|        |  |   |\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "I\\                                    -\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "—-\n\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "DN                              ® 9\n\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "ER\n\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "oO\n\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "p>    4                        oY)\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "t  /                  Mie\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "\\W     /     :     J\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "y ha      ,   (8.2  x           Zorg   p\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "4 AS oN         ) 4  i\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": "- vif ART     :  I<       “)\n"
+        },
+        {
+          "runId": "84863391-ffa4-4384-857c-23cad4440c1a",
+          "text": ".                   i       14\n"
+        },
+        {
+          "runId": "f8965c55-c34d-414a-8805-50240f08abe8",
+          "text": "R"
+        },
+        {
+          "runId": "f8965c55-c34d-414a-8805-50240f08abe8",
+          "text": "159"
+        },
+        {
+          "runId": "f8965c55-c34d-414a-8805-50240f08abe8",
+          "text": "nutella 339KJ"
+        },
+        {
+          "runId": "f8965c55-c34d-414a-8805-50240f08abe8",
+          "text": "81kcal"
+        },
+        {
+          "runId": "f8965c55-c34d-414a-8805-50240f08abe8",
+          "text": "FERRERO"
+        },
+        {
+          "runId": "f8965c55-c34d-414a-8805-50240f08abe8",
+          "text": "2278KJ/546 100g"
+        },
+        {
+          "runId": "f8965c55-c34d-414a-8805-50240f08abe8",
+          "text": "29"
+        }
+      ],
+      "parserDiagnostics": [],
+      "screenshots": "docs\\evidence\\private\\nutella-front-photo-extraction-diagnostic",
+      "externalRequests": [],
+      "paddleModelAssetRequestCount": 2,
+      "geminiRouteRequests": [],
+      "pageErrors": []
+    }
+  ]
+}

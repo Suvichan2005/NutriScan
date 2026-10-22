@@ -1,0 +1,2031 @@
+{
+  "schemaVersion": 1,
+  "kind": "indian-market-two-photo-local-ocr-product-journey",
+  "generatedAt": "2026-10-22T05:50:04.018Z",
+  "appOrigin": "http://127.0.0.1:3413",
+  "browser": "Installed Chrome via Playwright, visible window, fresh context",
+  "datasetSplit": "exploratory development; one product group; single manual reference from the same package source; not independent accuracy",
+  "sourceProduct": "Maggi noodles barcode 8901058022193; OFF image CC BY-SA, exact attribution/reuse review pending; source bytes remain local and uncommitted",
+  "sourcePhotos": [
+    {
+      "key": "nutrition",
+      "url": "https://images.openfoodfacts.org/images/products/890/105/802/2193/nutrition_en.13.full.jpg",
+      "sha256": "29f2842018da1d2edc1295dff71f3f8927def7b2e46a6e49aaa266276aa5e620",
+      "bytes": 1018344
+    },
+    {
+      "key": "ingredients",
+      "url": "https://images.openfoodfacts.org/images/products/890/105/802/2193/ingredients_en.19.full.jpg",
+      "sha256": "40d5a13f6c42edeb0bfc4ca1f88e97c3c5400fb59ac093631d4ff599d16b1996",
+      "bytes": 436248
+    }
+  ],
+  "initialQuestion": "How much protein is in a 70 g serving?",
+  "initialAnswer": "For 70 g: 5.74 g protein.",
+  "followupQuestion": "What allergen warnings did the package state?",
+  "followupAnswer": "The recorded label text says: Allergen Note: Contains Wheat & Nut. | May contain Milk, Oats and Soy. These are package-reading observations, not independently verified product facts; OCR or transcription may be wrong.",
+  "package": {
+    "photoCount": 2,
+    "photoRolesWereUnspecified": true,
+    "packageName": "Unidentified package",
+    "identityWarnings": [
+      "Product name was not established from readable label text; enter a name or check a verified product identifier.",
+      "An OCR name candidate appeared only in photos that also contain nutrition tables, so package identity remains unresolved; add a front-of-pack photo or a verified product identifier."
+    ],
+    "brand": null,
+    "barcode": null,
+    "serving": {
+      "value": 70,
+      "unit": "g"
+    },
+    "ingredientSectionCount": 15,
+    "ingredientLinesLinkedToPhoto": 15,
+    "ingredientLinesLinkedToSourceOcr": 15,
+    "ingredientSectionVisible": true,
+    "ingredientTagCount": 15,
+    "allergens": [
+      "Allergen Note: Contains Wheat & Nut.",
+      "May contain Milk, Oats and Soy."
+    ],
+    "allergenLinesLinkedToPhoto": 2,
+    "observedIngredientSignals": {
+      "wheat": true,
+      "palm oil": true,
+      "iodized salt": false
+    },
+    "observedAllergenSignals": {
+      "wheat": true,
+      "nut": true,
+      "milk": true,
+      "oats": true,
+      "soy": true
+    },
+    "additives": [],
+    "nutritionFieldCases": 16,
+    "exactValueUnitBasis": 16,
+    "acceptedWrong": 0,
+    "withheld": 0,
+    "omitted": 0,
+    "totalUnusable": 0,
+    "usableCoverage": "16/16",
+    "nutrients": [
+      {
+        "key": "energy",
+        "value": 384,
+        "unit": "kcal",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "energy",
+        "value": 269,
+        "unit": "kcal",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "protein",
+        "value": 8.2,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "protein",
+        "value": 5.7,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "carbohydrate",
+        "value": 59.6,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "carbohydrate",
+        "value": 41.7,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "sugars",
+        "value": 1.8,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "sugars",
+        "value": 1.3,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "addedSugars",
+        "value": 1.1,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "addedSugars",
+        "value": 0.8,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "fat",
+        "value": 12.5,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "fat",
+        "value": 8.8,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "saturatedFat",
+        "value": 8.2,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "saturatedFat",
+        "value": 5.8,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "sodium",
+        "value": 1000,
+        "unit": "mg",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "sodium",
+        "value": 700,
+        "unit": "mg",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      }
+    ],
+    "ocrLineCount": 59,
+    "wordBoxCount": 380,
+    "engines": [
+      "tesseract.js",
+      "@paddleocr/paddleocr-js/PP-OCRv6-small"
+    ],
+    "parserDecisionCounts": {
+      "rejected": 3,
+      "accepted": 8
+    },
+    "privacyDisclosureVisible": true
+  },
+  "coverageFirstEvaluation": {
+    "productGroups": [
+      {
+        "productGroup": "Maggi noodles 8901058022193",
+        "photos": 2,
+        "split": "exploratory development; the photos and repeated serving columns are one product group, not independent samples",
+        "nutrition": {
+          "denominator": 16,
+          "correctAccepted": 16,
+          "incorrectAccepted": 0,
+          "omitted": 0,
+          "withheld": 0,
+          "totalUnusable": 0,
+          "usableCoverage": "16/16",
+          "byBasis": {
+            "per100g": {
+              "denominator": 8,
+              "correctAccepted": 8,
+              "incorrectAccepted": 0,
+              "omitted": 0,
+              "withheld": 0
+            },
+            "per70gServing": {
+              "denominator": 8,
+              "correctAccepted": 8,
+              "incorrectAccepted": 0,
+              "omitted": 0,
+              "withheld": 0
+            }
+          },
+          "fields": [
+            {
+              "nutrient": "energy",
+              "expected": {
+                "value": 384,
+                "unit": "kcal",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 384,
+                  "unit": "kcal",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 384,
+                  "unit": "kcal",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "energy",
+              "expected": {
+                "value": 269,
+                "unit": "kcal",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 269,
+                  "unit": "kcal",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 269,
+                  "unit": "kcal",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "protein",
+              "expected": {
+                "value": 8.2,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 8.2,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 8.2,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "protein",
+              "expected": {
+                "value": 5.7,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 5.7,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 5.7,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "carbohydrate",
+              "expected": {
+                "value": 59.6,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 59.6,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 59.6,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "carbohydrate",
+              "expected": {
+                "value": 41.7,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 41.7,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 41.7,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "sugars",
+              "expected": {
+                "value": 1.8,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 1.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 1.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "sugars",
+              "expected": {
+                "value": 1.3,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 1.3,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 1.3,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "addedSugars",
+              "expected": {
+                "value": 1.1,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 1.1,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 1.1,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "addedSugars",
+              "expected": {
+                "value": 0.8,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 0.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 0.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "fat",
+              "expected": {
+                "value": 12.5,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 12.5,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 12.5,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "fat",
+              "expected": {
+                "value": 8.8,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 8.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 8.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "saturatedFat",
+              "expected": {
+                "value": 8.2,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 8.2,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 8.2,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "saturatedFat",
+              "expected": {
+                "value": 5.8,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 5.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 5.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "sodium",
+              "expected": {
+                "value": 1000,
+                "unit": "mg",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 1000,
+                  "unit": "mg",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 1000,
+                  "unit": "mg",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "sodium",
+              "expected": {
+                "value": 700,
+                "unit": "mg",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 700,
+                  "unit": "mg",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 700,
+                  "unit": "mg",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            }
+          ]
+        },
+        "nonNutrient": {
+          "productIdentity": {
+            "denominator": 1,
+            "expected": "Maggi noodles (same OFF product association; not independent image adjudication)",
+            "actual": "Unidentified package",
+            "correctAccepted": 0,
+            "incorrectAccepted": 0,
+            "omitted": 0,
+            "withheld": 1,
+            "candidateWithheldBy": "candidate appears only in OCR from photos that also contain nutrition tables; front or verified identifier is absent"
+          },
+          "servingDeclaration": {
+            "denominator": 1,
+            "expected": {
+              "value": 70,
+              "unit": "g"
+            },
+            "actual": {
+              "value": 70,
+              "unit": "g"
+            },
+            "correctAccepted": 1,
+            "incorrectAccepted": 0,
+            "omitted": 0,
+            "withheld": 0
+          },
+          "ingredients": {
+            "completeListsExpected": 1,
+            "completeListAccuracy": null,
+            "status": "not independently scored; no adjudicated transcript",
+            "sourceLinkedSegments": 15,
+            "availableSegments": 15,
+            "correctSegments": null,
+            "incorrectSegments": null,
+            "omittedIngredients": null,
+            "withheldIngredients": null
+          },
+          "allergens": {
+            "denominator": 2,
+            "correctAccepted": 2,
+            "incorrectAccepted": 0,
+            "omitted": 0,
+            "withheld": 0,
+            "reference": "same-image visual check by one reviewer; not independent adjudication",
+            "observations": [
+              "Allergen Note: Contains Wheat & Nut.",
+              "May contain Milk, Oats and Soy."
+            ]
+          }
+        }
+      }
+    ],
+    "acrossProductGroups": {
+      "productGroups": 1,
+      "independentProductCategories": [
+        "noodles"
+      ],
+      "nutrition": {
+        "denominator": 16,
+        "correctAccepted": 16,
+        "incorrectAccepted": 0,
+        "omitted": 0,
+        "withheld": 0,
+        "totalUnusable": 0,
+        "usableCoverage": "16/16"
+      },
+      "note": "Totals equal one product group; repeated columns and two photos are not counted as independent products."
+    },
+    "candidateLevelRecovery": {
+      "unusableFields": [],
+      "allFields": [
+        {
+          "nutrient": "energy",
+          "expected": {
+            "value": 384,
+            "unit": "kcal",
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "d077353f-bc6f-49bc-ba92-404fd0340c30",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "nergy, ,13% total Energy (kcal) 384 269 13%",
+              "numericWordTokens": [
+                "384",
+                "269"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "energy",
+          "expected": {
+            "value": 269,
+            "unit": "kcal",
+            "basis": {
+              "amount": 70,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "d077353f-bc6f-49bc-ba92-404fd0340c30",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "nergy, ,13% total Energy (kcal) 384 269 13%",
+              "numericWordTokens": [
+                "384",
+                "269"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "protein",
+          "expected": {
+            "value": 8.2,
+            "unit": "g",
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "7d71935d-6ec2-44c3-a6e4-e9a12abd2580",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "ted fat, 5% Protein (g) 8.2 5.7 11%",
+              "numericWordTokens": [
+                "8.2",
+                "5.7"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "protein",
+          "expected": {
+            "value": 5.7,
+            "unit": "g",
+            "basis": {
+              "amount": 70,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "7d71935d-6ec2-44c3-a6e4-e9a12abd2580",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "ted fat, 5% Protein (g) 8.2 5.7 11%",
+              "numericWordTokens": [
+                "8.2",
+                "5.7"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "carbohydrate",
+          "expected": {
+            "value": 59.6,
+            "unit": "g",
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "4ebe0ca2-84f7-42cb-973f-428347fda6db",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "tesseract.js",
+              "text": "Carbohydrate (g)\n",
+              "numericWordTokens": []
+            },
+            {
+              "observationId": "bd27aecd-92c2-4b7d-b1ce-a7c84513cdd7",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "5% sodium. Carbohydrate (g) 59.6 41.7 16%",
+              "numericWordTokens": [
+                "59.6",
+                "41.7"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "carbohydrate",
+          "expected": {
+            "value": 41.7,
+            "unit": "g",
+            "basis": {
+              "amount": 70,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "4ebe0ca2-84f7-42cb-973f-428347fda6db",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "tesseract.js",
+              "text": "Carbohydrate (g)\n",
+              "numericWordTokens": []
+            },
+            {
+              "observationId": "bd27aecd-92c2-4b7d-b1ce-a7c84513cdd7",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "5% sodium. Carbohydrate (g) 59.6 41.7 16%",
+              "numericWordTokens": [
+                "59.6",
+                "41.7"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "sugars",
+          "expected": {
+            "value": 1.8,
+            "unit": "g",
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "29630bf4-faf5-4b24-8140-11cf25ac75c2",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "tesseract.js",
+              "text": "~Total Sugars (g)\n\n",
+              "numericWordTokens": []
+            },
+            {
+              "observationId": "53fc5087-d930-4544-bda2-a011a37e63ee",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "es -Total Sugars (g) 1.8 1.3 1%",
+              "numericWordTokens": [
+                "1.8",
+                "1.3"
+              ]
+            },
+            {
+              "observationId": "0c9cb751-3f19-4ddc-a5be-26c8d10b5a45",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "g* -Added Sugars (g) 1.1 0.8",
+              "numericWordTokens": [
+                "1.1",
+                "0.8"
+              ]
+            },
+            {
+              "observationId": "aa280423-7164-4f2f-9fbb-71a7eedb9a7a",
+              "imageId": "8c86c8af-d193-4134-9c72-acf5153f81a4",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "Sugar",
+              "numericWordTokens": []
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "sugars",
+          "expected": {
+            "value": 1.3,
+            "unit": "g",
+            "basis": {
+              "amount": 70,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "29630bf4-faf5-4b24-8140-11cf25ac75c2",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "tesseract.js",
+              "text": "~Total Sugars (g)\n\n",
+              "numericWordTokens": []
+            },
+            {
+              "observationId": "53fc5087-d930-4544-bda2-a011a37e63ee",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "es -Total Sugars (g) 1.8 1.3 1%",
+              "numericWordTokens": [
+                "1.8",
+                "1.3"
+              ]
+            },
+            {
+              "observationId": "0c9cb751-3f19-4ddc-a5be-26c8d10b5a45",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "g* -Added Sugars (g) 1.1 0.8",
+              "numericWordTokens": [
+                "1.1",
+                "0.8"
+              ]
+            },
+            {
+              "observationId": "aa280423-7164-4f2f-9fbb-71a7eedb9a7a",
+              "imageId": "8c86c8af-d193-4134-9c72-acf5153f81a4",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "Sugar",
+              "numericWordTokens": []
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "addedSugars",
+          "expected": {
+            "value": 1.1,
+            "unit": "g",
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "0c9cb751-3f19-4ddc-a5be-26c8d10b5a45",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "g* -Added Sugars (g) 1.1 0.8",
+              "numericWordTokens": [
+                "1.1",
+                "0.8"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "addedSugars",
+          "expected": {
+            "value": 0.8,
+            "unit": "g",
+            "basis": {
+              "amount": 70,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "0c9cb751-3f19-4ddc-a5be-26c8d10b5a45",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "g* -Added Sugars (g) 1.1 0.8",
+              "numericWordTokens": [
+                "1.1",
+                "0.8"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "fat",
+          "expected": {
+            "value": 12.5,
+            "unit": "g",
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "c02b93d3-4ee9-438c-b5fa-dff4d382a024",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "tesseract.js",
+              "text": "~Trans Fat (g) (ot more than) | 0.13  0.\n",
+              "numericWordTokens": [
+                "0.13",
+                "0."
+              ]
+            },
+            {
+              "observationId": "7d71935d-6ec2-44c3-a6e4-e9a12abd2580",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "ted fat, 5% Protein (g) 8.2 5.7 11%",
+              "numericWordTokens": [
+                "8.2",
+                "5.7"
+              ]
+            },
+            {
+              "observationId": "4ff45cdc-ba7f-44ad-91f4-61c51c3305b0",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "S Total Fat (g) 12.5 8.8 13%",
+              "numericWordTokens": [
+                "12.5",
+                "8.8"
+              ]
+            },
+            {
+              "observationId": "e718aa50-ad7b-457c-9191-fcf9f56e2e61",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "odized salt, -Trans Fat (g) (not more than) 0.130.10",
+              "numericWordTokens": [
+                "0.130.10"
+              ]
+            },
+            {
+              "observationId": "c398dc0e-286e-4f8d-895c-ec4adcd5720e",
+              "imageId": "8c86c8af-d193-4134-9c72-acf5153f81a4",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "INGREDIENTS -Saturated Fat (g)(not more than) Total Fat (g) 12.58.813% 8.2 5.829%",
+              "numericWordTokens": [
+                "8.2"
+              ]
+            },
+            {
+              "observationId": "363faf42-abb8-42f6-b68c-1124465c33ff",
+              "imageId": "8c86c8af-d193-4134-9c72-acf5153f81a4",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "Noodles: Refined wheat flour -Trans Fat (g)(notmor than) 0.130.10",
+              "numericWordTokens": [
+                "0.130.10"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "fat",
+          "expected": {
+            "value": 8.8,
+            "unit": "g",
+            "basis": {
+              "amount": 70,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "c02b93d3-4ee9-438c-b5fa-dff4d382a024",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "tesseract.js",
+              "text": "~Trans Fat (g) (ot more than) | 0.13  0.\n",
+              "numericWordTokens": [
+                "0.13",
+                "0."
+              ]
+            },
+            {
+              "observationId": "7d71935d-6ec2-44c3-a6e4-e9a12abd2580",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "ted fat, 5% Protein (g) 8.2 5.7 11%",
+              "numericWordTokens": [
+                "8.2",
+                "5.7"
+              ]
+            },
+            {
+              "observationId": "4ff45cdc-ba7f-44ad-91f4-61c51c3305b0",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "S Total Fat (g) 12.5 8.8 13%",
+              "numericWordTokens": [
+                "12.5",
+                "8.8"
+              ]
+            },
+            {
+              "observationId": "e718aa50-ad7b-457c-9191-fcf9f56e2e61",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "odized salt, -Trans Fat (g) (not more than) 0.130.10",
+              "numericWordTokens": [
+                "0.130.10"
+              ]
+            },
+            {
+              "observationId": "c398dc0e-286e-4f8d-895c-ec4adcd5720e",
+              "imageId": "8c86c8af-d193-4134-9c72-acf5153f81a4",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "INGREDIENTS -Saturated Fat (g)(not more than) Total Fat (g) 12.58.813% 8.2 5.829%",
+              "numericWordTokens": [
+                "8.2"
+              ]
+            },
+            {
+              "observationId": "363faf42-abb8-42f6-b68c-1124465c33ff",
+              "imageId": "8c86c8af-d193-4134-9c72-acf5153f81a4",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "Noodles: Refined wheat flour -Trans Fat (g)(notmor than) 0.130.10",
+              "numericWordTokens": [
+                "0.130.10"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "saturatedFat",
+          "expected": {
+            "value": 8.2,
+            "unit": "g",
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "c76fd9a8-e2a7-4fdd-a9f7-c1b0079d7564",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "tesseract.js",
+              "text": "~Saturated Fat (g) (rot more han  82 58\n",
+              "numericWordTokens": [
+                "82",
+                "58"
+              ]
+            },
+            {
+              "observationId": "d4c7d33f-df82-4b6b-a9ef-038364423e4f",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "wheat flour -Saturated Fat (g)(not more than) 8.2 5.8 29%",
+              "numericWordTokens": [
+                "8.2",
+                "5.8"
+              ]
+            },
+            {
+              "observationId": "c398dc0e-286e-4f8d-895c-ec4adcd5720e",
+              "imageId": "8c86c8af-d193-4134-9c72-acf5153f81a4",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "INGREDIENTS -Saturated Fat (g)(not more than) Total Fat (g) 12.58.813% 8.2 5.829%",
+              "numericWordTokens": [
+                "8.2"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "saturatedFat",
+          "expected": {
+            "value": 5.8,
+            "unit": "g",
+            "basis": {
+              "amount": 70,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "correct-accepted",
+          "rawRowEvidence": [
+            {
+              "observationId": "c76fd9a8-e2a7-4fdd-a9f7-c1b0079d7564",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "tesseract.js",
+              "text": "~Saturated Fat (g) (rot more han  82 58\n",
+              "numericWordTokens": [
+                "82",
+                "58"
+              ]
+            },
+            {
+              "observationId": "d4c7d33f-df82-4b6b-a9ef-038364423e4f",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "wheat flour -Saturated Fat (g)(not more than) 8.2 5.8 29%",
+              "numericWordTokens": [
+                "8.2",
+                "5.8"
+              ]
+            },
+            {
+              "observationId": "c398dc0e-286e-4f8d-895c-ec4adcd5720e",
+              "imageId": "8c86c8af-d193-4134-9c72-acf5153f81a4",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "INGREDIENTS -Saturated Fat (g)(not more than) Total Fat (g) 12.58.813% 8.2 5.829%",
+              "numericWordTokens": [
+                "8.2"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": true,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "sodium",
+          "expected": {
+            "value": 1000,
+            "unit": "mg",
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "withheld",
+          "rawRowEvidence": [
+            {
+              "observationId": "f9e995f2-bc4d-4e81-9ae5-fc5a53b67719",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "tesseract.js",
+              "text": "Sodium (mg)\n",
+              "numericWordTokens": []
+            },
+            {
+              "observationId": "bd27aecd-92c2-4b7d-b1ce-a7c84513cdd7",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "5% sodium. Carbohydrate (g) 59.6 41.7 16%",
+              "numericWordTokens": [
+                "59.6",
+                "41.7"
+              ]
+            },
+            {
+              "observationId": "c1e27909-a04c-4ff0-9cf2-1b78562423e6",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "eners(508 & Sodium (mg) 1000.0700.0 29%",
+              "numericWordTokens": [
+                "1000.0700.0"
+              ]
+            },
+            {
+              "observationId": "32cbe3f5-d186-48e0-8f5c-7e33cba8d0e1",
+              "imageId": "8c86c8af-d193-4134-9c72-acf5153f81a4",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "Wheat gluten,Thickeners (508 & Maidal, Palm oil, lodized salt, Sodium (mg) 1000.0/70.00 29%",
+              "numericWordTokens": [
+                "1000.0/70.00"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": false,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [
+            {
+              "id": "a1739cfc-dc9d-4dc8-83ae-bf8ff4e60be8",
+              "text": "eners(508 & Sodium (mg) 1000.0 700.0 29%",
+              "derivedFromObservationIds": [
+                "c1e27909-a04c-4ff0-9cf2-1b78562423e6"
+              ]
+            }
+          ],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        },
+        {
+          "nutrient": "sodium",
+          "expected": {
+            "value": 700,
+            "unit": "mg",
+            "basis": {
+              "amount": 70,
+              "unit": "g"
+            }
+          },
+          "currentOutcome": "correct-accepted",
+          "priorReceiptOutcome": "withheld",
+          "rawRowEvidence": [
+            {
+              "observationId": "f9e995f2-bc4d-4e81-9ae5-fc5a53b67719",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "tesseract.js",
+              "text": "Sodium (mg)\n",
+              "numericWordTokens": []
+            },
+            {
+              "observationId": "bd27aecd-92c2-4b7d-b1ce-a7c84513cdd7",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "5% sodium. Carbohydrate (g) 59.6 41.7 16%",
+              "numericWordTokens": [
+                "59.6",
+                "41.7"
+              ]
+            },
+            {
+              "observationId": "c1e27909-a04c-4ff0-9cf2-1b78562423e6",
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "eners(508 & Sodium (mg) 1000.0700.0 29%",
+              "numericWordTokens": [
+                "1000.0700.0"
+              ]
+            },
+            {
+              "observationId": "32cbe3f5-d186-48e0-8f5c-7e33cba8d0e1",
+              "imageId": "8c86c8af-d193-4134-9c72-acf5153f81a4",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "text": "Wheat gluten,Thickeners (508 & Maidal, Palm oil, lodized salt, Sodium (mg) 1000.0/70.00 29%",
+              "numericWordTokens": [
+                "1000.0/70.00"
+              ]
+            }
+          ],
+          "correctDigitsSubstringPresentInSameRow": true,
+          "exactStandaloneValueTokenPresentInSameRow": false,
+          "candidateAvailable": {
+            "correctValueAndUnit": true,
+            "correctValueUnitAndBasisAccepted": true
+          },
+          "reconstructedCandidateTexts": [
+            {
+              "id": "a1739cfc-dc9d-4dc8-83ae-bf8ff4e60be8",
+              "text": "eners(508 & Sodium (mg) 1000.0 700.0 29%",
+              "derivedFromObservationIds": [
+                "c1e27909-a04c-4ff0-9cf2-1b78562423e6"
+              ]
+            }
+          ],
+          "relevantHeaderEvidence": [
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "erve. If a serve is 70 g"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "INFORMATION 100g serve Per serve"
+            },
+            {
+              "imageId": "7bfacd29-44e3-4b69-bd2f-b322313168cc",
+              "text": "tors (501(i)& per serve %RDA\""
+            }
+          ],
+          "blockingStage": null
+        }
+      ],
+      "priorReceiptCompared": "docs/evidence/india-maggi-multi-photo-flow-before-sodium-recovery.json",
+      "samePhotoFingerprints": true,
+      "note": "Digits found inside a fused token are only a character-substring signal, not proof of standalone OCR recognition. Reconstructed candidates retain links to the original OCR row."
+    },
+    "comparableBehaviorChange": {
+      "metric": "complete exact nutrient value-unit-basis fields",
+      "before": {
+        "denominator": 16,
+        "correctAccepted": 14,
+        "incorrectAccepted": 0,
+        "omitted": 0,
+        "withheld": 2,
+        "totalUnusable": 2
+      },
+      "after": {
+        "denominator": 16,
+        "correctAccepted": 16,
+        "incorrectAccepted": 0,
+        "omitted": 0,
+        "withheld": 0,
+        "totalUnusable": 0
+      },
+      "samePhotoFingerprints": true,
+      "automaticallyRecoveredFields": [
+        {
+          "nutrient": "sodium",
+          "expected": {
+            "value": 1000,
+            "unit": "mg",
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            }
+          },
+          "before": "withheld",
+          "after": "correct-accepted"
+        },
+        {
+          "nutrient": "sodium",
+          "expected": {
+            "value": 700,
+            "unit": "mg",
+            "basis": {
+              "amount": 70,
+              "unit": "g"
+            }
+          },
+          "before": "withheld",
+          "after": "correct-accepted"
+        }
+      ],
+      "automaticWithoutManualCorrection": true,
+      "accuracyClaim": "Within-image exploratory comparison only; nutrient annotations are a single visual read from the same product source, not independent adjudication or held-out evaluation."
+    },
+    "referenceMethod": "Nutrient reference was transcribed from the same package source, not independently adjudicated. Identity is evaluated against the associated Maggi product record; OCR-only package identity remains unverified. Ingredient exactness is unscored. Allergen text had one same-image visual check."
+  },
+  "viewports": [
+    {
+      "viewport": "390x844",
+      "axeViolations": [],
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": "1440x900",
+      "axeViolations": [],
+      "horizontalOverflow": false
+    }
+  ],
+  "localApiRoutes": [
+    "/api/status"
+  ],
+  "geminiRouteRequests": [],
+  "externalRequests": [
+    {
+      "method": "GET",
+      "origin": "https://paddle-model-ecology.bj.bcebos.com"
+    },
+    {
+      "method": "GET",
+      "origin": "https://paddle-model-ecology.bj.bcebos.com"
+    }
+  ],
+  "paddleModelAssetBytes": 31211520,
+  "pageErrors": [],
+  "screenshots": ".data/indian-hindi-label-probe/multi-photo-acceptance/",
+  "limitations": [
+    "Both package photos are English-only and from one noodles product group.",
+    "Reference readings were manually transcribed from the same source package, not independently adjudicated.",
+    "Recovered ingredient segments still contain recognition errors and are not independently scored for exact ingredient transcription.",
+    "This run does not establish population accuracy or regional Indian language readiness.",
+    "A community record or product identity is not verified by matching words in a package photograph."
+  ],
+  "commitUnderTest": "6bbff54 + uncommitted working tree"
+}

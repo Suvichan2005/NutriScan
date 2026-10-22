@@ -1,0 +1,631 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-intake-to-audit-design-review",
+  "generatedAt": "2026-10-22T02:14:08.629Z",
+  "captureTool": "Playwright using installed Chrome",
+  "appOrigin": "http://127.0.0.1:3413",
+  "acceptanceMode": "loopback local application",
+  "photoFile": "nutella-nutrition-es-off-3017620422003.jpg",
+  "limitations": [
+    "OCR field measurements use one source image and a single human visual read, not independent adjudication or a held-out accuracy estimate.",
+    "Axe results are automated checks, not full accessibility conformance.",
+    "The browser receipt counts Gemini route invocations, not downstream provider calls or provider cost."
+  ],
+  "screenshots": "docs\\evidence\\private\\core-journey-spanish-product-acceptance",
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "initialQuestionRetained": true,
+      "realPhotoHashVerified": true,
+      "cropCoordinates": [],
+      "selectedNameLineConfidence": null,
+      "packageName": "Unidentified package",
+      "ocrObservations": 22,
+      "ocrEngineSelections": [
+        {
+          "imageId": "0b091c1b-9311-4ca9-ba8b-13c8a208cb92",
+          "name": "tesseract.js",
+          "language": "eng"
+        },
+        {
+          "imageId": "0b091c1b-9311-4ca9-ba8b-13c8a208cb92",
+          "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+          "language": "es"
+        }
+      ],
+      "exportedOcrLines": 22,
+      "exportedOcrWordBoxes": 94,
+      "ocrWordGeometryWithinCapture": true,
+      "parsedNutrientRows": 3,
+      "annotatedFieldCounts": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "expected": 7,
+        "exact": 3,
+        "incorrect": 0,
+        "omitted": 0,
+        "withheld": 4,
+        "fields": [
+          {
+            "key": "energy",
+            "expectedValue": 100,
+            "expectedUnit": "kcal",
+            "emittedValue": 400,
+            "emittedUnit": "kJ",
+            "emittedBasis": {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "protein",
+            "expectedValue": 1,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "fat",
+            "expectedValue": 6,
+            "expectedUnit": "g",
+            "emittedValue": 6,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "ocrNumericCandidateCount": 2,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-basis",
+                  "missing-unit"
+                ]
+              },
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "saturatedFat",
+            "expectedValue": 2,
+            "expectedUnit": "g",
+            "emittedValue": 2,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "carbohydrate",
+            "expectedValue": 10,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "no-numeric-value"
+                ]
+              },
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "sugars",
+            "expectedValue": 10,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "sodium",
+            "expectedValue": 10,
+            "expectedUnit": "mg",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "ocrNumericCandidateCount": 0,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "no-numeric-value"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "stageDiagnostics": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "textDetection": {
+          "observedLineBoxes": 22,
+          "observedWordBoxes": 94,
+          "precisionRecall": null,
+          "limitation": "No independently annotated text-region boxes are available; observed boxes are not detection precision or recall."
+        },
+        "recognition": {
+          "annotatedFieldsWithExactNumericCandidate": 2,
+          "annotatedFieldsWithExactUnitCandidate": 2,
+          "annotatedFieldsWithExactBasisCandidate": 7,
+          "expectedFields": 7
+        },
+        "tableStructure": {
+          "annotatedFieldsWithMultipleNumericCandidates": 1,
+          "annotatedFieldsWithoutParserDiagnostic": 0,
+          "rowColumnAssociationScored": false,
+          "limitation": "Line and word geometry are retained, but no gold row or column regions exist for independent association scoring."
+        },
+        "parser": {
+          "annotatedFieldsWithDiagnostic": 7,
+          "rejectedFieldCount": 5,
+          "rejectionReasonOccurrences": {
+            "missing-unit": 4,
+            "missing-basis": 1,
+            "no-numeric-value": 2
+          }
+        }
+      },
+      "answerDisclosureMarkedUnverified": true,
+      "annotatedFieldScoreConserved": true,
+      "noIncorrectAnnotatedFields": true,
+      "addPhotoActionVisible": true,
+      "addPhotoPickerOpened": true,
+      "calculatedNutrients": 3,
+      "plainLanguageUnknownSummary": "Some nutrition entries need checking. NutriScan left unclear amounts out of calculations rather than guessing.\n\nThe product name was not established from the readable package text.",
+      "summaryHidesParserJargon": true,
+      "labelNotesInitiallyCollapsed": true,
+      "labelNotesDisclosure": "Label-reading notes (8)",
+      "labelNotesPreserveParserDetails": true,
+      "exactSaturatedFatObservation": true,
+      "localOcrRegionInspectionWorks": true,
+      "localOcrRegionInspectionMadeNoHttpRequest": true,
+      "uncertaintyFollowUpUsesPackageEvidence": true,
+      "uncertaintyAnswerLength": 340,
+      "followUpMessages": 3,
+      "correctionApplied": true,
+      "correctionBasisMatchesObserved": true,
+      "originalObservationsRetained": true,
+      "portion": "50",
+      "fiftyGramCalculation": true,
+      "ocrReadingMarkedUnverified": true,
+      "correctionMarkedUnverified": true,
+      "syntheticProfileOnly": true,
+      "personalizedQuestionRetained": true,
+      "personalCarbohydrateTargetWithheld": true,
+      "clinicianContextVisible": true,
+      "diabetesPlanningOptionsVisible": true,
+      "niddkSourceLinked": true,
+      "noNonLoopbackRequests": true,
+      "nonLoopbackRequestOrigins": [],
+      "paddleModelAssetRequests": [
+        {
+          "origin": "https://paddle-model-ecology.bj.bcebos.com",
+          "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_det_onnx_infer.tar",
+          "method": "GET"
+        },
+        {
+          "origin": "https://paddle-model-ecology.bj.bcebos.com",
+          "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_rec_onnx_infer.tar",
+          "method": "GET"
+        }
+      ],
+      "geminiRouteRequests": [],
+      "noGeminiRouteRequests": true,
+      "axeViolationIds": {
+        "intake": [],
+        "local OCR image inspection": [],
+        "findings": [],
+        "correction dialog": [],
+        "corrected calculation": [],
+        "personalized diabetes follow-up": []
+      },
+      "pageErrors": []
+    },
+    {
+      "viewport": "1440x900",
+      "initialQuestionRetained": true,
+      "realPhotoHashVerified": true,
+      "cropCoordinates": [],
+      "selectedNameLineConfidence": null,
+      "packageName": "Unidentified package",
+      "ocrObservations": 22,
+      "ocrEngineSelections": [
+        {
+          "imageId": "2e5850a7-f0a8-4d5c-b897-e81446019639",
+          "name": "tesseract.js",
+          "language": "eng"
+        },
+        {
+          "imageId": "2e5850a7-f0a8-4d5c-b897-e81446019639",
+          "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+          "language": "es"
+        }
+      ],
+      "exportedOcrLines": 22,
+      "exportedOcrWordBoxes": 94,
+      "ocrWordGeometryWithinCapture": true,
+      "parsedNutrientRows": 3,
+      "annotatedFieldCounts": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "expected": 7,
+        "exact": 3,
+        "incorrect": 0,
+        "omitted": 0,
+        "withheld": 4,
+        "fields": [
+          {
+            "key": "energy",
+            "expectedValue": 100,
+            "expectedUnit": "kcal",
+            "emittedValue": 400,
+            "emittedUnit": "kJ",
+            "emittedBasis": {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "protein",
+            "expectedValue": 1,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "fat",
+            "expectedValue": 6,
+            "expectedUnit": "g",
+            "emittedValue": 6,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "ocrNumericCandidateCount": 2,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-basis",
+                  "missing-unit"
+                ]
+              },
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "saturatedFat",
+            "expectedValue": 2,
+            "expectedUnit": "g",
+            "emittedValue": 2,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "carbohydrate",
+            "expectedValue": 10,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "no-numeric-value"
+                ]
+              },
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "sugars",
+            "expectedValue": 10,
+            "expectedUnit": "g",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "sodium",
+            "expectedValue": 10,
+            "expectedUnit": "mg",
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "ocrNumericCandidateCount": 0,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "no-numeric-value"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "stageDiagnostics": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "textDetection": {
+          "observedLineBoxes": 22,
+          "observedWordBoxes": 94,
+          "precisionRecall": null,
+          "limitation": "No independently annotated text-region boxes are available; observed boxes are not detection precision or recall."
+        },
+        "recognition": {
+          "annotatedFieldsWithExactNumericCandidate": 2,
+          "annotatedFieldsWithExactUnitCandidate": 2,
+          "annotatedFieldsWithExactBasisCandidate": 7,
+          "expectedFields": 7
+        },
+        "tableStructure": {
+          "annotatedFieldsWithMultipleNumericCandidates": 1,
+          "annotatedFieldsWithoutParserDiagnostic": 0,
+          "rowColumnAssociationScored": false,
+          "limitation": "Line and word geometry are retained, but no gold row or column regions exist for independent association scoring."
+        },
+        "parser": {
+          "annotatedFieldsWithDiagnostic": 7,
+          "rejectedFieldCount": 5,
+          "rejectionReasonOccurrences": {
+            "missing-unit": 4,
+            "missing-basis": 1,
+            "no-numeric-value": 2
+          }
+        }
+      },
+      "answerDisclosureMarkedUnverified": true,
+      "annotatedFieldScoreConserved": true,
+      "noIncorrectAnnotatedFields": true,
+      "addPhotoActionVisible": true,
+      "addPhotoPickerOpened": true,
+      "calculatedNutrients": 3,
+      "plainLanguageUnknownSummary": "Some nutrition entries need checking. NutriScan left unclear amounts out of calculations rather than guessing.\n\nThe product name was not established from the readable package text.",
+      "summaryHidesParserJargon": true,
+      "labelNotesInitiallyCollapsed": true,
+      "labelNotesDisclosure": "Label-reading notes (8)",
+      "labelNotesPreserveParserDetails": true,
+      "exactSaturatedFatObservation": true,
+      "localOcrRegionInspectionWorks": true,
+      "localOcrRegionInspectionMadeNoHttpRequest": true,
+      "uncertaintyFollowUpUsesPackageEvidence": true,
+      "uncertaintyAnswerLength": 340,
+      "followUpMessages": 3,
+      "correctionApplied": true,
+      "correctionBasisMatchesObserved": true,
+      "originalObservationsRetained": true,
+      "portion": "50",
+      "fiftyGramCalculation": true,
+      "ocrReadingMarkedUnverified": true,
+      "correctionMarkedUnverified": true,
+      "syntheticProfileOnly": true,
+      "personalizedQuestionRetained": true,
+      "personalCarbohydrateTargetWithheld": true,
+      "clinicianContextVisible": true,
+      "diabetesPlanningOptionsVisible": true,
+      "niddkSourceLinked": true,
+      "noNonLoopbackRequests": true,
+      "nonLoopbackRequestOrigins": [],
+      "paddleModelAssetRequests": [
+        {
+          "origin": "https://paddle-model-ecology.bj.bcebos.com",
+          "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_det_onnx_infer.tar",
+          "method": "GET"
+        },
+        {
+          "origin": "https://paddle-model-ecology.bj.bcebos.com",
+          "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_rec_onnx_infer.tar",
+          "method": "GET"
+        }
+      ],
+      "geminiRouteRequests": [],
+      "noGeminiRouteRequests": true,
+      "axeViolationIds": {
+        "intake": [],
+        "local OCR image inspection": [],
+        "findings": [],
+        "correction dialog": [],
+        "corrected calculation": [],
+        "personalized diabetes follow-up": []
+      },
+      "pageErrors": []
+    }
+  ]
+}

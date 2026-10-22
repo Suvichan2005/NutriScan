@@ -11,5 +11,8 @@
   {"id":"blood-pressure-sodium","query":"How can someone with high blood pressure reduce sodium from food?","relevant":["who-sodium"]},
   {"id":"free-sugar-definition","query":"What does WHO count as free sugars, including honey and fruit juice?","relevant":["who-sugars-2015"]},
   {"id":"ors-current-law-scope","query":"Is an ORS food product name currently allowed in India?","relevant":[]},
-  {"id":"fssai-current-law-scope","query":"What is the current FSSAI labelling rule for nutrition declarations?","relevant":[]}
+  {"id":"fssai-current-law-scope","query":"What is the current FSSAI labelling rule for nutrition declarations?","relevant":[]},
+  {"id":"beta-glucan-oats-unsupported-effect","query":"Does beta glucan in oats affect blood cholesterol?","relevant":[]},
+  {"id":"beta-glucan-oats-minimal-query","query":"beta glucan oats","relevant":[]},
+  {"id":"narrative-ins-322-identity","query":"What does INS 322 mean on a food label?","relevant":["fao-322"]}
 ]

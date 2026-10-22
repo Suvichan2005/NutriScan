@@ -1,0 +1,355 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-real-photo-extraction-diagnostic",
+  "generatedAt": "2026-10-22T02:06:47.227Z",
+  "captureTool": "Playwright using installed Chrome",
+  "appOrigin": "http://127.0.0.1:3413",
+  "acceptanceMode": "loopback local application",
+  "photoFile": "nutella-nutrition-es-off-3017620422003.jpg",
+  "limitations": [
+    "OCR field measurements use one source image and a single human visual read, not independent adjudication or a held-out accuracy estimate.",
+    "Axe results are automated checks, not full accessibility conformance.",
+    "The browser receipt counts Gemini route invocations, not downstream provider calls or provider cost."
+  ],
+  "screenshots": "docs\\evidence\\private\\core-journey-spanish-development",
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "realPhotoHashVerified": true,
+      "packageName": "Unidentified package",
+      "brand": null,
+      "ingredients": [],
+      "nutrientCount": 3,
+      "nutrients": [
+        {
+          "key": "energy",
+          "value": 400,
+          "unit": "kJ",
+          "basis": {
+            "amount": 18,
+            "unit": "g",
+            "description": "Por porción 18 g"
+          },
+          "status": "observed"
+        },
+        {
+          "key": "fat",
+          "value": 6,
+          "unit": "g",
+          "basis": {
+            "amount": 18,
+            "unit": "g",
+            "description": "Por porción 18 g"
+          },
+          "status": "observed"
+        },
+        {
+          "key": "saturatedFat",
+          "value": 2,
+          "unit": "g",
+          "basis": {
+            "amount": 18,
+            "unit": "g",
+            "description": "Por porción 18 g"
+          },
+          "status": "observed"
+        }
+      ],
+      "observationCount": 34,
+      "ocrLineCount": 22,
+      "wordBoxCount": 94,
+      "ocrEngineSelections": [
+        {
+          "name": "tesseract.js",
+          "language": "eng",
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "preparedImage": {
+            "width": 3000,
+            "height": 2439
+          },
+          "cropPercent": null
+        },
+        {
+          "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+          "language": "es",
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "preparedImage": {
+            "width": 3000,
+            "height": 2439
+          },
+          "cropPercent": null
+        }
+      ],
+      "ocrLines": [
+        {
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "text": "3   ss LE re CEE al alt a    —           ¥ wp\n"
+        },
+        {
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "text": "Informacion Nutrimenta/    Yporcii 4\n"
+        },
+        {
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "text": "Contenido energéticc 400 kJ\n"
+        },
+        {
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "text": "                 10\n"
+        },
+        {
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "text": "Grasas (lipidos)               6\n\n"
+        },
+        {
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "text": " Carbohidratos (hidratos  decarbonog)\n"
+        },
+        {
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "text": "1 ENR TT Ta                                     an dg\n"
+        },
+        {
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "text": "i ue 2 NE Min  wv  -  RIE Le\n\n"
+        },
+        {
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "text": "BEE <7 POE\n"
+        },
+        {
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "text": "A FT > |      Ny   oe es Xe                                                          4 4 roi\n"
+        },
+        {
+          "runId": "03fe6a56-4d76-4f75-9234-100cb579398d",
+          "text": "REE =    -         oo\n"
+        },
+        {
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "text": "Información Nutrimental Por porción 18 g"
+        },
+        {
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "text": "(i cuchara)"
+        },
+        {
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "text": "Contenido energético 400 KJ"
+        },
+        {
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "text": "(100 kcal)"
+        },
+        {
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "text": "Proteínas 19"
+        },
+        {
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "text": "Grasas (lípidos) 6g"
+        },
+        {
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "text": "Grasa saturada 2g"
+        },
+        {
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "text": "Carbohidratos (hidratos de carbono) 109"
+        },
+        {
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "text": "Azúcares 100"
+        },
+        {
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "text": "Fibra dietética Mends de1g"
+        },
+        {
+          "runId": "371c04fa-0b09-4ef4-9a3d-26baa42dd20b",
+          "text": "Sodio 10ing"
+        }
+      ],
+      "parserDiagnostics": [
+        {
+          "field": "fat",
+          "decision": "rejected",
+          "reasonCodes": [
+            "missing-basis",
+            "missing-unit"
+          ],
+          "numericCandidates": [
+            {
+              "value": 6,
+              "unit": null
+            }
+          ],
+          "basisCandidates": []
+        },
+        {
+          "field": "carbohydrate",
+          "decision": "rejected",
+          "reasonCodes": [
+            "no-numeric-value"
+          ],
+          "numericCandidates": [],
+          "basisCandidates": []
+        },
+        {
+          "field": "energy",
+          "decision": "accepted",
+          "reasonCodes": [],
+          "numericCandidates": [
+            {
+              "value": 400,
+              "unit": "kj"
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "protein",
+          "decision": "rejected",
+          "reasonCodes": [
+            "missing-unit"
+          ],
+          "numericCandidates": [
+            {
+              "value": 19,
+              "unit": null
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "fat",
+          "decision": "accepted",
+          "reasonCodes": [],
+          "numericCandidates": [
+            {
+              "value": 6,
+              "unit": "g"
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "saturatedFat",
+          "decision": "accepted",
+          "reasonCodes": [],
+          "numericCandidates": [
+            {
+              "value": 2,
+              "unit": "g"
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "carbohydrate",
+          "decision": "rejected",
+          "reasonCodes": [
+            "missing-unit"
+          ],
+          "numericCandidates": [
+            {
+              "value": 109,
+              "unit": null
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "sugars",
+          "decision": "rejected",
+          "reasonCodes": [
+            "missing-unit"
+          ],
+          "numericCandidates": [
+            {
+              "value": 100,
+              "unit": null
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "fiber",
+          "decision": "rejected",
+          "reasonCodes": [
+            "approximate-or-bounded"
+          ],
+          "numericCandidates": [
+            {
+              "value": 1,
+              "unit": "g"
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "sodium",
+          "decision": "rejected",
+          "reasonCodes": [
+            "no-numeric-value"
+          ],
+          "numericCandidates": [],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        }
+      ],
+      "screenshots": "docs\\evidence\\private\\core-journey-spanish-development",
+      "externalRequests": [],
+      "paddleModelAssetRequestCount": 2,
+      "geminiRouteRequests": [],
+      "pageErrors": []
+    }
+  ]
+}

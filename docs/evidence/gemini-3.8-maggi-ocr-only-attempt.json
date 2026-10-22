@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "gemini-free-real-package-ocr-only-attempt",
+  "date": "2026-10-22",
+  "productGroup": "Maggi noodles barcode 8901058022193",
+  "model": "gemini-3.8-flash",
+  "tier": "free",
+  "codePath": "src/lib/server/gemini.ts assist() with the production prompt, output schema and local validation; direct in-process invocation, not HTTP-route acceptance",
+  "arm": "ocr-text-only",
+  "question": "Which ingredients are listed, and what protein value and serving basis does the label show?",
+  "input": {
+    "ocrLineObservations": 59,
+    "ocrCaptures": 4,
+    "imagesIncluded": 0,
+    "profileFields": 0,
+    "conversationTurns": 0,
+    "paidProjectSelected": false,
+    "packageObservations": 90
+  },
+  "sourcePhotos": [
+    {
+      "key": "nutrition",
+      "sha256": "29f2842018da1d2edc1295dff71f3f8927def7b2e46a6e49aaa266276aa5e620",
+      "bytes": 1018344
+    },
+    {
+      "key": "ingredients",
+      "sha256": "40d5a13f6c42edeb0bfc4ca1f88e97c3c5400fb59ac093631d4ff599d16b1996",
+      "bytes": 436248
+    }
+  ],
+  "heuristicBaseline": {
+    "nutrientFields": 16,
+    "correctAccepted": 16,
+    "incorrectAccepted": 0,
+    "omitted": 0,
+    "withheld": 0,
+    "ingredientSegments": 15,
+    "ingredientExactness": "unscored"
+  },
+  "attempt": {
+    "status": "http-error",
+    "httpStatus": 503,
+    "elapsedMs": 10012,
+    "modelVersion": null,
+    "usage": {
+      "promptTokens": null,
+      "outputTokens": null,
+      "thoughtTokens": null,
+      "totalTokens": null
+    },
+    "retryCount": 0,
+    "paidFallback": false
+  },
+  "result": {
+    "status": "not-scored",
+    "responseAvailable": false,
+    "expectedNutritionFields": 16,
+    "reason": "The provider returned no model output; no field-level outcome was observed."
+  },
+  "privacy": {
+    "packageImageBytesSent": 0,
+    "ocrTextSent": true,
+    "personalProfileDataSent": false,
+    "conversationDataSent": false,
+    "paidProviderCalls": 0
+  },
+  "limitations": [
+    "One Indian noodles product group and one bounded free-tier attempt; not an architecture comparison or accuracy estimate.",
+    "No package photo bytes were sent. The OCR transcript is derived from the two local public product-label photos identified by hash.",
+    "The 16/16 local-reader baseline is a within-product exploratory result against one visual read; ingredient exactness is unscored.",
+    "Free-tier prompts and responses may be used by Google to improve its products; the sent text contains package-label OCR only."
+  ]
+}

@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "kind": "conversational-local-evidence-browser-acceptance",
-  "generatedAt": "2026-10-21T19:48:49.842Z",
+  "generatedAt": "2026-10-22T03:28:15.634Z",
   "browser": "Chrome via Playwright, headless",
   "origin": "loopback",
-  "input": "Synthetic typed label; explicit general meal-planning and unrelated follow-up questions.",
-  "evidenceExpected": "NIDDK Healthy Living with Diabetes source summary with its US scope and limitations; no match for quantum mechanics.",
+  "input": "Synthetic typed label; explicit meal-planning, unrelated-domain, and beta-glucan-in-oats follow-up questions.",
+  "evidenceExpected": "NIDDK Healthy Living with Diabetes source summary with its US scope and limitations; no match for quantum mechanics or the beta-glucan-in-oats effect question.",
   "limitations": [
     "This verifies the UI-to-local-index journey and source presentation, not independent retrieval relevance or health-outcome accuracy.",
     "The package input is synthetic typed text; no real photo or OCR result is evaluated.",
@@ -21,7 +21,9 @@
       "officialNiddkLink": true,
       "candidateCaveatVisible": true,
       "noMatchAbstained": true,
+      "betaGlucanFalseSourceSuppressed": true,
       "evidenceRouteStatuses": [
+        200,
         200,
         200
       ],
@@ -39,7 +41,9 @@
       "officialNiddkLink": true,
       "candidateCaveatVisible": true,
       "noMatchAbstained": true,
+      "betaGlucanFalseSourceSuppressed": true,
       "evidenceRouteStatuses": [
+        200,
         200,
         200
       ],

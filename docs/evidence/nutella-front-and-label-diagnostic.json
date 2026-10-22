@@ -1,0 +1,376 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-real-photo-extraction-diagnostic",
+  "generatedAt": "2026-10-22T02:32:32.365Z",
+  "captureTool": "Playwright using installed Chrome",
+  "appOrigin": "http://127.0.0.1:3413",
+  "acceptanceMode": "loopback local application",
+  "photoFile": "nutella-nutrition-es-off-3017620422003.jpg",
+  "photoFiles": [
+    "nutella-label-off-3017620422003.jpg",
+    "nutella-nutrition-es-off-3017620422003.jpg"
+  ],
+  "photoRoles": [],
+  "limitations": [
+    "OCR field measurements use one source image and a single human visual read, not independent adjudication or a held-out accuracy estimate.",
+    "Axe results are automated checks, not full accessibility conformance.",
+    "The browser receipt counts Gemini route invocations, not downstream provider calls or provider cost."
+  ],
+  "screenshots": "docs\\evidence\\private\\nutella-front-and-label-diagnostic",
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "realPhotoHashVerified": true,
+      "packageName": "nutella 339KJ",
+      "brand": null,
+      "ingredients": [],
+      "nutrientCount": 3,
+      "nutrients": [
+        {
+          "key": "energy",
+          "value": 400,
+          "unit": "kJ",
+          "basis": {
+            "amount": 18,
+            "unit": "g",
+            "description": "Por porción 18 g"
+          },
+          "status": "observed"
+        },
+        {
+          "key": "fat",
+          "value": 6,
+          "unit": "g",
+          "basis": {
+            "amount": 18,
+            "unit": "g",
+            "description": "Por porción 18 g"
+          },
+          "status": "observed"
+        },
+        {
+          "key": "saturatedFat",
+          "value": 2,
+          "unit": "g",
+          "basis": {
+            "amount": 18,
+            "unit": "g",
+            "description": "Por porción 18 g"
+          },
+          "status": "observed"
+        }
+      ],
+      "observationCount": 35,
+      "ocrLineCount": 24,
+      "wordBoxCount": 54,
+      "ocrEngineSelections": [
+        {
+          "name": "tesseract.js",
+          "language": "eng",
+          "runId": "a547570e-9ae3-4ddc-af6c-7db7f009104d",
+          "imageId": "7c25e6e7-6662-43a7-8349-e3dda1decff0",
+          "side": "extra",
+          "preparedImage": {
+            "width": 1688,
+            "height": 3000
+          },
+          "cropPercent": null
+        },
+        {
+          "name": "tesseract.js",
+          "language": "eng",
+          "runId": "51eae4dc-e4fa-41b3-b0d6-a6fb010976f3",
+          "imageId": "6966aca5-1acd-482b-96b0-7f138ed3adee",
+          "side": "extra",
+          "preparedImage": {
+            "width": 3000,
+            "height": 2439
+          },
+          "cropPercent": null
+        },
+        {
+          "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+          "language": "en",
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "imageId": "6966aca5-1acd-482b-96b0-7f138ed3adee",
+          "side": "extra",
+          "preparedImage": {
+            "width": 3000,
+            "height": 2439
+          },
+          "cropPercent": null
+        },
+        {
+          "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+          "language": "en",
+          "runId": "760ee5c7-f170-4742-bc33-92fafb275dfa",
+          "imageId": "7c25e6e7-6662-43a7-8349-e3dda1decff0",
+          "side": "extra",
+          "preparedImage": {
+            "width": 1688,
+            "height": 3000
+          },
+          "cropPercent": null
+        }
+      ],
+      "assignedPhotoRoles": [
+        "unknown",
+        "unknown"
+      ],
+      "ocrLines": [
+        {
+          "runId": "51eae4dc-e4fa-41b3-b0d6-a6fb010976f3",
+          "text": "PP\n\n"
+        },
+        {
+          "runId": "51eae4dc-e4fa-41b3-b0d6-a6fb010976f3",
+          "text": "Informacion Nutrimental Popo\n\n"
+        },
+        {
+          "runId": "51eae4dc-e4fa-41b3-b0d6-a6fb010976f3",
+          "text": "$00 kJ\n"
+        },
+        {
+          "runId": "51eae4dc-e4fa-41b3-b0d6-a6fb010976f3",
+          "text": "(100 kcal)\n\n"
+        },
+        {
+          "runId": "51eae4dc-e4fa-41b3-b0d6-a6fb010976f3",
+          "text": "19\n"
+        },
+        {
+          "runId": "51eae4dc-e4fa-41b3-b0d6-a6fb010976f3",
+          "text": "65\n\n"
+        },
+        {
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "text": "Información Nutrimental Por porción 18 g"
+        },
+        {
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "text": "(i cuchara)"
+        },
+        {
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "text": "Contenido energético 400 KJ"
+        },
+        {
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "text": "(100 kcal)"
+        },
+        {
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "text": "Proteínas 19"
+        },
+        {
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "text": "Grasas (lípidos) 6g"
+        },
+        {
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "text": "Grasa saturada 2g"
+        },
+        {
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "text": "Carbohidratos (hidratos de carbono) 109"
+        },
+        {
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "text": "Azúcares 100"
+        },
+        {
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "text": "Fibra dietética Mends de1g"
+        },
+        {
+          "runId": "f1c4f886-cc28-4b98-87cd-ce9aef713a60",
+          "text": "Sodio 10ing"
+        },
+        {
+          "runId": "760ee5c7-f170-4742-bc33-92fafb275dfa",
+          "text": "R"
+        },
+        {
+          "runId": "760ee5c7-f170-4742-bc33-92fafb275dfa",
+          "text": "159"
+        },
+        {
+          "runId": "760ee5c7-f170-4742-bc33-92fafb275dfa",
+          "text": "nutella 339KJ"
+        },
+        {
+          "runId": "760ee5c7-f170-4742-bc33-92fafb275dfa",
+          "text": "81kcal"
+        },
+        {
+          "runId": "760ee5c7-f170-4742-bc33-92fafb275dfa",
+          "text": "FERRERO"
+        },
+        {
+          "runId": "760ee5c7-f170-4742-bc33-92fafb275dfa",
+          "text": "2278KJ/546 100g"
+        },
+        {
+          "runId": "760ee5c7-f170-4742-bc33-92fafb275dfa",
+          "text": "29"
+        }
+      ],
+      "parserDiagnostics": [
+        {
+          "field": "energy",
+          "decision": "accepted",
+          "reasonCodes": [],
+          "numericCandidates": [
+            {
+              "value": 400,
+              "unit": "kj"
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "protein",
+          "decision": "rejected",
+          "reasonCodes": [
+            "missing-unit"
+          ],
+          "numericCandidates": [
+            {
+              "value": 19,
+              "unit": null
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "fat",
+          "decision": "accepted",
+          "reasonCodes": [],
+          "numericCandidates": [
+            {
+              "value": 6,
+              "unit": "g"
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "saturatedFat",
+          "decision": "accepted",
+          "reasonCodes": [],
+          "numericCandidates": [
+            {
+              "value": 2,
+              "unit": "g"
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "carbohydrate",
+          "decision": "rejected",
+          "reasonCodes": [
+            "missing-unit"
+          ],
+          "numericCandidates": [
+            {
+              "value": 109,
+              "unit": null
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "sugars",
+          "decision": "rejected",
+          "reasonCodes": [
+            "missing-unit"
+          ],
+          "numericCandidates": [
+            {
+              "value": 100,
+              "unit": null
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "fiber",
+          "decision": "rejected",
+          "reasonCodes": [
+            "approximate-or-bounded"
+          ],
+          "numericCandidates": [
+            {
+              "value": 1,
+              "unit": "g"
+            }
+          ],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        },
+        {
+          "field": "sodium",
+          "decision": "rejected",
+          "reasonCodes": [
+            "no-numeric-value"
+          ],
+          "numericCandidates": [],
+          "basisCandidates": [
+            {
+              "amount": 18,
+              "unit": "g",
+              "description": "Por porción 18 g"
+            }
+          ]
+        }
+      ],
+      "screenshots": "docs\\evidence\\private\\nutella-front-and-label-diagnostic",
+      "externalRequests": [],
+      "paddleModelAssetRequestCount": 2,
+      "geminiRouteRequests": [],
+      "pageErrors": []
+    }
+  ]
+}

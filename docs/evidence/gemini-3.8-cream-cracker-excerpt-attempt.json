@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "gemini-3.8-cream-cracker-partial-text-diagnostic-2026-10-22",
+  "attemptStartedAt": "2026-10-22T08:23:09.288Z",
+  "provider": {
+    "name": "gemini-developer-api",
+    "tier": "free",
+    "purpose": "application",
+    "model": "gemini-3.8-flash",
+    "projectModelInventory": {
+      "operation": "models.list",
+      "listed": true,
+      "generateContent": true,
+      "inputTokenLimit": 1048576,
+      "outputTokenLimit": 65536,
+      "generationCall": false
+    }
+  },
+  "case": {
+    "productGroup": "cream-cracker",
+    "inputSource": "partial owner-pasted OCR excerpt in the mission directive",
+    "excerptLineCount": 2,
+    "completeOcrTranscriptAvailable": false,
+    "sourcePhotographsAvailable": false,
+    "imageBytesSent": 0,
+    "profileOrConversationSent": false,
+    "freeTierContentMayBeUsedToImproveGoogleProducts": true,
+    "knownExcerptCategories": [
+      "ingredient text",
+      "nutrition heading",
+      "fused carbohydrate readings",
+      "other interleaved package text"
+    ]
+  },
+  "localBaseline": {
+    "method": "parseLabel on the excerpt as user-supplied text",
+    "nutrientCandidates": [
+      { "field": "carbohydrate", "value": 6329, "unit": "g", "basis": null, "status": "conflict" },
+      { "field": "carbohydrate", "value": 928, "unit": "g", "basis": null, "status": "conflict" }
+    ],
+    "structuredIngredientCount": 0,
+    "completeUsableFields": 0,
+    "groundTruthDenominatorAvailable": false,
+    "scorable": false
+  },
+  "geminiAttempt": {
+    "applicationRequests": 1,
+    "configuredMaximumAttempts": 2,
+    "observedProviderFetches": 1,
+    "elapsedMs": 24658,
+    "sdkReportedHttpStatus": 504,
+    "responseHeadersCaptured": false,
+    "failureStage": "SDK ApiError with status 504 after one provider fetch; origin of the gateway response was not captured",
+    "modelContentReceived": false,
+    "modelVersion": null,
+    "promptTokens": null,
+    "outputTokens": null,
+    "thinkingTokens": null,
+    "totalTokens": null,
+    "usageLedgerState": "failed",
+    "reservedUsd": 0,
+    "estimatedActualUsd": null,
+    "paidRequests": 0
+  },
+  "interpretation": "Failed partial-text diagnostic. No Gemini output was accepted or scored. The two heuristic nutrient candidates are conflicting, basisless parser outputs, not correct accepted readings. No image-only or OCR-plus-image arm was possible for this case."
+}

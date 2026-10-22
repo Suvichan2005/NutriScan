@@ -1,0 +1,1148 @@
+{
+  "schemaVersion": 1,
+  "kind": "indian-market-two-photo-local-ocr-product-journey",
+  "generatedAt": "2026-10-22T05:20:41.637Z",
+  "appOrigin": "http://127.0.0.1:3413",
+  "browser": "Installed Chrome via Playwright, visible window, fresh context",
+  "datasetSplit": "exploratory development; one product group; single manual reference from the same package source; not independent accuracy",
+  "sourceProduct": "Maggi noodles barcode 8901058022193; OFF image CC BY-SA, exact attribution/reuse review pending; source bytes remain local and uncommitted",
+  "sourcePhotos": [
+    {
+      "key": "nutrition",
+      "url": "https://images.openfoodfacts.org/images/products/890/105/802/2193/nutrition_en.13.full.jpg",
+      "sha256": "29f2842018da1d2edc1295dff71f3f8927def7b2e46a6e49aaa266276aa5e620",
+      "bytes": 1018344
+    },
+    {
+      "key": "ingredients",
+      "url": "https://images.openfoodfacts.org/images/products/890/105/802/2193/ingredients_en.19.full.jpg",
+      "sha256": "40d5a13f6c42edeb0bfc4ca1f88e97c3c5400fb59ac093631d4ff599d16b1996",
+      "bytes": 436248
+    }
+  ],
+  "initialQuestion": "How much protein is in a 70 g serving?",
+  "initialAnswer": "For 70 g: 5.74 g protein. Some readings conflict and need checking before a dietary decision.",
+  "followupQuestion": "What allergen warnings did the package state?",
+  "followupAnswer": "The recorded label text says: Allergen Note: Contains Wheat & Nut. | May contain Milk, Oats and Soy. These are package-reading observations, not independently verified product facts; OCR or transcription may be wrong. Some readings conflict and need checking before a dietary decision.",
+  "package": {
+    "photoCount": 2,
+    "photoRolesWereUnspecified": true,
+    "packageName": "opram porind threngh scientifie",
+    "brand": null,
+    "barcode": null,
+    "serving": {
+      "value": 70,
+      "unit": "g"
+    },
+    "ingredientSectionCount": 15,
+    "ingredientLinesLinkedToPhoto": 15,
+    "ingredientLinesLinkedToSourceOcr": 15,
+    "ingredientSectionVisible": true,
+    "ingredientTagCount": 15,
+    "allergens": [
+      "Allergen Note: Contains Wheat & Nut.",
+      "May contain Milk, Oats and Soy."
+    ],
+    "allergenLinesLinkedToPhoto": 2,
+    "observedIngredientSignals": {
+      "wheat": true,
+      "palm oil": true,
+      "iodized salt": false
+    },
+    "observedAllergenSignals": {
+      "wheat": true,
+      "nut": true,
+      "milk": true,
+      "oats": true,
+      "soy": true
+    },
+    "additives": [],
+    "nutritionFieldCases": 16,
+    "exactValueUnitBasis": 14,
+    "acceptedWrong": 0,
+    "withheld": 2,
+    "omitted": 0,
+    "totalUnusable": 2,
+    "usableCoverage": "14/16",
+    "nutrients": [
+      {
+        "key": "energy",
+        "value": 384,
+        "unit": "kcal",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "energy",
+        "value": 269,
+        "unit": "kcal",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "protein",
+        "value": 8.2,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "protein",
+        "value": 5.7,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "carbohydrate",
+        "value": 59.6,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "carbohydrate",
+        "value": 41.7,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "sugars",
+        "value": 1.8,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "sugars",
+        "value": 1.3,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "addedSugars",
+        "value": 1.1,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "addedSugars",
+        "value": 0.8,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "fat",
+        "value": 12.5,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "fat",
+        "value": 8.8,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "saturatedFat",
+        "value": 8.2,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "saturatedFat",
+        "value": 5.8,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "sodium",
+        "value": 1000.07,
+        "unit": "mg",
+        "basis": null,
+        "status": "conflict"
+      },
+      {
+        "key": "sodium",
+        "value": 0,
+        "unit": "mg",
+        "basis": null,
+        "status": "conflict"
+      }
+    ],
+    "ocrLineCount": 59,
+    "wordBoxCount": 380,
+    "engines": [
+      "tesseract.js",
+      "@paddleocr/paddleocr-js/PP-OCRv6-small"
+    ],
+    "parserDecisionCounts": {
+      "rejected": 3,
+      "accepted": 7,
+      "conflict": 1
+    },
+    "privacyDisclosureVisible": true
+  },
+  "coverageFirstEvaluation": {
+    "productGroups": [
+      {
+        "productGroup": "Maggi noodles 8901058022193",
+        "photos": 2,
+        "split": "exploratory development; the photos and repeated serving columns are one product group, not independent samples",
+        "nutrition": {
+          "denominator": 16,
+          "correctAccepted": 14,
+          "incorrectAccepted": 0,
+          "omitted": 0,
+          "withheld": 2,
+          "totalUnusable": 2,
+          "usableCoverage": "14/16",
+          "byBasis": {
+            "per100g": {
+              "denominator": 8,
+              "correctAccepted": 7,
+              "incorrectAccepted": 0,
+              "omitted": 0,
+              "withheld": 1
+            },
+            "per70gServing": {
+              "denominator": 8,
+              "correctAccepted": 7,
+              "incorrectAccepted": 0,
+              "omitted": 0,
+              "withheld": 1
+            }
+          },
+          "fields": [
+            {
+              "nutrient": "energy",
+              "expected": {
+                "value": 384,
+                "unit": "kcal",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 384,
+                  "unit": "kcal",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 384,
+                  "unit": "kcal",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "energy",
+              "expected": {
+                "value": 269,
+                "unit": "kcal",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 269,
+                  "unit": "kcal",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 269,
+                  "unit": "kcal",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "protein",
+              "expected": {
+                "value": 8.2,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 8.2,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 8.2,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "protein",
+              "expected": {
+                "value": 5.7,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 5.7,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 5.7,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "carbohydrate",
+              "expected": {
+                "value": 59.6,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 59.6,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 59.6,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "carbohydrate",
+              "expected": {
+                "value": 41.7,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 41.7,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 41.7,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "sugars",
+              "expected": {
+                "value": 1.8,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 1.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 1.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "sugars",
+              "expected": {
+                "value": 1.3,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 1.3,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 1.3,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "addedSugars",
+              "expected": {
+                "value": 1.1,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 1.1,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 1.1,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "addedSugars",
+              "expected": {
+                "value": 0.8,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 0.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 0.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "fat",
+              "expected": {
+                "value": 12.5,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 12.5,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 12.5,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "fat",
+              "expected": {
+                "value": 8.8,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 8.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 8.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "saturatedFat",
+              "expected": {
+                "value": 8.2,
+                "unit": "g",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 8.2,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 8.2,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 100,
+                    "unit": "g",
+                    "description": "per 100g (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "saturatedFat",
+              "expected": {
+                "value": 5.8,
+                "unit": "g",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "correct-accepted",
+              "accepted": [
+                {
+                  "value": 5.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  }
+                }
+              ],
+              "parserCandidates": [
+                {
+                  "value": 5.8,
+                  "unit": "g",
+                  "basis": {
+                    "amount": 70,
+                    "unit": "g",
+                    "description": "per declared serving (split table header)"
+                  },
+                  "status": "observed"
+                }
+              ]
+            },
+            {
+              "nutrient": "sodium",
+              "expected": {
+                "value": 1000,
+                "unit": "mg",
+                "basis": {
+                  "amount": 100,
+                  "unit": "g"
+                }
+              },
+              "status": "withheld",
+              "accepted": [],
+              "parserCandidates": [
+                {
+                  "value": 1000.07,
+                  "unit": "mg",
+                  "basis": null,
+                  "status": "conflict"
+                },
+                {
+                  "value": 0,
+                  "unit": "mg",
+                  "basis": null,
+                  "status": "conflict"
+                }
+              ]
+            },
+            {
+              "nutrient": "sodium",
+              "expected": {
+                "value": 700,
+                "unit": "mg",
+                "basis": {
+                  "amount": 70,
+                  "unit": "g"
+                }
+              },
+              "status": "withheld",
+              "accepted": [],
+              "parserCandidates": [
+                {
+                  "value": 1000.07,
+                  "unit": "mg",
+                  "basis": null,
+                  "status": "conflict"
+                },
+                {
+                  "value": 0,
+                  "unit": "mg",
+                  "basis": null,
+                  "status": "conflict"
+                }
+              ]
+            }
+          ]
+        },
+        "nonNutrient": {
+          "productIdentity": {
+            "denominator": 1,
+            "expected": "Maggi noodles (same OFF product association; not independent image adjudication)",
+            "actual": "opram porind threngh scientifie",
+            "correctAccepted": 0,
+            "incorrectAccepted": 1,
+            "omitted": 0,
+            "withheld": 0
+          },
+          "servingDeclaration": {
+            "denominator": 1,
+            "expected": {
+              "value": 70,
+              "unit": "g"
+            },
+            "actual": {
+              "value": 70,
+              "unit": "g"
+            },
+            "correctAccepted": 1,
+            "incorrectAccepted": 0,
+            "omitted": 0,
+            "withheld": 0
+          },
+          "ingredients": {
+            "completeListsExpected": 1,
+            "completeListAccuracy": null,
+            "status": "not independently scored; no adjudicated transcript",
+            "sourceLinkedSegments": 15,
+            "availableSegments": 15,
+            "correctSegments": null,
+            "incorrectSegments": null,
+            "omittedIngredients": null,
+            "withheldIngredients": null
+          },
+          "allergens": {
+            "denominator": 2,
+            "correctAccepted": 2,
+            "incorrectAccepted": 0,
+            "omitted": 0,
+            "withheld": 0,
+            "reference": "same-image visual check by one reviewer; not independent adjudication",
+            "observations": [
+              "Allergen Note: Contains Wheat & Nut.",
+              "May contain Milk, Oats and Soy."
+            ]
+          }
+        }
+      }
+    ],
+    "acrossProductGroups": {
+      "productGroups": 1,
+      "independentProductCategories": [
+        "noodles"
+      ],
+      "nutrition": {
+        "denominator": 16,
+        "correctAccepted": 14,
+        "incorrectAccepted": 0,
+        "omitted": 0,
+        "withheld": 2,
+        "totalUnusable": 2,
+        "usableCoverage": "14/16"
+      },
+      "note": "Totals equal one product group; repeated columns and two photos are not counted as independent products."
+    },
+    "candidateLevelRecovery": {
+      "sodiumFields": [
+        {
+          "expected": {
+            "value": 1000,
+            "unit": "mg",
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            }
+          },
+          "outcome": "withheld",
+          "rawReaderEvidence": [
+            {
+              "observationId": "196371e7-114a-4373-91c7-dab7065b2655",
+              "imageId": "ca0d5506-a2c2-4ab1-8025-b9e453058260",
+              "reader": "tesseract.js",
+              "rowLabelAndUnitRecognized": true,
+              "numericWordTokens": []
+            },
+            {
+              "observationId": "3dca5910-2913-4c06-8b0d-540507f167a4",
+              "imageId": "ca0d5506-a2c2-4ab1-8025-b9e453058260",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "rowLabelAndUnitRecognized": true,
+              "numericWordTokens": [
+                {
+                  "text": "1000.0700.0",
+                  "confidence": 92.53619096495889,
+                  "bbox": {
+                    "x0": 757,
+                    "y0": 1920,
+                    "x1": 973,
+                    "y1": 2003
+                  }
+                }
+              ]
+            },
+            {
+              "observationId": "f61891e7-75f5-4ce6-b46c-ff7cafa4f278",
+              "imageId": "298fc2e9-c8be-4c72-b507-b58b48009c0d",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "rowLabelAndUnitRecognized": true,
+              "numericWordTokens": [
+                {
+                  "text": "1000.0/70.00",
+                  "confidence": 85.48142332583666,
+                  "bbox": {
+                    "x0": 2214,
+                    "y0": 386,
+                    "x1": 2813,
+                    "y1": 570
+                  }
+                }
+              ]
+            }
+          ],
+          "rawValueEvidence": {
+            "expectedDigitsPresentOnlyWithinMergedTokens": true,
+            "exactStandaloneValueTokenPresent": false,
+            "unitRecognizedInRowLabel": true,
+            "per100gBasisRecognized": true,
+            "per70gServingBasisRecognized": true,
+            "correctValueUnitBasisCandidateAvailable": false
+          },
+          "basisEvidence": [
+            {
+              "imageId": "ca0d5506-a2c2-4ab1-8025-b9e453058260",
+              "textSignals": [
+                "70 g"
+              ]
+            },
+            {
+              "imageId": "ca0d5506-a2c2-4ab1-8025-b9e453058260",
+              "textSignals": [
+                "100g",
+                "Per serve"
+              ]
+            },
+            {
+              "imageId": "ca0d5506-a2c2-4ab1-8025-b9e453058260",
+              "textSignals": [
+                "per serve"
+              ]
+            }
+          ],
+          "tentativeParserCandidates": [
+            {
+              "value": 1000.07,
+              "unit": "mg",
+              "basis": null,
+              "status": "conflict"
+            },
+            {
+              "value": 0,
+              "unit": "mg",
+              "basis": null,
+              "status": "conflict"
+            }
+          ],
+          "alternateReaderAvailable": true,
+          "targetedCropEvaluated": false,
+          "blockingStage": "numeric token segmentation plus row-to-column association: Tesseract found the row/unit without a usable numeric word; PaddleOCR returned fused numeric spans. The expected digits are present inside a merged span, but neither value has a standalone token/basis assignment. The parser withheld both fields."
+        },
+        {
+          "expected": {
+            "value": 700,
+            "unit": "mg",
+            "basis": {
+              "amount": 70,
+              "unit": "g"
+            }
+          },
+          "outcome": "withheld",
+          "rawReaderEvidence": [
+            {
+              "observationId": "196371e7-114a-4373-91c7-dab7065b2655",
+              "imageId": "ca0d5506-a2c2-4ab1-8025-b9e453058260",
+              "reader": "tesseract.js",
+              "rowLabelAndUnitRecognized": true,
+              "numericWordTokens": []
+            },
+            {
+              "observationId": "3dca5910-2913-4c06-8b0d-540507f167a4",
+              "imageId": "ca0d5506-a2c2-4ab1-8025-b9e453058260",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "rowLabelAndUnitRecognized": true,
+              "numericWordTokens": [
+                {
+                  "text": "1000.0700.0",
+                  "confidence": 92.53619096495889,
+                  "bbox": {
+                    "x0": 757,
+                    "y0": 1920,
+                    "x1": 973,
+                    "y1": 2003
+                  }
+                }
+              ]
+            },
+            {
+              "observationId": "f61891e7-75f5-4ce6-b46c-ff7cafa4f278",
+              "imageId": "298fc2e9-c8be-4c72-b507-b58b48009c0d",
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "rowLabelAndUnitRecognized": true,
+              "numericWordTokens": [
+                {
+                  "text": "1000.0/70.00",
+                  "confidence": 85.48142332583666,
+                  "bbox": {
+                    "x0": 2214,
+                    "y0": 386,
+                    "x1": 2813,
+                    "y1": 570
+                  }
+                }
+              ]
+            }
+          ],
+          "rawValueEvidence": {
+            "expectedDigitsPresentOnlyWithinMergedTokens": true,
+            "exactStandaloneValueTokenPresent": false,
+            "unitRecognizedInRowLabel": true,
+            "per100gBasisRecognized": true,
+            "per70gServingBasisRecognized": true,
+            "correctValueUnitBasisCandidateAvailable": false
+          },
+          "basisEvidence": [
+            {
+              "imageId": "ca0d5506-a2c2-4ab1-8025-b9e453058260",
+              "textSignals": [
+                "70 g"
+              ]
+            },
+            {
+              "imageId": "ca0d5506-a2c2-4ab1-8025-b9e453058260",
+              "textSignals": [
+                "100g",
+                "Per serve"
+              ]
+            },
+            {
+              "imageId": "ca0d5506-a2c2-4ab1-8025-b9e453058260",
+              "textSignals": [
+                "per serve"
+              ]
+            }
+          ],
+          "tentativeParserCandidates": [
+            {
+              "value": 1000.07,
+              "unit": "mg",
+              "basis": null,
+              "status": "conflict"
+            },
+            {
+              "value": 0,
+              "unit": "mg",
+              "basis": null,
+              "status": "conflict"
+            }
+          ],
+          "alternateReaderAvailable": true,
+          "targetedCropEvaluated": false,
+          "blockingStage": "numeric token segmentation plus row-to-column association: Tesseract found the row/unit without a usable numeric word; PaddleOCR returned fused numeric spans. The expected digits are present inside a merged span, but neither value has a standalone token/basis assignment. The parser withheld both fields."
+        }
+      ]
+    },
+    "comparableBehaviorChange": {
+      "sameSavedOcrObservationsReplayed": true,
+      "metric": "source-linked structured ingredient text segments",
+      "before": 0,
+      "after": 15,
+      "automaticWithoutManualCorrection": true,
+      "accuracyClaim": "none; exact ingredient transcription and complete-list accuracy remain unscored without an annotated reference"
+    },
+    "referenceMethod": "Nutrient reference was transcribed from the same package source, not independently adjudicated. Identity comes from the same product-record association. Ingredient exactness is unscored. Allergen text had one same-image visual check."
+  },
+  "viewports": [
+    {
+      "viewport": "390x844",
+      "axeViolations": [],
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": "1440x900",
+      "axeViolations": [],
+      "horizontalOverflow": false
+    }
+  ],
+  "localApiRoutes": [
+    "/api/status"
+  ],
+  "geminiRouteRequests": [],
+  "externalRequests": [
+    {
+      "method": "GET",
+      "origin": "https://paddle-model-ecology.bj.bcebos.com"
+    },
+    {
+      "method": "GET",
+      "origin": "https://paddle-model-ecology.bj.bcebos.com"
+    }
+  ],
+  "paddleModelAssetBytes": 31211520,
+  "pageErrors": [],
+  "screenshots": ".data/indian-hindi-label-probe/multi-photo-acceptance/",
+  "limitations": [
+    "Both package photos are English-only and from one noodles product group.",
+    "Reference readings were manually transcribed from the same source package, not independently adjudicated.",
+    "Recovered ingredient segments still contain recognition errors and are not independently scored for exact ingredient transcription.",
+    "This run does not establish population accuracy or regional Indian language readiness.",
+    "A community record or product identity is not verified by matching words in a package photograph."
+  ]
+}

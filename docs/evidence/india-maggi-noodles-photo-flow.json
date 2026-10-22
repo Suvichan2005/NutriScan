@@ -1,0 +1,375 @@
+{
+  "schemaVersion": 1,
+  "kind": "indian-market-public-package-photo-integration-development",
+  "generatedAt": "2026-10-22T04:41:47.979Z",
+  "source": {
+    "product": "Maggi Noodles, barcode 8901058022193",
+    "productPage": "https://world.openfoodfacts.org/product/8901058022193",
+    "photoUrl": "https://images.openfoodfacts.org/images/products/890/105/802/2193/nutrition_en.13.full.jpg",
+    "imageRevision": 13,
+    "uploader": "smoothie-app",
+    "license": "Open Food Facts product photo CC BY-SA; exact reuse attribution review pending; image bytes remain local and uncommitted.",
+    "languagesObserved": [
+      "English"
+    ],
+    "imageSha256": "29f2842018da1d2edc1295dff71f3f8927def7b2e46a6e49aaa266276aa5e620",
+    "imageBytes": 1018344,
+    "dimensions": {
+      "width": 1844,
+      "height": 4096
+    }
+  },
+  "evaluation": "Single English-only Indian-market development photograph. The visible table was manually transcribed for this within-image exploratory comparison; no second adjudicator or held-out products were used. This is not population accuracy. Product identity and ingredients remain unverified.",
+  "runtime": {
+    "browser": "Chrome via Playwright, visible window",
+    "viewportSequence": [
+      "390x844",
+      "1440x900"
+    ],
+    "appOrigin": "http://127.0.0.1:3413",
+    "profile": "fresh browser context, no saved profile"
+  },
+  "outcomes": {
+    "mobileAxeViolations": [],
+    "resultAxeViolations": [],
+    "desktopAxeViolations": [],
+    "mobileOverflow": false,
+    "desktopOverflow": false,
+    "viewportScreenshots": [
+      "mobile.png",
+      "desktop.png"
+    ],
+    "photoHint": "unknown",
+    "scanWallMs": 23485,
+    "packageName": "opram porind threngh scientifie",
+    "brand": null,
+    "barcode": null,
+    "ingredientTokenCount": 0,
+    "nutrientCount": 16,
+    "nutrients": [
+      {
+        "key": "energy",
+        "value": 384,
+        "unit": "kcal",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "energy",
+        "value": 269,
+        "unit": "kcal",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "protein",
+        "value": 8.2,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "protein",
+        "value": 5.7,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "carbohydrate",
+        "value": 59.6,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "carbohydrate",
+        "value": 41.7,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "sugars",
+        "value": 1.8,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "sugars",
+        "value": 1.3,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "addedSugars",
+        "value": 1.1,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "addedSugars",
+        "value": 0.8,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "fat",
+        "value": 12.5,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "fat",
+        "value": 8.8,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "saturatedFat",
+        "value": 8.2,
+        "unit": "g",
+        "basis": {
+          "amount": 100,
+          "unit": "g",
+          "description": "per 100g (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "saturatedFat",
+        "value": 5.8,
+        "unit": "g",
+        "basis": {
+          "amount": 70,
+          "unit": "g",
+          "description": "per declared serving (split table header)"
+        },
+        "status": "observed"
+      },
+      {
+        "key": "sodium",
+        "value": 1000.07,
+        "unit": "mg",
+        "basis": null,
+        "status": "conflict"
+      },
+      {
+        "key": "sodium",
+        "value": 0,
+        "unit": "mg",
+        "basis": null,
+        "status": "conflict"
+      }
+    ],
+    "ocrLineCount": 42,
+    "wordBoxCount": 257,
+    "engines": [
+      {
+        "name": "tesseract.js",
+        "language": "eng",
+        "imageId": "57c9916a-51a4-4427-a0f0-ce6054d16607"
+      },
+      {
+        "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+        "language": "en",
+        "imageId": "57c9916a-51a4-4427-a0f0-ce6054d16607"
+      }
+    ],
+    "parserDiagnostics": {
+      "rejected": 2,
+      "accepted": 7,
+      "conflict": 1
+    },
+    "tableRows": [
+      {
+        "nutrient": "Energy",
+        "observation": "384 kcal",
+        "basis": "100 g",
+        "calculation": "268.8 kcal"
+      },
+      {
+        "nutrient": "Energy",
+        "observation": "269 kcal",
+        "basis": "70 g",
+        "calculation": "268.8 kcal"
+      },
+      {
+        "nutrient": "Protein",
+        "observation": "8.2 g",
+        "basis": "100 g",
+        "calculation": "5.74 g"
+      },
+      {
+        "nutrient": "Protein",
+        "observation": "5.7 g",
+        "basis": "70 g",
+        "calculation": "5.74 g"
+      },
+      {
+        "nutrient": "Carbohydrate",
+        "observation": "59.6 g",
+        "basis": "100 g",
+        "calculation": "41.72 g"
+      },
+      {
+        "nutrient": "Carbohydrate",
+        "observation": "41.7 g",
+        "basis": "70 g",
+        "calculation": "41.72 g"
+      },
+      {
+        "nutrient": "Total sugars",
+        "observation": "1.8 g",
+        "basis": "100 g",
+        "calculation": "withheld"
+      },
+      {
+        "nutrient": "Total sugars",
+        "observation": "1.3 g",
+        "basis": "70 g",
+        "calculation": "withheld"
+      },
+      {
+        "nutrient": "Added sugars",
+        "observation": "1.1 g",
+        "basis": "100 g",
+        "calculation": "withheld"
+      },
+      {
+        "nutrient": "Added sugars",
+        "observation": "0.8 g",
+        "basis": "70 g",
+        "calculation": "withheld"
+      },
+      {
+        "nutrient": "Total fat",
+        "observation": "12.5 g",
+        "basis": "100 g",
+        "calculation": "8.75 g"
+      },
+      {
+        "nutrient": "Total fat",
+        "observation": "8.8 g",
+        "basis": "70 g",
+        "calculation": "8.75 g"
+      },
+      {
+        "nutrient": "Saturated fat",
+        "observation": "8.2 g",
+        "basis": "100 g",
+        "calculation": "5.74 g"
+      },
+      {
+        "nutrient": "Saturated fat",
+        "observation": "5.8 g",
+        "basis": "70 g",
+        "calculation": "5.74 g"
+      },
+      {
+        "nutrient": "Sodium",
+        "observation": "1000.07 mg · conflict",
+        "basis": "unknown",
+        "calculation": "withheld"
+      },
+      {
+        "nutrient": "Sodium",
+        "observation": "0 mg · conflict",
+        "basis": "unknown",
+        "calculation": "withheld"
+      }
+    ],
+    "followupQuestion": "How much protein is in a 70 g serving according to this label?",
+    "followupAnswer": "For 70 g: 5.74 g protein. Some readings conflict and need checking before a dietary decision.",
+    "localApiRoutes": [
+      "/api/status"
+    ],
+    "geminiRouteRequests": [],
+    "externalOrigins": [
+      "https://paddle-model-ecology.bj.bcebos.com"
+    ],
+    "externalNonGetRequests": [],
+    "paddleModelAssetUrls": [
+      "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_rec_onnx_infer.tar",
+      "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_det_onnx_infer.tar"
+    ],
+    "paddleModelAssetBytes": 31211520,
+    "pageErrors": []
+  },
+  "fieldComparison": {
+    "datasetSplit": "exploratory-development-only",
+    "referenceMethod": "Manual visual transcription from the same photographed nutrition table; not independently adjudicated.",
+    "schemaFieldCases": 16,
+    "fields": "Eight current-schema nutrients with per-100-g and per-70-g readings: energy, protein, carbohydrate, sugars, added sugars, total fat, saturated fat and sodium.",
+    "before": {
+      "correctExactValueUnitBasis": 0,
+      "incorrectStructured": 0,
+      "withheld": 16,
+      "scanWallMs": 19070
+    },
+    "after": {
+      "correctExactValueUnitBasis": 14,
+      "incorrectStructured": 0,
+      "withheld": 2,
+      "scanWallMs": 23485,
+      "automatic": true,
+      "manualCropOrCorrection": false
+    },
+    "withheld": "The two sodium readings remained conflicted because OCR fused 1000.0 and 700.0 into one numeric string. Trans fat and iron are outside the current nutrient schema and excluded from the denominator.",
+    "interpretation": "Structured parsing and header recovery improved; the OCR recognizer did not change. The result applies to this one development image only."
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "kind": "serving-measure-browser-acceptance",
+  "date": "2026-10-22",
+  "commitUnderTest": "6bbff54",
+  "workingTree": "uncommitted changes present",
+  "capture": {
+    "tool": "Playwright using installed Chrome",
+    "origin": "http://127.0.0.1:3413",
+    "viewports": ["390x844", "1440x900"],
+    "photo": {
+      "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+      "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+      "source": "https://images.openfoodfacts.org/images/products/890/108/806/8758/nutrition_en.25.full.jpg",
+      "rightsReview": "not independently verified; original image remains local and is not included in this receipt"
+    },
+    "imageHandling": "full-frame only; no user-selected or automatic crop in the accepted run"
+  },
+  "servingDeclaration": {
+    "expected": 1,
+    "before": {
+      "correctAccepted": 0,
+      "incorrectAccepted": 0,
+      "omitted": 1,
+      "withheld": 0,
+      "usable": 0,
+      "denominator": 1,
+      "reason": "The OCR label was fused as Serveasure and the previous parser did not recognize this serving-measure label form."
+    },
+    "after": {
+      "correctAccepted": 1,
+      "incorrectAccepted": 0,
+      "omitted": 0,
+      "withheld": 0,
+      "usable": 1,
+      "denominator": 1,
+      "value": 38,
+      "unit": "g",
+      "printedAlternate": "1/2 cup",
+      "browserDetectedServing": {"value": 38, "unit": "g"},
+      "initialPortion": "38"
+    },
+    "method": "A bounded parser extension recognizes serving size/measure forms, including the OCR variant Serveasure, and preserves the source OCR observation. It does not treat a servings-per-pack count as serving mass."
+  },
+  "nutritionFields": {
+    "before": {"correctAccepted": 5, "incorrectAccepted": 0, "omitted": 1, "withheld": 3, "usable": 5, "denominator": 9},
+    "after": {"correctAccepted": 5, "incorrectAccepted": 0, "omitted": 1, "withheld": 3, "usable": 5, "denominator": 9},
+    "change": "none",
+    "currentUnusableFailureCategories": {
+      "withheldMissingUnit": ["energy", "protein", "sugars"],
+      "omittedTruncatedNutrientLabel": ["carbohydrate: OCR label Carbohyd was not associated with its recognized numeric value and printed basis"]
+    },
+    "rawEvidence": {
+      "fieldsWithExactNumericValueOnRow": 9,
+      "fieldsWithExactUnitOnRow": 6,
+      "fieldsWithExactValueAndUnitOnRow": 5,
+      "fieldsWithBasisTextInImage": 9,
+      "expected": 9,
+      "limitation": "Same-line/image presence does not establish correct row-column association or independent detection precision/recall."
+    },
+    "reference": "single human visual read on one exploratory development photo; not independent adjudication or held-out accuracy"
+  },
+  "otherPackageInformation": {
+    "productIdentity": {"result": "Unidentified package", "scored": false, "reason": "The nutrition-panel photo is not an adjudicated identity view."},
+    "ingredients": {"scored": false, "reason": "No ingredient-panel reference is present in this nutrition-only photo."},
+    "allergens": {"scored": false, "reason": "No allergen reference is annotated for this photo."}
+  },
+  "downstreamUtility": {
+    "automaticCorrectionBeforeUse": false,
+    "initialPortionCalculationUsedDetectedServing": true,
+    "visibleExample": "The initial 38 g portion used the accepted 3.4 g saturated-fat value per 100 g to calculate 1.292 g; the app labels OCR-derived nutrition and calculations as unverified estimates.",
+    "providerCalls": 0
+  },
+  "browserAndNetwork": {
+    "pageErrors": 0,
+    "axeViolations": 0,
+    "packagePhotoUploadRequests": 0,
+    "geminiRouteRequests": 0,
+    "paddleModelAssetGetRequests": 4,
+    "note": "Paddle model assets were fetched by GET from the configured model host; these are external model downloads, not package-photo uploads."
+  },
+  "rejectedAutomaticCropExperiment": {
+    "includedInProductRun": false,
+    "method": "A bounded crop was derived from OCR geometry and processed with one local contrast pass.",
+    "result": "Nutrition remained 5/9; the crop OCR read the printed g unit for total sugars as 9 and the value remained safely unusable.",
+    "decision": "Not integrated because it did not improve usable extraction and introduced a new recognition error."
+  },
+  "limitations": [
+    "One Indian-market English oats nutrition photo and one visual reviewer do not establish general accuracy.",
+    "The experiment does not measure Indian-language or Devanagari recognition.",
+    "Serving recovery is a product utility improvement, not a nutrient-table extraction improvement.",
+    "The OCR-to-parser recovery does not establish current product formulation or label truth."
+  ]
+}

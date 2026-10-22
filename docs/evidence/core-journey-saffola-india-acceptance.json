@@ -1,0 +1,1648 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-intake-to-audit-design-review",
+  "generatedAt": "2026-10-22T06:14:01.809Z",
+  "captureTool": "Playwright using installed Chrome",
+  "appOrigin": "http://127.0.0.1:3413",
+  "acceptanceMode": "loopback local application",
+  "photoFile": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+  "photoFiles": [
+    "saffola-veggie-oats-nutrition-off-8901088068758.jpg"
+  ],
+  "photoRoles": [],
+  "limitations": [
+    "OCR field measurements use one source image and a single human visual read, not independent adjudication or a held-out accuracy estimate.",
+    "Axe results are automated checks, not full accessibility conformance.",
+    "The browser receipt counts Gemini route invocations, not downstream provider calls or provider cost.",
+    "The 5/9 full-frame result is a development photo with one visual read, not held-out or independent accuracy.",
+    "The earlier 6/9 result used a user-selected crop and is not directly comparable to this full-frame automatic run.",
+    "Product identity and ingredients are not scored from the nutrition-panel-only image. Source-image redistribution rights remain unverified.",
+    "Prior cropped receipt preserved byte-for-byte at docs/evidence/core-journey-saffola-india-acceptance-cropped.json; backup SHA-256 b6e928bf88187b9e2b6f4172b5b4f6e53de0390d1ff7ffd83e2133e33bf9085d."
+  ],
+  "screenshots": ".data\\saffola-current-after-coverage-metrics-capture",
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "initialQuestionRetained": true,
+      "realPhotoHashVerified": true,
+      "cropCoordinates": [],
+      "selectedNameLineConfidence": null,
+      "packageName": "Unidentified package",
+      "ocrObservations": 31,
+      "ocrEngineSelections": [
+        {
+          "imageId": "6af31485-2502-49eb-b200-77b849f42d3f",
+          "name": "tesseract.js",
+          "language": "eng"
+        },
+        {
+          "imageId": "6af31485-2502-49eb-b200-77b849f42d3f",
+          "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+          "language": "en"
+        }
+      ],
+      "exportedOcrLines": 31,
+      "exportedOcrWordBoxes": 157,
+      "ocrWordGeometryWithinCapture": true,
+      "parsedNutrientRows": 5,
+      "annotatedFieldCounts": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "scoring": "Value, unit, and basis are compared per annotated column; distinct bases are not treated as duplicate readings.",
+        "expected": 9,
+        "exact": 5,
+        "incorrect": 0,
+        "omitted": 1,
+        "withheld": 3,
+        "fields": [
+          {
+            "key": "energy",
+            "expectedValue": 376,
+            "expectedUnit": "kcal",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "candidateCountAtBasis": 0,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": false,
+            "ocrValueUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 2,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "protein",
+            "expectedValue": 8.8,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "candidateCountAtBasis": 0,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": false,
+            "ocrValueUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "carbohydrate",
+            "expectedValue": 69.2,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "candidateCountAtBasis": 0,
+            "ocrNumericCandidateCount": 0,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrValueUnitCandidateExact": false,
+            "ocrBasisCandidateExact": false,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "omitted",
+            "parserDiagnostics": []
+          },
+          {
+            "key": "sugars",
+            "expectedValue": 5.1,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "candidateCountAtBasis": 0,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": false,
+            "ocrValueUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "addedSugars",
+            "expectedValue": 3.6,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": 3.6,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per 100 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "candidateCountAtBasis": 1,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrValueUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": true,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 2,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "fiber",
+            "expectedValue": 12.4,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": 12.4,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per 100 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "candidateCountAtBasis": 1,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrValueUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": true,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 3,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "fat",
+            "expectedValue": 9.9,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": 9.9,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per 100 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "candidateCountAtBasis": 1,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrValueUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": true,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 2,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": [
+                  "missing-basis"
+                ]
+              },
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "saturatedFat",
+            "expectedValue": 3.4,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": 3.4,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per 100 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "candidateCountAtBasis": 1,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrValueUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": true,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": [
+                  "missing-basis"
+                ]
+              },
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "sodium",
+            "expectedValue": 2283,
+            "expectedUnit": "mg",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": 2283,
+            "emittedUnit": "mg",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per 100 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "candidateCountAtBasis": 1,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrValueUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": true,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          }
+        ]
+      },
+      "stageDiagnostics": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "textDetection": {
+          "observedLineBoxes": 31,
+          "observedWordBoxes": 157,
+          "precisionRecall": null,
+          "limitation": "No independently annotated text-region boxes are available; observed boxes are not detection precision or recall."
+        },
+        "recognition": {
+          "annotatedFieldsWithExactNumericValueCandidate": 8,
+          "annotatedFieldsWithExactUnitCandidate": 5,
+          "annotatedFieldsWithExactValueAndUnitCandidate": 5,
+          "annotatedFieldsWithExactBasisCandidate": 8,
+          "expectedFields": 9,
+          "limitation": "These counts are parser-diagnostic candidates, not standalone OCR accuracy; raw OCR row/value/unit/basis flags are recorded per field below."
+        },
+        "rawOcrEvidence": {
+          "fieldsWithRowLabelText": 9,
+          "fieldsWithExactValueOnSameRowLine": 9,
+          "fieldsWithExactUnitOnSameRowLine": 6,
+          "fieldsWithExactValueAndUnitOnSameRowLine": 5,
+          "fieldsWithBasisTextInSameImage": 9,
+          "expectedFields": 9,
+          "limitation": "Literal same-line and same-image presence checks do not establish row-to-column association or independent detection precision/recall."
+        },
+        "tableStructure": {
+          "annotatedFieldsWithMultipleNumericCandidates": 0,
+          "annotatedFieldsWithoutParserDiagnostic": 1,
+          "rowColumnAssociationScored": false,
+          "limitation": "Line and word geometry are retained, but no gold row or column regions exist for independent association scoring."
+        },
+        "parser": {
+          "annotatedFieldsWithDiagnostic": 8,
+          "rejectedFieldCount": 3,
+          "rejectionReasonOccurrences": {
+            "missing-unit": 3
+          }
+        }
+      },
+      "answerDisclosureMarkedUnverified": true,
+      "annotatedFieldScoreConserved": true,
+      "noIncorrectAnnotatedFields": true,
+      "addPhotoActionVisible": true,
+      "addPhotoPickerOpened": true,
+      "calculatedNutrients": 5,
+      "plainLanguageUnknownSummary": "The package labels its nutrition values as approximate; portion calculations use the printed readings as estimates.\n\nSome nutrition entries need checking. NutriScan left unclear amounts out of calculations rather than guessing.\n\nThe product name was not established from the readable package text.",
+      "summaryHidesParserJargon": true,
+      "labelNotesInitiallyCollapsed": true,
+      "labelNotesDisclosure": "Label-reading notes (8)",
+      "labelNotesPreserveParserDetails": true,
+      "exactSaturatedFatObservation": true,
+      "localOcrRegionInspectionWorks": true,
+      "localOcrRegionInspectionMadeNoHttpRequest": true,
+      "uncertaintyFollowUpUsesPackageEvidence": true,
+      "uncertaintyAnswerLength": 340,
+      "followUpMessages": 3,
+      "correctionApplied": true,
+      "correctionBasisMatchesObserved": true,
+      "originalObservationsRetained": true,
+      "portion": "50",
+      "fiftyGramCalculation": true,
+      "ocrReadingMarkedUnverified": true,
+      "correctionMarkedUnverified": true,
+      "syntheticProfileOnly": true,
+      "personalizedQuestionRetained": true,
+      "personalCarbohydrateTargetWithheld": true,
+      "clinicianContextVisible": true,
+      "diabetesPlanningOptionsVisible": true,
+      "niddkSourceLinked": true,
+      "noNonLoopbackRequests": true,
+      "nonLoopbackRequestOrigins": [],
+      "paddleModelAssetRequests": [
+        {
+          "origin": "https://paddle-model-ecology.bj.bcebos.com",
+          "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_det_onnx_infer.tar",
+          "method": "GET"
+        },
+        {
+          "origin": "https://paddle-model-ecology.bj.bcebos.com",
+          "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_rec_onnx_infer.tar",
+          "method": "GET"
+        }
+      ],
+      "geminiRouteRequests": [],
+      "noGeminiRouteRequests": true,
+      "axeViolationIds": {
+        "intake": [],
+        "local OCR image inspection": [],
+        "findings": [],
+        "correction dialog": [],
+        "corrected calculation": [],
+        "personalized diabetes follow-up": []
+      },
+      "pageErrors": []
+    },
+    {
+      "viewport": "1440x900",
+      "initialQuestionRetained": true,
+      "realPhotoHashVerified": true,
+      "cropCoordinates": [],
+      "selectedNameLineConfidence": null,
+      "packageName": "Unidentified package",
+      "ocrObservations": 31,
+      "ocrEngineSelections": [
+        {
+          "imageId": "bfb0a2f7-8901-4835-9b06-5a9506349f9f",
+          "name": "tesseract.js",
+          "language": "eng"
+        },
+        {
+          "imageId": "bfb0a2f7-8901-4835-9b06-5a9506349f9f",
+          "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+          "language": "en"
+        }
+      ],
+      "exportedOcrLines": 31,
+      "exportedOcrWordBoxes": 157,
+      "ocrWordGeometryWithinCapture": true,
+      "parsedNutrientRows": 5,
+      "annotatedFieldCounts": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "scoring": "Value, unit, and basis are compared per annotated column; distinct bases are not treated as duplicate readings.",
+        "expected": 9,
+        "exact": 5,
+        "incorrect": 0,
+        "omitted": 1,
+        "withheld": 3,
+        "fields": [
+          {
+            "key": "energy",
+            "expectedValue": 376,
+            "expectedUnit": "kcal",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "candidateCountAtBasis": 0,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": false,
+            "ocrValueUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 2,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "protein",
+            "expectedValue": 8.8,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "candidateCountAtBasis": 0,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": false,
+            "ocrValueUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "carbohydrate",
+            "expectedValue": 69.2,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "candidateCountAtBasis": 0,
+            "ocrNumericCandidateCount": 0,
+            "ocrNumericCandidateExact": false,
+            "ocrUnitCandidateExact": false,
+            "ocrValueUnitCandidateExact": false,
+            "ocrBasisCandidateExact": false,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "omitted",
+            "parserDiagnostics": []
+          },
+          {
+            "key": "sugars",
+            "expectedValue": 5.1,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": null,
+            "emittedUnit": null,
+            "emittedBasis": null,
+            "numericExact": false,
+            "unitExact": false,
+            "basisExact": false,
+            "candidateCountAtBasis": 0,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": false,
+            "ocrValueUnitCandidateExact": false,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "withheld",
+            "parserDiagnostics": [
+              {
+                "decision": "rejected",
+                "reasonCodes": [
+                  "missing-unit"
+                ]
+              }
+            ]
+          },
+          {
+            "key": "addedSugars",
+            "expectedValue": 3.6,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": 3.6,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per 100 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "candidateCountAtBasis": 1,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrValueUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": true,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 2,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "fiber",
+            "expectedValue": 12.4,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": 12.4,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per 100 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "candidateCountAtBasis": 1,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrValueUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": true,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 3,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "fat",
+            "expectedValue": 9.9,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": 9.9,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per 100 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "candidateCountAtBasis": 1,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrValueUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": true,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 2,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": [
+                  "missing-basis"
+                ]
+              },
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "saturatedFat",
+            "expectedValue": 3.4,
+            "expectedUnit": "g",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": 3.4,
+            "emittedUnit": "g",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per 100 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "candidateCountAtBasis": 1,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrValueUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": true,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": [
+                  "missing-basis"
+                ]
+              },
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          },
+          {
+            "key": "sodium",
+            "expectedValue": 2283,
+            "expectedUnit": "mg",
+            "expectedBasis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "emittedValue": 2283,
+            "emittedUnit": "mg",
+            "emittedBasis": {
+              "amount": 100,
+              "unit": "g",
+              "description": "Per 100 g"
+            },
+            "numericExact": true,
+            "unitExact": true,
+            "basisExact": true,
+            "candidateCountAtBasis": 1,
+            "ocrNumericCandidateCount": 1,
+            "ocrNumericCandidateExact": true,
+            "ocrUnitCandidateExact": true,
+            "ocrValueUnitCandidateExact": true,
+            "ocrBasisCandidateExact": true,
+            "rawOcrEvidence": {
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": true,
+              "basisTextInSameImage": true,
+              "readers": [
+                {
+                  "reader": "tesseract.js",
+                  "rowLabelLineCount": 0,
+                  "rowLabelPresent": false,
+                  "exactValueOnSameRowLine": false,
+                  "exactUnitOnSameRowLine": false,
+                  "exactValueAndUnitOnSameRowLine": false,
+                  "basisTextInSameImage": false
+                },
+                {
+                  "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+                  "rowLabelLineCount": 1,
+                  "rowLabelPresent": true,
+                  "exactValueOnSameRowLine": true,
+                  "exactUnitOnSameRowLine": true,
+                  "exactValueAndUnitOnSameRowLine": true,
+                  "basisTextInSameImage": true
+                }
+              ]
+            },
+            "outcome": "exact",
+            "parserDiagnostics": [
+              {
+                "decision": "accepted",
+                "reasonCodes": []
+              }
+            ]
+          }
+        ]
+      },
+      "stageDiagnostics": {
+        "referenceStatus": "single human visual read; not independently adjudicated",
+        "textDetection": {
+          "observedLineBoxes": 31,
+          "observedWordBoxes": 157,
+          "precisionRecall": null,
+          "limitation": "No independently annotated text-region boxes are available; observed boxes are not detection precision or recall."
+        },
+        "recognition": {
+          "annotatedFieldsWithExactNumericValueCandidate": 8,
+          "annotatedFieldsWithExactUnitCandidate": 5,
+          "annotatedFieldsWithExactValueAndUnitCandidate": 5,
+          "annotatedFieldsWithExactBasisCandidate": 8,
+          "expectedFields": 9,
+          "limitation": "These counts are parser-diagnostic candidates, not standalone OCR accuracy; raw OCR row/value/unit/basis flags are recorded per field below."
+        },
+        "rawOcrEvidence": {
+          "fieldsWithRowLabelText": 9,
+          "fieldsWithExactValueOnSameRowLine": 9,
+          "fieldsWithExactUnitOnSameRowLine": 6,
+          "fieldsWithExactValueAndUnitOnSameRowLine": 5,
+          "fieldsWithBasisTextInSameImage": 9,
+          "expectedFields": 9,
+          "limitation": "Literal same-line and same-image presence checks do not establish row-to-column association or independent detection precision/recall."
+        },
+        "tableStructure": {
+          "annotatedFieldsWithMultipleNumericCandidates": 0,
+          "annotatedFieldsWithoutParserDiagnostic": 1,
+          "rowColumnAssociationScored": false,
+          "limitation": "Line and word geometry are retained, but no gold row or column regions exist for independent association scoring."
+        },
+        "parser": {
+          "annotatedFieldsWithDiagnostic": 8,
+          "rejectedFieldCount": 3,
+          "rejectionReasonOccurrences": {
+            "missing-unit": 3
+          }
+        }
+      },
+      "answerDisclosureMarkedUnverified": true,
+      "annotatedFieldScoreConserved": true,
+      "noIncorrectAnnotatedFields": true,
+      "addPhotoActionVisible": true,
+      "addPhotoPickerOpened": true,
+      "calculatedNutrients": 5,
+      "plainLanguageUnknownSummary": "The package labels its nutrition values as approximate; portion calculations use the printed readings as estimates.\n\nSome nutrition entries need checking. NutriScan left unclear amounts out of calculations rather than guessing.\n\nThe product name was not established from the readable package text.",
+      "summaryHidesParserJargon": true,
+      "labelNotesInitiallyCollapsed": true,
+      "labelNotesDisclosure": "Label-reading notes (8)",
+      "labelNotesPreserveParserDetails": true,
+      "exactSaturatedFatObservation": true,
+      "localOcrRegionInspectionWorks": true,
+      "localOcrRegionInspectionMadeNoHttpRequest": true,
+      "uncertaintyFollowUpUsesPackageEvidence": true,
+      "uncertaintyAnswerLength": 340,
+      "followUpMessages": 3,
+      "correctionApplied": true,
+      "correctionBasisMatchesObserved": true,
+      "originalObservationsRetained": true,
+      "portion": "50",
+      "fiftyGramCalculation": true,
+      "ocrReadingMarkedUnverified": true,
+      "correctionMarkedUnverified": true,
+      "syntheticProfileOnly": true,
+      "personalizedQuestionRetained": true,
+      "personalCarbohydrateTargetWithheld": true,
+      "clinicianContextVisible": true,
+      "diabetesPlanningOptionsVisible": true,
+      "niddkSourceLinked": true,
+      "noNonLoopbackRequests": true,
+      "nonLoopbackRequestOrigins": [],
+      "paddleModelAssetRequests": [
+        {
+          "origin": "https://paddle-model-ecology.bj.bcebos.com",
+          "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_det_onnx_infer.tar",
+          "method": "GET"
+        },
+        {
+          "origin": "https://paddle-model-ecology.bj.bcebos.com",
+          "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_rec_onnx_infer.tar",
+          "method": "GET"
+        }
+      ],
+      "geminiRouteRequests": [],
+      "noGeminiRouteRequests": true,
+      "axeViolationIds": {
+        "intake": [],
+        "local OCR image inspection": [],
+        "findings": [],
+        "correction dialog": [],
+        "corrected calculation": [],
+        "personalized diabetes follow-up": []
+      },
+      "pageErrors": []
+    }
+  ],
+  "commitUnderTest": "6bbff54 + uncommitted working tree",
+  "sample": {
+    "id": "saffola-veggie-oats-nutrition-off-8901088068758",
+    "market": "India",
+    "productCategory": "oats",
+    "split": "development",
+    "heldOut": false,
+    "sourceManifest": "data/semantic-photo-manifest.json",
+    "imageSha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+    "referenceStatus": "single visual read; not independently adjudicated",
+    "imageRights": "redistribution rights not independently verified; source image is not included"
+  },
+  "method": {
+    "capture": "Installed Chrome via Playwright against local loopback application",
+    "viewports": [
+      "390x844",
+      "1440x900"
+    ],
+    "crop": null,
+    "readers": [
+      {
+        "name": "tesseract.js",
+        "language": "eng"
+      },
+      {
+        "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+        "language": "en"
+      }
+    ],
+    "score": "Value, unit, and basis must match the single human visual reference for each annotated 100 g field.",
+    "automaticScoreRecordedBeforeCorrection": true
+  },
+  "coverageFirstEvaluation": {
+    "denominator": 9,
+    "correctAccepted": 5,
+    "incorrectAccepted": 0,
+    "omitted": 1,
+    "withheld": 3,
+    "totalUnusable": 4,
+    "usableCoverage": "5/9",
+    "byBasis": {
+      "per100g": {
+        "expected": 9,
+        "correctAccepted": 5,
+        "incorrectAccepted": 0,
+        "omitted": 1,
+        "withheld": 3
+      }
+    },
+    "candidateLevelFailures": [
+      {
+        "nutrient": "energy",
+        "expected": {
+          "value": 376,
+          "unit": "kcal",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "outcome": "withheld",
+        "rawOcrEvidence": {
+          "rowLabelPresent": true,
+          "exactValueOnSameRowLine": true,
+          "exactUnitOnSameRowLine": true,
+          "exactValueAndUnitOnSameRowLine": false,
+          "basisTextInSameImage": true,
+          "readers": [
+            {
+              "reader": "tesseract.js",
+              "rowLabelLineCount": 0,
+              "rowLabelPresent": false,
+              "exactValueOnSameRowLine": false,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": false
+            },
+            {
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "rowLabelLineCount": 2,
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": true,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true
+            }
+          ]
+        },
+        "parserCandidates": {
+          "exactNumericValue": true,
+          "exactUnit": false,
+          "exactValueAndUnit": false,
+          "exactBasis": true,
+          "parserReasons": [
+            "missing-unit"
+          ]
+        },
+        "blocker": "The correct 376.0 value and 100 g basis are present. Paddle OCR also contains an Energy/kcal line, but kcal and 376.0 are on separate OCR lines, so no value-unit pair is linked; parser rejects with missing-unit."
+      },
+      {
+        "nutrient": "protein",
+        "expected": {
+          "value": 8.8,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "outcome": "withheld",
+        "rawOcrEvidence": {
+          "rowLabelPresent": true,
+          "exactValueOnSameRowLine": true,
+          "exactUnitOnSameRowLine": false,
+          "exactValueAndUnitOnSameRowLine": false,
+          "basisTextInSameImage": true,
+          "readers": [
+            {
+              "reader": "tesseract.js",
+              "rowLabelLineCount": 0,
+              "rowLabelPresent": false,
+              "exactValueOnSameRowLine": false,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": false
+            },
+            {
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "rowLabelLineCount": 1,
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true
+            }
+          ]
+        },
+        "parserCandidates": {
+          "exactNumericValue": true,
+          "exactUnit": false,
+          "exactValueAndUnit": false,
+          "exactBasis": true,
+          "parserReasons": [
+            "missing-unit"
+          ]
+        },
+        "blocker": "The exact numeric value and 100 g basis are present in the row evidence, but neither reader supplied the printed unit on that OCR row; parser rejects with missing-unit."
+      },
+      {
+        "nutrient": "carbohydrate",
+        "expected": {
+          "value": 69.2,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "outcome": "omitted",
+        "rawOcrEvidence": {
+          "rowLabelPresent": true,
+          "exactValueOnSameRowLine": true,
+          "exactUnitOnSameRowLine": false,
+          "exactValueAndUnitOnSameRowLine": false,
+          "basisTextInSameImage": true,
+          "readers": [
+            {
+              "reader": "tesseract.js",
+              "rowLabelLineCount": 0,
+              "rowLabelPresent": false,
+              "exactValueOnSameRowLine": false,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": false
+            },
+            {
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "rowLabelLineCount": 1,
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true
+            }
+          ]
+        },
+        "parserCandidates": {
+          "exactNumericValue": false,
+          "exactUnit": false,
+          "exactValueAndUnit": false,
+          "exactBasis": false,
+          "parserReasons": []
+        },
+        "blocker": "Raw OCR contains the truncated row label and exact 69.2 value, and the 100 g header appears in the same image. The production parser does not normalize Carbohyd, so it emits no row diagnostic or row-linked basis candidate."
+      },
+      {
+        "nutrient": "sugars",
+        "expected": {
+          "value": 5.1,
+          "unit": "g",
+          "basis": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        "outcome": "withheld",
+        "rawOcrEvidence": {
+          "rowLabelPresent": true,
+          "exactValueOnSameRowLine": true,
+          "exactUnitOnSameRowLine": false,
+          "exactValueAndUnitOnSameRowLine": false,
+          "basisTextInSameImage": true,
+          "readers": [
+            {
+              "reader": "tesseract.js",
+              "rowLabelLineCount": 0,
+              "rowLabelPresent": false,
+              "exactValueOnSameRowLine": false,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": false
+            },
+            {
+              "reader": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+              "rowLabelLineCount": 1,
+              "rowLabelPresent": true,
+              "exactValueOnSameRowLine": true,
+              "exactUnitOnSameRowLine": false,
+              "exactValueAndUnitOnSameRowLine": false,
+              "basisTextInSameImage": true
+            }
+          ]
+        },
+        "parserCandidates": {
+          "exactNumericValue": true,
+          "exactUnit": false,
+          "exactValueAndUnit": false,
+          "exactBasis": true,
+          "parserReasons": [
+            "missing-unit"
+          ]
+        },
+        "blocker": "The exact numeric value and 100 g basis are present in the row evidence, but neither reader supplied the printed unit on that OCR row; parser rejects with missing-unit."
+      }
+    ],
+    "stageDiagnostics": {
+      "referenceStatus": "single human visual read; not independently adjudicated",
+      "textDetection": {
+        "observedLineBoxes": 31,
+        "observedWordBoxes": 157,
+        "precisionRecall": null,
+        "limitation": "No independently annotated text-region boxes are available; observed boxes are not detection precision or recall."
+      },
+      "recognition": {
+        "annotatedFieldsWithExactNumericValueCandidate": 8,
+        "annotatedFieldsWithExactUnitCandidate": 5,
+        "annotatedFieldsWithExactValueAndUnitCandidate": 5,
+        "annotatedFieldsWithExactBasisCandidate": 8,
+        "expectedFields": 9,
+        "limitation": "These counts are parser-diagnostic candidates, not standalone OCR accuracy; raw OCR row/value/unit/basis flags are recorded per field below."
+      },
+      "rawOcrEvidence": {
+        "fieldsWithRowLabelText": 9,
+        "fieldsWithExactValueOnSameRowLine": 9,
+        "fieldsWithExactUnitOnSameRowLine": 6,
+        "fieldsWithExactValueAndUnitOnSameRowLine": 5,
+        "fieldsWithBasisTextInSameImage": 9,
+        "expectedFields": 9,
+        "limitation": "Literal same-line and same-image presence checks do not establish row-to-column association or independent detection precision/recall."
+      },
+      "tableStructure": {
+        "annotatedFieldsWithMultipleNumericCandidates": 0,
+        "annotatedFieldsWithoutParserDiagnostic": 1,
+        "rowColumnAssociationScored": false,
+        "limitation": "Line and word geometry are retained, but no gold row or column regions exist for independent association scoring."
+      },
+      "parser": {
+        "annotatedFieldsWithDiagnostic": 8,
+        "rejectedFieldCount": 3,
+        "rejectionReasonOccurrences": {
+          "missing-unit": 3
+        }
+      }
+    },
+    "productIdentity": {
+      "status": "not scored from this nutrition-panel-only image; application title is Unidentified package"
+    },
+    "ingredients": {
+      "status": "not scored; ingredient panel is not present in this photo"
+    },
+    "scoreTiming": "Captured before the separate correction interaction."
+  },
+  "comparisonNote": {
+    "priorReceipt": "docs/evidence/core-journey-saffola-india-acceptance-cropped.json",
+    "priorReceiptSha256": "b6e928bf88187b9e2b6f4172b5b4f6e53de0390d1ff7ffd83e2133e33bf9085d",
+    "priorRunCropPercent": [
+      3,
+      0,
+      93,
+      99
+    ],
+    "currentRunCropPercent": null,
+    "comparableAutomaticBaseline": false,
+    "note": "The older 6/9 result used a user-selected crop; the current 5/9 full-frame run is not a direct before/after comparison.",
+    "oldCropReceipt": "docs/evidence/core-journey-saffola-india-acceptance-cropped.json",
+    "automaticScoreBeforeCorrection": true
+  }
+}

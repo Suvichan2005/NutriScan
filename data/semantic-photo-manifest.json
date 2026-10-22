@@ -196,7 +196,13 @@
           {
             "key": "energy",
             "value": 100,
-            "unit": "kcal"
+            "unit": "kcal",
+            "printedAlternatives": [
+              {
+                "value": 400,
+                "unit": "kJ"
+              }
+            ]
           },
           {
             "key": "protein",
@@ -229,7 +235,7 @@
             "unit": "mg"
           }
         ],
-        "status": "Human reading Spanish photograph, explicitly per18g. Fiber printed less than1g; must preserve inequality rather than store as1g or0g."
+        "status": "Human reading Spanish photograph, explicitly per18g. The energy line prints 400 kJ (100 kcal); both displayed readings are annotated. Fiber is printed as less than1g; preserve the inequality rather than store as1g or0g."
       }
     },
     {

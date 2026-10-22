@@ -1,8 +1,8 @@
-# Inference module contributor rules — Yash
+# Inference module contributor rules
 
 ## Ownership
 
-You may edit only `src/modules/inference/**`. The owner controls every other path, including `src/lib/contracts.ts`, compatibility adapters in `src/lib/`, `src/app/api/**`, `src/components/**`, application state, configuration, package scripts and other module roots. If integration needs a change outside this directory, explain the exact interface change in your pull request; do not make it yourself.
+This module currently has no teammate owner. Contributors may edit `src/modules/inference/**` only after the owner assigns that path. The owner controls every other path, including `src/lib/contracts.ts`, compatibility adapters in `src/lib/`, `src/app/api/**`, `src/components/**`, application state, configuration, package scripts and other module roots. If integration needs a change outside the assigned directory, explain the exact interface change in your pull request; do not make it yourself.
 
 ## Module purpose and boundary
 
@@ -42,7 +42,7 @@ npm test -- src/modules/inference src/lib/__tests__/assist-evidence-contract.tes
 
 Module tests must use synthetic fixture inputs. Do not require API keys, private package photos, personal health records, external services or network access. Keep mocked model output clearly separate from live-provider evidence. A passing fixture suite validates code paths and contracts only; it does not demonstrate Gemini accuracy or behavior.
 
-## First independent work package
+## Suitable future work package
 
 Add a small, general fixture set for evidence-grounded reasoning across noisy OCR, conflicting package observations, missing units/bases, retrieved-source limitations, deterministic calculations and explicitly supplied profile context. Measure which claims are retained, rejected or abstained and whether each retained claim points to the right evidence. Include counterexamples for unsupported associations and numerical contradictions. Do not add condition-specific canned answers, modify the provider prompt or enable Gemini as part of that work.
 

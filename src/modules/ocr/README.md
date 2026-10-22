@@ -23,6 +23,6 @@ The first independent work package is to improve nutritional-table field recover
 
 ## Contributor boundary
 
-Yug may modify `src/modules/ocr/**`. Global contracts, compatibility facades, barcode code, root scripts/configuration, application routes, UI, session state, consent, and other modules are owner-controlled. Stable interfaces are the exports in `index.ts` and shared schemas/types in `src/lib/contracts.ts`. Propose integration changes instead of editing those files.
+Yug owns OCR implementation files under `src/modules/ocr/**`; Yash owns `annotation.ts`, `evaluation.ts`, `fixtures/**`, annotation/evaluation tests and offline comparative runners under `evaluation-tools/**`. The public `index.ts`, global contracts, compatibility facades, barcode code, root scripts/configuration, cross-engine browser runners, application routes, UI, session state, consent, and other modules remain owner-controlled. Both contributors can run `node src/modules/ocr/test.mjs`. The owner may temporarily assign Yash OCR implementation files only when Yug is not working on overlapping paths.
 
 An acceptable change includes a focused offline fixture test, preserved source provenance and conflicts, a reproducible module command, and a concise result/limitation note. Never promote a recognition candidate to a verified package fact; never assume an absent field is zero; do not add private photographs, profiles, API credentials, or network calls.

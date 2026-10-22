@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-real-photo-extraction-diagnostic",
+  "generatedAt": "2026-10-22T02:22:17.813Z",
+  "captureTool": "Playwright using installed Chrome",
+  "appOrigin": "http://127.0.0.1:3413",
+  "acceptanceMode": "loopback local application",
+  "photoFile": "heinz-beans-front-off-5000157024671.jpg",
+  "limitations": [
+    "OCR field measurements use one source image and a single human visual read, not independent adjudication or a held-out accuracy estimate.",
+    "Axe results are automated checks, not full accessibility conformance.",
+    "The browser receipt counts Gemini route invocations, not downstream provider calls or provider cost."
+  ],
+  "screenshots": "docs\\evidence\\private\\front-photo-extraction-diagnostic",
+  "outcomes": [
+    {
+      "viewport": "390x844",
+      "realPhotoHashVerified": true,
+      "packageName": "HEINZ",
+      "brand": null,
+      "ingredients": [],
+      "nutrientCount": 0,
+      "nutrients": [],
+      "observationCount": 12,
+      "ocrLineCount": 11,
+      "wordBoxCount": 32,
+      "ocrEngineSelections": [
+        {
+          "name": "tesseract.js",
+          "language": "eng",
+          "runId": "ff62f2b2-3a23-46c5-9a61-09f798670ff8",
+          "preparedImage": {
+            "width": 1539,
+            "height": 3000
+          },
+          "cropPercent": null
+        },
+        {
+          "name": "@paddleocr/paddleocr-js/PP-OCRv6-small",
+          "language": "en",
+          "runId": "ce0e1e73-0ec8-4a41-8099-1b6b04bd1884",
+          "preparedImage": {
+            "width": 1539,
+            "height": 3000
+          },
+          "cropPercent": null
+        }
+      ],
+      "ocrLines": [
+        {
+          "runId": "ff62f2b2-3a23-46c5-9a61-09f798670ff8",
+          "text": "P' SuEINZL  \\\n"
+        },
+        {
+          "runId": "ff62f2b2-3a23-46c5-9a61-09f798670ff8",
+          "text": "BEANZ] ©\n"
+        },
+        {
+          "runId": "ff62f2b2-3a23-46c5-9a61-09f798670ff8",
+          "text": ". = E |  .  Ww \\     \\\n"
+        },
+        {
+          "runId": "ff62f2b2-3a23-46c5-9a61-09f798670ff8",
+          "text": "A Te\n"
+        },
+        {
+          "runId": "ff62f2b2-3a23-46c5-9a61-09f798670ff8",
+          "text": "Cw\n"
+        },
+        {
+          "runId": "ff62f2b2-3a23-46c5-9a61-09f798670ff8",
+          "text": "WW ae\n"
+        },
+        {
+          "runId": "ff62f2b2-3a23-46c5-9a61-09f798670ff8",
+          "text": "      = PN\n"
+        },
+        {
+          "runId": "ce0e1e73-0ec8-4a41-8099-1b6b04bd1884",
+          "text": "HEINZ"
+        },
+        {
+          "runId": "ce0e1e73-0ec8-4a41-8099-1b6b04bd1884",
+          "text": "ESTP 1869"
+        },
+        {
+          "runId": "ce0e1e73-0ec8-4a41-8099-1b6b04bd1884",
+          "text": "BEANZ"
+        },
+        {
+          "runId": "ce0e1e73-0ec8-4a41-8099-1b6b04bd1884",
+          "text": "Baked Beans in a deliciously rich tomato sauce"
+        }
+      ],
+      "parserDiagnostics": [],
+      "screenshots": "docs\\evidence\\private\\front-photo-extraction-diagnostic",
+      "externalRequests": [],
+      "paddleModelAssetRequestCount": 2,
+      "geminiRouteRequests": [],
+      "pageErrors": []
+    }
+  ]
+}
