@@ -77,3 +77,28 @@ export function safeConversationEvidence(sources: readonly EvidenceSource[] | un
     return [parsed.data];
   }).slice(0, 3);
 }
+
+/** Carry source-linked audit context into the local chat reply without adding unsupported findings. */
+export function buildLocalAuditConversationReply(audit: Audit, question: string): {
+  answer: string;
+  evidence?: ConversationEvidenceSource[];
+} {
+  const asksForEvidenceContext = /\b(?:compare|comparison|guidance|recommend\w*|daily|per day|whole[- ]day|reference|population|limit|according to|WHO|official|evidence|research|suitab\w*|safe|safety|health|risk|personal|me|my|allerg\w*|intoleran\w*|diabetes|blood pressure)\b/i.test(question);
+  const relevantFindings = audit.findings.filter((finding) => finding.sourceIds.length > 0 && (
+    (asksForEvidenceContext && finding.status === 'context') || finding.status === 'calculated'
+  ));
+  const referencedSourceIds = new Set(relevantFindings.flatMap((finding) => finding.sourceIds));
+  const evidence = safeConversationEvidence(audit.sources.filter((source) => referencedSourceIds.has(source.id)));
+  const safeSourceIds = new Set(evidence.map((source) => source.id));
+  const groundedContext = relevantFindings
+    .filter((finding) => finding.status === 'context' && finding.detail.trim() && finding.sourceIds.some((id) => safeSourceIds.has(id)))
+    .slice(0, 2)
+    .map((finding) => finding.detail.trim());
+  const answer = [...new Set([
+    audit.answer.trim(),
+    ...groundedContext,
+    ...audit.nextQuestions.slice(0, 2).map((question) => question.trim())
+  ])].filter(Boolean).join('\n\n').slice(0, 8000);
+
+  return { answer, ...(evidence.length ? { evidence } : {}) };
+}

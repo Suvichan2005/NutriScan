@@ -1,7 +1,7 @@
 'use client';
 
-import { ArrowRight, ChevronDown, CircleHelp, ScanLine } from 'lucide-react';
-import { otherPackageOcrLines, packageLabelEvidenceGroups } from '@/lib/package-label-evidence';
+import { ChevronDown, CircleHelp, ScanLine } from 'lucide-react';
+import { isLowSignalPackageOcrLine, otherPackageOcrLines, packageLabelEvidenceGroups } from '@/lib/package-label-evidence';
 import type { Observation, PackageData } from '@/lib/contracts';
 
 type Props = {
@@ -9,7 +9,6 @@ type Props = {
   canInspect: (observation: Observation) => boolean;
   isInspecting: (observation: Observation) => boolean;
   onInspect: (observation: Observation) => void;
-  onAsk: () => void;
   ocrSideLabel?: (observation: Observation) => string;
 };
 
@@ -21,9 +20,11 @@ function sourceLabel(observation: Observation) {
   return 'Entered text';
 }
 
-export function ThreadPackageLabelDetails({ pkg, canInspect, isInspecting, onInspect, onAsk, ocrSideLabel }: Props) {
+export function ThreadPackageLabelDetails({ pkg, canInspect, isInspecting, onInspect, ocrSideLabel }: Props) {
   const groups = packageLabelEvidenceGroups(pkg);
   const otherLines = otherPackageOcrLines(pkg, groups);
+  const readableLines = otherLines.filter(observation => !isLowSignalPackageOcrLine(observation));
+  const shortFragments = otherLines.filter(isLowSignalPackageOcrLine);
   const count = groups.reduce((sum, group) => sum + group.observations.length, 0) + otherLines.length;
   const hasGroupedAllergenText = groups.some(group => group.field === 'allergens' && group.observations.length > 0);
   if (!count) return null;
@@ -41,9 +42,9 @@ export function ThreadPackageLabelDetails({ pkg, canInspect, isInspecting, onIns
   );
 
   return <details className="thread-label-details" data-testid="package-label-details">
-    <summary><span><strong>Ingredients & label text</strong><small>{count} linked or retained observation{count === 1 ? '' : 's'}</small></span><ChevronDown size={15}/></summary>
+    <summary><span><strong>Package text</strong><small>{count} observation{count === 1 ? '' : 's'}</small></span><ChevronDown size={15}/></summary>
     <div className="thread-label-details-content">
-      <p className="thread-label-caveat"><CircleHelp size={14}/>Text is shown as read and grouped by NutriScan; it may be incomplete or misclassified. Check the photo when a region is available.</p>
+      <p className="thread-label-caveat"><CircleHelp size={14}/>Unconfirmed text. Open a photo region to check the package.</p>
       {groups.filter(group => group.field === 'ingredients').map(group => <section key={group.field} className="thread-label-group">
         <h3>{group.label} <span>{group.observations.length}</span></h3><ul>{group.observations.map(row)}</ul>
       </section>)}
@@ -53,12 +54,15 @@ export function ThreadPackageLabelDetails({ pkg, canInspect, isInspecting, onIns
       {groups.filter(group => group.field === 'claim').map(group => <section key={group.field} className="thread-label-group">
         <h3>{group.label} <span>{group.observations.length}</span></h3><ul>{group.observations.map(row)}</ul>
       </section>)}
-      {!hasGroupedAllergenText && <p className="thread-label-missing">No allergen statement was separated from this scan. That does not establish that allergens or cross-contact are absent.</p>}
+      {!hasGroupedAllergenText && <p className="thread-label-missing">No allergen statement was recognized. Check the package; absence is not confirmed.</p>}
       {otherLines.length > 0 && <details className="thread-other-ocr-lines">
-        <summary><span>Other recognized text <small>{otherLines.length} lines</small></span><ChevronDown size={14}/></summary>
-        <ul>{otherLines.map(row)}</ul>
+        <summary><span>Other label text <small>{readableLines.length} lines</small></span><ChevronDown size={14}/></summary>
+        {readableLines.length > 0 && <ul>{readableLines.map(row)}</ul>}
+        {shortFragments.length > 0 && <details className="thread-low-signal-lines">
+          <summary>Show {shortFragments.length} short OCR fragment{shortFragments.length === 1 ? '' : 's'}</summary>
+          <ul>{shortFragments.map(row)}</ul>
+        </details>}
       </details>}
-      <button className="text-button thread-label-ask" type="button" onClick={onAsk}>Ask about these label details<ArrowRight size={14}/></button>
     </div>
   </details>;
 }

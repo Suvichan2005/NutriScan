@@ -74,6 +74,72 @@ describe('provider-independent inference output validation', () => {
     expect(result.answer).not.toContain('Ignored free-form answer');
   });
 
+  it('accepts exact citations to a source record limitation', () => {
+    const source = {
+      id: 'assessment-source', title: 'Assessment record', publisher: 'Public authority',
+      url: 'https://example.org/assessment', category: 'assessment' as const, jurisdiction: 'European Union',
+      publishedAt: '2026-01-01', effectiveAt: null, retrievedAt: '2026-01-02',
+      summary: 'This assessment discusses a substance under stated conditions.',
+      limitations: 'It does not establish product presence, dose or personal safety.',
+    };
+    const result = validateInferenceOutput({
+      answer: '',
+      claims: [{
+        mode: 'synthesis', text: 'The assessment does not establish this product’s dose or personal safety.',
+        observationIds: [], sourceIds: [source.id],
+        supportingSpans: [{ kind: 'source', id: source.id, quote: source.limitations }],
+      }],
+      limitations: [], inspectImage: null,
+    }, { package: fixturePackage, evidence: [source] });
+
+    expect(result.claims).toHaveLength(1);
+    expect(result.answer).toContain('product presence, dose or personal safety');
+  });
+
+  it('keeps dose and exposure limitations while withholding personalized safety and treatment advice', () => {
+    const result = validateInferenceOutput({
+      answer: '',
+      claims: [
+        {
+          mode: 'synthesis',
+          text: 'This OCR line does not state a dose, so product amount and dietary exposure cannot be calculated.',
+          observationIds: ['ocr-line-1'],
+          sourceIds: [],
+          supportingSpans: [observationSpan],
+        },
+        {
+          mode: 'synthesis',
+          text: 'This product is safe for you.',
+          observationIds: ['ocr-line-1'],
+          sourceIds: [],
+          supportingSpans: [observationSpan],
+        },
+        {
+          mode: 'synthesis',
+          text: 'The available record does not establish that this product is safe for you.',
+          observationIds: ['ocr-line-1'],
+          sourceIds: [],
+          supportingSpans: [observationSpan],
+        },
+        {
+          mode: 'synthesis',
+          text: 'You should avoid this product to treat diabetes.',
+          observationIds: ['ocr-line-1'],
+          sourceIds: [],
+          supportingSpans: [observationSpan],
+        },
+      ],
+      limitations: [],
+      inspectImage: null,
+    }, { package: fixturePackage });
+
+    expect(result.claims).toHaveLength(2);
+    expect(result.answer).toContain('does not state a dose');
+    expect(result.answer).not.toContain('This product is safe for you.');
+    expect(result.answer).toContain('does not establish that this product is safe');
+    expect(result.answer).not.toContain('avoid this product');
+  });
+
   it('withholds numeric synthesis that conflicts with cited OCR while allowing equivalent units', () => {
     const result = validateInferenceOutput({
       answer: '',
@@ -256,7 +322,8 @@ describe('provider-independent inference output validation', () => {
 
     expect(result.tentativeCandidates).toEqual([candidate]);
     expect(result.answer).toContain('tentative package readings');
-    expect(result.answer).toContain('not used as confirmed package facts or calculations');
+    expect(result.answer).toContain('clearly labeled arithmetic');
+    expect(result.answer).toContain('remain outside calculations');
     expect(result.answer).not.toContain('8.8 g');
     expect(fixturePackage).toEqual(before);
     expect(fixturePackage.nutrients).toEqual([]);

@@ -5,6 +5,7 @@ import { parseLabel } from '../parser';
 import {
   buildLocalEvidenceFollowUp,
   buildLocalEvidenceUnavailableFollowUp,
+  buildLocalAuditConversationReply,
   isSafeEvidenceUrl,
   parseLocalEvidenceResponse,
   safeConversationEvidence,
@@ -82,6 +83,25 @@ describe('local evidence follow-ups', () => {
     expect(noMatch).toContain('does not mean relevant evidence does not exist');
     expect(buildLocalEvidenceUnavailableFollowUp('The package alone does not answer this.'))
       .toContain('remains a package-only response');
+  });
+
+  it('puts only source-linked audit context and safe citations into a local conversation reply', () => {
+    const pkg = parseLabel('Nutrition information per 100 g\nSodium 2283 mg', { origin: 'user' });
+    const comparisonQuestion = 'How does this 20 g serving compare with WHO daily adult sodium guidance?';
+    const audit = buildAudit(pkg, 20, 'g', defaultProfile, comparisonQuestion);
+    const reply = buildLocalAuditConversationReply(audit, comparisonQuestion);
+
+    expect(reply.answer).toContain('456.6 mg sodium');
+    expect(reply.answer).toContain('WHO general adult reference');
+    expect(reply.evidence?.map((item) => item.id)).toContain('who-sodium');
+
+    const quantityOnly = buildLocalAuditConversationReply(audit, 'How much sodium is in a 20 g portion?');
+    expect(quantityOnly.evidence).toBeUndefined();
+    expect(quantityOnly.answer).not.toContain('WHO general adult reference');
+
+    const unrelated = buildLocalAuditConversationReply(audit, 'What remains uncertain on this label?');
+    expect(unrelated.evidence).toBeUndefined();
+    expect(unrelated.answer).not.toContain('WHO general adult reference');
   });
 
   it('bounds restored conversation citations and removes unsafe links', () => {

@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Nutrient, ProductRecord } from '../contracts';
+import type { InterpretedNutrientReading } from '../interpreted-nutrients';
 import { compareProductNutrition } from '../product-comparison';
 
 const reading = (key: Nutrient['key'], value: number, unit: Nutrient['unit'], amount: number | null, basisUnit: 'g' | 'ml' = 'g', status: Nutrient['status'] = 'observed'): Nutrient => ({ key, value, unit, basis: amount ? { amount, unit: basisUnit, description: `per ${amount} ${basisUnit}` } : null, observationIds: ['observation-1'], status });
 const record = (key: ProductRecord['nutrients'][number]['key'], value: number, unit: string, basis: ProductRecord['nutrients'][number]['basis'] = { amount: 100, unit: 'g' }): ProductRecord['nutrients'][number] => ({ key, value, unit, basis });
+const interpreted = (value: number, amount: number, id = `candidate-${value}`): InterpretedNutrientReading => ({ key: 'protein', value, unit: 'g', basis: { amount, unit: 'g', description: `per ${amount} g` }, candidateIds: [id], observationIds: [`line-${id}`], uncertainty: 'OCR words and layout linked; original pixels not confirmed.' });
 
 describe('evidence-aligned product nutrition comparison', () => {
   it('normalizes package serving values to the same explicit 100 g basis', () => {
@@ -49,5 +51,31 @@ describe('evidence-aligned product nutrition comparison', () => {
   it('preserves explicit zero when both sources provide comparable bases', () => {
     const [row] = compareProductNutrition([reading('sugars', 0, 'g', 100)], [record('sugars', 0, 'g')]);
     expect(row).toMatchObject({ status: 'comparable', packagePer100: 0, recordPer100: 0, difference: 0 });
+  });
+  it('uses a complete OCR-linked model interpretation when package parsing has no row, and labels its provenance', () => {
+    const [row] = compareProductNutrition([], [record('protein', 9, 'g')], { interpretedReadings: [interpreted(2, 25)] });
+    expect(row).toMatchObject({ status: 'comparable', packageReadingSource: 'gemini-interpretation', packagePer100: 8, recordPer100: 9, packageReading: { value: 2, basis: { amount: 25, unit: 'g' }, interpretationIds: ['candidate-2'], observationIds: ['line-candidate-2'] } });
+  });
+  it('uses an OCR-linked basis to complete one observed value only when its value and unit agree', () => {
+    const incomplete: Nutrient = { key: 'protein', value: 2, unit: 'g', basis: null, observationIds: ['parsed-protein'], status: 'observed' };
+    const [completed] = compareProductNutrition([incomplete], [record('protein', 9, 'g')], { interpretedReadings: [interpreted(2, 25)] });
+    expect(completed).toMatchObject({ status: 'comparable', packageReadingSource: 'gemini-interpretation', packagePer100: 8, packageReading: { value: 2, basis: { amount: 25 }, observationIds: ['parsed-protein', 'line-candidate-2'] } });
+
+    const [disagreement] = compareProductNutrition([incomplete], [record('protein', 9, 'g')], { interpretedReadings: [interpreted(3, 25)] });
+    expect(disagreement).toMatchObject({ status: 'package-basis-unknown', packageReadingSource: 'package-observation', packageReading: { value: 2, basis: null, status: 'observed' }, packagePer100: null });
+  });
+  it('normalizes consistent per-serving and per-100 interpretations while retaining all OCR lineage', () => {
+    const [row] = compareProductNutrition([], [record('protein', 4, 'g')], { interpretedReadings: [interpreted(1, 25), interpreted(4, 100)] });
+    expect(row).toMatchObject({ status: 'comparable', packageReadingSource: 'gemini-interpretation', packagePer100: 4, recordPer100: 4, packageReading: { value: 4, basis: { amount: 100 }, interpretationIds: ['candidate-1', 'candidate-4'], observationIds: ['line-candidate-1', 'line-candidate-4'] } });
+  });
+  it('does not let a model interpretation override package conflicts or disputed identity', () => {
+    const conflict = compareProductNutrition([reading('protein', 5, 'g', 100, 'g', 'conflict')], [record('protein', 9, 'g')], { interpretedReadings: [interpreted(9, 100)] })[0];
+    expect(conflict).toMatchObject({ status: 'package-reading-conflict', packageReading: { value: 5, status: 'conflict' }, packageReadingSource: 'package-observation' });
+    const identity = compareProductNutrition([], [record('protein', 9, 'g')], { identityConflict: true, interpretedReadings: [interpreted(9, 100)] })[0];
+    expect(identity).toMatchObject({ status: 'package-identity-conflict', packageReading: null, packageReadingSource: null });
+  });
+  it('withholds inconsistent interpretations instead of selecting a convenient value', () => {
+    const [row] = compareProductNutrition([], [record('protein', 9, 'g')], { interpretedReadings: [interpreted(4, 100), interpreted(5, 100)] });
+    expect(row).toMatchObject({ status: 'package-reading-conflict', packageReading: null, packagePer100: null, difference: null });
   });
 });

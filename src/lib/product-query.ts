@@ -1,4 +1,5 @@
 import type { PackageData } from './contracts';
+import { findOcrGtinCandidate } from './barcode';
 
 export type ProductLookupOptions = {
   text: string;
@@ -8,10 +9,23 @@ export type ProductLookupOptions = {
   productBarcode?: string;
 };
 
+export type ProductQuerySource = 'barcode' | 'barcode-candidate' | 'label-text' | 'user-detail';
+
+/** Describe the provenance of the exact term used by the explicit catalog action. */
+export function productQuerySource(data: Pick<PackageData, 'barcode' | 'identityConflict' | 'name' | 'userDescription' | 'observations'>): ProductQuerySource {
+  if (data.barcode) return 'barcode';
+  if (data.observations.some(observation => observation.field === 'name' && observation.origin === 'user' && observation.text.trim() === data.name)) return 'user-detail';
+  if (data.name === 'Unidentified package' && data.userDescription?.trim()) return 'user-detail';
+  if (!data.identityConflict && findOcrGtinCandidate(data.observations)) return 'barcode-candidate';
+  return 'label-text';
+}
+
 /** Avoid preselecting a catalog search while the package identity is disputed. */
-export function defaultProductLookup(data: Pick<PackageData, 'barcode' | 'identityConflict' | 'name' | 'userDescription'>): string {
+export function defaultProductLookup(data: Pick<PackageData, 'barcode' | 'identityConflict' | 'name' | 'userDescription'> & { observations?: PackageData['observations'] }): string {
   if (data.identityConflict) return '';
-  return data.barcode ?? (data.name === 'Unidentified package' ? (data.userDescription ?? '') : data.name);
+  if (data.barcode) return data.barcode;
+  if (data.name === 'Unidentified package' && data.userDescription?.trim()) return data.userDescription;
+  return findOcrGtinCandidate(data.observations ?? [])?.code ?? data.name;
 }
 
 /** Build a bounded catalog request without inferring location or losing an exact current identifier. */

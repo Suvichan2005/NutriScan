@@ -23,10 +23,26 @@ function fail(code: ConstructorParameters<typeof InferenceModuleError>[0], messa
 /** Validate and safely render model output without invoking a provider. */
 export function validateInferenceOutput(output: unknown, data: AssistValidationContext) {
   const result = assistOutput.safeParse(output);
-  if (!result.success) fail('provider_invalid', 'The model output failed validation. No result was accepted.');
+  if (!result.success) {
+    if (process.env.NODE_ENV !== 'production') {
+      // Keep local provider debugging useful without ever logging generated text,
+      // evidence, profile context, images, or prompt contents.
+      console.warn('Gemini structured-output validation rejected fields', {
+        issueCount: result.error.issues.length,
+        issues: result.error.issues.slice(0, 20).map(issue => ({
+          code: issue.code,
+          field: issue.path.filter((part): part is string | number => typeof part === 'string' || typeof part === 'number').join('.'),
+        })),
+      });
+    }
+    fail('provider_invalid', 'The model output failed validation. No result was accepted.');
+  }
 
   const observations = new Map(data.package.observations.map(observation => [observation.id, observation.text]));
-  const sources = new Map((data.evidence ?? []).map(source => [source.id, source.summary]));
+  // Source limitations are attributable evidence too. A model must be able to
+  // cite the record's own scope caveat rather than making it an unsupported
+  // disclaimer that the exact-span validator silently drops.
+  const sources = new Map((data.evidence ?? []).map(source => [source.id, `${source.summary}\n${source.limitations}`]));
   const calculations = new Map((data.calculations ?? []).map(calculation => [
     calculation.id,
     calculation.evidenceText ?? calculationEvidenceText(calculation),
@@ -60,7 +76,15 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     const mode = claim.mode;
     const literalClaim = spans.find(span => span.quote === claim.text);
     if (mode === 'synthesis' && !numericMentionsAreSupported(claim.text, [...spans.map(span => span.quote), ...visualEvidence.map(reference => reference.visibleText)])) return [];
-    const unsafeMedicalConclusion = /\b(?:safe|unsafe|suitable|unsuitable)\b|\b(?:diagnos(?:e|is)|treat(?:ment)?|cure|medication|medicine|dosage|dose|insulin)\b/i.test(claim.text);
+    // Mentioning a dose or clinical reference in a limitation is useful and
+    // should not be mistaken for dosing advice. Block actual individualized
+    // safety verdicts and treatment directives instead.
+    const safetyVerdict = /\b(?:is|are|may be|might be|seems? to be|considered)\s+(?:safe|unsafe|suitable|unsuitable)\b|\b(?:is|are)\s+not\s+(?:safe|suitable)\b/i.test(claim.text);
+    const explicitSafetyCaveat = /\b(?:does not|doesn't|cannot|can't|unable to|insufficient evidence|insufficient information|no evidence (?:that|to conclude)|not enough evidence)\b.{0,80}\b(?:safe|unsafe|suitable|unsuitable)\b/i.test(claim.text);
+    const unsafeMedicalConclusion =
+      safetyVerdict && !explicitSafetyCaveat
+      || /\b(?:you should|you must|you need to)\b.{0,80}\b(?:eat|consume|avoid|limit|take|stop|start|adjust|increase|decrease|treat|dose|medication|insulin)\b/i.test(claim.text)
+      || /\b(?:diagnose|treat|cure)\s+(?:you|your|diabetes|hypertension|kidney disease|an allergy)\b/i.test(claim.text);
     if (!allRefsHaveExactQuotes || !noUncitedSpan || mode === 'direct-quote' && !literalClaim || mode === 'synthesis' && unsafeMedicalConclusion) return [];
     return [{ ...claim, mode, text: mode === 'direct-quote' ? literalClaim!.quote : claim.text }];
   });
@@ -178,7 +202,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     : result.data.inspectImage
       ? 'More package evidence is needed. A specific browser image has been requested for inspection.'
       : tentativeCandidates.length
-        ? 'I found tentative package readings in the supplied label evidence. They are shown separately for review and are not used as confirmed package facts or calculations.'
+        ? 'I found tentative package readings in the supplied evidence. They remain separate from package facts; OCR-linked interpretations may support clearly labeled arithmetic only after the application checks the cited words, units, basis and layout. Image-only interpretations remain outside calculations.'
       : 'No supported factual conclusion was returned. The available evidence does not establish personal health effects or product safety. Review the package observations or add a relevant source.';
   if (!answer && result.data.inspectImage) answer = 'More package evidence is needed. A specific browser image has been requested for inspection.';
 
@@ -186,7 +210,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     claims: displayedClaims,
     tentativeCandidates,
     uiComponents,
-    limitations: ['Generated explanations are not independently verified. Tentative structured candidates never alter confirmed package observations or calculations. Image-linked text and region references are model-reported and unverified. No diagnosis, medication advice, or safety assessment is provided.'],
+    limitations: ['Generated explanations are not independently verified. Tentative candidates never alter original package observations. The application may use a complete OCR-linked candidate only for explicitly labeled arithmetic after checking its evidence and layout; that reading remains unverified. Image-only text and region references stay outside calculations. No diagnosis, medication advice, or safety assessment is provided.'],
     inspectImage: result.data.inspectImage ? { ...result.data.inspectImage, reason: 'A specific package detail may need a closer look. Review the selected image before choosing to send it.' } : null,
     answer,
   };

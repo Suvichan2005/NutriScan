@@ -1,5 +1,39 @@
 # Chronological decisions
 
+## 23 October 2026 — resume paid Gemini under the owner's revised budget
+
+- The owner confirmed that exposed API keys were replaced and raised the project budget to ₹500. This supersedes the earlier four-call/$1 authorization and the temporary stop after HTTP 429. Keep the application on the exact stable `gemini-3.8-flash` model, with the local $5 spend cap, request/token caps and paid calls single-attempt. Never print credentials, prompts, image bytes, profile fields or model conversations.
+- Live `/api/status` on isolated local port 3416 reports paid provider configured, authorized and enabled. Each consumer photo transfer still requires the app's explicit consent action; actual profile fields remain governed by the user's separate choice.
+- The current local usage ledger is an estimate, not a billing receipt: 64 paid requests, $0.6257445 estimated actual and $1.311534 reserved. Use this ledger for bounded development and avoid prompt sweeps or redundant retries.
+
+## 23 October 2026 — keep OpenFoodTox 3.0 out of the derived corpus pending reuse review
+
+- EFSA's official OpenFoodTox 3.0 page describes 7,880 substances, 45,682 study results and 19,452 toxicological reference values, with an Excel export and IUCLID archive. The Zenodo release metadata identifies CC BY-ND 4.0; EFSA states it owns the database and content.
+- A local, ignored copy of the 22.6 MB Excel export was inspected for workbook structure only. Do not transform or distribute its rows as a NutriScan index until reuse rights for that purpose are established. Prefer source links and separately rights-reviewed summaries while continuing ingestion from sources whose permitted reuse is clearer.
+
+## 23 October 2026 — OCR-only GTIN recovery remains an explicit candidate
+
+- A checksum-valid number recognized in original image OCR can help an explicit product-record lookup, even if the browser barcode decoder misses the bars. A check digit alone does not prove the number belongs to the photographed package.
+- Offer only a single, non-conflicting GTIN from raw OCR lines; exclude invalid checksums and license-labelled text. Preserve observation IDs and do not assign `PackageData.barcode`. Only a user-triggered lookup may send the number to Open Food Facts, with candidate status disclosed.
+- Paid Gemini is locally selected but disabled pending credential replacement and Google project quota/billing confirmation. Keep provider calls off until those owner actions are complete.
+
+## 23 October 2026 — stop paid Gemini retries after a quota rejection
+
+- A single owner-authorized synthetic text request to paid `gemini-3.8-flash` returned HTTP 429. Do not retry within the four-call/$1 cap until the project's quota and billing status are checked. No package images or user context were transmitted; the actual charge is unknown because the provider returned no token receipt.
+
+## 23 October 2026 — keep low-signal OCR out of the default evidence list
+
+- Collapse short OCR fragments and isolated numeric tokens without units; keep number-plus-unit snippets visible. “Show all,” the full transcript, photo-region inspection and export retain access to the original observations. This display rule does not filter evidence sent to interpretation or promote OCR into package facts. It supersedes the earlier default visibility of numeric-only fragments.
+
+## 23 October 2026 — report Gemini quota limits without leaking provider errors
+
+- Map only a typed upstream HTTP 429 on Gemini routes to stable quota/rate-limit guidance. Do not serialize the SDK error message or body; those may contain prompt, image or credential data. Preserve the app's retry control and local analysis on this failure path.
+
+## 22 October 2026 — keep package evidence out of the duplicate results dashboard
+
+- In The Thread, keep the everyday package answer and nutrition controls in the conversation. The evidence drawer contains attributed sources and original observations only; product/source search and provider controls stay behind a separate disclosure.
+- In the label-text view, tuck single-character non-numeric OCR scraps into a nested “short OCR fragments” disclosure. Preserve every observation in raw evidence and keep numeric-only readings visible; this is a presentation filter, not evidence deletion or OCR improvement.
+
 ## 22 October 2026 — expose community ingredient evidence without promoting it
 
 - Render Open Food Facts ingredient text and allergen tags only inside a collapsed, attributed community-record disclosure after the user explicitly requests a product lookup. Keep these fields separate from photographed observations, confirmed package facts, calculations and exported package data; empty community fields do not establish absence on the package.
@@ -631,3 +665,61 @@ Keep the active application as a viewport-sized workspace with internal conversa
 - When an answer requests the editable nutrition table, render the existing `NutritionTable` inside that answer and hide its duplicate in the package summary. Without a model component request, keep the current table placement. The portion calculator always uses the existing deterministic audit calculations; user edits preserve observation lineage and invalidate prior model output as before.
 - Include a community product record in model context only after explicit user selection and only without a package identity conflict. Attribute the source and retain its variant/coverage limitations; never treat it as verified manufacturer data.
 - Conversation-history opt-in may persist generated answers and typed presentation IDs locally, excluding photos and profile fields. The privacy copy names that behavior. Gemini remains disabled until owner configuration/authorization; mocked UI acceptance proves only rendering and local deterministic behavior.
+
+## 22 October 2026 — allow strictly OCR-grounded interpretations to support labeled arithmetic
+
+- This supersedes the earlier blanket exclusion of tentative candidates from calculations only for nutrient candidates whose label, exact printed number, unit and basis each link to current raw OCR words, a matching OCR capture, and aligned row/column geometry. Image-only readings, unresolved fields, contradictory candidates and conflicts with package facts remain unusable; user corrections retain precedence.
+- Calculations preserve the candidate ID and original OCR observation IDs, and the conversation, nutrition table and portion calculator mark the result as an unverified interpretation. This allows supported table reconstruction to become useful without mutating confirmed package observations. Synthetic offline tests establish the guard behavior only; no live Gemini output or photo accuracy is claimed.
+
+## 22 October 2026 — show relevant source context in local conversation turns
+
+- A local reply may include only context findings whose source IDs exist in the current audit and pass the existing safe-URL and bounded conversation-source schemas. Show that context when the question asks for guidance, comparison, health relevance or a source-backed calculation; keep quantity-only and uncertainty replies focused. Never infer applicability from retrieval alone.
+- After a new local or Gemini turn, align the latest conversation turn at the top of the chat viewport so the question and answer opening remain visible. Honor `prefers-reduced-motion`; keep the independent nutrition and evidence controls scrollable below the conversation.
+
+## 22 October 2026 — make public product lookup explicit and provenance-aware
+
+- Put the Open Food Facts action in the package context within The Thread. It runs only after a user click and sends only the current barcode or product query; derive its disclosure from observation provenance so user-origin names are not mislabeled as OCR. Never attach photos or profile fields to this catalog request.
+- Keep returned records marked as community candidates with regional variant, label-date, completeness and local-stock limits. Do not merge catalog values into photographed package facts. Offer comparison only after explicit selection and only when package identity is not disputed.
+
+## 22 October 2026 — allow validated OCR-linked interpretations to fill comparison gaps
+
+- For an explicitly selected community-record comparison, a complete OCR-linked model interpretation may supply a missing package nutrient or fill a missing basis for one observed value when its exact value and unit agree. The reconciler must validate label, number, unit, printed basis, source run and row/column geometry. Inconsistent interpretations, corrected/conflicted rows and disputed identity stay blocked; package readings and user corrections keep precedence.
+- Keep this as ephemeral comparison input, never a package fact. Show its model origin, unverified status and OCR/image trace at the point of use. This applies the existing interpretation contract without changing shared schemas or Gemini provider behavior.
+- Enable the explicit record-comparison action when at least one such reconciled reading exists, even if `PackageData.nutrients` is empty. Keep identity-conflict gating in both the action and comparator.
+
+## 22 October 2026 — report retained but unparsed ingredient OCR honestly
+
+- If an OCR line contains an explicit Ingredients heading but the parser yields no structured ingredient statement, the local response should describe an unresolved parsing gap and link that raw observation. Do not say the label has no readable ingredient text, and do not treat the raw line as a confirmed ingredient list.
+- Keep the conditional Paddle fallback as an experimental path for now: this two-photo development run added 1 usable parser reading (0/10 to 1/10) at a 91 s cold-start and 31.2 MB of model GETs. The result is not enough to justify broader routing or a production-quality claim; evaluate varied, independently annotated Indian product groups before changing the architecture.
+
+## 22 October 2026 — configure Gemini locally without enabling paid calls
+
+Use stable `gemini-3.8-flash` through the explicitly selected free project for the local consumer path. Keep per-action consent, photo-transfer disclosure, profile opt-in and the local-only alternative. Google documents 3.8 Flash as stable and multimodal; its free tier has no token charge but may use submitted content to improve products. Keep paid access off until separately authorized.
+
+For the current Gemini Developer API `models.generateContent` SDK path, use `responseMimeType` and `responseJsonSchema`: `responseFormat` is not supported by Gemini API and the installed SDK omits it from the serialized request. Revisit this only with a tested migration to a compatible endpoint. Mocked wire verification is not provider acceptance.
+
+## 23 October 2026 — Do not equate Gemini configuration with availability
+
+A configured key and enabled model are not proof of a successful provider call. The owner later authorized one bounded paid synthetic attempt; it returned HTTP 429 after 1.45 seconds, with no provider model or token receipt. Do not spend another attempt while that project remains rate- or quota-limited. Do not claim live readiness until an authenticated request returns a validated response with usage/model metadata.
+
+## 23 October 2026 — Include validated local retrieval for unsupported Gemini questions
+
+For a question the deterministic local audit cannot answer, query the same-origin curated evidence index with only the bounded question and include up to three returned sources in Gemini's existing validated evidence context. Share an in-flight lookup with the local evidence panel. If retrieval fails, continue without retrieved sources; never imply a match proves applicability. Keep provider availability and grounded-answer quality unverified until a successful, receipt-backed Gemini response.
+
+## 23 October 2026 — Stop paid Gemini retries after repeated 429
+
+The owner-authorized paid test is capped at $1 and four Gemini 3.8 Flash generation requests. Two paid attempts have reached Google and returned HTTP 429 without a model/token receipt; the usage ledger reserves $0.0528705, while actual billing is unknown. Do not retry until the configured Google project's quota and billing state are checked. Keep the normal `.env.local` selection unchanged; paid settings were limited to a stopped local test server. The real two-photo request verified consented request assembly and safe failure behavior, but did not produce a model interpretation.
+
+## Gemini response budget and validation — 23 October 2026
+
+Use gemini-3.8-flash with the official @google/genai GenerateContent tool loop and structured JSON output. Google documents function calling, structured output, and a 64K-token output maximum for this model (model capabilities: https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash; structured output with tools: https://ai.google.dev/gemini-api/docs/generate-content/structured-output). Keep NutriScan's per-generation output bound at 6,000 tokens and retain the $5 aggregate spend cap; the prior 4,000-token ceiling caused observed truncation on the real two-photo assist. Use full local Zod validation and evidence checks. Gemini-enforced maxItems constraints were rejected for this nested response schema and remain disabled. Do not raise the spend cap without owner authorization.
+
+Synthesis safety checks should reject definitive personalized safety/suitability verdicts and treatment directives, while allowing evidence-linked limitations that mention dose or exposure. Package facts and model candidates remain distinct; this change does not authorize medical conclusions or automatic confirmation of visual readings.
+
+## Gemini tool-loop and paid usage accounting — 23 October 2026
+
+Keep Gemini 3.8 Flash as the current paid development model. Preserve complete server-side Search call/response parts when continuing a multi-step tool turn, count Search queries from grounding metadata or echoed tool calls, and downgrade only invalid model image coordinates to withheld regions. Never turn out-of-bounds coordinates into normalized image evidence. Normalize grounding text for presentation, but do not label generated Search-grounded segments as direct quotations or independently reviewed source text.
+
+The owner authorized development within ₹500. The local guard is $4.20 and 220 calls, with a conservative $0.014-per-search-query upper bound when the monthly Search free allowance may be exhausted. The 23 October ledger snapshot is $1.7889 committed estimate including failed reservations; token and Search estimates are not billing receipts. Continue to omit profile fields unless the user separately opts into cloud sharing.
+
+EFSA OpenFoodTox 3.0 is a local structured lookup for substance identities and assessment reference values. Keep the CC BY-ND source and derived index under ignored `.data/`, preserve the pinned release/checksum and provenance, and do not vectorize or redistribute extracted tables. Identity or an ADI does not establish package presence, dose, consumer exposure, or individual safety.

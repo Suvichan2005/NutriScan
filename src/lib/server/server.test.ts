@@ -1,11 +1,12 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fixedFetch, input, localGate, readBounded, route } from './http';
 import { lookupProducts, normalizeProduct, productInput } from './products';
-import { assist, assistInput, assistOutput, assistPromptPayload, linkVisionResponseToCapture, providerStatus, validateClaims, validateImage, vision, visionInput } from './gemini';
-import { applicationGeminiContext, freeTierSyntheticSmokeContext } from './gemini-provider';
+import { assist, assistInput, assistOutput, assistPromptPayload, geminiResponseJsonSchema, linkVisionResponseToCapture, providerStatus, validateClaims, validateImage, vision, visionInput } from './gemini';
+import { applicationGeminiContext, committedPaidSpendUsd, countGoogleSearchQueries, freeTierSyntheticSmokeContext, resetGeminiUsageLedgerForTests } from './gemini-provider';
 import { research, researchInput, researchRecalls } from './research';
 import { z } from 'zod';
 
+beforeEach(() => { resetGeminiUsageLedgerForTests(); });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 const request = (body: unknown, origin = 'http://127.0.0.1:3400') => new Request('http://127.0.0.1:3400/api/test', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const visionTestImage={imageId:'package-photo-1',mimeType:'image/png' as const,base64:'a'.repeat(20),side:'back' as const,sourceImage:{width:1600,height:2400},preprocessing:{rotation:90 as const,contrast:true,invert:false,crop:{x:0.1,y:0.15,width:0.8,height:0.7}}};
@@ -112,6 +113,29 @@ describe('bounded server boundary', () => {
     const result = await route(request({}), 'error-test', async () => { throw new Error('SECRET request image payload'); });
     expect(await result.text()).not.toContain('SECRET');
   });
+  it('turns a Gemini quota response into safe retry guidance without exposing provider text', async () => {
+    const providerError = Object.assign(new Error('SECRET provider response body'), { status: 429 });
+    const response = await route(request({}), 'gemini', async () => { throw providerError; });
+    const body = await response.json();
+    expect(response.status).toBe(429);
+    expect(body).toMatchObject({
+      status: 'unavailable',
+      code: 'provider_rate_limited',
+      message: 'Google Gemini is rate- or quota-limited. Check the configured Google project before retrying. Local analysis remains available.',
+    });
+    expect(JSON.stringify(body)).not.toContain('SECRET');
+  });
+  it('classifies Gemini authentication and access denials without returning provider text', async () => {
+    for (const [status, code] of [[401, 'provider_authentication_failed'], [403, 'provider_access_denied'], [404, 'provider_model_unavailable']] as const) {
+      const providerError = Object.assign(new Error('SECRET provider body with request details'), { status });
+      const response = await route(request({}), 'gemini', async () => { throw providerError; });
+      const body = await response.json();
+      expect(response.status).toBe(502);
+      expect(body).toMatchObject({ status: 'unavailable', code });
+      expect(JSON.stringify(body)).not.toContain('SECRET');
+      expect(JSON.stringify(body)).not.toContain('request details');
+    }
+  });
   it('does not follow redirects and rejects invalid upstream JSON', async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response('not-json', { headers: { 'content-type': 'application/json' } })); vi.stubGlobal('fetch', fetcher);
     await expect(fixedFetch(new URL('https://www.ebi.ac.uk/europepmc/webservices/rest/search'))).rejects.toMatchObject({ code: 'upstream_invalid' });
@@ -129,6 +153,24 @@ describe('bounded server boundary', () => {
     fetcher.mockResolvedValueOnce(new Response('not a PDF', { headers: { 'content-type': 'application/pdf' } }));
     await expect(fixedFetch(url, 'pdf', 100)).rejects.toMatchObject({ code: 'unexpected_content' });
     await expect(fixedFetch(new URL('https://evil.example/test.pdf'), 'pdf', 100)).rejects.toMatchObject({ code: 'url_rejected' });
+  });
+});
+
+describe('paid Gemini spend accounting', () => {
+  it('releases completed call headroom but keeps uncertain failed spend reserved', () => {
+    const accounted = committedPaidSpendUsd([
+      { state: 'completed', reservedUsd: 0.1, estimatedActualUsd: 0.012, estimatedGroundingCostUpperUsd: 0.014 },
+      { state: 'failed', reservedUsd: 0.1, estimatedActualUsd: null, estimatedGroundingCostUpperUsd: null },
+      { state: 'completed', reservedUsd: 0.1, estimatedActualUsd: null, estimatedGroundingCostUpperUsd: null },
+    ]);
+    expect(accounted).toBeCloseTo(0.226);
+  });
+
+  it('counts native Search queries from grounding metadata or echoed server-side tool calls', () => {
+    expect(countGoogleSearchQueries({ candidates: [{ groundingMetadata: { webSearchQueries: ['one', 'two'] } }] } as never)).toBe(2);
+    expect(countGoogleSearchQueries({ candidates: [{ content: { parts: [{ toolCall: { toolType: 'GOOGLE_SEARCH_WEB', args: { queries: ['one', 'two', 'three'] } } }] } }] } as never)).toBe(3);
+    expect(countGoogleSearchQueries({ candidates: [{ groundingMetadata: { webSearchQueries: ['one'] }, content: { parts: [{ toolCall: { toolType: 'GOOGLE_SEARCH_WEB', args: { queries: ['one', 'two'] } } }] } }] } as never)).toBe(2);
+    expect(countGoogleSearchQueries({ candidates: [{ content: { parts: [{ toolCall: { toolType: 'URL_CONTEXT', args: { urls: ['https://example.org'] } } }] } }] } as never)).toBe(0);
   });
 });
 
@@ -247,8 +289,25 @@ describe('provider validation, independent of provider invocation', () => {
     expect(JSON.stringify(providerSchema)).toContain('visibleText');
     expect(assistOutput.safeParse({answer:'',claims:[{text:'A paraphrase',observationIds:[],sourceIds:[],supportingSpans:[]}],limitations:[],inspectImage:null}).success).toBe(false);
   });
+  it('reduces Zod JSON Schema to Google-supported grammar while retaining full local validation', () => {
+    const schema = geminiResponseJsonSchema(assistOutput) as Record<string, unknown>;
+    const keys = new Set<string>();
+    const walk = (value: unknown) => {
+      if (Array.isArray(value)) { value.forEach(walk); return; }
+      if (!value || typeof value !== 'object') return;
+      for (const [key, child] of Object.entries(value)) { keys.add(key); walk(child); }
+    };
+    walk(schema);
+    expect(keys.has('$schema')).toBe(false);
+    expect(keys.has('anyOf')).toBe(false);
+    expect(keys.has('const')).toBe(false);
+    expect(keys.has('maxItems')).toBe(false);
+    expect(keys.has('exclusiveMinimum')).toBe(false);
+    expect((schema as { required?: string[] }).required).toContain('answer');
+    expect((schema as { properties?: Record<string, unknown> }).properties).toHaveProperty('tentativeCandidates');
+  });
   it('does not guess a provider project from key presence', () => {
-    vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('ENABLE_GEMINI_SEARCH', 'true'); vi.stubEnv('GEMINI_API_KEY', 'paid-placeholder'); vi.stubEnv('FREE_GEMINI_API_KEY', 'free-placeholder'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash');
+    vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('ENABLE_GEMINI_SEARCH', 'false'); vi.stubEnv('GEMINI_API_KEY', 'paid-placeholder'); vi.stubEnv('FREE_GEMINI_API_KEY', 'free-placeholder'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash');
     expect(providerStatus()).toMatchObject({ configured: false, enabled: false, tier: null, searchEnabled: false });
     expect(JSON.stringify(providerStatus())).not.toContain('placeholder');
   });
@@ -276,6 +335,40 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.modelVersion).toBe('gemini-3.8-flash-test');
     expect(result.usageMetadata?.totalTokenCount).toBe(12);
   });
+  it('sends Gemini structured output through the supported generateContent config and validates the returned answer', async () => {
+    vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
+    const resultText = JSON.stringify({ answer: 'BISK FARM CREAM CRACKER', claims: [{ mode: 'direct-quote', text: 'BISK FARM CREAM CRACKER', observationIds: ['input-1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'input-1', quote: 'BISK FARM CREAM CRACKER' }] }], limitations: [], inspectImage: null });
+    const payload = JSON.stringify({ candidates: [{ content: { parts: [{ text: resultText }], role: 'model' }, finishReason: 'STOP', index: 0 }], modelVersion: 'gemini-3.8-flash-test', usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 20, totalTokenCount: 32 } });
+    const fetcher = vi.fn().mockResolvedValue(new Response(payload, { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetcher);
+    const data = assistInput.parse({ consent: true, question: 'What product is this?', package: { id: 'package-1', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'input-1', field: 'user-description', text: 'BISK FARM CREAM CRACKER', side: 'text', confidence: null, origin: 'user' }], rawText: 'BISK FARM CREAM CRACKER', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
+
+    await expect(assist(data)).resolves.toMatchObject({ status: 'ok', answer: 'Package observation: “BISK FARM CREAM CRACKER” [observation:input-1]' });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const wireRequest = JSON.parse(String(fetcher.mock.calls[0][1]?.body));
+    expect(wireRequest.generationConfig).toMatchObject({ responseMimeType: 'application/json', responseJsonSchema: { type: 'object' } });
+    expect(wireRequest.generationConfig).not.toHaveProperty('responseFormat');
+    expect(JSON.stringify(wireRequest.generationConfig.responseJsonSchema)).not.toMatch(/"(?:anyOf|const|maxItems|exclusiveMinimum)"/);
+  });
+  it('keeps supported claims when citation repair is incomplete and drops unsupported citations', async () => {
+    vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
+    const invalid = JSON.stringify({ answer: 'unsupported', claims: [
+      { mode: 'direct-quote', text: 'Protein 3 g', observationIds: ['protein-observation'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'protein-observation', quote: 'Protein 3 g' }] },
+      { mode: 'direct-quote', text: 'invented citation', observationIds: ['unknown-observation'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'unknown-observation', quote: 'invented citation' }] },
+    ], limitations: [], inspectImage: null });
+    const payload = JSON.stringify({ candidates: [{ content: { parts: [{ text: invalid }], role: 'model' }, finishReason: 'STOP', index: 0 }], modelVersion: 'gemini-3.8-flash-test', usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 20, totalTokenCount: 32 } });
+    const incompleteRepair = JSON.stringify({ candidates: [{ content: { parts: [{ text: invalid }], role: 'model' }, finishReason: 'MAX_TOKENS', index: 0 }], modelVersion: 'gemini-3.8-flash-test', usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 20, totalTokenCount: 32 } });
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(payload, { status: 200, headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(incompleteRepair, { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetcher);
+    const data = assistInput.parse({ consent: true, question: 'What does this package show?', package: { id: 'package-1', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'protein-observation', field: 'protein', text: 'Protein 3 g', side: 'text', confidence: 100, origin: 'ocr' }], rawText: 'Protein 3 g', warnings: [], synthetic: true, createdAt: new Date().toISOString() } });
+
+    const result = await assist(data);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({ status: 'ok', answer: 'Package observation: “Protein 3 g” [observation:protein-observation]', agentTrace: [{ name: 'citation_repair', status: 'withheld', resultCount: 1 }] });
+    expect(result.claims.map(claim => claim.text)).toEqual(['Protein 3 g']);
+  });
   it('keeps paid application and free synthetic-smoke calls single-attempt', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'paid'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('GEMINI_API_KEY', 'offline-paid-test-key'); vi.stubEnv('ENABLE_PAID_GEMINI', 'true');
     vi.stubEnv('GEMINI_PAID_BUDGET_USD', '1'); vi.stubEnv('GEMINI_PAID_MAX_CALLS', '1'); vi.stubEnv('GEMINI_PAID_MAX_INPUT_TOKENS', '1000'); vi.stubEnv('GEMINI_PAID_MAX_OUTPUT_TOKENS', '100'); vi.stubEnv('GEMINI_PAID_INPUT_USD_PER_MILLION', '1'); vi.stubEnv('GEMINI_PAID_OUTPUT_USD_PER_MILLION', '1');
@@ -299,7 +392,7 @@ describe('provider validation, independent of provider invocation', () => {
     expect(validateClaims(valid, data).answer).not.toContain('medical assertion');
     expect(validateClaims(valid, data).answer).not.toContain('diabetes');
     expect(validateClaims(valid, data).limitations.join(' ')).not.toContain('manage diabetes');
-    expect(validateClaims(valid, data).limitations).toEqual(['Generated explanations are not independently verified. Tentative structured candidates never alter confirmed package observations or calculations. Image-linked text and region references are model-reported and unverified. No diagnosis, medication advice, or safety assessment is provided.']);
+    expect(validateClaims(valid, data).limitations).toEqual(['Generated explanations are not independently verified. Tentative candidates never alter original package observations. The application may use a complete OCR-linked candidate only for explicitly labeled arithmetic after checking its evidence and layout; that reading remains unverified. Image-only text and region references stay outside calculations. No diagnosis, medication advice, or safety assessment is provided.']);
     expect(() => validateClaims({ ...valid, claims: [{ mode:'direct-quote',text: 'Claim', observationIds: ['missing'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'missing', quote: 'Claim' }] }] }, data)).toThrow('unknown evidence');
     expect(() => validateClaims({ ...valid, inspectImage: { handle: 'not-owned', reason: 'Read label' } }, data)).toThrow('unknown browser image');
     const visualClaim = { answer: '', claims: [{ mode: 'synthesis', text: 'The image may show sugar 3 g.', observationIds: [], sourceIds: [], supportingSpans: [], visualEvidence: [{ imageId: 'package-photo', visibleText: 'Sugar 3g', region: null }] }], limitations: [], inspectImage: null };

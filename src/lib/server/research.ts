@@ -56,14 +56,14 @@ function excerptHtml(html: string, query: string) {
   return text.slice(Math.max(0, position - 80), Math.max(0, position - 80) + 800);
 }
 
-const europePmcStopWords = new Set(['a', 'an', 'and', 'are', 'about', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'for', 'from', 'how', 'in', 'into', 'is', 'it', 'of', 'on', 'or', 'the', 'to', 'was', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'would']);
+const europePmcStopWords = new Set(['a', 'an', 'and', 'are', 'about', 'as', 'at', 'be', 'been', 'being', 'but', 'by', 'can', 'could', 'did', 'do', 'does', 'for', 'from', 'how', 'in', 'into', 'is', 'it', 'of', 'on', 'or', 'the', 'to', 'was', 'were', 'what', 'when', 'where', 'which', 'who', 'why', 'will', 'with', 'would', 'ins', 'e', 'no', 'number']);
 
 function europePmcScienceQuery(input: string) {
   // Scope free-text topic terms to metadata that describes the paper, rather
   // than incidental mentions anywhere in Europe PMC's indexed full text.
   // Token-only clauses keep user-supplied query operators inert.
   const terms = (input.normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])
-    .filter(term => !europePmcStopWords.has(term))
+    .filter(term => /\p{L}/u.test(term) && term.length >= 3 && !europePmcStopWords.has(term))
     .slice(0, 24);
   if (!terms.length) throw new ApiError(400, 'invalid_input', 'Include a food, ingredient, nutrient, outcome, or other specific science topic.');
   return terms.map(term => `TITLE_ABS:"${term}"`).join(' AND ');

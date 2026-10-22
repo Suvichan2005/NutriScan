@@ -6,6 +6,8 @@ export {
   localEvidenceScoreFloor,
   modelDirectory,
   indexFile,
+  openFoodToxIndexFile,
+  openFoodToxSourceSha256,
   documentText,
   corpusFingerprint,
   embedLocally,
@@ -15,5 +17,7 @@ export {
   isCurrentLawOrRegulatoryQuery,
   clearsLocalEvidenceFloor,
   semanticRetrieve,
+  rankOpenFoodToxSubstances,
+  searchOpenFoodTox,
 } from '../modules/knowledge/server';
-export type { SemanticHit } from '../modules/knowledge/server';
+export type { SemanticHit, OpenFoodToxHit, OpenFoodToxSearch, OpenFoodToxSubstance, OpenFoodToxAssessment, OpenFoodToxReference } from '../modules/knowledge/server';

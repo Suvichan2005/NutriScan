@@ -7,7 +7,7 @@ import { applyNutrientCorrection } from '../correction';
 import { retrieveEvidence } from '../knowledge';
 import { mergePackageEvidence } from '../merge-evidence';
 import { parseLabel } from '../parser';
-import { assistInput, validateClaims } from '../server/gemini';
+import { assistInput, assistPromptPayload, validateClaims } from '../server/gemini';
 
 const imageId='photo-private-1';
 const runId='ocr-run-1';
@@ -200,6 +200,9 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(result.tentativeCandidates).toHaveLength(1);
     expect(result.tentativeCandidates[0]).toMatchObject({status:'tentative',numericValue:8.8,basis:null,observationIds:['line-2'],ocrWordEvidence:candidate.ocrWordEvidence});
     expect(data.package.nutrients.some(item=>item.key==='protein')).toBe(false);
+    const carried=assistInput.parse({...data,interpretedCandidates:[candidate]});
+    expect(assistPromptPayload(carried).interpretedCandidates).toEqual([candidate]);
+    expect(assistInput.safeParse({...data,interpretedCandidates:[{...candidate,observationIds:['stale-line']}]}).success).toBe(false);
     expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[]}]},data).tentativeCandidates).toEqual([]);
     expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-2',role:'value',wordIndexes:[99]}]}]},data).tentativeCandidates).toEqual([]);
     expect(validateClaims({...output,tentativeCandidates:[{...candidate,supportingSpans:[{...span,quote:'Protein approx'}]}]},data).tentativeCandidates).toEqual([]);
@@ -239,7 +242,8 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(data.package.observations.find(item=>item.id===noisyLine.id)?.ocrWords).toEqual(noisyLine.ocrWords);
     expect(pkg.additives).not.toContain('385');
     expect(result.tentativeCandidates).toEqual([candidate]);
-    expect(result.answer).toContain('not used as confirmed package facts or calculations');
+    expect(result.answer).toContain('clearly labeled arithmetic');
+    expect(result.answer).toContain('remain outside calculations');
     expect(validateClaims({answer:'ignored',claims:[],tentativeCandidates:[{...candidate,supportingSpans:[{...candidate.supportingSpans[0],quote:'Calciurn disodium'}]}],limitations:[],inspectImage:null},data).tentativeCandidates).toEqual([]);
   });
 

@@ -28,14 +28,48 @@ type UsageRecord = {
   thoughtTokens: number | null;
   totalTokens: number | null;
   estimatedActualUsd: number | null;
+  groundedSearchQueryCount?: number | null;
+  estimatedGroundingCostUpperUsd?: number | null;
   elapsedMs: number | null;
+  providerHttpStatus?: number | null;
+  providerFailureClass?: string | null;
 };
 
 type UsageLedger = { version: 1; calls: UsageRecord[] };
 
+/** Release unused per-call reservations once the provider's settled usage is known. */
+export function committedPaidSpendUsd(calls: ReadonlyArray<Pick<UsageRecord, 'state' | 'reservedUsd' | 'estimatedActualUsd' | 'estimatedGroundingCostUpperUsd'>>) {
+  return calls.reduce((sum, call) => {
+    if (call.state !== 'completed' || call.estimatedActualUsd === null) return sum + call.reservedUsd;
+    return sum + call.estimatedActualUsd + (call.estimatedGroundingCostUpperUsd ?? 0);
+  }, 0);
+}
+
+/** Count Search queries from either grounding metadata or echoed server tool-call parts. */
+export function countGoogleSearchQueries(response: Pick<GenerateContentResponse, 'candidates'> | undefined) {
+  const candidates = response?.candidates ?? [];
+  const metadataCount = candidates.flatMap(candidate => candidate.groundingMetadata?.webSearchQueries ?? []).filter(query => query.trim()).length;
+  const toolCallCount = candidates.flatMap(candidate => candidate.content?.parts ?? []).reduce((count, part) => {
+    if (part.toolCall?.toolType !== 'GOOGLE_SEARCH_WEB') return count;
+    const queries = part.toolCall.args?.queries;
+    return count + (Array.isArray(queries) ? queries.filter(query => typeof query === 'string' && query.trim()).length : 0);
+  }, 0);
+  return Math.max(metadataCount, toolCallCount);
+}
+
 const ledgerPath = path.join(process.cwd(), '.data', 'gemini-usage.json');
 const maxLedgerBytes = 5_000_000;
 let ledgerQueue: Promise<void> = Promise.resolve();
+let testLedger: UsageLedger = { version: 1, calls: [] };
+
+function isTestRuntime() {
+  return process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+}
+
+/** Keeps mocked provider traffic out of the owner's local paid-usage ledger. */
+export function resetGeminiUsageLedgerForTests() {
+  testLedger = { version: 1, calls: [] };
+}
 
 function positiveNumber(name: string): number | null {
   const value = Number(process.env[name]);
@@ -81,7 +115,8 @@ export function providerStatus() {
     : tier === 'paid' && configured && !paidAuthorized
       ? 'Paid Gemini is blocked: explicit enablement, a positive spend cap, a request cap, input/output limits and current price rates are all required.'
       : 'Gemini is disabled. Select a server-side provider and stable model, then explicitly enable the chosen tier. No provider calls are made while disabled.';
-  return { provider: 'Gemini', tier, configured, enabled, paidAuthorized, model, searchEnabled: false, searchRequested: process.env.ENABLE_GEMINI_SEARCH === 'true', message };
+  const searchEnabled = process.env.ENABLE_GEMINI_SEARCH === 'true';
+  return { provider: 'Gemini', tier, configured, enabled, paidAuthorized, model, searchEnabled, searchRequested: searchEnabled, message };
 }
 
 function buildClient(apiKey: string, tier: GeminiTier, purpose: GeminiPurpose) {
@@ -125,6 +160,7 @@ export function freeTierSyntheticSmokeContext(model: string): GeminiContext {
 }
 
 async function readLedger(): Promise<UsageLedger> {
+  if (isTestRuntime()) return testLedger;
   try {
     const contents = await readFile(ledgerPath);
     if (contents.byteLength > maxLedgerBytes) throw new Error('size');
@@ -143,8 +179,13 @@ async function updateLedger<T>(update: (ledger: UsageLedger) => T | Promise<T>):
   ledgerQueue = new Promise<void>((resolve) => { release = resolve; });
   await prior;
   try {
-    const ledger = await readLedger();
+    const testRuntime = isTestRuntime();
+    const ledger = testRuntime ? testLedger : await readLedger();
     const value = await update(ledger);
+    if (testRuntime) {
+      testLedger = ledger;
+      return value;
+    }
     await mkdir(path.dirname(ledgerPath), { recursive: true });
     const temporaryPath = `${ledgerPath}.${process.pid}.${randomUUID()}.tmp`;
     await writeFile(temporaryPath, JSON.stringify(ledger), { encoding: 'utf8', mode: 0o600 });
@@ -173,7 +214,7 @@ async function reserveCall(context: GeminiContext, record: UsageRecord) {
       const maxCalls = positiveNumber('GEMINI_PAID_MAX_CALLS')!;
       const budget = positiveNumber('GEMINI_PAID_BUDGET_USD')!;
       const paidCalls = ledger.calls.filter((call) => call.tier === 'paid');
-      const reserved = paidCalls.reduce((sum, call) => sum + call.reservedUsd, 0);
+      const reserved = committedPaidSpendUsd(paidCalls);
       if (paidCalls.length >= maxCalls) throw new ApiError(429, 'paid_request_cap', 'The configured paid Gemini request cap has been reached.');
       if (reserved + record.reservedUsd > budget + 1e-12) throw new ApiError(429, 'paid_spend_cap', 'The conservative paid Gemini spend estimate exceeds the configured cap.');
     }
@@ -181,7 +222,22 @@ async function reserveCall(context: GeminiContext, record: UsageRecord) {
   });
 }
 
-async function settleCall(id: string, state: 'completed' | 'failed', response: GenerateContentResponse | undefined, elapsedMs: number, context: GeminiContext) {
+function safeProviderFailure(error: unknown) {
+  const status = error && typeof error === 'object' && 'status' in error && typeof error.status === 'number'
+    ? Math.min(599, Math.max(100, Math.floor(error.status)))
+    : null;
+  const failureClass = status === 401 ? 'authentication'
+    : status === 403 ? 'access-denied'
+      : status === 404 ? 'model-or-endpoint'
+        : status === 429 ? 'rate-or-quota'
+          : status === 400 || status === 422 ? 'request-rejected'
+            : status === 408 || status === 504 ? 'timeout'
+              : status !== null && status >= 500 ? 'provider-unavailable'
+                : 'transport-or-unknown';
+  return { status, failureClass };
+}
+
+async function settleCall(id: string, state: 'completed' | 'failed', response: GenerateContentResponse | undefined, elapsedMs: number, context: GeminiContext, failure?: unknown) {
   const price = modelPrice(context.tier);
   const usage = response?.usageMetadata;
   const promptTokens = usage?.promptTokenCount ?? null;
@@ -192,6 +248,7 @@ async function settleCall(id: string, state: 'completed' | 'failed', response: G
   const estimate = promptTokens === null || outputTokens === null
     ? null
     : ((promptTokens * price.input) + (billableOutput * price.output)) / 1_000_000;
+    const groundedSearchQueryCount = countGoogleSearchQueries(response);
   await updateLedger((ledger) => {
     const record = ledger.calls.find((call) => call.id === id);
     if (!record) throw new ApiError(503, 'usage_ledger_unavailable', 'Provider usage could not be reconciled locally.');
@@ -202,14 +259,26 @@ async function settleCall(id: string, state: 'completed' | 'failed', response: G
     record.totalTokens = totalTokens;
     record.modelVersion = response?.modelVersion ?? null;
     record.estimatedActualUsd = estimate;
+    record.groundedSearchQueryCount = groundedSearchQueryCount;
+    // Gross upper bound assumes the project's monthly free search allowance
+    // has already been exhausted; actual billing can be lower.
+    record.estimatedGroundingCostUpperUsd = groundedSearchQueryCount * 0.014;
     record.elapsedMs = elapsedMs;
+    if (state === 'failed') {
+      const safeFailure = safeProviderFailure(failure);
+      record.providerHttpStatus = safeFailure.status;
+      record.providerFailureClass = safeFailure.failureClass;
+    } else {
+      record.providerHttpStatus = null;
+      record.providerFailureClass = null;
+    }
   });
 }
 
 export async function generateTracked(context: GeminiContext, params: GenerateContentParameters): Promise<GenerateContentResponse> {
   if (params.model !== context.model) throw new ApiError(400, 'provider_model_mismatch', 'Request model does not match the selected provider configuration.');
   const maxOutputTokens = params.config?.maxOutputTokens ?? 0;
-  if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 1 || maxOutputTokens > 4000) throw new ApiError(400, 'output_limit', 'Gemini output must be explicitly bounded to at most 4000 tokens.');
+  if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 1 || maxOutputTokens > 6000) throw new ApiError(400, 'output_limit', 'Gemini output must be explicitly bounded to at most 6000 tokens.');
   const serializedBytes = Buffer.byteLength(JSON.stringify(params.contents));
   const containsInlineImage = (value: unknown): boolean => {
     if (Array.isArray(value)) return value.some(containsInlineImage);
@@ -231,7 +300,11 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
     if (!Number.isInteger(promptTokens) || promptTokens! < 0 || promptTokens! > maxInputTokens) throw new ApiError(413, 'paid_input_cap', 'The estimated paid input exceeds its configured token limit.');
     if (maxOutputTokens > positiveNumber('GEMINI_PAID_MAX_OUTPUT_TOKENS')!) throw new ApiError(413, 'paid_output_cap', 'The requested paid output exceeds its configured token limit.');
     const price = modelPrice(context.tier);
-    reservedUsd = ((promptTokens! * price.input) + (maxOutputTokens * price.output)) / 1_000_000;
+    const tokenReservation = ((promptTokens! * price.input) + (maxOutputTokens * price.output)) / 1_000_000;
+    const searchToolOffered = params.config?.tools?.some(tool => 'googleSearch' in tool) ?? false;
+    // Reserve for up to five search queries per generation at Google's
+    // published $14/1,000 over-quota rate. This is a conservative upper bound.
+    reservedUsd = tokenReservation + (searchToolOffered ? 5 * 0.014 : 0);
   }
 
   const record: UsageRecord = {
@@ -257,7 +330,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
     return response;
   } catch (error) {
     // Keep the full reservation on failure; ambiguous network failures may have reached the provider.
-    await settleCall(id, 'failed', undefined, Date.now() - started, context);
+    await settleCall(id, 'failed', undefined, Date.now() - started, context, error);
     throw error;
   }
 }

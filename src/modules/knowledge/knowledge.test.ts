@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sourceSchema } from '../../lib/contracts';
-import { clearsLocalEvidenceFloor, localEvidenceScoreFloor } from './server';
+import { clearsLocalEvidenceFloor, localEvidenceScoreFloor, rankOpenFoodToxSubstances, type OpenFoodToxSubstance } from './server';
 import {
   additives,
   detectAdditives,
@@ -72,5 +72,22 @@ describe('knowledge module offline contract', () => {
     expect(clearsLocalEvidenceFloor(0.3999)).toBe(false);
     expect(clearsLocalEvidenceFloor(Number.NaN)).toBe(false);
     expect(clearsLocalEvidenceFloor(Number.POSITIVE_INFINITY)).toBe(false);
+  });
+
+  it('ranks EFSA substance names and exact registry identifiers without matching generic fragments', () => {
+    const tbhq: OpenFoodToxSubstance = {
+      substanceId: 'sub-tbhq', name: 'Tertiary-butyl hydroquinone (TBHQ)', referenceSubstanceId: 'ref-tbhq',
+      aliases: ['Tertiary-butyl hydroquinone (TBHQ)', 'tert-Butylhydroquinone'],
+      identifiers: { casNumber: '1948-33-0', pubchemCid: 16043 }, type: ['mono-constituent substance'], references: [],
+      assessments: [{ assessmentId: 'assessment-tbhq', adi: { 'Adi.lowerValue': 0.7, 'Adi.Unit': 'mg/kg bw/day' }, acuteReferenceDose: null }],
+    };
+    const unrelated: OpenFoodToxSubstance = {
+      substanceId: 'sub-hydroquinone', name: 'Hydroquinone', referenceSubstanceId: 'ref-hydroquinone',
+      aliases: ['Hydroquinone'], identifiers: { casNumber: '123-31-9' }, type: [], references: [], assessments: [],
+    };
+    expect(rankOpenFoodToxSubstances('TBHQ', [unrelated, tbhq])).toMatchObject([{ substance: { substanceId: 'sub-tbhq' }, matchedBy: 'exact-name' }]);
+    expect(rankOpenFoodToxSubstances('1948-33-0', [unrelated, tbhq])).toMatchObject([{ substance: { substanceId: 'sub-tbhq' }, matchedBy: 'exact-identifier' }]);
+    expect(rankOpenFoodToxSubstances('hydro', [unrelated, tbhq])).toEqual([]);
+    expect(() => rankOpenFoodToxSubstances('TBHQ', [tbhq], 0)).toThrow(/request/i);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { applyBarcodeReadings, detectRetailBarcodes, isValidGtin, type BarcodeDetectorProvider } from '../barcode';
+import { applyBarcodeReadings, detectRetailBarcodes, findOcrGtinCandidate, isValidGtin, type BarcodeDetectorProvider } from '../barcode';
 import { packageSchema } from '../contracts';
 import { parseLabel } from '../parser';
 
@@ -11,6 +11,29 @@ describe('local retail barcode reading',()=>{
     expect(isValidGtin('4006381333932')).toBe(false);
     expect(isValidGtin('ABC6381333931')).toBe(false);
     expect(isValidGtin('12345678')).toBe(false);
+  });
+
+  it('retains one checksum-valid OCR code as an unconfirmed, traceable candidate',()=>{
+    const candidate=findOcrGtinCandidate([
+      {id:'line-1',field:'ocr-line',text:'OTHER 8901928202755>',origin:'ocr',imageId:'back-photo',side:'back'},
+      {id:'user-line',field:'ocr-line',text:'4006381333931',origin:'user',imageId:'back-photo',side:'back'},
+      {id:'fixture-line',field:'ocr-line',text:'4006381333931',origin:'fixture',imageId:'back-photo',side:'back'},
+    ]);
+    expect(candidate).toEqual({code:'8901928202755',observationIds:['line-1'],imageIds:['back-photo'],sides:['back']});
+  });
+
+  it('ignores invalid checksums and identifiers printed as licenses',()=>{
+    expect(findOcrGtinCandidate([
+      {id:'wrong-check',field:'ocr-line',text:'4006381333932',origin:'ocr',imageId:'back',side:'back'},
+      {id:'license',field:'ocr-line',text:'Lic.No. 10012031000173',origin:'ocr',imageId:'back',side:'back'},
+    ])).toBeNull();
+  });
+
+  it('withholds a candidate when distinct valid codes occur across package evidence',()=>{
+    expect(findOcrGtinCandidate([
+      {id:'code-a',field:'ocr-line',text:'4006381333931',origin:'ocr',imageId:'front',side:'front'},
+      {id:'code-b',field:'ocr-line',text:'036000291452',origin:'ocr',imageId:'back',side:'back'},
+    ])).toBeNull();
   });
 
   it('reads only supported retail formats and deduplicates valid results',async()=>{

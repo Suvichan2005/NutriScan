@@ -508,6 +508,14 @@ describe('nutrition numerical invariants',()=>{
     expect(audit.answer).toMatch(/No readable ingredient text is recorded.*does not establish that the package has none/i);
     expect(audit.findings.some(entry=>entry.title==='Recorded ingredient text')).toBe(false);
   });
+  it('distinguishes retained ingredient-heading OCR from a structured ingredient list',()=>{
+    const rawLine='NUTRITIONAL INFORMATION INGREDIENTS: Refined wheat flour (maida) (89.98%), hydrogenated vegetable oil';
+    const pkg=parseLabel(rawLine,{origin:'ocr',observations:[{id:'ingredient-heading-ocr',field:'ocr-line',text:rawLine,side:'back',origin:'ocr',confidence:58,imageId:'package-side-1'}]});
+    const audit=buildAudit(pkg,30,'g',defaultProfile,'What ingredients are listed?');
+    expect(pkg.ingredients).toEqual([]);
+    expect(audit.answer).toMatch(/Raw OCR retained a line labelled “Ingredients,” but no structured ingredient statement was recovered/i);
+    expect(audit.findings.find(entry=>entry.title==='Unstructured ingredient OCR')?.observationIds).toContain('ingredient-heading-ocr');
+  });
 });
 describe('genuine local evidence retrieval',()=>{
   it('uses exact additive identities, never substring codes or aliases',()=>{

@@ -1,6 +1,7 @@
-import { packageSchema, profileSchema, nutrientKeys, type Audit, type Calculation, type Finding, type Nutrient, type NutrientKey, type PackageData, type Profile } from './contracts';
+import { packageSchema, profileSchema, nutrientKeys, type Audit, type Calculation, type Finding, type Nutrient, type NutrientKey, type PackageData, type Profile, type TentativeStructuredCandidate } from './contracts';
 import { detectAdditives, evidenceSources, findNutrientContentClaimGuidance, lookupAdditive, nutrientContentClaimSourceIds, resolveTentativeAdditiveIdentity, retrieveEvidence } from './knowledge';
 import { findDeclaredFoodMentions } from './ingredient-context';
+import { matchesPackageRows, reconcileInterpretedNutrition } from './interpreted-nutrients';
 
 const display:Record<NutrientKey,string>={energy:'Energy',carbohydrate:'Carbohydrate',sugars:'Total sugars',addedSugars:'Added sugars',protein:'Protein',fat:'Fat',saturatedFat:'Saturated fat',fiber:'Fibre',sodium:'Sodium',salt:'Salt'};
 const uncertaintyQuestionPattern=/\b(?:what remains uncertain|what(?:'s| is) still uncertain|what is uncertain|what remains unclear|what is unclear|what(?:'s| is) still unclear|what is unknown|what remains unknown|what is not known|what don't we know|what do we not know|what needs checking|what should be checked|what remains to be checked|any uncertainties|what are the uncertainties)\b/i;
@@ -32,18 +33,18 @@ function normalized(n:Nutrient):{value:number;unit:string} {
   if(n.key==='sodium')return {value:n.unit==='g'?n.value*1000:n.value,unit:'mg'};
   return {value:n.unit==='mg'?n.value/1000:n.value,unit:'g'};
 }
-type Usable = {nutrient:Nutrient;value:number;unit:string;observations:string[]};
+type Usable = {key:NutrientKey;value:number;unit:string;basis:NonNullable<Nutrient['basis']>;observations:string[];interpretationIds?:string[]};
 function usable(pkg:PackageData,key:NutrientKey,unit:'g'|'ml'):Usable|undefined {
   const rows=pkg.nutrients.filter(n=>n.key===key);
   if(!rows.length||rows.some(n=>n.status==='conflict'||!n.basis||n.basis.unit!==unit))return;
   const first=rows[0]; const norm=normalized(first); const perUnit=norm.value/first.basis!.amount;
   // Differently based declarations must agree after normalization, not by voting.
   if(rows.some(n=>Math.abs(normalized(n).value/n.basis!.amount-perUnit)>Math.max(.000001,Math.abs(perUnit)*.02)))return;
-  return {nutrient:first,value:norm.value,unit:norm.unit,observations:unique(rows.flatMap(n=>n.observationIds))};
+  return {key,value:norm.value,unit:norm.unit,basis:first.basis!,observations:unique(rows.flatMap(n=>n.observationIds))};
 }
 
 /** Reuses the same package for follow-ups. Pure and local: no hidden network call. */
-export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'ml',profileInput:Profile,question='What does this label mean for this portion?'):Audit {
+export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'ml',profileInput:Profile,question='What does this label mean for this portion?',interpretedCandidates:TentativeStructuredCandidate[]=[]):Audit {
   const pkg=packageSchema.parse(pkgInput);const profile=profileSchema.parse(profileInput);
   const observationIds=new Set(pkg.observations.map(o=>o.id));
   if(observationIds.size!==pkg.observations.length)throw new Error('Observation identifiers must be unique.');
@@ -149,10 +150,20 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   }
   const candidates=new Map<NutrientKey,Usable>();
   for(const key of nutrientKeys){const candidate=usable(pkg,key,portionUnit);if(candidate)candidates.set(key,candidate);}
+  const interpretedNutrition=reconcileInterpretedNutrition(pkg,interpretedCandidates);
+  for(const key of nutrientKeys){
+    if(candidates.has(key))continue;
+    const rows=pkg.nutrients.filter(nutrient=>nutrient.key===key);
+    const options=interpretedNutrition.readings.filter(reading=>reading.key===key&&reading.basis.unit===portionUnit&&matchesPackageRows(reading,rows));
+    if(!options.length)continue;
+    // Prefer a standard 100-unit declaration; equivalent serving columns stay linked.
+    const selected=[...options].sort((a,b)=>Number(b.basis.amount===100)-Number(a.basis.amount===100))[0];
+    candidates.set(key,{key,value:selected.value,unit:selected.unit,basis:selected.basis,observations:unique([...selected.observationIds,...rows.flatMap(row=>row.observationIds)]),interpretationIds:selected.candidateIds});
+  }
   const salt=candidates.get('salt');const sodium=candidates.get('sodium');
   if(salt&&sodium){
-    const saltPerUnit=salt.value/salt.nutrient.basis!.amount;
-    const sodiumPerUnit=sodium.value/sodium.nutrient.basis!.amount;
+    const saltPerUnit=salt.value/salt.basis.amount;
+    const sodiumPerUnit=sodium.value/sodium.basis.amount;
     if(Math.abs(saltPerUnit*400-sodiumPerUnit)>Math.max(.1,sodiumPerUnit*.05)){
       candidates.delete('salt');candidates.delete('sodium');
       finding({title:'Salt and sodium disagree',detail:'The declared salt and sodium values do not agree using 1 g salt ≈ 400 mg sodium. Both are preserved and withheld from portion calculations until checked.',status:'conflict',observationIds:unique([...salt.observations,...sodium.observations]),sourceIds:['who-sodium'],calculationIds:[]});
@@ -160,14 +171,14 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   }
   // Validate the reported hierarchy before exposing any scaled sugar totals.
   const sugarRow=candidates.get('sugars');const carbRow=candidates.get('carbohydrate');const addedRow=candidates.get('addedSugars');
-  const sugarConflict=(sugarRow&&carbRow&&sugarRow.value/sugarRow.nutrient.basis!.amount>carbRow.value/carbRow.nutrient.basis!.amount+.001)||(addedRow&&sugarRow&&addedRow.value/addedRow.nutrient.basis!.amount>sugarRow.value/sugarRow.nutrient.basis!.amount+.001);
+  const sugarConflict=(sugarRow&&carbRow&&sugarRow.value/sugarRow.basis.amount>carbRow.value/carbRow.basis.amount+.001)||(addedRow&&sugarRow&&addedRow.value/addedRow.basis.amount>sugarRow.value/sugarRow.basis.amount+.001);
   if(sugarConflict){
     const conflictingRows=[sugarRow,carbRow,addedRow].filter((r):r is Usable=>!!r);
-    for(const row of conflictingRows)candidates.delete(row.nutrient.key);
+    for(const row of conflictingRows)candidates.delete(row.key);
     finding({title:'Nutrition totals disagree',detail:'The declared sugar/carbohydrate hierarchy is inconsistent on a common basis. The affected values remain in the label evidence, but their calculations are withheld pending a visual check.',status:'conflict',observationIds:unique(conflictingRows.flatMap(r=>r.observations)),sourceIds:[],calculationIds:[]});
   }
   for(const [key,candidate] of candidates){
-    if(candidate.nutrient.basis!.unit==='g'&&key!=='energy'&&candidate.value/(key==='sodium'?1000:1)>candidate.nutrient.basis!.amount+.001){
+    if(candidate.basis.unit==='g'&&key!=='energy'&&candidate.value/(key==='sodium'?1000:1)>candidate.basis.amount+.001){
       candidates.delete(key);
       finding({title:`${display[key]} exceeds the labelled food mass`,detail:'This reading is physically inconsistent with the stated gram basis. The value is preserved and its portion calculation is withheld.',status:'conflict',observationIds:candidate.observations,sourceIds:[],calculationIds:[]});
     }
@@ -178,14 +189,15 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       if(rows.length&&!findings.some(f=>f.status==='conflict'&&rows.some(n=>n.observationIds.some(id=>f.observationIds.includes(id)))))finding({title:`${display[key]} needs confirmation`,detail:'A conflict, missing basis or incompatible mass/volume unit prevents a reliable portion calculation. All original readings remain in the label evidence.',status:rows.some(n=>n.status==='conflict')?'conflict':'uncertain',observationIds:unique(rows.flatMap(n=>n.observationIds)),sourceIds:[],calculationIds:[]});
       continue;
     }
-    const n=candidate.nutrient;
-    const result=candidate.value*portion/n.basis!.amount;
-    const readingAssumption=packageMarksNutritionValuesApproximate
+    const result=candidate.value*portion/candidate.basis.amount;
+    const readingAssumption=candidate.interpretationIds?.length
+      ?'Gemini associated the nutrient, number, unit and printed basis with exact OCR word evidence. This remains an unverified model interpretation; it has not been confirmed against the original pixels.'
+      :packageMarksNutritionValuesApproximate
       ?'The package labels its nutrition values as approximate; this calculation scales the printed reading as an estimate. NutriScan has not independently verified the reading or basis.'
       :'This calculation assumes the displayed reading and basis are accurate; NutriScan has not independently verified either.';
-    const calc:Calculation={id:`calc-${key}`,label:`${display[key]} in ${portion} ${portionUnit}`,nutrient:key,input:candidate.value,inputUnit:candidate.unit,basisAmount:n.basis!.amount,portion,portionUnit,result,unit:candidate.unit,formula:`${candidate.value} ${candidate.unit} × ${portion} ${portionUnit} ÷ ${n.basis!.amount} ${n.basis!.unit}`,observationIds:candidate.observations,assumptions:[readingAssumption,'The portion is assumed to have the same composition as the labelled product.']};
+    const calc:Calculation={id:`calc-${key}`,label:`${display[key]} in ${portion} ${portionUnit}`,nutrient:key,input:candidate.value,inputUnit:candidate.unit,basisAmount:candidate.basis.amount,portion,portionUnit,result,unit:candidate.unit,formula:`${candidate.value} ${candidate.unit} × ${portion} ${portionUnit} ÷ ${candidate.basis.amount} ${candidate.basis.unit}`,observationIds:candidate.observations,...(candidate.interpretationIds?.length?{interpretationIds:candidate.interpretationIds}:{}),assumptions:[readingAssumption,'The portion is assumed to have the same composition as the labelled product.']};
     calculations.push(calc);
-    finding({title:calc.label,detail:`${rounded(result)} ${candidate.unit}, calculated from the printed ${n.basis!.description}.`,status:'calculated',observationIds:calc.observationIds,sourceIds:[],calculationIds:[calc.id]});
+    finding({title:calc.label,detail:`${rounded(result)} ${candidate.unit}, calculated from the printed ${candidate.basis.description}${candidate.interpretationIds?.length?' under an OCR-linked Gemini interpretation that remains unverified.':'.'}`,status:'calculated',observationIds:calc.observationIds,sourceIds:[],calculationIds:[calc.id]});
   }
   // Convert rather than double-counting when only one of salt/sodium is declared.
   if(!candidates.has('sodium')&&candidates.has('salt')&&!pkg.nutrients.some(n=>n.key==='sodium')){
@@ -352,11 +364,18 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       answerIntent=`observed ${textIntent.label}`;
       const rows=pkg.observations.filter(observation=>observation.field===textIntent.field&&observation.text.trim());
       const text=unique(rows.map(observation=>observation.text.trim()));
+      const unstructuredIngredientOcr=textIntent.field==='ingredients'
+        ?pkg.observations.filter(observation=>observation.origin==='ocr'&&observation.field==='ocr-line'&&/\bingredients?\s*[:：]/i.test(observation.text))
+        :[];
       if(text.length){
         const shown=text.slice(0,8).map(line=>line.slice(0,240));
         const omitted=text.length>shown.length||text.some(line=>line.length>240);
         answer=`The recorded label text says: ${shown.join(' | ')}${omitted?' | Additional text is omitted or truncated.':''} These are package-reading observations, not independently verified product facts; OCR or transcription may be wrong.`;
         finding({title:`Recorded ${textIntent.label}`,detail:`Literal text retained from the label-reading record. OCR or transcription may be wrong; inspect the package before relying on it.`,status:'observed',observationIds:unique(rows.map(observation=>observation.id)),sourceIds:[],calculationIds:[]});
+      }else if(unstructuredIngredientOcr.length){
+        const observationIds=unique(unstructuredIngredientOcr.map(observation=>observation.id));
+        answer='Raw OCR retained a line labelled “Ingredients,” but no structured ingredient statement was recovered. The text may be incomplete or misread; inspect the linked label evidence and photo before relying on it.';
+        finding({title:'Unstructured ingredient OCR',detail:'The original OCR line contains an ingredient heading, but the local parser did not separate an ingredient list. This remains unverified package text.',status:'uncertain',observationIds,sourceIds:[],calculationIds:[]});
       }else{
         answer=`No readable ${textIntent.label} is recorded for this package. That does not establish that the package has none; add or check a clear photo of the relevant panel.`;
       }

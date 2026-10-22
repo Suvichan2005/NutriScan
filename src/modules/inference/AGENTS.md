@@ -20,7 +20,7 @@ The Gemini SDK adapter, API routes, consent controls, image inspection, session 
 
 - Reuse schemas and types from `src/lib/contracts.ts`; never copy their definitions into this module.
 - Do not import UI state, Next.js, API routes, `src/lib/server/http`, food-knowledge storage internals, OCR parser internals, Gemini SDKs or image-processing providers into the provider-independent core.
-- Keep model interpretations separate from observed package facts. Tentative candidates must remain tentative and traceable; never mutate or confirm package observations.
+- Keep model interpretations separate from observed package facts. Tentative candidates must remain tentative and traceable; never mutate or confirm package observations. The owner-controlled application may allow a complete OCR-linked nutrient candidate to support explicitly labeled arithmetic only after independently checking exact label/value/unit/basis word references and same-table geometry. Image-only candidates never enter calculations, and all such calculations remain unverified interpretations.
 - Missing data is not zero. Preserve conflicts, units, serving bases, user context and evidence provenance. Conversation history is context, not citeable evidence.
 - Exact citation spans provide traceability, not semantic entailment. Do not describe this validation as proof that a claim is true or supported in meaning.
 - Do not weaken input/output bounds or safety/privacy invariants to make a fixture pass.

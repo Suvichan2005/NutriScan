@@ -14,6 +14,8 @@ Shared schemas remain owner-controlled in `src/lib/contracts.ts`; this module do
 
 The bundled records are concise attributed summaries and identity references, not full source publications or verified legal determinations. Each record carries its publisher, source URL, jurisdiction, dates, limitations, and a license note. Unknown redistribution terms are not treated as clearance. Similarity scores are retrieval signals, not probabilities, source quality, entailment, or product facts. Static references do not establish current law. Additive identity matches do not establish package presence, dose, authorization, or individual safety. Fuzzy OCR identity matches are tentative and retain their observed wording.
 
+The Node-only server entry can also query the local EFSA OpenFoodTox 3.0 snapshot at `.data/knowledge/openfoodtox-3.0.json`. The pinned 2026-04-30 release contains 7,880 substance identities, 5,620 with assessment references, 872 with recorded reference values, and 1,263 assessment rows with an ADI or acute reference dose. This is chemical-hazard reference data, not a food-product catalog or evidence of package exposure. The source is CC BY-ND 4.0; keep both the source workbook and derived local snapshot under ignored `.data/` and do not redistribute the extraction.
+
 Do not add restricted source text, private package images, health profiles, API keys, or user conversations. Do not use this module to turn missing information into zero, infer a product's contents, or produce a clinical/legal verdict.
 
 ## Offline checks and evaluation
@@ -25,6 +27,15 @@ node src/modules/knowledge/test.mjs
 ```
 
 No API key, private image, or model download is needed for that suite. Existing retrieval measurements remain available through `npm run embeddings:evaluate` and `npm run embeddings:evaluate:boundary`; they use developer-authored queries, not independent relevance evaluation. These root scripts write evaluation receipts. `npm run embeddings:prepare` is an explicit setup action that may download the pinned model if its local files are absent.
+
+To reproduce the local OpenFoodTox snapshot, install the pinned workbook dependency and place the checksum-verified official export at `.data/sources/openfoodtox/OFT3.0-export-repository.xlsx`, then run:
+
+```powershell
+python -m pip install -r src/modules/knowledge/requirements-openfoodtox.txt
+python src/modules/knowledge/import_openfoodtox.py
+```
+
+The importer verifies the pinned file size and hashes before writing the local-only index. A missing workbook or dependency is an explicit setup condition; application queries do not download or transmit data.
 
 ## Contribution boundary
 

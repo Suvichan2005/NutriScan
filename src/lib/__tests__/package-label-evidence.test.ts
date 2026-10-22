@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { otherPackageOcrLines, packageLabelEvidenceGroups } from '../package-label-evidence';
+import { isLowSignalPackageOcrLine, otherPackageOcrLines, packageLabelEvidenceGroups } from '../package-label-evidence';
 import type { Observation } from '../contracts';
 
 function line(id: string, text: string, lineIndex: number): Observation {
@@ -17,6 +17,17 @@ function line(id: string, text: string, lineIndex: number): Observation {
 }
 
 describe('package label evidence groups', () => {
+  it('tucks unusable fragments away while keeping value-plus-unit OCR visible', () => {
+    expect(isLowSignalPackageOcrLine({ text: ' A. ' })).toBe(true);
+    expect(isLowSignalPackageOcrLine({ text: '—' })).toBe(true);
+    expect(isLowSignalPackageOcrLine({ text: 'EE NE—' })).toBe(true);
+    expect(isLowSignalPackageOcrLine({ text: 'TT Tee e——' })).toBe(true);
+    expect(isLowSignalPackageOcrLine({ text: '0' })).toBe(true);
+    expect(isLowSignalPackageOcrLine({ text: '019' })).toBe(true);
+    expect(isLowSignalPackageOcrLine({ text: '8.8 g' })).toBe(false);
+    expect(isLowSignalPackageOcrLine({ text: 'Contains wheat' })).toBe(false);
+  });
+
   it('keeps every ingredient, allergen and claim observation with its raw OCR source available', () => {
     const ingredientLine = line('raw-ingredients', 'Ingredients: Wheat flour, vegetable oil', 0);
     const allergenLine = line('raw-allergen', 'Contains wheat', 1);

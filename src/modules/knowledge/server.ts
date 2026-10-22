@@ -13,11 +13,127 @@ export const embeddingDimensions = 384;
 export const localEvidenceScoreFloor = 0.4;
 export const modelDirectory = path.join(process.cwd(), '.data', 'models');
 export const indexFile = path.join(process.cwd(), 'data', 'semantic-index.json');
+export const openFoodToxIndexFile = path.join(process.cwd(), '.data', 'knowledge', 'openfoodtox-3.0.json');
+export const openFoodToxSourceSha256 = '5181661e921651d4087b544981e1e5a63b99532844eac0112732806a00a85eda';
 export const documentText = (source: EvidenceSource) => `${source.title}. ${source.summary}`;
 export const corpusFingerprint = () => createHash('sha256').update(JSON.stringify(evidenceSources.map(s => ({ id: s.id, text: documentText(s), url: s.url })))).digest('hex');
 
 type Index = { model: string; revision: string; dimensions: number; corpusVersion: string; corpusSha256: string; generatedAt: string; vectors: { id: string; vector: number[] }[] };
 export type SemanticHit = { source: EvidenceSource; semanticScore: number; lexicalScore: number; score: number; exactIdentity: boolean };
+
+export type OpenFoodToxReference = {
+  dossierId: string;
+  title?: string | null;
+  date?: string | null;
+  persistentId?: string | null;
+  foodDomain?: string | null;
+  expertGroup?: string | null;
+  regulation?: string | null;
+};
+export type OpenFoodToxAssessment = {
+  assessmentId: string;
+  adi: Record<string, string | number | boolean> | null;
+  acuteReferenceDose: Record<string, string | number | boolean> | null;
+};
+export type OpenFoodToxSubstance = {
+  substanceId: string;
+  name: string;
+  referenceSubstanceId: string | null;
+  aliases: string[];
+  identifiers: Record<string, string | number>;
+  type: string[];
+  references: OpenFoodToxReference[];
+  assessments: OpenFoodToxAssessment[];
+};
+type OpenFoodToxSnapshot = {
+  schemaVersion: 1;
+  dataset: { version: '3.0'; sourceSha256: string; sourceUrl: string; releaseDate: string; license: string; licenseUrl: string; attribution: string };
+  statistics: Record<string, number>;
+  substances: OpenFoodToxSubstance[];
+};
+export type OpenFoodToxHit = { substance: OpenFoodToxSubstance; score: number; matchedBy: 'exact-identifier' | 'exact-name' | 'name-token-overlap' };
+export type OpenFoodToxSearch =
+  | { status: 'ok'; source: OpenFoodToxSnapshot['dataset']; statistics: OpenFoodToxSnapshot['statistics']; results: OpenFoodToxHit[] }
+  | { status: 'no_match'; source: OpenFoodToxSnapshot['dataset']; results: [] }
+  | { status: 'unavailable'; reason: 'not-imported' | 'invalid-index'; results: [] };
+
+let openFoodToxSnapshotPromise: Promise<OpenFoodToxSnapshot | null> | undefined;
+
+async function loadOpenFoodToxSnapshot(): Promise<OpenFoodToxSnapshot | null> {
+  if (!openFoodToxSnapshotPromise) {
+    openFoodToxSnapshotPromise = (async () => {
+      let text: string;
+      try { text = await readFile(openFoodToxIndexFile, 'utf8'); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+        throw error;
+      }
+      if (Buffer.byteLength(text) > 50_000_000) throw new Error('Local OpenFoodTox index exceeds its size limit.');
+      const value = JSON.parse(text) as OpenFoodToxSnapshot;
+      if (value.schemaVersion !== 1 || value.dataset?.version !== '3.0' || value.dataset.sourceSha256 !== openFoodToxSourceSha256 || !Array.isArray(value.substances) || value.substances.length < 7000 || value.substances.length > 9000) throw new Error('Local OpenFoodTox index does not match the pinned release.');
+      for (const substance of value.substances) {
+        if (!substance || typeof substance.substanceId !== 'string' || typeof substance.name !== 'string' || !Array.isArray(substance.aliases) || !Array.isArray(substance.assessments) || !Array.isArray(substance.references)) throw new Error('Local OpenFoodTox index contains an invalid substance record.');
+      }
+      return value;
+    })();
+    openFoodToxSnapshotPromise.catch(() => { openFoodToxSnapshotPromise = undefined; });
+  }
+  try { return await openFoodToxSnapshotPromise; }
+  catch (error) { openFoodToxSnapshotPromise = undefined; throw error; }
+}
+
+function normalizedOftName(value: string) {
+  return value.normalize('NFKC').toLocaleLowerCase('en').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
+}
+
+function scoreOpenFoodToxSubstance(query: string, substance: OpenFoodToxSubstance): OpenFoodToxHit | null {
+  const normalizedQuery = normalizedOftName(query);
+  const compactQuery = normalizedQuery.replace(/\s/g, '');
+  const identifiers = Object.values(substance.identifiers).map(value => String(value).trim().toLocaleLowerCase('en'));
+  if (identifiers.some(identifier => identifier === query.trim().toLocaleLowerCase('en') || normalizedOftName(identifier).replace(/\s/g, '') === compactQuery)) return { substance, score: 100, matchedBy: 'exact-identifier' };
+  const aliases = [substance.name, ...substance.aliases];
+  const normalizedAliases = aliases.map(normalizedOftName).filter(Boolean);
+  if (normalizedAliases.some(alias => alias === normalizedQuery || alias.replace(/\s/g, '') === compactQuery)) return { substance, score: 95, matchedBy: 'exact-name' };
+  if (compactQuery.length >= 12 && normalizedAliases.some(alias => alias.replace(/\s/g, '').startsWith(compactQuery) && alias.replace(/\s/g, '').length - compactQuery.length <= 5)) return { substance, score: 90, matchedBy: 'exact-name' };
+  if (normalizedQuery.length >= 4 && !normalizedQuery.includes(' ') && normalizedAliases.some(alias => alias.split(' ').includes(normalizedQuery))) return { substance, score: 90, matchedBy: 'exact-name' };
+
+  const queryTokens = [...new Set(normalizedQuery.split(' ').filter(token => token.length >= 3))];
+  if (!queryTokens.length) return null;
+  const best = normalizedAliases.reduce((maximum, alias) => {
+    const aliasTokens = new Set(alias.split(' ').filter(token => token.length >= 3));
+    const overlap = queryTokens.filter(token => aliasTokens.has(token)).length;
+    const queryCoverage = overlap / queryTokens.length;
+    const aliasCoverage = overlap / Math.max(1, aliasTokens.size);
+    return Math.max(maximum, Math.min(queryCoverage, aliasCoverage));
+  }, 0);
+  if (best < (queryTokens.length === 1 ? 1 : 0.67)) return null;
+  return { substance, score: Math.round(best * 70), matchedBy: 'name-token-overlap' };
+}
+
+export function rankOpenFoodToxSubstances(query: string, substances: OpenFoodToxSubstance[], limit = 3): OpenFoodToxHit[] {
+  if (typeof query !== 'string' || query.trim().length < 2 || query.length > 120 || !Number.isInteger(limit) || limit < 1 || limit > 5) throw new Error('Invalid OpenFoodTox search request.');
+  return substances
+    .map(substance => scoreOpenFoodToxSubstance(query, substance))
+    .filter((hit): hit is OpenFoodToxHit => Boolean(hit))
+    .sort((a, b) => b.score - a.score || Number(b.substance.assessments.length > 0) - Number(a.substance.assessments.length > 0) || a.substance.name.localeCompare(b.substance.name))
+    .slice(0, limit);
+}
+
+/**
+ * Search the locally imported EFSA source snapshot by substance name or exact
+ * registry identifier. This is identity retrieval only; it does not infer that
+ * a substance is present in a package or that the package contains an exposure.
+ */
+export async function searchOpenFoodTox(query: string, limit = 3): Promise<OpenFoodToxSearch> {
+  if (typeof query !== 'string' || query.trim().length < 2 || query.length > 120 || !Number.isInteger(limit) || limit < 1 || limit > 5) throw new Error('Invalid OpenFoodTox search request.');
+  let snapshot: OpenFoodToxSnapshot | null;
+  try { snapshot = await loadOpenFoodToxSnapshot(); }
+  catch { return { status: 'unavailable', reason: 'invalid-index', results: [] }; }
+  if (!snapshot) return { status: 'unavailable', reason: 'not-imported', results: [] };
+  const results = rankOpenFoodToxSubstances(lookupAdditive(query)?.name ?? query, snapshot.substances, limit);
+  if (!results.length) return { status: 'no_match', source: snapshot.dataset, results: [] };
+  return { status: 'ok', source: snapshot.dataset, statistics: snapshot.statistics, results };
+}
 
 let extractorPromise: Promise<FeatureExtractionPipeline> | undefined;
 async function extractor() {

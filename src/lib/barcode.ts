@@ -7,6 +7,8 @@ export type BarcodeDetectorProvider = {
 export type BarcodeFallback = (blob: Blob) => Promise<BarcodeDetection[]>;
 export type BarcodeReading = { code: string; imageId: string; side: 'front'|'back'|'extra' };
 
+export type OcrGtinCandidate = { code: string; observationIds: string[]; imageIds: string[]; sides: Array<'front'|'back'|'extra'> };
+
 const supportedRetailFormats = new Set(['ean_13','ean_8','upc_a']);
 
 /** Validates GTIN/EAN/UPC check digits; it does not prove product identity. */
@@ -17,6 +19,34 @@ export function isValidGtin(value: string): boolean {
   let sum=0,weight=3;
   for(let i=digits.length-1;i>=0;i--){sum+=digits[i]*weight;weight=weight===3?1:3;}
   return (10-(sum%10))%10===check;
+}
+
+/**
+ * Finds one checksum-valid product-code candidate in original image OCR lines.
+ * This does not establish a decoded package barcode or product identity.
+ */
+export function findOcrGtinCandidate(
+  observations: readonly { id: string; field: string; text: string; origin: string; imageId?: string; side: string }[],
+): OcrGtinCandidate | null {
+  const byCode = new Map<string, { observationIds: Set<string>; imageIds: Set<string>; sides: Set<'front'|'back'|'extra'> }>();
+  for (const observation of observations) {
+    if (observation.origin !== 'ocr' || observation.field !== 'ocr-line' || !observation.imageId) continue;
+    const line = observation.text.normalize('NFKC');
+    if (/\b(?:FSSAI|LIC(?:ENCE|ENSE)?\.?\s*(?:NO\.?|NUMBER|#))\b/iu.test(line)) continue;
+    for (const match of line.matchAll(/(?<!\p{N})(\d{8,14})(?!\p{N})/gu)) {
+      const code = match[1];
+      if (!isValidGtin(code) || !['front', 'back', 'extra'].includes(observation.side)) continue;
+      const side = observation.side as 'front'|'back'|'extra';
+      const evidence = byCode.get(code) ?? { observationIds: new Set<string>(), imageIds: new Set<string>(), sides: new Set<'front'|'back'|'extra'>() };
+      evidence.observationIds.add(observation.id);
+      evidence.imageIds.add(observation.imageId);
+      evidence.sides.add(side);
+      byCode.set(code, evidence);
+    }
+  }
+  if (byCode.size !== 1) return null;
+  const [code, evidence] = byCode.entries().next().value!;
+  return { code, observationIds: [...evidence.observationIds], imageIds: [...evidence.imageIds], sides: [...evidence.sides] };
 }
 
 /** Lazily loads a local ZXing decoder when the browser has no native barcode API. */

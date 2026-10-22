@@ -64,7 +64,7 @@ export async function input<T extends z.ZodType>(request: Request, schema: T, ma
 }
 
 export async function fixedFetch(url: URL, type: 'json' | 'html' | 'pdf' = 'json', max = 900_000, searchBody?: object) {
-  const allowed = ['world.openfoodfacts.org', 'search.openfoodfacts.org', 'www.ebi.ac.uk', 'www.who.int', 'fssai.gov.in', 'www.fssai.gov.in', 'delhihighcourt.nic.in', 'api.fda.gov'];
+  const allowed = ['world.openfoodfacts.org', 'search.openfoodfacts.org', 'www.ebi.ac.uk', 'www.who.int', 'pubchem.ncbi.nlm.nih.gov', 'fssai.gov.in', 'www.fssai.gov.in', 'delhihighcourt.nic.in', 'api.fda.gov'];
   if (url.protocol !== 'https:' || !allowed.includes(url.hostname) || url.username || url.password || url.port) throw new ApiError(400, 'url_rejected', 'Remote destination is not allowed.');
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 12_000);
   try {
@@ -102,6 +102,26 @@ export async function route(request: Request, group: string, work: () => Promise
   try { release = localGate(request, group, limit); return reply({ ...await work() as object, requestId }); }
   catch (error) {
     if (error instanceof ApiError) return reply({ status: error.code === 'provider_disabled' ? 'disabled' : 'unavailable', code: error.code, message: error.message, requestId }, error.status);
+    const providerStatus = error && typeof error === 'object' && 'status' in error ? error.status : undefined;
+    if (group === 'gemini' && providerStatus === 429) {
+      return reply({ status: 'unavailable', code: 'provider_rate_limited', message: 'Google Gemini is rate- or quota-limited. Check the configured Google project before retrying. Local analysis remains available.', requestId }, 429);
+    }
+    if (group === 'gemini' && typeof providerStatus === 'number') {
+      const failure = providerStatus === 401
+        ? { code: 'provider_authentication_failed', message: 'Google rejected Gemini authentication. Confirm the replacement key is active for the selected project.' }
+        : providerStatus === 403
+          ? { code: 'provider_access_denied', message: 'Google denied this Gemini request. Check API access, project billing and the selected model.' }
+          : providerStatus === 404
+            ? { code: 'provider_model_unavailable', message: 'The selected Gemini model or API endpoint is unavailable to this project.' }
+            : providerStatus === 400 || providerStatus === 422
+              ? { code: 'provider_request_rejected', message: 'Google rejected the Gemini request format. NutriScan kept the scan and local analysis.' }
+              : providerStatus === 408 || providerStatus === 504
+                ? { code: 'provider_timeout', message: 'Google Gemini did not finish before the request timed out. Retry when ready.' }
+                : providerStatus >= 500
+                  ? { code: 'provider_unavailable', message: 'Google Gemini is temporarily unavailable. Retry when ready.' }
+                  : { code: 'provider_request_failed', message: 'The Gemini request did not complete. NutriScan kept the scan and local analysis.' };
+      return reply({ status: 'unavailable', ...failure, requestId }, 502);
+    }
     // Never serialize provider errors: those may contain prompts, images, or credentials.
     return reply({ status: 'unavailable', code: 'request_failed', message: 'The request could not be completed safely. Local analysis remains available.', requestId }, 502);
   } finally { release?.(); }

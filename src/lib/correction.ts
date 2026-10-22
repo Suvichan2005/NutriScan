@@ -24,6 +24,7 @@ export type NutrientCorrection = {
   basisAmount: number;
   basisUnit: 'g' | 'ml';
   productName?: string;
+  sourceObservationIds?: string[];
 };
 
 /** Applies a user-confirmed correction while retaining and linking prior evidence. */
@@ -38,6 +39,10 @@ export function applyNutrientCorrection(pkg: PackageData, correction: NutrientCo
     || !Number.isFinite(correction.basisAmount) || correction.basisAmount <= 0 || correction.basisAmount > 10000) {
     throw new Error('The correction value or printed basis is outside supported ranges.');
   }
+  const sourceObservationIds = [...new Set(correction.sourceObservationIds ?? [])];
+  if (sourceObservationIds.length > 20 || sourceObservationIds.some(id => !pkg.observations.some(observation => observation.id === id))) {
+    throw new Error('A correction must link to existing package evidence.');
+  }
   const id = crypto.randomUUID();
   const productName = correction.productName?.trim();
   const observation = {
@@ -48,6 +53,7 @@ export function applyNutrientCorrection(pkg: PackageData, correction: NutrientCo
     confidence: null,
     origin: 'user' as const,
     supersedesObservationIds: correctionEvidenceIds(pkg, correction.key),
+    ...(sourceObservationIds.length ? { derivedFromObservationIds: sourceObservationIds } : {}),
     value: correction.value,
     unit: correction.unit,
   };
