@@ -22,7 +22,7 @@ type Outcome = 'correct' | 'incorrect' | 'omitted' | 'withheld';
 const root = process.cwd();
 const baseUrl = process.env.NUTRISCAN_BASE_URL ?? 'http://127.0.0.1:3413';
 const photoDirectory = path.join(root, 'docs/evidence/private');
-const resultPath = path.join(root, 'docs/evidence/real-ocr-browser-ui-probe.json');
+const resultPath = path.resolve(root, process.env.NUTRISCAN_OCR_UI_OUTPUT ?? 'docs/evidence/real-ocr-browser-ui-probe.json');
 const labels: Record<string, string> = {
   energy: 'Energy', protein: 'Protein', carbohydrate: 'Carbohydrate', sugars: 'Total sugars',
   addedSugars: 'Added sugars', fiber: 'Fibre', fat: 'Total fat', saturatedFat: 'Saturated fat', sodium: 'Sodium', salt: 'Salt',
@@ -47,6 +47,12 @@ const cases: CaseSpec[] = [
   { id: 'bagrrys-nutrition-role-full-image-contrast', sourceId: 'bagrrys', role: 'nutrition', contrast: true },
   { id: 'bagrrys-nutrition-role-user-crop-contrast', sourceId: 'bagrrys', role: 'nutrition', crop: sources[1].crop, contrast: true },
 ];
+const requestedCaseIds = process.env.NUTRISCAN_OCR_UI_CASES?.split(',').map(value => value.trim()).filter(Boolean);
+const activeCases = requestedCaseIds?.length ? cases.filter(spec => requestedCaseIds.includes(spec.id)) : cases;
+if (!activeCases.length || requestedCaseIds?.some(id => !cases.some(spec => spec.id === id))) throw new Error('The requested browser UI case set is empty or contains an unknown case.');
+const viewportName = process.env.NUTRISCAN_OCR_UI_VIEWPORT ?? 'mobile';
+if (viewportName !== 'mobile' && viewportName !== 'desktop') throw new Error('The browser UI viewport must be mobile or desktop.');
+const viewport = viewportName === 'desktop' ? { width: 1440, height: 900 } : { width: 390, height: 844 };
 
 function assertLoopbackOrigin(value: string) {
   const url = new URL(value);
@@ -129,10 +135,10 @@ async function main() {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   const results = [];
   try {
-    for (const spec of cases) {
+    for (const spec of activeCases) {
       const record = records.get(spec.sourceId)!;
       const photoPath = path.join(photoDirectory, record.file);
-      const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      const context = await browser.newContext({ viewport });
       const page = await context.newPage();
       let pageErrorCount = 0;
       page.on('pageerror', () => { pageErrorCount += 1; });
@@ -161,8 +167,10 @@ async function main() {
         const expected = [spec.crop.x, spec.crop.y, spec.crop.width, spec.crop.height];
         if (selected.some((value, index) => Math.abs(value - expected[index]) > 1)) throw new Error(`Visual crop selection mismatch: ${selected.join(',')}.`);
       }
+      const scanStartedAt = performance.now();
       await page.getByRole('button', { name: /Read these photos/ }).click();
       await page.locator('.results-section').waitFor({ state: 'visible', timeout: 120_000 });
+      const scanWallMs = Math.round(performance.now() - scanStartedAt);
       const initialQuestionPreserved = spec.initialQuestion
         ? await page.locator('.conversation .user-message').filter({ hasText: spec.initialQuestion }).count() === 1
         : null;
@@ -186,6 +194,7 @@ async function main() {
           intakeScreenshot: intakeScreenshot ? path.relative(root, intakeScreenshot).replaceAll('\\', '/') : undefined,
         } : null,
         ...scored,
+        scanWallMs,
         parsedNutrientRows: await page.locator('.details-block table tbody tr').count(),
         axeViolationIds: axe.violations.map((violation) => violation.id).sort(),
         pageErrorCount,
@@ -200,16 +209,16 @@ async function main() {
   const receipt = {
     generatedAt: new Date().toISOString(),
     baseUrl,
-    browser: 'Chrome via Playwright, headless; viewport 390x844',
-    sources: sources.map((source) => {
+    browser: `Chrome via Playwright, headless; ${viewportName} viewport ${viewport.width}x${viewport.height}`,
+    sources: sources.filter(source => activeCases.some(spec => spec.sourceId === source.id)).map((source) => {
       const record = records.get(source.id)!;
       return { id: source.id, evaluationSplit: source.evaluationSplit, file: record.file, sha256: actualHashes.get(source.id), annotationBasis: record.manualAnnotation.basis, expectedFields: record.manualAnnotation.nutrients.length };
     }),
-    method: 'Development-split only: actual upload, role selection, optional contrast setting, optional crop selected by dragging over the displayed image, and in-browser OCR on two hash-verified English package photos. No held-out products are included. Crop percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching the human-annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.',
+    method: `Development-split only: actual upload, role selection, optional contrast setting, optional crop selected by dragging over the displayed image, and in-browser OCR on hash-verified English package photos. ${activeCases.length} UI cases are included; no held-out products are included. Crop percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching the human-annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.`,
     results,
   };
   await writeFile(resultPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
-  console.log(JSON.stringify({ resultPath: path.relative(root, resultPath), results: results.map(({ id, correct, incorrect, omitted, withheld, parsedNutrientRows, calculatedFields, initialQuestionJourney, axeViolationIds, pageErrorCount }) => ({ id, correct, incorrect, omitted, withheld, parsedNutrientRows, calculatedFields, initialQuestionJourney, axeViolationIds, pageErrorCount })) }, null, 2));
+  console.log(JSON.stringify({ resultPath: path.relative(root, resultPath), results: results.map(({ id, correct, incorrect, omitted, withheld, scanWallMs, parsedNutrientRows, calculatedFields, initialQuestionJourney, axeViolationIds, pageErrorCount }) => ({ id, correct, incorrect, omitted, withheld, scanWallMs, parsedNutrientRows, calculatedFields, initialQuestionJourney, axeViolationIds, pageErrorCount })) }, null, 2));
 }
 
 main().catch((error: unknown) => {

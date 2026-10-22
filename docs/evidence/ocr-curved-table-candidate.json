@@ -1,0 +1,936 @@
+{
+  "schemaVersion": 1,
+  "kind": "official-paddleocr-js-pp-ocrv5-v6-structured-extraction-comparison",
+  "generatedAt": "2026-10-22T00:56:54.099Z",
+  "sdk": {
+    "package": "@paddleocr/paddleocr-js",
+    "version": "0.4.2",
+    "license": "Apache-2.0",
+    "models": [
+      "PP-OCRv5 English baseline",
+      "PP-OCRv6 English/French/Spanish language-matched candidate"
+    ],
+    "backend": "ONNX Runtime Web WASM CPU; one thread",
+    "worker": false,
+    "initializations": [
+      {
+        "model": "PP-OCRv5",
+        "language": "en",
+        "initializeMs": 7492,
+        "runtime": {
+          "backend": "wasm",
+          "webgpuAvailable": true,
+          "detProvider": "wasm",
+          "recProvider": "wasm",
+          "assets": [
+            {
+              "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_det_onnx_infer.tar",
+              "bytes": 4843520
+            },
+            {
+              "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_rec_onnx_infer.tar",
+              "bytes": 16701440
+            }
+          ],
+          "elapsedMs": 1751.7999999970198,
+          "pipelineConfigWarnings": [
+            "DocPreprocessor is not yet supported in PaddleOCR.js: config will be ignored for now.",
+            "TextLineOrientation is not yet supported in PaddleOCR.js: config will be ignored for now."
+          ]
+        }
+      },
+      {
+        "model": "PP-OCRv6",
+        "language": "en",
+        "initializeMs": 6930,
+        "runtime": {
+          "backend": "wasm",
+          "webgpuAvailable": true,
+          "detProvider": "wasm",
+          "recProvider": "wasm",
+          "assets": [
+            {
+              "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_det_onnx_infer.tar",
+              "bytes": 9891840
+            },
+            {
+              "url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_rec_onnx_infer.tar",
+              "bytes": 21319680
+            }
+          ],
+          "elapsedMs": 3484.7999999970198,
+          "pipelineConfigWarnings": [
+            "DocPreprocessor is not yet supported in PaddleOCR.js: config will be ignored for now.",
+            "TextLineOrientation is not yet supported in PaddleOCR.js: config will be ignored for now."
+          ]
+        }
+      }
+    ],
+    "modelNetworkBytes": 100676088,
+    "uniqueModelArtifactBytes": 52760278,
+    "wasmTransferBytes": 28400179,
+    "browserBundleBytes": 10904819,
+    "loadedAssets": [
+      {
+        "origin": "http://127.0.0.1:52587",
+        "path": "/",
+        "method": "GET",
+        "encodedBytes": 357
+      },
+      {
+        "origin": "http://127.0.0.1:52587",
+        "path": "/probe.js",
+        "method": "GET",
+        "encodedBytes": 10904819
+      },
+      {
+        "origin": "http://127.0.0.1:52587",
+        "path": "/favicon.ico",
+        "method": "GET",
+        "encodedBytes": 143
+      },
+      {
+        "origin": "https://paddle-model-ecology.bj.bcebos.com",
+        "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_det_onnx_infer.tar",
+        "method": "GET",
+        "encodedBytes": 4844468
+      },
+      {
+        "origin": "https://paddle-model-ecology.bj.bcebos.com",
+        "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_rec_onnx_infer.tar",
+        "method": "GET",
+        "encodedBytes": 16702391
+      },
+      {
+        "origin": "http://127.0.0.1:52587",
+        "path": "/ort/ort-wasm-simd-threaded.jsep.mjs",
+        "method": "GET",
+        "encodedBytes": 47078
+      },
+      {
+        "origin": "http://127.0.0.1:52587",
+        "path": "/ort/ort-wasm-simd-threaded.jsep.wasm",
+        "method": "GET",
+        "encodedBytes": 28353101
+      },
+      {
+        "origin": "https://paddle-model-ecology.bj.bcebos.com",
+        "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_rec_onnx_infer.tar",
+        "method": "GET",
+        "encodedBytes": 16702391
+      },
+      {
+        "origin": "https://paddle-model-ecology.bj.bcebos.com",
+        "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_det_onnx_infer.tar",
+        "method": "GET",
+        "encodedBytes": 9892789
+      },
+      {
+        "origin": "https://paddle-model-ecology.bj.bcebos.com",
+        "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_rec_onnx_infer.tar",
+        "method": "GET",
+        "encodedBytes": 21320630
+      },
+      {
+        "origin": "https://paddle-model-ecology.bj.bcebos.com",
+        "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_det_onnx_infer.tar",
+        "method": "GET",
+        "encodedBytes": 9892789
+      },
+      {
+        "origin": "https://paddle-model-ecology.bj.bcebos.com",
+        "path": "/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_small_rec_onnx_infer.tar",
+        "method": "GET",
+        "encodedBytes": 21320630
+      }
+    ]
+  },
+  "sample": {
+    "source": "Hash-verified public Open Food Facts label photos already in the local development benchmark",
+    "records": [
+      {
+        "file": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+        "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+        "basis": {
+          "amount": 100,
+          "unit": "g"
+        },
+        "expectedFields": 9
+      },
+      {
+        "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+        "sha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+        "basis": {
+          "amount": 100,
+          "unit": "g"
+        },
+        "expectedFields": 8
+      }
+    ],
+    "totalExpectedFields": 17,
+    "split": "2 previously used development photos; this is not held-out or population-level evaluation."
+  },
+  "reconstruction": "Each source photograph was prepared in browser Canvas using the production 3,000 px long-edge cap and JPEG quality 0.98. SDK polygons were grouped into production-shaped OCR observations with per-token text, confidence, bounding boxes, reading order, image IDs, and a capture record, then passed to the production parser. For a panel with one explicit multi-basis header, label-like rows to the left of the value columns, complete values in each column, and unambiguous geometry, the parser aligns the independent top-to-bottom row orders and emits tentative candidates only for supported nutrient labels. It retains raw OCR lines and links each candidate to its source boxes. Per-field stage flags include these candidates; region precision/recall and independent column annotations remain unavailable.",
+  "outcomes": [
+    {
+      "photo": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+      "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+      "language": "en",
+      "model": "PP-OCRv5 via official @paddleocr/paddleocr-js 0.4.2",
+      "inputBasis": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "expectedFields": 9,
+      "correct": 4,
+      "incorrect": 0,
+      "omitted": 5,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "outcome": "omitted",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": false,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "protein",
+          "outcome": "omitted",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": false,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "carbohydrate",
+          "outcome": "omitted",
+          "stages": {
+            "labelRecognized": false,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": false,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": false,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "sugars",
+          "outcome": "omitted",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": false,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "addedSugars",
+          "outcome": "omitted",
+          "stages": {
+            "labelRecognized": false,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": false,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": false,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "fiber",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": true,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "fat",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": true,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "saturatedFat",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": true,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "sodium",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": true,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        }
+      ],
+      "basisTextObserved": true,
+      "parsedRows": 4,
+      "parserDiagnostics": [
+        "missing-unit",
+        "missing-unit",
+        "missing-unit"
+      ],
+      "detectedBoxes": 55,
+      "recognizedNonEmptyBoxes": 55,
+      "meanRecognizedBoxScore": 0.8957,
+      "reconstructedRows": 17,
+      "layoutCandidateRows": 0,
+      "sdkMetrics": {
+        "detMs": 21511.39999999106,
+        "recMs": 10248,
+        "totalMs": 31894.29999999702,
+        "detectedBoxes": 56,
+        "recognizedCount": 55
+      },
+      "wallMs": 32128,
+      "jsHeapBeforeBytes": 14835696,
+      "jsHeapAfterBytes": 9491108
+    },
+    {
+      "photo": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+      "sha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+      "language": "en",
+      "model": "PP-OCRv5 via official @paddleocr/paddleocr-js 0.4.2",
+      "inputBasis": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "expectedFields": 8,
+      "correct": 1,
+      "incorrect": 0,
+      "omitted": 1,
+      "withheld": 6,
+      "fields": [
+        {
+          "key": "energy",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "protein",
+          "outcome": "withheld",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "carbohydrate",
+          "outcome": "withheld",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": false,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "sugars",
+          "outcome": "withheld",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": false,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "fiber",
+          "outcome": "withheld",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": false,
+            "labelAndValueSameReconstructedRow": false,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "fat",
+          "outcome": "withheld",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": false,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "saturatedFat",
+          "outcome": "withheld",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": false,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "sodium",
+          "outcome": "omitted",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": false,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": false,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        }
+      ],
+      "basisTextObserved": true,
+      "parsedRows": 9,
+      "parserDiagnostics": [
+        "multiple-values",
+        "ambiguous-basis",
+        "missing-unit",
+        "multiple-values",
+        "ambiguous-basis",
+        "missing-unit",
+        "multiple-values",
+        "ambiguous-basis",
+        "multiple-values",
+        "ambiguous-basis",
+        "missing-unit",
+        "multiple-values",
+        "ambiguous-basis",
+        "missing-unit",
+        "multiple-values",
+        "ambiguous-basis",
+        "multiple-values",
+        "ambiguous-basis",
+        "missing-unit",
+        "approximate-or-bounded"
+      ],
+      "detectedBoxes": 53,
+      "recognizedNonEmptyBoxes": 53,
+      "meanRecognizedBoxScore": 0.9542,
+      "reconstructedRows": 22,
+      "layoutCandidateRows": 0,
+      "sdkMetrics": {
+        "detMs": 22478.90000000596,
+        "recMs": 9520,
+        "totalMs": 32118,
+        "detectedBoxes": 54,
+        "recognizedCount": 53
+      },
+      "wallMs": 32525,
+      "jsHeapBeforeBytes": 9491108,
+      "jsHeapAfterBytes": 10399280
+    },
+    {
+      "photo": "saffola-veggie-oats-nutrition-off-8901088068758.jpg",
+      "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+      "language": "en",
+      "model": "PP-OCRv6 via official @paddleocr/paddleocr-js 0.4.2",
+      "inputBasis": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "expectedFields": 9,
+      "correct": 5,
+      "incorrect": 0,
+      "omitted": 4,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "outcome": "omitted",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": false,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "protein",
+          "outcome": "omitted",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": false,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "carbohydrate",
+          "outcome": "omitted",
+          "stages": {
+            "labelRecognized": false,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": false,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": false,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "sugars",
+          "outcome": "omitted",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": false,
+            "parserCandidateOnDeclaredBasis": false
+          },
+          "unitExact": false,
+          "basisExact": false
+        },
+        {
+          "key": "addedSugars",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": true,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "fiber",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": true,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "fat",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": true,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "saturatedFat",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": true,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "sodium",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": true,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        }
+      ],
+      "basisTextObserved": true,
+      "parsedRows": 5,
+      "parserDiagnostics": [
+        "missing-unit",
+        "missing-unit",
+        "missing-unit"
+      ],
+      "detectedBoxes": 34,
+      "recognizedNonEmptyBoxes": 34,
+      "meanRecognizedBoxScore": 0.9669,
+      "reconstructedRows": 17,
+      "layoutCandidateRows": 0,
+      "sdkMetrics": {
+        "detMs": 17107.80000001192,
+        "recMs": 7883.5,
+        "totalMs": 25106.59999999404,
+        "detectedBoxes": 34,
+        "recognizedCount": 34
+      },
+      "wallMs": 25339,
+      "jsHeapBeforeBytes": 13294356,
+      "jsHeapAfterBytes": 10977464
+    },
+    {
+      "photo": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+      "sha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+      "language": "en",
+      "model": "PP-OCRv6 via official @paddleocr/paddleocr-js 0.4.2",
+      "inputBasis": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "expectedFields": 8,
+      "correct": 8,
+      "incorrect": 0,
+      "omitted": 0,
+      "withheld": 0,
+      "fields": [
+        {
+          "key": "energy",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": true,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "protein",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "carbohydrate",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "sugars",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "fiber",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "fat",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "saturatedFat",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        },
+        {
+          "key": "sodium",
+          "outcome": "correct",
+          "stages": {
+            "labelRecognized": true,
+            "numericValueRecognized": true,
+            "labelAndValueSameReconstructedRow": true,
+            "unitTextRecognized": false,
+            "declaredBasisObserved": true,
+            "parserCandidateEmitted": true,
+            "parserCandidateOnDeclaredBasis": true
+          },
+          "unitExact": true,
+          "basisExact": true
+        }
+      ],
+      "basisTextObserved": true,
+      "parsedRows": 16,
+      "parserDiagnostics": [
+        "multiple-values",
+        "ambiguous-basis",
+        "multiple-values",
+        "ambiguous-basis",
+        "multiple-values",
+        "ambiguous-basis",
+        "multiple-values",
+        "ambiguous-basis",
+        "multiple-values",
+        "ambiguous-basis",
+        "multiple-values",
+        "ambiguous-basis",
+        "multiple-values",
+        "ambiguous-basis",
+        "multiple-values",
+        "ambiguous-basis"
+      ],
+      "detectedBoxes": 52,
+      "recognizedNonEmptyBoxes": 52,
+      "meanRecognizedBoxScore": 0.9918,
+      "reconstructedRows": 22,
+      "layoutCandidateRows": 8,
+      "sdkMetrics": {
+        "detMs": 16418.59999999404,
+        "recMs": 10711.70000000298,
+        "totalMs": 27263,
+        "detectedBoxes": 52,
+        "recognizedCount": 52
+      },
+      "wallMs": 27648,
+      "jsHeapBeforeBytes": 10977464,
+      "jsHeapAfterBytes": 10535368
+    }
+  ],
+  "aggregate": {
+    "PP-OCRv5": {
+      "correct": 5,
+      "incorrect": 0,
+      "omitted": 6,
+      "withheld": 6,
+      "expectedFields": 17,
+      "detectedBoxes": 108,
+      "wallMs": 64653
+    },
+    "PP-OCRv6": {
+      "correct": 13,
+      "incorrect": 0,
+      "omitted": 4,
+      "withheld": 0,
+      "expectedFields": 17,
+      "detectedBoxes": 86,
+      "wallMs": 52987
+    }
+  },
+  "pageErrors": [],
+  "externalRequests": [
+    {
+      "url": "https://paddle-model-ecology.bj.bcebos.com",
+      "method": "GET"
+    },
+    {
+      "url": "https://paddle-model-ecology.bj.bcebos.com",
+      "method": "GET"
+    },
+    {
+      "url": "https://paddle-model-ecology.bj.bcebos.com",
+      "method": "GET"
+    },
+    {
+      "url": "https://paddle-model-ecology.bj.bcebos.com",
+      "method": "GET"
+    },
+    {
+      "url": "https://paddle-model-ecology.bj.bcebos.com",
+      "method": "GET"
+    },
+    {
+      "url": "https://paddle-model-ecology.bj.bcebos.com",
+      "method": "GET"
+    },
+    {
+      "url": "https://paddle-model-ecology.bj.bcebos.com",
+      "method": "GET"
+    },
+    {
+      "url": "https://paddle-model-ecology.bj.bcebos.com",
+      "method": "GET"
+    }
+  ],
+  "networkPolicy": "Images were supplied from the local process to Chrome memory; only GET requests to Paddle model hosting were allowed. The harness records no image/text payloads and blocks no local research data outside the process.",
+  "limitations": [
+    "Only 2 convenience-sample photos (17 fields); all were previously used during OCR exploration, so no held-out score is claimed.",
+    "PP-OCRv5 is tested with its English model; PP-OCRv6 language is selected from existing human photo annotations only for this offline comparison. Production language detection and routing are not demonstrated.",
+    "OCR output strings are processed in memory for parsing and scoring but are not persisted.",
+    "Recognized box presence and confidence do not establish correct table row/column association; independent region and column annotations remain unavailable.",
+    "JavaScript heap metrics exclude WebAssembly linear memory, browser native allocations, and potential GPU memory.",
+    "No image bytes leave the local process; only GET requests to Paddle model hosting are made. This is a comparative development experiment, not held-out or population-level evidence."
+  ]
+}

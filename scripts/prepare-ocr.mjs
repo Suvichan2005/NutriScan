@@ -23,4 +23,4 @@ for (const name of [
  'ort-wasm-simd-threaded.mjs',
  'ort-wasm-simd-threaded.wasm'
 ]) await copyFile(`${paddleRuntime}/${name}`, `${paddleRuntimeDir}/${name}`);
-console.log('Local Tesseract and Paddle ONNX runtime assets copied. PP-OCRv5 model weights are fetched on first fallback use; package images stay in the browser.');
+console.log('Local Tesseract and Paddle ONNX runtime assets copied. PP-OCRv6-small model weights are fetched on first fallback use; package images stay in the browser.');

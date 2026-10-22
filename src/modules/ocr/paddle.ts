@@ -124,7 +124,7 @@ function rowObservations(boxes: PaddleBox[], runId: string, asset: ImageAsset, w
   });
 }
 
-/** Runs the browser-local PP-OCRv5 candidate and retains its detected geometry as OCR evidence. */
+/** Runs the browser-local PP-OCRv6-small candidate and retains its detected geometry as OCR evidence. */
 export async function readPaddleOcrImages(
   assets: ImageAsset[],
   onProgress: (label: string, progress: number) => void,
@@ -154,7 +154,7 @@ export async function readPaddleOcrImages(
   if (!cachedEngine && !creation) {
     creation = import('@paddleocr/paddleocr-js').then(({ PaddleOCR }) => PaddleOCR.create({
       lang: 'en',
-      ocrVersion: 'PP-OCRv5',
+      ocrVersion: 'PP-OCRv6',
       worker: true,
       ortOptions: { backend: 'auto', wasmPaths: '/ocr/ort/', numThreads: 1, simd: true },
     })).then(async created => {
@@ -196,7 +196,7 @@ export async function readPaddleOcrImages(
         sourceImage: { width: asset.width, height: asset.height },
         preparedImage: { width, height },
         bboxCoordinateSpace: 'prepared-image-pixels',
-        engine: { name: '@paddleocr/paddleocr-js', version: '0.4.2', language: 'en', confidenceScale: '0-100', segmentationMode: 'auto' },
+        engine: { name: '@paddleocr/paddleocr-js/PP-OCRv6-small', version: '0.4.2', language: 'en', confidenceScale: '0-100', segmentationMode: 'auto' },
         processing: { rotation, contrast: options.contrast, invert: options.invert ?? false, cropPercent: crop ?? null },
       });
       for (const item of result.items) {

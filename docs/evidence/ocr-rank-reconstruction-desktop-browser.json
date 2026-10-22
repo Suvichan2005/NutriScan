@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-10-22T01:07:38.519Z",
+  "baseUrl": "http://127.0.0.1:3413",
+  "browser": "Chrome via Playwright, headless; desktop viewport 1440x900",
+  "sources": [
+    {
+      "id": "bagrrys",
+      "evaluationSplit": "development",
+      "file": "bagrrys-white-oats-nutrition-off-8902710100150.jpg",
+      "sha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6",
+      "annotationBasis": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "expectedFields": 8
+    }
+  ],
+  "method": "Development-split only: actual upload, role selection, optional contrast setting, optional crop selected by dragging over the displayed image, and in-browser OCR on hash-verified English package photos. 1 UI cases are included; no held-out products are included. Crop percentage controls are checked against the requested rectangle within one percentage point. Scoring requires matching the human-annotated basis and unit; tolerance is max(0.015, 0.5% of expected). No OCR text or image bytes are stored in this receipt.",
+  "results": [
+    {
+      "id": "bagrrys-nutrition-role-full-image",
+      "sourceId": "bagrrys",
+      "role": "nutrition",
+      "contrast": false,
+      "cropSelection": null,
+      "initialQuestionJourney": null,
+      "expected": 8,
+      "correct": 7,
+      "incorrect": 0,
+      "omitted": 0,
+      "withheld": 1,
+      "calculatedFields": 7,
+      "fields": [
+        {
+          "field": "energy",
+          "outcome": "correct",
+          "calculated": true
+        },
+        {
+          "field": "protein",
+          "outcome": "correct",
+          "calculated": true
+        },
+        {
+          "field": "carbohydrate",
+          "outcome": "correct",
+          "calculated": true
+        },
+        {
+          "field": "sugars",
+          "outcome": "correct",
+          "calculated": true
+        },
+        {
+          "field": "fiber",
+          "outcome": "correct",
+          "calculated": true
+        },
+        {
+          "field": "fat",
+          "outcome": "correct",
+          "calculated": true
+        },
+        {
+          "field": "saturatedFat",
+          "outcome": "withheld",
+          "calculated": false
+        },
+        {
+          "field": "sodium",
+          "outcome": "correct",
+          "calculated": true
+        }
+      ],
+      "parsedNutrientRows": 16,
+      "axeViolationIds": [],
+      "pageErrorCount": 0,
+      "screenshot": "docs/evidence/private/browser-ocr-bagrrys-nutrition-role-full-image.png"
+    }
+  ]
+}

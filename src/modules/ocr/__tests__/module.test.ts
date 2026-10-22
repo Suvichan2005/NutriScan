@@ -26,6 +26,17 @@ describe('OCR module parsing boundary', () => {
     }
   });
 
+  it.each([
+    ['Par 100 g', 'Énergie 420 kcal', 'Protéines 10 g', 'Glucides 55 g'],
+    ['Por 100 g', 'Energía 420 kcal', 'Proteínas 10 g', 'Hidratos de carbono 55 g'],
+  ])('associates localized per-basis headings with French and Spanish nutrient rows', (...lines) => {
+    const result = parseLabel(lines.join('\n'), { origin: 'user' });
+    expect(result.nutrients).toHaveLength(3);
+    expect(result.nutrients.every(nutrient => nutrient.basis?.amount === 100 && nutrient.basis.unit === 'g')).toBe(true);
+    expect(result.nutrients.map(nutrient => nutrient.key)).toEqual(expect.arrayContaining(['energy', 'protein', 'carbohydrate']));
+    expect(result.nutrients.every(nutrient => nutrient.status === 'observed')).toBe(true);
+  });
+
   it('selects a bounded package-panel fallback only when the first read leaves useful fields unresolved', () => {
     const complete = parseLabel([
       'Nutrition information per 100 g',
@@ -182,5 +193,74 @@ describe('OCR module parsing boundary', () => {
     const oneValue: Observation = { ...sugar, id: 'two-column-sugar-one-value', text: 'Sugar 0 g', ocrWords: sugar.ocrWords?.slice(0, 3) };
     const unresolved = parseLabel(`${header.text}\n${oneValue.text}`, { origin: 'ocr', observations: [header, oneValue], ocrCaptures: [capture] });
     expect(unresolved.nutrients.filter(nutrient => nutrient.key === 'sugars').every(nutrient => nutrient.status === 'conflict' && nutrient.basis === null)).toBe(true);
+  });
+
+  it('reconstructs a curved table from ordered OCR columns and abstains when one column is incomplete', () => {
+    const runId = 'curved-table-run';
+    const imageId = 'curved-table-image';
+    const capture = { ...captureFixture, runId, imageId, sourceImage: { width: 1000, height: 1800 }, preparedImage: { width: 1000, height: 1800 } } as const;
+    let lineIndex = 0;
+    const box = (id: string, text: string, x: number, y: number, tokens=text.split(/\s+/)): Observation => {
+      const ocrWords = tokens.map((token, index) => ({
+        wordIndex: index, text: token, confidence: 96,
+        bbox: { x0: x + index * 34, y0: y, x1: x + index * 34 + Math.max(24, token.length * 9), y1: y + 24 }
+      }));
+      return {
+        id, field: 'ocr-line', text, side: 'back', confidence: 96, origin: 'ocr', imageId,
+        bbox: { x0: Math.min(...ocrWords.map(word => word.bbox.x0)), y0: y, x1: Math.max(...ocrWords.map(word => word.bbox.x1)), y1: y + 24 },
+        ocrWords,
+        readingOrder: { runId, blockIndex: 0, paragraphIndex: 0, lineIndex: lineIndex++ }
+      };
+    };
+    const header=box(
+      'curved-header','Nutrients Per 100 g Per 35 g',80,200,
+      ['Nutrients','Per','100','g','Per','35','g']
+    );
+    const headerXs=[80,420,460,490,720,760,790];
+    header.ocrWords=header.ocrWords?.map((word,index)=>({...word,bbox:{...word.bbox,x0:headerXs[index],x1:headerXs[index]+Math.max(24,word.text.length*9)}}));
+    if(header.ocrWords?.length)header.bbox={x0:80,y0:200,x1:820,y1:224};
+    const source: Observation[] = [header];
+    const rows = [
+      { label: 'Energy', key: 'energy' as const, left: '410kcal', right: '123kcal', labelY: 500, leftY: 460, rightY: 440 },
+      { label: 'Protein', key: 'protein' as const, left: '14g', right: '4.2g', labelY: 650, leftY: 610, rightY: 590 },
+      { label: 'Carbohydrate', key: 'carbohydrate' as const, left: '66g', right: '19.8g', labelY: 800, leftY: 760, rightY: 740 },
+      { label: 'Total fat', key: 'fat' as const, left: '8g', right: '2.4g', labelY: 1100, leftY: 1180, rightY: 1160 },
+      { label: 'Sodium', key: 'sodium' as const, left: '300mg', right: '105mg', labelY: 1250, leftY: 1330, rightY: 1310 }
+    ];
+    for (const [index,row] of rows.entries()) {
+      source.push(box(`curved-label-${index}`,row.label,80,row.labelY));
+      source.push(box(`curved-left-${index}`,row.left,440,row.leftY));
+      source.push(box(`curved-right-${index}`,row.right,740,row.rightY));
+    }
+    const input = source.sort((a,b)=>(a.bbox?.y0??0)-(b.bbox?.y0??0)||a.id.localeCompare(b.id));
+    const text = input.map(observation=>observation.text).join('\n');
+    const result = parseLabel(text,{origin:'ocr',observations:input,ocrCaptures:[capture]});
+
+    for (const [index,row] of rows.entries()) {
+      expect(result.nutrients).toContainEqual(expect.objectContaining({key:row.key,value:Number.parseFloat(row.left),basis:expect.objectContaining({amount:100,unit:'g'}),status:'observed'}));
+      expect(result.nutrients).toContainEqual(expect.objectContaining({key:row.key,value:Number.parseFloat(row.right),basis:expect.objectContaining({amount:35,unit:'g'}),status:'observed'}));
+      const candidate=result.observations.find(observation=>observation.field==='nutrition-row-candidate'&&observation.derivedFromObservationIds?.includes(`curved-label-${index}`));
+      expect(candidate?.derivedFromObservationIds).toEqual(expect.arrayContaining([`curved-left-${index}`,`curved-right-${index}`]));
+    }
+    expect(result.rawText).toBe(text);
+    expect(result.observations.map(observation=>observation.id)).toEqual(expect.arrayContaining(source.map(observation=>observation.id)));
+    expect(result.parserDiagnostics?.filter(diagnostic=>diagnostic.field==='energy'||diagnostic.field==='protein'||diagnostic.field==='carbohydrate'||diagnostic.field==='fat'||diagnostic.field==='sodium').every(diagnostic=>diagnostic.decision==='accepted')).toBe(true);
+
+    const coarseHeader={...header,ocrWords:header.ocrWords?.map(word=>({...word,bbox:{x0:400,y0:200,x1:820,y1:224}})),bbox:{x0:400,y0:200,x1:820,y1:224}};
+    const coarseSource=source.map(observation=>observation.id==='curved-header'?coarseHeader:observation.id.startsWith('curved-left-')?{
+      ...observation,
+      bbox:observation.bbox&&{...observation.bbox,x0:observation.bbox.x0+160,x1:observation.bbox.x1+160},
+      ocrWords:observation.ocrWords?.map(word=>({...word,bbox:{...word.bbox,x0:word.bbox.x0+160,x1:word.bbox.x1+160}})),
+    }:observation);
+    const coarseText=coarseSource.sort((a,b)=>(a.bbox?.y0??0)-(b.bbox?.y0??0)||a.id.localeCompare(b.id)).map(observation=>observation.text).join('\n');
+    const coarseResult=parseLabel(coarseText,{origin:'ocr',observations:coarseSource,ocrCaptures:[capture]});
+    expect(coarseResult.observations.filter(observation=>observation.field==='nutrition-row-candidate')).toHaveLength(5);
+
+    const incompleteSource=input.filter(observation=>observation.id!=='curved-right-4');
+    const incompleteText=incompleteSource.map(observation=>observation.text).join('\n');
+    const incomplete=parseLabel(incompleteText,{origin:'ocr',observations:incompleteSource,ocrCaptures:[capture]});
+    expect(incomplete.observations.some(observation=>observation.field==='nutrition-row-candidate')).toBe(false);
+    expect(incomplete.nutrients).toHaveLength(0);
+    expect(incomplete.observations).toEqual(expect.arrayContaining(incompleteSource.map(observation=>expect.objectContaining({id:observation.id}))));
   });
 });

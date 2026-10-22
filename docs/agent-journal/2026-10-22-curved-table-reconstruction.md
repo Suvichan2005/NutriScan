@@ -1,0 +1,9 @@
+# Curved nutrition-table reconstruction — 22 October 2026
+
+Switched the selective browser fallback to official PP-OCRv6-small and added a conservative row-rank reconstruction for curved multi-column panels. The parser orders all detected text labels and each declared value column, proceeds only when geometry is unambiguous and row counts match exactly, then emits tentative observations only for supported nutrient rows. Raw OCR, boxes, and conflicts remain preserved.
+
+On the same five development photos / 37 fields, PP-OCRv5 scored 5 correct and 0 incorrect; PP-OCRv6 before reconstruction scored 7 correct and 5 incorrect; PP-OCRv6 after reconstruction scored 13 correct and 0 incorrect. Gains came from two oat labels; three other packages still yielded no exact fields. In the mobile app, Saffola scored 5/9 and Bagrry’s 7/8, with the one Bagrry’s saturated-fat conflict withheld. Twelve accepted readings were calculated without correction; mobile scans took 27.8 s and 27.0 s. Desktop Chrome reproduced Bagrry’s result.
+
+This is exploratory evidence on repeatedly used development data, not a held-out accuracy claim. The local WASM pass averaged 27.7 s per photo; model/runtime assets and memory remain material constraints. The benchmark fetched Paddle assets only; package photos stayed local. Gemini remains disabled. Detailed sanitized receipts: `docs/evidence/ocr-rank-reconstruction-development.json`, `ocr-rank-reconstruction-browser.json`, and `ocr-rank-reconstruction-desktop-browser.json`.
+
+Follow-up parser work recognizes French `par` and Spanish `por` basis headings and has focused text tests. The language-matched photo rerun was stopped when the Chrome process approached 2 GB working set, before a result receipt was produced. This does not change the measured photo scores or production language routing; real-photo impact remains unknown.
