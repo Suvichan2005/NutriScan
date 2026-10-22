@@ -114,7 +114,10 @@ export const profileSchema = z.object({dietaryPattern:z.string().max(500),avoide
 export type Profile = z.infer<typeof profileSchema>;
 export const defaultProfile:Profile = {dietaryPattern:'',avoidedIngredients:'',allergies:'',intolerances:'',healthConsiderations:'',goals:'',portionPreferences:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''};
 export const hasUserContext = (profile:Profile):boolean => Object.values(profile).some(value=>value.trim().length>0);
-export const savedConversationTurnSchema=z.object({question:z.string().trim().min(1).max(1000),answer:z.string().max(8000),at:z.iso.datetime(),evidence:z.array(conversationEvidenceSourceSchema).max(3).optional()}).strict();
+export const assistantUiComponentTypeSchema=z.enum(['nutrition-table','portion-calculator','ingredient-explorer','allergen-explanation','product-comparison','package-evidence','source-reference-cards','personalized-finding','package-details']);
+export const assistantUiComponentSchema=z.object({type:assistantUiComponentTypeSchema,observationIds:z.array(z.string().min(1).max(160)).max(20),sourceIds:z.array(z.string().min(1).max(160)).max(10),calculationIds:z.array(z.string().min(1).max(120)).max(20)}).strict();
+export type AssistantUiComponent=z.infer<typeof assistantUiComponentSchema>;
+export const savedConversationTurnSchema=z.object({question:z.string().trim().min(1).max(1000),answer:z.string().max(8000),at:z.iso.datetime(),answerOrigin:z.enum(['local','gemini']).optional(),evidence:z.array(conversationEvidenceSourceSchema).max(3).optional(),uiComponents:z.array(assistantUiComponentSchema).max(6).optional()}).strict();
 export type SavedConversationTurn=z.infer<typeof savedConversationTurnSchema>;
 export const savedScanSchema=z.object({id:z.string().min(1).max(160),name:z.string().max(200),createdAt:z.string().min(1).max(80),package:packageSchema,portion:z.number().finite().positive().max(10000),unit:z.enum(['g','ml']),conversation:z.array(savedConversationTurnSchema).max(30).optional()}).strict();
 export type SavedScanRecord=z.infer<typeof savedScanSchema>;

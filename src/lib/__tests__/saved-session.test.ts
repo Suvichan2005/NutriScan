@@ -18,6 +18,17 @@ describe('locally saved investigation context', () => {
     expect(savedScanSchema.safeParse({ ...scan, images: ['data:image/jpeg;base64,private'] }).success).toBe(false);
   });
 
+  it('preserves opted-in Gemini answer origin and typed UI choices without accepting arbitrary markup', () => {
+    const uiComponents = [{ type: 'portion-calculator', observationIds: [], sourceIds: [], calculationIds: ['calc-energy-100g'] }];
+    const scan = savedScanSchema.parse({ ...base, conversation: [{
+      question: 'What is the protein in 30 g?', answer: 'A generated explanation.', at: '2026-10-21T12:00:00.000Z',
+      answerOrigin: 'gemini', uiComponents,
+    }] });
+    expect(scan.conversation?.[0]?.answerOrigin).toBe('gemini');
+    expect(scan.conversation?.[0]?.uiComponents).toEqual(uiComponents);
+    expect(savedScanSchema.safeParse({ ...scan, conversation: [{ ...scan.conversation![0], uiComponents: [{ html: '<img>' }] }] }).success).toBe(false);
+  });
+
   it('rejects empty, overlong, invalid-time and excessive-turn records', () => {
     const turn = { question: 'Question', answer: 'Answer', at: '2026-10-21T12:00:00.000Z' };
     expect(savedScanSchema.safeParse({ ...base, conversation: [{ ...turn, question: '  ' }] }).success).toBe(false);

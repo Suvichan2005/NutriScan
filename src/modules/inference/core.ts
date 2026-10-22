@@ -65,6 +65,37 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     return [{ ...claim, mode, text: mode === 'direct-quote' ? literalClaim!.quote : claim.text }];
   });
 
+  const seenUiTypes = new Set<string>();
+  const uiComponents = (result.data.uiComponents ?? []).filter(component => {
+    if (seenUiTypes.has(component.type)) return false;
+    seenUiTypes.add(component.type);
+    if (component.observationIds.some(id => !observations.has(id))
+      || component.sourceIds.some(id => !sources.has(id))
+      || component.calculationIds.some(id => !calculations.has(id))) return false;
+
+    const hasObservations = component.observationIds.length > 0;
+    const hasSources = component.sourceIds.length > 0;
+    const hasCalculations = component.calculationIds.length > 0;
+    const hasProductEvidence = component.sourceIds.some(id => data.evidence?.some(source => source.id === id && source.category === 'product'));
+    switch (component.type) {
+      case 'nutrition-table':
+        return hasObservations && data.package.observations.length > 0;
+      case 'portion-calculator':
+        return hasCalculations;
+      case 'ingredient-explorer':
+      case 'allergen-explanation':
+      case 'package-evidence':
+      case 'package-details':
+        return hasObservations;
+      case 'source-reference-cards':
+        return hasSources;
+      case 'product-comparison':
+        return hasObservations && hasProductEvidence;
+      case 'personalized-finding':
+        return supported.some(claim => (claim.profileFieldIds?.length ?? 0) > 0);
+    }
+  });
+
   if (result.data.inspectImage && !data.images?.some(image => image.handle === result.data.inspectImage!.handle)) {
     fail('unknown_image', 'The model requested an unknown browser image.');
   }
@@ -154,6 +185,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
   return {
     claims: displayedClaims,
     tentativeCandidates,
+    uiComponents,
     limitations: ['Generated explanations are not independently verified. Tentative structured candidates never alter confirmed package observations or calculations. Image-linked text and region references are model-reported and unverified. No diagnosis, medication advice, or safety assessment is provided.'],
     inspectImage: result.data.inspectImage ? { ...result.data.inspectImage, reason: 'A specific package detail may need a closer look. Review the selected image before choosing to send it.' } : null,
     answer,

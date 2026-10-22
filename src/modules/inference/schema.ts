@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { evidenceSpanSchema, normalizedCropSchema, tentativeStructuredCandidateSchema, visualEvidenceReferenceSchema } from '../../lib/contracts';
+import { assistantUiComponentSchema, evidenceSpanSchema, normalizedCropSchema, tentativeStructuredCandidateSchema, visualEvidenceReferenceSchema } from '../../lib/contracts';
 
 const profileFieldIdSchema = z.enum([
   'dietaryPattern', 'avoidedIngredients', 'allergies', 'intolerances', 'healthConsiderations',
@@ -22,6 +22,7 @@ export const assistOutput = z.object({
   answer: z.string().max(7000),
   claims: z.array(claimSchema).max(15),
   tentativeCandidates: z.array(tentativeStructuredCandidateSchema).max(20).optional(),
+  uiComponents: z.array(assistantUiComponentSchema).max(6).optional(),
   limitations: z.array(z.string().max(500)).max(15),
   inspectImage: z.object({
     handle: z.string().max(100),

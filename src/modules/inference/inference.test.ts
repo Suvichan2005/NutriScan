@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { packageSchema, tentativeStructuredCandidateSchema, type Calculation, type PackageData } from '../../lib/contracts';
+import { defaultProfile, packageSchema, tentativeStructuredCandidateSchema, type Calculation, type PackageData } from '../../lib/contracts';
 import { InferenceModuleError, validateInferenceOutput } from './index';
 
 const fixturePackage: PackageData = packageSchema.parse({
@@ -347,5 +347,44 @@ describe('provider-independent inference output validation', () => {
       limitations: [],
       inspectImage: null,
     }, { package: fixturePackage })).toThrowError(expect.objectContaining({ code: 'unknown_citation' }));
+  });
+
+  it('keeps only unique UI requests whose backing evidence exists and can be rendered', () => {
+    const productSource = {
+      id: 'community-oats', title: 'Example Oats', publisher: 'Open Food Facts community database',
+      url: 'https://world.openfoodfacts.org/product/123456789', category: 'product' as const, jurisdiction: 'India',
+      publishedAt: null, effectiveAt: null, retrievedAt: '2026-10-22T00:00:00.000Z', summary: 'Protein: 13 g per 100 g',
+      limitations: 'Community record; verify the variant.',
+    };
+    const result = validateInferenceOutput({
+      answer: '', claims: [], limitations: [], inspectImage: null,
+      uiComponents: [
+        { type: 'nutrition-table', observationIds: ['ocr-line-1'], sourceIds: [], calculationIds: [] },
+        { type: 'nutrition-table', observationIds: ['ocr-line-1'], sourceIds: [], calculationIds: [] },
+        { type: 'package-evidence', observationIds: ['not-present'], sourceIds: [], calculationIds: [] },
+        { type: 'product-comparison', observationIds: ['ocr-line-1'], sourceIds: ['community-oats'], calculationIds: [] },
+        { type: 'source-reference-cards', observationIds: [], sourceIds: ['unknown-source'], calculationIds: [] },
+      ],
+    }, { package: fixturePackage, evidence: [productSource] });
+
+    expect(result.uiComponents.map(component => component.type)).toEqual(['nutrition-table', 'product-comparison']);
+    expect(result.uiComponents[1].sourceIds).toEqual(['community-oats']);
+  });
+
+  it('shows a personalized UI choice only when a validated claim cites supplied profile context', () => {
+    const profile = { ...defaultProfile, goals: 'Understand the nutrition label.' };
+    const output = {
+      answer: '',
+      claims: [{
+        mode: 'direct-quote' as const,
+        text: profile.goals,
+        observationIds: [], sourceIds: [], profileFieldIds: ['goals'],
+        supportingSpans: [{ kind: 'profile' as const, id: 'goals', quote: profile.goals }],
+      }],
+      limitations: [], inspectImage: null,
+      uiComponents: [{ type: 'personalized-finding' as const, observationIds: [], sourceIds: [], calculationIds: [] }],
+    };
+    expect(validateInferenceOutput({ ...output, claims: [] }, { package: fixturePackage }).uiComponents).toEqual([]);
+    expect(validateInferenceOutput(output, { package: fixturePackage, profile }).uiComponents).toEqual(output.uiComponents);
   });
 });
