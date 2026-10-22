@@ -614,3 +614,7 @@ Keep each scanned side's original image immutable. Persist normalized crop corne
 ## 22 October 2026 — preserve correction provenance in the chat nutrition table
 
 Treat edits to a label reading as user corrections, not verification. Keep the original OCR/text observation and correction in the package evidence graph; require a user-entered positive printed basis amount and unit when none is already recorded; never substitute the package serving size for a missing nutrient basis. Recalculate deterministically from the updated package, cancel in-flight model work, and visibly note that prior conversation answers may reflect previous values. The first thread component is a controlled data table; model-selected typed UI instructions remain a separate pending integration.
+
+## 22 October 2026 — only offer an OCR photo-region link when lineage is intact
+
+Expose an evidence-inspection action from a nutrition reading only if its OCR observation retains a supported field type, image ID, bounding box and run ID that resolve to the capture and in-session image. Rebuild and dimension-check the prepared image before drawing the region. This gives users direct visual context without adding a second image pipeline or uploading the photo; text-only evidence and stale references remain text-only.

@@ -1,8 +1,8 @@
 'use client';
 
 import { Fragment, useState, type FormEvent } from 'react';
-import { Check, Pencil, Plus, X } from 'lucide-react';
-import type { Audit } from '@/lib/contracts';
+import { Check, Eye, Pencil, Plus, X } from 'lucide-react';
+import type { Audit, Observation } from '@/lib/contracts';
 import { nutrientKeys, type NutrientKey, type PackageData } from '@/lib/contracts';
 import type { NutrientCorrection } from '@/lib/correction';
 
@@ -24,13 +24,16 @@ function display(value: number): string {
 type Draft = { key: NutrientKey; value: string; unit: NutrientCorrection['unit']; basis: string; basisUnit: '' | 'g' | 'ml' };
 
 export function NutritionTable({
-  pkg, audit, portion, portionUnit, onSave,
+  pkg, audit, portion, portionUnit, onSave, canInspect, isInspecting, onInspect,
 }: {
   pkg: PackageData;
   audit: Audit;
   portion: number;
   portionUnit: 'g' | 'ml';
   onSave: (correction: NutrientCorrection) => boolean;
+  canInspect: (observation: Observation) => boolean;
+  isInspecting: (observation: Observation) => boolean;
+  onInspect: (observation: Observation) => void;
 }) {
   const [draft, setDraft] = useState<Draft | null>(null);
 
@@ -71,7 +74,7 @@ export function NutritionTable({
           const editing = draft?.key === key;
           return <Fragment key={key}><tr className={nutrient?.status === 'corrected' ? 'user-corrected' : undefined}>
             <th scope="row">{labels[key]}{nutrient?.status === 'corrected' && <small className="reading-origin">Your correction</small>}</th>
-            <td>{nutrient ? <>{display(nutrient.value)} {nutrient.unit}<small className="reading-basis">{nutrient.basis ? `per ${display(nutrient.basis.amount)} ${nutrient.basis.unit}` : 'basis not established'}</small>{source.length > 0 && <details className="reading-evidence"><summary>Evidence</summary>{source.map(observation => <p key={observation.id}>{observation.origin === 'user' ? observation.supersedesObservationIds?.length ? 'User correction' : 'User-provided label text' : observation.origin === 'ocr' ? 'OCR observation' : 'Package observation'}: “{observation.text}”</p>)}</details>}</> : <span className="reading-missing">Not established</span>}</td>
+            <td>{nutrient ? <>{display(nutrient.value)} {nutrient.unit}<small className="reading-basis">{nutrient.basis ? `per ${display(nutrient.basis.amount)} ${nutrient.basis.unit}` : 'basis not established'}</small>{source.length > 0 && <details className="reading-evidence"><summary>Evidence</summary>{source.map(observation => <div className="reading-evidence-item" key={observation.id}><p>{observation.origin === 'user' ? observation.supersedesObservationIds?.length ? 'User correction' : 'User-provided label text' : observation.origin === 'ocr' ? 'OCR observation' : 'Package observation'}: “{observation.text}”</p>{canInspect(observation)&&<button className="text-button inspect-region-button" type="button" disabled={isInspecting(observation)} onClick={()=>onInspect(observation)}><Eye size={13}/>{isInspecting(observation)?'Preparing photo…':'Inspect photo region'}</button>}</div>)}</details>}</> : <span className="reading-missing">Not established</span>}</td>
             <td>{calculation ? <>{display(calculation.result)} {calculation.unit}</> : <span className="reading-missing">—</span>}</td>
             <td><button className="nutrition-row-edit" type="button" onClick={() => begin(key)} aria-label={`${nutrient ? 'Edit' : 'Add'} ${labels[key]} label reading`}>{nutrient ? <Pencil size={14}/> : <Plus size={14}/>}<span>{nutrient ? 'Edit' : 'Add'}</span></button></td>
           </tr>{editing && <tr className="nutrition-editor-row"><td colSpan={4}>

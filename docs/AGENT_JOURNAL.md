@@ -452,3 +452,7 @@ Implemented non-destructive crop/rotation/enhancement state tied to immutable pa
 ## 22 October 2026 — editable package facts in The Thread
 
 Integrated the first interactive package-data surface inside the chat. It exposes supported nutrient values, units, bases, calculations and observation provenance; user edits remain labeled and traceable. A desktop/mobile Chrome run entered a controlled label specimen, changed sodium 850 to 900 mg/100 g, explicitly added a previously missing protein reading of 9 g/100 g, verified the 20 g calculations and sodium follow-up, and inspected the preserved source text. No image/OCR accuracy or Gemini quality claim. npm test 309/309, TypeScript, and isolated optimized build passed; screenshots are local under ignored .data/product-design-audit-20261022/.
+
+## 22 October 2026 — connect nutrition readings to local photo evidence
+
+Added a lineage-checked photo-region action to OCR-backed nutrition readings, reusing the local inspector. A desktop Chrome run with two local package sides showed 40 OCR lines and eight populated supported nutrient slots; one Energy source opened its matching prepared-image view with a bounding box. Identity remained unknown, there is no independent expected-field annotation, and this is not an accuracy result. Gemini remained disabled; no `/api/assist` or `/api/vision` request was observed. 309 tests, TypeScript and isolated optimized build passed; screenshot and Playwright harness remain ignored under `.data/product-design-audit-20261022/`.
