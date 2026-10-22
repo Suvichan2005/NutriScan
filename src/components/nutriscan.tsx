@@ -443,7 +443,7 @@ export default function NutriScan(){
    applyTableCorrection({key:correction.key,value,unit:correction.unit as NutrientCorrection['unit'],basisAmount:basis,basisUnit:correction.basisUnit,productName:correction.name});
   }
  function canInspectOcrRegion(observation:Observation){
-  if(observation.origin!=='ocr'||!['ocr-line','nutrition-row-candidate'].includes(observation.field)||!observation.imageId||!observation.bbox||!observation.readingOrder?.runId)return false;
+  if(observation.origin!=='ocr'||!observation.imageId||!observation.bbox||!observation.readingOrder?.runId)return false;
   return !!pkg?.ocrCaptures?.some(capture=>capture.imageId===observation.imageId&&capture.runId===observation.readingOrder?.runId)&&images.some(image=>image.id===observation.imageId);
  }
  async function inspectOcrRegion(observation:Observation){

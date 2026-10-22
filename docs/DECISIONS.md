@@ -617,4 +617,4 @@ Treat edits to a label reading as user corrections, not verification. Keep the o
 
 ## 22 October 2026 — only offer an OCR photo-region link when lineage is intact
 
-Expose an evidence-inspection action from a nutrition reading only if its OCR observation retains a supported field type, image ID, bounding box and run ID that resolve to the capture and in-session image. Rebuild and dimension-check the prepared image before drawing the region. This gives users direct visual context without adding a second image pipeline or uploading the photo; text-only evidence and stale references remain text-only.
+Expose an evidence-inspection action from a nutrition reading only if its OCR-origin observation retains an image ID, bounding box and run ID that resolve to the capture and in-session image. Rebuild and dimension-check the prepared image before drawing the region. This gives users direct visual context without adding a second image pipeline or uploading the photo; text-only evidence and stale references remain text-only.
