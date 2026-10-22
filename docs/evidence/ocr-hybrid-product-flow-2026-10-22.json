@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "kind": "selective-browser-secondary-ocr-product-flow-ablation",
+  "generatedAt": "2026-10-22T00:08:38Z",
+  "status": "exploratory-development",
+  "sample": {
+    "source": "Existing hash-verified public Open Food Facts label photos in the local development manifest",
+    "split": "development; all five images have been used previously during OCR development; not held-out and not population-representative",
+    "expectedFields": 37,
+    "records": [
+      { "id": "bagrrys-white-oats-8902710100150", "sha256": "4619ac881019664bea876f28d496c6aa53dcd76da968bdf0d8485aeb45e603f6", "expectedFields": 8, "tesseractOnly": { "correct": 1, "incorrect": 0, "omitted": 7, "withheld": 0 }, "integrated": { "correct": 2, "incorrect": 0, "omitted": 1, "withheld": 5 } },
+      { "id": "saffola-veggie-oats-8901088068758", "sha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde", "expectedFields": 9, "tesseractOnly": { "correct": 0, "incorrect": 0, "omitted": 7, "withheld": 2 }, "integrated": { "correct": 4, "incorrect": 0, "omitted": 5, "withheld": 0 } },
+      { "id": "coca-cola-5449000000996", "sha256": "8a5b6cc6554736a3ef7189b02efacf3ad97b66c1cc88f1e41d2da6e10dec37be", "expectedFields": 6, "tesseractOnly": { "correct": 0, "incorrect": 0, "omitted": 6, "withheld": 0 }, "integrated": { "correct": 0, "incorrect": 0, "omitted": 4, "withheld": 2 } },
+      { "id": "nutella-nutrition-nl-3017620422003", "sha256": "1ad0d429b1f47490a36f11a97715ca33ade7b28aecf15273808d3f0ac258d3ac", "expectedFields": 7, "tesseractOnly": { "correct": 0, "incorrect": 0, "omitted": 7, "withheld": 0 }, "integrated": { "correct": 0, "incorrect": 0, "omitted": 7, "withheld": 0 } },
+      { "id": "nutella-nutrition-es-3017620422003", "sha256": "386f20829029db0af9449c4eaf4761f8c386320cde54c9a652dda7d538f7463c", "expectedFields": 7, "tesseractOnly": { "correct": 0, "incorrect": 0, "omitted": 7, "withheld": 0 }, "integrated": { "correct": 0, "incorrect": 0, "omitted": 6, "withheld": 1 } }
+    ]
+  },
+  "scoring": {
+    "method": "Existing browser UI scorer semantics using the photo manifest annotations; complete means nutrient key, numeric value within 0.5% or 0.015 tolerance, unit, and annotated basis all match. Missing table row is omitted; displayed but conflicting/unbased value is withheld.",
+    "tesseractOnly": { "correct": 1, "incorrect": 0, "omitted": 34, "withheld": 2 },
+    "integrated": { "correct": 6, "incorrect": 0, "omitted": 23, "withheld": 8 },
+    "manualCorrections": 0,
+    "interpretation": "Five additional exact complete fields, no incorrect complete field in this sample. Most gains came from two oat labels. Do not interpret as independent accuracy or evidence of broad packaging performance."
+  },
+  "integratedFlow": {
+    "primary": "Tesseract browser reader and existing parser",
+    "secondary": "@paddleocr/paddleocr-js 0.4.2, PP-OCRv5 English, lazy selective fallback with automatic runtime selection",
+    "samePhotoRecovery": "Exact OCR value/unit agreement can be joined to a secondary explicit basis; otherwise preserve conflicts and abstain.",
+    "portionExamples": [
+      { "photo": "bagrrys-white-oats-8902710100150", "portion": "35 g", "calculations": ["138.95 kcal energy", "0 g total sugars"] },
+      { "photo": "saffola-veggie-oats-8901088068758", "portion": "50 g", "calculations": ["6.2 g fibre", "4.95 g fat", "1.7 g saturated fat", "1141.5 mg sodium"] }
+    ],
+    "browser": { "viewport": "390x844", "sequence": "one tab; five photos; no manual corrections", "pageErrors": 0, "failedRequests": 0, "axeViolations": 0 },
+    "latencyMs": {
+      "tesseractOnlyPerPhoto": [9246, 8418, 9356, 8453, 7439],
+      "tesseractOnlyMean": 8582.4,
+      "integratedPerPhoto": [30961, 14535, 15216, 15743, 12914],
+      "integratedMean": 17873.8,
+      "firstColdIntegrated": 30961,
+      "fourWarmMean": 14602
+    },
+    "network": {
+      "paddleModelArchiveGetRequests": 2,
+      "modelArchiveHost": "paddle-model-ecology.bj.bcebos.com",
+      "coldUniqueModelRuntimeAndBrowserBundleEstimateBytes": 60851321,
+      "estimateBasis": "Existing same-SDK receipt docs/evidence/ocr-paddleocr-v5-browser.json; the integrated browser listener could not read the WebAssembly response body length, so this is not a fresh byte-level measurement.",
+      "externalPostRequests": 0,
+      "assistOrVisionProviderCalls": 0,
+      "memoryMeasured": false
+    },
+    "identity": "The run displayed two OCR nutrition/table headings as package names on the French and Spanish Nutella photos. A narrowly scoped parser guard was added afterward and unit-tested; the five-photo UI sequence has not yet been rerun with that guard.",
+    "localEvidenceFollowUp": "The beta-glucan-in-oats query returned three unrelated local source cards (FSSAI FAQ, ICMR dietary guidelines, and FSSAI claims compendium). This was a retrieval false association and is not a successful scientific answer.",
+    "privacy": "Package image files were only supplied to local browser memory. The only off-origin requests were GET model downloads; no external photo/text POST, Gemini request, vision route, or assist provider call occurred."
+  }
+}

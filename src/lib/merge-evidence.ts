@@ -96,3 +96,34 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
     synthetic: current.synthetic && incoming.synthetic,
   });
 }
+
+/** Keeps an already usable primary field when a secondary reader has only an unbased candidate. */
+export function mergeSecondaryOcrEvidence(primary: PackageData, secondary: PackageData): PackageData {
+  const primaryUsableKeys = new Set(primary.nutrients
+    .filter(nutrient => nutrient.status === 'observed' && nutrient.basis)
+    .map(nutrient => nutrient.key));
+  const usableSecondary = secondary.nutrients.filter(nutrient => nutrient.status === 'observed' && nutrient.basis);
+  const sourceImageIds = (pkg: PackageData, nutrient: Nutrient) => new Set(nutrient.observationIds.flatMap(id => {
+    const observation = pkg.observations.find(item => item.id === id);
+    const sourceIds = observation?.derivedFromObservationIds ?? [id];
+    return pkg.observations.filter(item => sourceIds.includes(item.id) && item.origin === 'ocr' && item.field === 'ocr-line' && item.imageId).map(item => item.imageId!);
+  }));
+  const sharedImage = (first: Nutrient, second: Nutrient) => {
+    const firstImages = sourceImageIds(primary, first);
+    return [...sourceImageIds(secondary, second)].some(imageId => firstImages.has(imageId));
+  };
+
+  // Matching OCR values on the same photo let a based secondary reading
+  // resolve the first reader's missing basis without discarding its evidence.
+  const corroboratedUnbased = primary.nutrients.filter(candidate => candidate.status === 'observed' && !candidate.basis
+    && usableSecondary.some(reading => reading.key === candidate.key && reading.unit === candidate.unit && reading.value === candidate.value && sharedImage(candidate, reading)));
+  const remainingPrimary = primary.nutrients.filter(nutrient => !corroboratedUnbased.includes(nutrient));
+  const primaryForMerge = corroboratedUnbased.length ? { ...primary, nutrients: remainingPrimary } : primary;
+  const supportedCandidates = secondary.nutrients
+    .filter(nutrient => !primaryUsableKeys.has(nutrient.key) || nutrient.basis !== null)
+    .map(nutrient => {
+      const corroboratingIds = corroboratedUnbased.filter(candidate => candidate.key === nutrient.key && candidate.unit === nutrient.unit && candidate.value === nutrient.value && sharedImage(candidate, nutrient)).flatMap(candidate => candidate.observationIds);
+      return corroboratingIds.length ? { ...nutrient, observationIds: [...new Set([...nutrient.observationIds, ...corroboratingIds])] } : nutrient;
+    });
+  return mergePackageEvidence(primaryForMerge, { ...secondary, nutrients: supportedCandidates });
+}

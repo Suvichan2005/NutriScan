@@ -2,7 +2,22 @@
 
 Updated: 2026-10-22. Reproduce with `npm run ocr:evaluate` after the private evaluation photographs have been provisioned locally. The command verifies every photograph against the SHA-256 in `data/semantic-photo-manifest.json`, runs the installed Tesseract.js English model, compares parsed values with the manifest's human visual annotations, and writes `docs/evidence/real-ocr-evaluation.json`. It does not write source images or raw OCR text into the result.
 
-## Current result
+## Integrated product-browser comparison — 22 October 2026
+
+The production photo flow now runs Tesseract first and selectively adds the official PP-OCRv5 browser reader when too few fields are usable or table diagnostics remain unresolved. A same-page Chrome/Playwright run at 390×844 processed the five hash-verified photos used by the existing 37-field manifest, with no manual corrections. The browser table was scored against the unchanged per-photo human annotations, requiring exact nutrient identity, value tolerance, unit and annotated basis.
+
+| Reader | Correct | Incorrect | Omitted | Withheld |
+|---|---:|---:|---:|---:|
+| Tesseract only | 1 | 0 | 34 | 2 |
+| Tesseract + selective PP-OCRv5 | 6 | 0 | 23 | 8 |
+
+Per-photo exact matches changed as follows: Bagrry's 1/8→2/8, Saffola 0/9→4/9, Coca-Cola 0/6→0/6, French Nutella 0/7→0/7, and Spanish Nutella 0/7→0/7. The five additional complete fields had correct value, unit and basis; no annotated field was emitted as a complete incorrect reading. More candidates were preserved as withheld rather than treated as facts. The relative gain is real for these two oat labels, but absolute recovery remains 6/37 and the three other label photos still produced no complete field. Do not interpret the result as population accuracy, independent acceptance, or evidence that language/table-layout failures are solved.
+
+The application then calculated 138.95 kcal and 0 g total sugars in 35 g for Bagrry's; and 6.2 g fibre, 4.95 g fat, 1.7 g saturated fat and 1,141.5 mg sodium in 50 g for Saffola. These were automatic label-derived calculations, not a scientific-source answer. Mean full scan time increased from 8.58 seconds to 17.87 seconds; the first cold fallback scan took 30.96 seconds and the next four scans averaged 14.60 seconds. The run made two GET requests for Paddle model archives, no external POST, and no provider call; page errors, failed requests and Axe violations were zero. The first-load unique model/runtime/browser bundle estimate is about 60.9 MB from the separate [same-SDK asset receipt](evidence/ocr-paddleocr-v5-browser.json); the integrated response listener could not read the WebAssembly body size, so this was not freshly byte-verified. Memory and mobile-device performance remain unmeasured.
+
+The run also exposed false OCR-derived product names on the French and Spanish Nutella photos. A localized nutrition-heading/basis-header guard was added afterward and is covered by module tests, but a full photo-browser recheck is still needed. The beta-glucan follow-up displayed unrelated local sources; it is recorded as a retrieval false association, not a grounded answer. See the sanitized [hybrid product-flow receipt](evidence/ocr-hybrid-product-flow-2026-10-22.json).
+
+## Existing Node Tesseract diagnostic
 
 Five genuine Open Food Facts package photographs were evaluated: three English panels, one French panel and one Spanish panel, with 37 human-read nutrient fields. With the current 3,000 px, quality-98 preparation, the single-block pass matched **2 fields, had 0 incorrect, omitted 34 and withheld 1**. That is 2/37 matched annotated fields (5.4%) for this small diagnostic set. The grayscale/normalize/sharpen pass also matched 2, with 0 incorrect, 33 omitted and 2 withheld. English-only modes read 0 of 7 French fields and 0 of 7 Spanish fields. An English native-image automatic-page pass returned two incorrect values, including a sodium value read ten times too high on the Saffola photograph. Sparse-text mode omitted all 37 fields.
 

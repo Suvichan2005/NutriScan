@@ -25,7 +25,7 @@ const photoDirectory = path.join(root, 'docs/evidence/private');
 const resultPath = path.join(root, 'docs/evidence/real-ocr-browser-ui-probe.json');
 const labels: Record<string, string> = {
   energy: 'Energy', protein: 'Protein', carbohydrate: 'Carbohydrate', sugars: 'Total sugars',
-  addedSugars: 'Added sugars', fiber: 'Fibre', fat: 'Total fat', saturatedFat: 'Saturated fat', sodium: 'Sodium',
+  addedSugars: 'Added sugars', fiber: 'Fibre', fat: 'Total fat', saturatedFat: 'Saturated fat', sodium: 'Sodium', salt: 'Salt',
 };
 const sources: SourceSpec[] = [
   { id: 'saffola', evaluationSplit: 'development', file: 'saffola-veggie-oats-nutrition-off-8901088068758.jpg', crop: { x: 3, y: 0, width: 93, height: 99 } },

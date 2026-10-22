@@ -59,29 +59,73 @@ function numericOcrWords(observation:Observation):GeometryNumber[]|undefined {
   }
   return result;
 }
-function basisGeometryCenter(observation:Observation,basis:Basis):number|undefined {
+function basisGeometryCenters(observation:Observation,bases:Basis[]):number[]|undefined {
   const words=observation.ocrWords;
   if(!words?.length)return;
-  const amount=String(basis.amount).replace('.','[.,]');
-  const amountPattern=new RegExp(`^(${amount})(?:\\s*(${basis.unit}))?`, 'i');
-  for(let index=0;index<words.length;index++){
-    const word=words[index];
-    let token=word.text.replace(/^(?:per|pour|para)/i,'');
-    const prefixLength=word.text.length-token.length;
-    let match=token.match(amountPattern);
-    if(!match)continue;
-    let right=word.bbox.x0+(word.bbox.x1-word.bbox.x0)*(prefixLength+match[0].length)/Math.max(1,word.text.length);
-    if(!match[2]){
-      const next=words[index+1];
-      if(next&&new RegExp(`^${basis.unit}$`,'i').test(next.text.trim()))right=next.bbox.x1;
-      else continue;
+  const result:number[]=[];
+  let searchFrom=0;
+  for(const basis of bases){
+    const amount=String(basis.amount).replace('.','[.,]');
+    const amountPattern=new RegExp(`^(${amount})(?:\\s*(${basis.unit}))?`, 'i');
+    let found:number|undefined;
+    for(let index=searchFrom;index<words.length;index++){
+      const word=words[index];
+      let token=word.text.replace(/^(?:per|pour|para)/i,'');
+      const prefixLength=word.text.length-token.length;
+      const match=token.match(amountPattern);
+      if(!match)continue;
+      let right=word.bbox.x0+(word.bbox.x1-word.bbox.x0)*(prefixLength+match[0].length)/Math.max(1,word.text.length);
+      if(!match[2]){
+        const next=words[index+1];
+        if(next&&new RegExp(`^${basis.unit}$`,'i').test(next.text.trim()))right=next.bbox.x1;
+        else continue;
+      }
+      let left=word.bbox.x0;
+      for(let prior=index;prior>=Math.max(0,index-2);prior--){
+        if(/^(?:per|pour|para)$/i.test(words[prior].text.trim())){left=words[prior].bbox.x0;break;}
+      }
+      found=(left+right)/2;
+      searchFrom=index+1;
+      break;
     }
-    let left=word.bbox.x0;
-    for(let prior=index;prior>=Math.max(0,index-2);prior--){
-      if(/^(?:per|pour|para)$/i.test(words[prior].text.trim())){left=words[prior].bbox.x0;break;}
-    }
-    return (left+right)/2;
+    if(found===undefined)return;
+    result.push(found);
   }
+  return result;
+}
+function geometryValueBasisIndexes(
+  numericCandidates:ParserDiagnostic['numericCandidates'],
+  rowObservation:Observation|undefined,
+  basisObservation:Observation|undefined,
+  bases:Basis[],
+  captures:OcrCapture[]
+):number[]|undefined {
+  if(numericCandidates.length<2||numericCandidates.length!==bases.length||!rowObservation||!basisObservation)return;
+  if(rowObservation.origin!=='ocr'||basisObservation.origin!=='ocr'||rowObservation.imageId!==basisObservation.imageId)return;
+  const rowRun=rowObservation.readingOrder?.runId;
+  if(!rowRun||basisObservation.readingOrder?.runId!==rowRun)return;
+  const capture=captures.find(item=>item.runId===rowRun&&item.imageId===rowObservation.imageId);
+  const basisCenters=basisGeometryCenters(basisObservation,bases);
+  const wordValues=numericOcrWords(rowObservation);
+  if(!capture||!basisCenters||basisCenters.length!==bases.length||!wordValues||wordValues.length!==numericCandidates.length)return;
+  for(let index=0;index<numericCandidates.length;index++){
+    const candidate=numericCandidates[index];
+    const word=wordValues[index];
+    if(candidate.value===null||Math.abs(candidate.value-word.value)>0.000001)return;
+    if(candidate.unit&&word.unit&&candidate.unit.toLowerCase()!==word.unit)return;
+  }
+  const maxDistance=Math.max(20,capture.preparedImage.width*0.075);
+  const requiredMargin=Math.max(12,capture.preparedImage.width*0.02);
+  const assigned=new Set<number>();
+  const result:number[]=[];
+  for(const word of wordValues){
+    const ranked=basisCenters.map((center,index)=>({index,distance:Math.abs(word.center-center)})).sort((a,b)=>a.distance-b.distance);
+    if(!ranked.length||ranked[0].distance>maxDistance||ranked.length>1&&ranked[1].distance-ranked[0].distance<requiredMargin||assigned.has(ranked[0].index))return;
+    assigned.add(ranked[0].index);
+    result.push(ranked[0].index);
+  }
+  if(assigned.size!==bases.length)return;
+  return result;
 }
 function geometrySelectedValueIndex(
   numericCandidates:ParserDiagnostic['numericCandidates'],
@@ -95,16 +139,16 @@ function geometrySelectedValueIndex(
   const rowRun=rowObservation.readingOrder?.runId;
   if(!rowRun||basisObservation.readingOrder?.runId!==rowRun)return;
   const capture=captures.find(item=>item.runId===rowRun&&item.imageId===rowObservation.imageId);
-  const basisCenter=basisGeometryCenter(basisObservation,basis);
+  const basisCenters=basisGeometryCenters(basisObservation,[basis]);
   const wordValues=numericOcrWords(rowObservation);
-  if(!capture||basisCenter===undefined||!wordValues||wordValues.length!==numericCandidates.length)return;
+  if(!capture||!basisCenters||!wordValues||wordValues.length!==numericCandidates.length)return;
   for(let index=0;index<numericCandidates.length;index++){
     const candidate=numericCandidates[index];
     const word=wordValues[index];
     if(candidate.value===null||Math.abs(candidate.value-word.value)>0.000001)return;
     if(candidate.unit&&word.unit&&candidate.unit.toLowerCase()!==word.unit)return;
   }
-  const ranked=wordValues.map((word,index)=>({index,distance:Math.abs(word.center-basisCenter)})).sort((a,b)=>a.distance-b.distance);
+  const ranked=wordValues.map((word,index)=>({index,distance:Math.abs(word.center-basisCenters[0])})).sort((a,b)=>a.distance-b.distance);
   const maxDistance=Math.max(20,capture.preparedImage.width*0.045);
   const requiredMargin=Math.max(12,capture.preparedImage.width*0.03);
   if(ranked[0].distance>maxDistance||(ranked[1].distance-ranked[0].distance)<requiredMargin)return;
@@ -133,17 +177,19 @@ function basesIn(line:string,serving?:PackageData['serving']):Basis[] {
   if(servingInline) result.push({amount:Number(servingInline[1]),unit:servingInline[2].toLowerCase() as 'g'|'ml',description:servingInline[0]});
   return result;
 }
-const nonNamePrefix=/^(?:nutrition|nutritional|valeurs nutrition|per\b|pour\b|para\b|ingredients?|contains|allergen|net\b|serving\b|no\.?\s*of\s+servings?\b|soluble\b|insoluble\b|of\s+which\b|energy\b|calories\b|carbohyd|carbs?\b|sugars?\b|added sugars?\b|protein\b|fat\b|saturated\b|trans fat\b|cholesterol\b|sodium\b|salt\b|fssai\b|licen[cs]e|barcode|total\b|synthetic)/i;
+const nonNamePrefix=/^(?:nutrition|nutritional|valeurs nutrition|contenido\b|informaci[oó]n\b|voedingswaard|voedingsinformatie|per\b|pour\b|para\b|ingredients?|contains|allergen|net\b|serving\b|no\.?\s*of\s+servings?\b|soluble\b|insoluble\b|of\s+which\b|energy\b|calories\b|carbohyd|carbs?\b|sugars?\b|added sugars?\b|protein\b|fat\b|saturated\b|trans\b|cholesterol\b|sodium\b|salt\b|fssai\b|licen[cs]e|barcode|total\b|synthetic)/i;
 const labelMetadata=/\b(?:servings?\s+per\s+(?:pack|package|container)|serving\s+size|portion\s+size|per\s*\d+(?:\.\d+)?\s*(?:g|ml)|approximate\s+values?)\b/i;
 const referenceIntake=/\b(?:reference\s+intake|adult[-\s]type|daily\s+value|valeur\s+quotidienne|apport\s+de\s+r[eé]f[eé]rence|assunzioni\s+di\s+riferimento|ingesta\s+de\s+referencia)\b/i;
-const nutritionRowTerm=/\b(?:nutrition|information|typical\s+value|energy|calories|carbohydrates?|glucides|koolhydraten|hidratos|sugars?|sucres|suikers|az[uú]cares|protein|prot[eé]ines?|prote[ií]nas?|eiwitten|fat|gras|vetten|saturat(?:ed|es)|fiber|fibre|vezels|fatty|acids?|sodium|sodio|salt|sel|zout|cholesterol|vitamins?|minerals?)\b/i;
+const nutritionRowTerm=/\b(?:nutrition|information|typical\s+value|energy|calories|carbohydrates?|glucides|koolhydraten|hidratos|sugars?|sucres|suikers|az[uú]cares|protein|prot[eé]ines?|prote[ií]nas?|eiwitten|fat|gras|vetten|saturat(?:ed|es)|fiber|fibre|vezels|fatty|faty|acids?|sodium|sodio|salt|sel|zout|cholesterol|vitamins?|minerals?|[il1]ron|calcium|zinc|magnesium|potassium|phosph(?:orus|ate)|thiamin|riboflavin|niacin|fol(?:ate|ic\s+acid)|biotin|copper|manganese|selenium|iodine|chloride|omega(?:[-\s]?\d)?)\b/i;
 const slogan=/^(?:[®™]\s*)?(?:taste(?:\s+the\s+feeling)?|feel\s+good|great\s+taste)\b|\b(?:delicious(?:ly)?|tasty)\b/i;
 function isNameCandidate(line:string){
   const measuredTableValue=/\d/.test(line)&&(/[()]/.test(line)||/\(\s*(?:kcal|kj|mg|g|ml)\s*\)/i.test(line));
   const nutrientValueLine=/\d/.test(line)&&nutritionRowTerm.test(line);
-  const nutritionHeading=/\b(?:nutrition|information|typical\s+value)\b/i.test(line);
+  const nutritionHeading=/\b(?:nutrition|information|typical\s+value)\b/i.test(line)||/^(?:contenido\s+(?:energ|nutric)|informaci[oó]n\s+nutric|valor\s+energ|voedingswaard|voedingsinformatie)/i.test(line);
+  const basisOnlyHeader=line.replace(/\b\d+(?:[.,]\d+)?\s*(?:g|ml|kcal|kj|mg|mcg)\b/gi,' ').replace(/[|/,:;()[\]]/g,' ').trim();
+  const onlyBasisAndColumnWords=!basisOnlyHeader||/^(?:per|par|por|pour)$/i.test(basisOnlyHeader);
   const hasReadableWord=/\p{L}{3,}/u.test(line);
-  return line.length>=3&&hasReadableWord&&!rows.some(row=>row.pattern.test(line))&&!nonNamePrefix.test(line)&&!labelMetadata.test(line)&&!referenceIntake.test(line)&&!nutritionHeading&&!nutrientValueLine&&!slogan.test(line)&&!measuredTableValue;
+  return line.length>=3&&hasReadableWord&&!rows.some(row=>row.pattern.test(line))&&!nonNamePrefix.test(line)&&!labelMetadata.test(line)&&!referenceIntake.test(line)&&!nutritionHeading&&!nutrientValueLine&&!slogan.test(line)&&!measuredTableValue&&!onlyBasisAndColumnWords;
 }
 const nameConfidenceThreshold=80;
 function labelName(lines:string[],inputObservations:Observation[],origin:Observation['origin']|undefined){
@@ -201,7 +247,7 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
   const servingObservationId=servingMatch?observe('serving',servingMatch[0]):undefined;
   if(weightMatch) observe('netWeight',weightMatch[0]);
   const ingredients:string[]=[]; const allergens:string[]=[]; const claims:string[]=[];
-  let ingredientsOpen=false; let basis:Basis|null=null; let basisObservationIds:string[]=[]; let ambiguousBasis=false;
+  let ingredientsOpen=false; let basis:Basis|null=null; let columnBases:Basis[]=[]; let basisObservationIds:string[]=[]; let ambiguousBasis=false;
   const nutrients:Nutrient[]=[];
   const parserDiagnostics:ParserDiagnostic[]=[];
   const lineOccurrenceCounts=new Map<string,number>();
@@ -226,6 +272,7 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
     if(!nutrientRow&&hasBasis){
       ingredientsOpen=false;
       ambiguousBasis=foundBases.length>1;
+      columnBases=foundBases;
       basis=foundBases.length===1?foundBases[0]:null;
       const basisObservationId=observe('basis',line);
       basisObservationIds=[basisObservationId,...(foundBases.some(item=>item.description==='per declared serving')&&servingObservationId?[servingObservationId]:[])];
@@ -258,7 +305,7 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
       const n=Number(value[1]);const unit=(value[2]??(orderedEnergyUnits&&values.length===2?orderedEnergyUnits[valueIndex+1]:rowUnit))?.toLowerCase()??null;
       return {rawValueText:value[1],value:Number.isFinite(n)?n:null,unit};
     });
-    const basisCandidates=foundBases.length?foundBases:(basis?[basis]:[]);
+    const basisCandidates=foundBases.length?foundBases:(columnBases.length?columnBases:(basis?[basis]:[]));
     const evidenceIds=(observationId:string)=>observations.find(item=>item.id===observationId)?.derivedFromObservationIds??[observationId];
     const numericEvidenceObservationIds=evidenceIds(obsId);
     const basisObservationIdCandidates=foundBases.length?[obsId]:basisObservationIds;
@@ -269,9 +316,14 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
     if(/-\s+\d/.test(tail)){warnings.push(`${nutrientRow.key}: invalid or ambiguous signed value withheld.`);diagnose('rejected',['signed-or-ambiguous']);continue;}
     if(!values.length){warnings.push(`${nutrientRow.key}: no readable numerical value.`);diagnose('rejected',['no-numeric-value']);continue;}
     const geometryBasisId=foundBases.length?obsId:basisObservationIds[0];
-    const mappedValueIndex=values.length>1?geometrySelectedValueIndex(numericCandidates,sourceOcrObservationForId(obsId),sourceOcrObservationForId(geometryBasisId),basisCandidates.length===1?basisCandidates[0]:undefined,options.ocrCaptures??[]):undefined;
-    const conflicting=ambiguousBasis||foundBases.length>1||(values.length>1&&mappedValueIndex===undefined);
-    if(values.length>1&&mappedValueIndex!==undefined)warnings.push(`${nutrientRow.key}: one value aligns with the recognized ${basisCandidates[0].amount} ${basisCandidates[0].unit} column; other row values remain unassigned.`);
+    const rowSourceObservation=sourceOcrObservationForId(obsId);
+    const basisSourceObservation=sourceOcrObservationForId(geometryBasisId);
+    const mappedBasisIndexes=values.length>1?geometryValueBasisIndexes(numericCandidates,rowSourceObservation,basisSourceObservation,basisCandidates,options.ocrCaptures??[]):undefined;
+    const mappedValueIndex=values.length>1&&basisCandidates.length===1?geometrySelectedValueIndex(numericCandidates,rowSourceObservation,basisSourceObservation,basisCandidates[0],options.ocrCaptures??[]):undefined;
+    const mappedEveryColumn=mappedBasisIndexes!==undefined&&mappedBasisIndexes.length===values.length;
+    const conflicting=(ambiguousBasis||foundBases.length>1)&&!mappedEveryColumn||(values.length>1&&mappedValueIndex===undefined&&!mappedEveryColumn);
+    if(mappedEveryColumn)warnings.push(`${nutrientRow.key}: each recognized value aligns with a separate printed nutrition column; values retain their matched bases.`);
+    else if(values.length>1&&mappedValueIndex!==undefined)warnings.push(`${nutrientRow.key}: one value aligns with the recognized ${basisCandidates[0].amount} ${basisCandidates[0].unit} column; other row values remain unassigned.`);
     else if(values.length>1) warnings.push(`${nutrientRow.key}: multiple numeric values retained; confirm the intended column.`);
     const reasonCodes:ParserDiagnostic['reasonCodes']=[];
     if(values.length>1)reasonCodes.push('multiple-values');
@@ -279,6 +331,7 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
     if(!basisCandidates.length)reasonCodes.push('missing-basis');
     let emitted=0;
     for(const [valueIndex,value] of values.entries()){
+      if(mappedEveryColumn&&(!mappedBasisIndexes||mappedBasisIndexes[valueIndex]===undefined))continue;
       if(mappedValueIndex!==undefined&&valueIndex!==mappedValueIndex)continue;
       const n=Number(value[1]); const unit=(value[2]??(orderedEnergyUnits&&values.length===2?orderedEnergyUnits[valueIndex+1]:rowUnit))?.toLowerCase();
       if(!Number.isFinite(n)||n<0||n>100000){warnings.push(`${nutrientRow.key}: invalid value withheld.`);reasonCodes.push('invalid-value');continue;}
@@ -286,7 +339,8 @@ export function parseLabel(text:string,options:ParseOptions={}):PackageData {
       const validUnit=unit==='kj'?'kJ':unit as Nutrient['unit'];
       if((nutrientRow.key==='energy'&&!['kcal','kJ'].includes(validUnit))||(nutrientRow.key!=='energy'&&!['g','mg'].includes(validUnit))){warnings.push(`${nutrientRow.key}: incompatible unit withheld.`);reasonCodes.push('incompatible-unit');continue;}
       const usedHeaderBasis=foundBases.length===0?basisObservationIds:[];
-      nutrients.push({key:nutrientRow.key,value:n,unit:validUnit,basis:conflicting?null:(foundBases[0]??basis),observationIds:[obsId,...usedHeaderBasis],status:conflicting?'conflict':'observed'});
+      const assignedBasis=mappedEveryColumn&&mappedBasisIndexes?basisCandidates[mappedBasisIndexes[valueIndex]]:(mappedValueIndex!==undefined?basisCandidates[0]:(basisCandidates.length===1?basisCandidates[0]:null));
+      nutrients.push({key:nutrientRow.key,value:n,unit:validUnit,basis:conflicting?null:assignedBasis,observationIds:[obsId,...usedHeaderBasis],status:conflicting?'conflict':'observed'});
       emitted++;
     }
     diagnose(emitted===0?'rejected':conflicting?'conflict':'accepted',reasonCodes);

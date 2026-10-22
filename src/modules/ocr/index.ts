@@ -1,5 +1,6 @@
 export { BROWSER_OCR_ENGINE_VERSION, prepareImage, readOcrImages } from './browser';
 export type { BrowserOcrOptions, BrowserOcrResult, Crop } from './browser';
+export { readPaddleOcrImages, selectPaddleFallbackAssets, shouldRunPaddleFallback } from './paddle';
 export { parseLabel } from './parser';
 export type { ParseOptions } from './parser';
 export { summarizeLabelUncertainty } from './label-uncertainty';

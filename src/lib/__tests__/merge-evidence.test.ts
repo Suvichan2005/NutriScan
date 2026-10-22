@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergePackageEvidence } from '../merge-evidence';
+import { mergePackageEvidence, mergeSecondaryOcrEvidence } from '../merge-evidence';
 import { defaultProductLookup } from '../product-query';
 import { parseLabel } from '../parser';
 
@@ -25,6 +25,40 @@ describe('incremental package evidence', () => {
     expect(merged.nutrients).toHaveLength(2);
     expect(merged.nutrients.every(n => n.status === 'conflict')).toBe(true);
     expect(merged.warnings.join(' ')).toMatch(/conflict/i);
+  });
+
+  it('keeps a usable primary reading when a secondary reader has only an unbased candidate', () => {
+    const first = parseLabel('Nutrition per 100 g\nSugar 0 g', { origin: 'ocr' });
+    const second = parseLabel('Sugar 3.6 g', { origin: 'ocr' });
+    const merged = mergeSecondaryOcrEvidence(first, second);
+    expect(merged.nutrients.filter(n => n.key === 'sugars')).toHaveLength(1);
+    expect(merged.nutrients.find(n => n.key === 'sugars')).toMatchObject({ value: 0, basis: { amount: 100, unit: 'g' }, status: 'observed' });
+    expect(merged.observations.some(observation => observation.text.includes('3.6'))).toBe(true);
+    expect(merged.rawText).toContain('3.6');
+  });
+
+  it('uses an explicit secondary basis when both OCR readers agree on value and unit for the same photo', () => {
+    const primaryLine = { id: 'primary-fat-line', field: 'ocr-line' as const, text: 'Total fat 9.9 g', side: 'back' as const, confidence: 80, origin: 'ocr' as const, imageId: 'same-photo' };
+    const secondaryHeader = { id: 'secondary-basis-line', field: 'ocr-line' as const, text: 'Nutrition per 100 g', side: 'back' as const, confidence: 90, origin: 'ocr' as const, imageId: 'same-photo' };
+    const secondaryLine = { id: 'secondary-fat-line', field: 'ocr-line' as const, text: 'Total fat 9.9 g', side: 'back' as const, confidence: 90, origin: 'ocr' as const, imageId: 'same-photo' };
+    const first = parseLabel(primaryLine.text, { origin: 'ocr', observations: [primaryLine] });
+    const second = parseLabel(`${secondaryHeader.text}\n${secondaryLine.text}`, { origin: 'ocr', observations: [secondaryHeader, secondaryLine] });
+
+    const merged = mergeSecondaryOcrEvidence(first, second);
+    const reading = merged.nutrients.find(item => item.key === 'fat');
+    expect(merged.nutrients.filter(item => item.key === 'fat')).toHaveLength(1);
+    expect(reading).toMatchObject({ value: 9.9, unit: 'g', basis: { amount: 100, unit: 'g' }, status: 'observed' });
+    expect(merged.observations.some(item => item.id === primaryLine.id)).toBe(true);
+    expect(reading?.observationIds.some(id => merged.observations.find(item => item.id === id)?.derivedFromObservationIds?.includes(primaryLine.id))).toBe(true);
+    expect(merged.parserDiagnostics?.some(item => item.field === 'fat' && item.reasonCodes.includes('missing-basis'))).toBe(true);
+  });
+
+  it('still marks a fully based secondary disagreement as a conflict', () => {
+    const first = parseLabel('Nutrition per 100 g\nSugar 0 g', { origin: 'ocr' });
+    const second = parseLabel('Nutrition per 100 g\nSugar 3.6 g', { origin: 'ocr' });
+    const merged = mergeSecondaryOcrEvidence(first, second);
+    expect(merged.nutrients.filter(n => n.key === 'sugars')).toHaveLength(2);
+    expect(merged.nutrients.filter(n => n.key === 'sugars').every(n => n.status === 'conflict')).toBe(true);
   });
 
   it('does not merge different mass and volume bases into a conflict', () => {
