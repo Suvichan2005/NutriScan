@@ -618,3 +618,9 @@ Treat edits to a label reading as user corrections, not verification. Keep the o
 ## 22 October 2026 — only offer an OCR photo-region link when lineage is intact
 
 Expose an evidence-inspection action from a nutrition reading only if its OCR-origin observation retains an image ID, bounding box and run ID that resolve to the capture and in-session image. Rebuild and dimension-check the prepared image before drawing the region. This gives users direct visual context without adding a second image pipeline or uploading the photo; text-only evidence and stale references remain text-only.
+
+## 22 October 2026 — expose label OCR evidence in the selected Thread direction
+
+Keep ingredient, allergen and claim groupings visibly provisional. Surface all currently grouped observations and otherwise-unrepresented OCR lines in a collapsed Thread panel, preserving source-side/image links and the original observations. Do not treat the parser's grouping as verified meaning or convert it into a confirmed package fact. Do not truncate the ordinary Thread to a handful of ingredient fragments. Keep manual corrections separate from OCR and model interpretations.
+
+Keep the active application as a viewport-sized workspace with internal conversation scrolling; constrain document-level overflow so the mobile composer and package context do not drift. Give the full-screen scanner modal a screen-reader-visible title even when its visual header is compact. Use named button/group semantics for side thumbnails and meet contrast on compact source labels.
