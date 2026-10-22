@@ -1,10 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import { applyNutrientCorrection } from '../correction';
-import { packageSchema } from '../contracts';
+import { defaultProfile, packageSchema } from '../contracts';
+import { buildAudit } from '../engine';
 import { mergePackageEvidence } from '../merge-evidence';
 import { parseLabel } from '../parser';
 
 describe('user correction provenance', () => {
+  it('recalculates from a correction while preserving the original OCR evidence', () => {
+    const pkg = parseLabel('Nutrition per 100 g\nSodium 850 mg', { origin: 'ocr' });
+    const before = buildAudit(pkg, 20, 'g', defaultProfile, 'How much sodium?');
+    const corrected = applyNutrientCorrection(pkg, { key: 'sodium', value: 900, unit: 'mg', basisAmount: 100, basisUnit: 'g' });
+    const after = buildAudit(corrected, 20, 'g', defaultProfile, 'How much sodium?');
+
+    expect(before.calculations.find(item => item.nutrient === 'sodium')?.result).toBe(170);
+    expect(after.calculations.find(item => item.nutrient === 'sodium')?.result).toBe(180);
+    expect(corrected.nutrients.find(item => item.key === 'sodium')).toMatchObject({ value: 900, status: 'corrected', basis: { amount: 100, unit: 'g' } });
+    expect(corrected.observations.some(item => item.origin === 'ocr' && item.text.includes('Sodium 850 mg'))).toBe(true);
+    expect(corrected.observations.find(item => item.origin === 'user')?.supersedesObservationIds).toContain(pkg.nutrients.find(item => item.key === 'sodium')?.observationIds[0]);
+  });
+
+  it('rejects a unit incompatible with the selected nutrient', () => {
+    const pkg = parseLabel('Nutrition per 100 g\nCarbohydrate 65 g', { origin: 'ocr' });
+    expect(() => applyNutrientCorrection(pkg, { key: 'carbohydrate', value: 65, unit: 'mg', basisAmount: 100, basisUnit: 'g' })).toThrow(/unit does not match/);
+    expect(pkg.nutrients.find(item => item.key === 'carbohydrate')).toMatchObject({ value: 65, unit: 'g', status: 'observed' });
+  });
+
   it('keeps conflicting OCR readings and links a correction to every replaced reading', () => {
     const pkg = parseLabel('Nutrition per 100 g\nSodium 850 mg\nSodium 85 mg', { origin: 'ocr' });
     const corrected = applyNutrientCorrection(pkg, { key: 'sodium', value: 850, unit: 'mg', basisAmount: 100, basisUnit: 'g' });

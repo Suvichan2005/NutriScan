@@ -28,6 +28,16 @@ export type NutrientCorrection = {
 
 /** Applies a user-confirmed correction while retaining and linking prior evidence. */
 export function applyNutrientCorrection(pkg: PackageData, correction: NutrientCorrection): PackageData {
+  const allowedUnits = correction.key === 'energy'
+    ? ['kcal', 'kJ']
+    : correction.key === 'sodium' || correction.key === 'salt'
+      ? ['g', 'mg']
+      : ['g'];
+  if (!allowedUnits.includes(correction.unit)) throw new Error('The correction unit does not match the selected nutrient.');
+  if (!Number.isFinite(correction.value) || correction.value < 0 || correction.value > 100000
+    || !Number.isFinite(correction.basisAmount) || correction.basisAmount <= 0 || correction.basisAmount > 10000) {
+    throw new Error('The correction value or printed basis is outside supported ranges.');
+  }
   const id = crypto.randomUUID();
   const productName = correction.productName?.trim();
   const observation = {

@@ -610,3 +610,7 @@ Keep each scanned side's original image immutable. Persist normalized crop corne
 - Require one user-selected goal during first-run setup while leaving medical and other sensitive disclosures optional. Keep context tab-scoped by default; device persistence is a separate opt-in. Keep Gemini profile sharing separately consented and disabled by default.
 - Show only calculations supported by current package facts. Preserve dashes for missing values, state that OCR readings are not independently verified, and keep tentative model candidates out of calculations. The current portion card is deterministic; a model-selected generative component system remains follow-up work.
 - Gemini is unavailable in the current session. Local results remain visible without silently substituting them for a missing model response, and no provider call was made for this checkpoint.
+
+## 22 October 2026 — preserve correction provenance in the chat nutrition table
+
+Treat edits to a label reading as user corrections, not verification. Keep the original OCR/text observation and correction in the package evidence graph; require a user-entered positive printed basis amount and unit when none is already recorded; never substitute the package serving size for a missing nutrient basis. Recalculate deterministically from the updated package, cancel in-flight model work, and visibly note that prior conversation answers may reflect previous values. The first thread component is a controlled data table; model-selected typed UI instructions remain a separate pending integration.
