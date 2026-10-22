@@ -1,6 +1,6 @@
 # NutriScan team handoff
 
-Use the published `checkpoint/2026-10-22-team-handoff` branch as the collaboration base while the owner preserves the existing `main` history. Create feature branches from that checkpoint and target PRs to it for owner review; do not push directly to shared branches or merge PRs. The checkpoint removes the two restricted historical JPG paths without rewriting remote `main`. Do not add package photographs, personal profiles, API keys, cached models, private OCR receipts, or restricted source files. Contributors may read the repository, but the paths below define their edit scope.
+Use the current private `main` commit supplied by the owner and create separate feature branches from it. Do not push directly to `main`; the owner reviews and merges PRs. The published mainline is a normal fast-forward from the existing remote and its reachable history excludes the two restricted historical JPG paths. Their original bytes and the complete pre-publication Git history remain only in the ignored local backup. Do not add package photographs, personal profiles, API keys, cached models, private OCR receipts, or restricted source files. Contributors may read the repository, but the paths below define their edit scope.
 
 ## Yug — OCR and package extraction
 
