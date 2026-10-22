@@ -257,7 +257,7 @@ describe('nutrition numerical invariants',()=>{
     expect(()=>buildAudit(dangling,30,'g',defaultProfile)).toThrow(/existing package observations/);
   });
   it('keeps an empty profile empty and rejects old example-specific runtime fields',()=>{
-    expect(defaultProfile).toEqual({dietaryPattern:'',allergies:'',intolerances:'',healthConsiderations:'',goals:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''});
+    expect(defaultProfile).toEqual({dietaryPattern:'',avoidedIngredients:'',allergies:'',intolerances:'',healthConsiderations:'',goals:'',portionPreferences:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''});
     expect(profileSchema.safeParse({...defaultProfile,chapatis:8}).success).toBe(false);
     const audit=buildAudit(label('Per 100 g\nCarbohydrate 60 g'),30,'g',defaultProfile,'Can I eat this daily?');
     expect(audit.findings.some(f=>f.title==='Personal context to consider')).toBe(false);

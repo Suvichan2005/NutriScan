@@ -8,7 +8,7 @@ export type DeclaredFoodEvidence = {
 };
 
 export type DeclaredFoodMatch = {
-  kind: 'allergy' | 'intolerance';
+  kind: 'allergy' | 'intolerance' | 'avoidance';
   term: string;
   matched: boolean;
   evidence: DeclaredFoodEvidence[];
@@ -35,10 +35,10 @@ const evidenceType = (observation: Observation): DeclaredFoodEvidenceType => {
 };
 
 /** Surface literal mentions only; label wording categories are observations, not verified composition or safety. */
-export function findDeclaredFoodMentions(pkg: PackageData, declarations: { allergies: string; intolerances: string }): DeclaredFoodMatch[] {
+export function findDeclaredFoodMentions(pkg: PackageData, declarations: { allergies: string; intolerances: string; avoidedIngredients?: string }): DeclaredFoodMatch[] {
   const observations: Observation[] = pkg.observations.filter(o => o.field === 'ingredients' || o.field === 'allergens');
-  return (['allergy', 'intolerance'] as const).flatMap(kind => {
-    const input = kind === 'allergy' ? declarations.allergies : declarations.intolerances;
+  return (['allergy', 'intolerance', 'avoidance'] as const).flatMap(kind => {
+    const input = kind === 'allergy' ? declarations.allergies : kind === 'intolerance' ? declarations.intolerances : declarations.avoidedIngredients ?? '';
     const terms = [...new Set(input.split(/[,;\n]+/).map(term => term.trim()).filter(Boolean))];
     return terms.map(term => {
       const evidence = observations.filter(o => wordsContainPhrase(o.text, term)).map(observation => ({

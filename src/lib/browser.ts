@@ -10,6 +10,8 @@ export type { Crop } from '../modules/ocr';
 export type SavedScan = SavedScanRecord;
 const historyKey = 'nutriscan.history.v1';
 const rememberedProfileKey = 'nutriscan.user-context.v1';
+const sessionProfileKey = 'nutriscan.user-context.session.v1';
+const onboardingCompleteKey = 'nutriscan.onboarding.complete.v1';
 
 export async function readHistory(): Promise<SavedScan[]> {
   const data: unknown = await get(historyKey);
@@ -43,6 +45,30 @@ export async function saveRememberedProfile(input: Profile): Promise<void> {
   await set(rememberedProfileKey, profile);
 }
 export async function deleteRememberedProfile(): Promise<void> { await del(rememberedProfileKey); }
+
+/** Session-only context is scoped to this tab and restored after a reload. */
+export function readSessionProfile(): Profile | null {
+  try {
+    if (sessionStorage.getItem(onboardingCompleteKey) !== '1') return null;
+    const raw = sessionStorage.getItem(sessionProfileKey);
+    if (!raw) return null;
+    const parsed = profileSchema.safeParse(JSON.parse(raw));
+    if (!parsed.success) { sessionStorage.removeItem(sessionProfileKey); return null; }
+    return hasUserContext(parsed.data) ? parsed.data : null;
+  } catch { return null; }
+}
+export function saveSessionProfile(input: Profile): void {
+  const profile = profileSchema.parse(input);
+  if (!hasUserContext(profile)) { deleteSessionProfile(); return; }
+  sessionStorage.setItem(sessionProfileKey, JSON.stringify(profile));
+}
+export function deleteSessionProfile(): void { sessionStorage.removeItem(sessionProfileKey); }
+export function hasCompletedOnboardingSession(): boolean {
+  try { return sessionStorage.getItem(onboardingCompleteKey) === '1'; } catch { return false; }
+}
+export function completeOnboardingSession(): void {
+  sessionStorage.setItem(onboardingCompleteKey, '1');
+}
 
 export async function loadImage(file: Blob, side: ImageAsset['side'], name = 'Package photograph'): Promise<ImageAsset> {
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('Choose a JPG, PNG or WebP photo. HEIC needs conversion first.');

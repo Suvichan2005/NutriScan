@@ -110,9 +110,9 @@ export const tentativeStructuredCandidateSchema=z.object({
   status:z.literal('tentative'),observationIds:z.array(z.string().min(1).max(160)).max(20),sourceIds:z.array(z.string().min(1).max(160)).max(20),supportingSpans:z.array(evidenceSpanSchema.extend({kind:z.enum(['observation','source'])})).max(10),visualEvidence:z.array(visualEvidenceReferenceSchema).max(10).optional(),ocrWordEvidence:z.array(tentativeOcrWordEvidenceSchema).max(20).optional(),uncertainty:z.string().min(1).max(500)
 }).strict();
 export type TentativeStructuredCandidate=z.infer<typeof tentativeStructuredCandidateSchema>;
-export const profileSchema = z.object({dietaryPattern:z.string().max(500),allergies:z.string().max(1000),intolerances:z.string().max(1000),healthConsiderations:z.string().max(1500),goals:z.string().max(1000),ageGroup:z.string().max(80),sexOrReferenceGroup:z.string().max(100),country:z.string().max(80),locality:z.string().max(100)}).strict();
+export const profileSchema = z.object({dietaryPattern:z.string().max(500),avoidedIngredients:z.string().max(1000).default(''),allergies:z.string().max(1000),intolerances:z.string().max(1000),healthConsiderations:z.string().max(1500),goals:z.string().max(1000),portionPreferences:z.string().max(500).default(''),ageGroup:z.string().max(80),sexOrReferenceGroup:z.string().max(100),country:z.string().max(80),locality:z.string().max(100)}).strict();
 export type Profile = z.infer<typeof profileSchema>;
-export const defaultProfile:Profile = {dietaryPattern:'',allergies:'',intolerances:'',healthConsiderations:'',goals:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''};
+export const defaultProfile:Profile = {dietaryPattern:'',avoidedIngredients:'',allergies:'',intolerances:'',healthConsiderations:'',goals:'',portionPreferences:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''};
 export const hasUserContext = (profile:Profile):boolean => Object.values(profile).some(value=>value.trim().length>0);
 export const savedConversationTurnSchema=z.object({question:z.string().trim().min(1).max(1000),answer:z.string().max(8000),at:z.iso.datetime(),evidence:z.array(conversationEvidenceSourceSchema).max(3).optional()}).strict();
 export type SavedConversationTurn=z.infer<typeof savedConversationTurnSchema>;

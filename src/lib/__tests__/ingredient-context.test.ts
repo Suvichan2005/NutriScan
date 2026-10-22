@@ -38,4 +38,10 @@ describe('declared allergy and intolerance label mentions', () => {
       ['intolerance', 'gluten', false],
     ]);
   });
+  it('checks an explicitly avoided ingredient separately from allergy and intolerance', () => {
+    const pkg = parseLabel('Ingredients: Oats, coconut oil, salt');
+    const result = findDeclaredFoodMentions(pkg, { allergies: '', intolerances: '', avoidedIngredients: 'coconut' });
+    expect(result).toEqual([expect.objectContaining({ kind: 'avoidance', term: 'coconut', matched: true })]);
+    expect(result[0].observationIds).toEqual([pkg.observations.find(observation => observation.field === 'ingredients')?.id]);
+  });
 });

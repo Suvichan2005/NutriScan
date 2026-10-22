@@ -26,7 +26,7 @@ function isExplicitlyUnder18(ageGroup:string){
   const single=ageGroup.match(/^\s*(?:age\s*)?(\d{1,2})(?:\s*(?:years?|y\/o|old))?\s*$/i);
   return !!single&&Number(single[1])<18;
 }
-const profileText=(p:Profile)=>[p.dietaryPattern&&`Dietary pattern: ${p.dietaryPattern}`,p.allergies&&`User-declared food allergies: ${p.allergies}`,p.intolerances&&`User-declared food intolerances: ${p.intolerances}`,p.healthConsiderations&&`User-declared health considerations: ${p.healthConsiderations}`,p.goals&&`User goals: ${p.goals}`,p.ageGroup&&`Age group: ${p.ageGroup}`,p.sexOrReferenceGroup&&`Reference group: ${p.sexOrReferenceGroup}`,p.country&&`Country: ${p.country}`,p.locality&&`Locality: ${p.locality}`].filter(Boolean).join('\n');
+const profileText=(p:Profile)=>[p.dietaryPattern&&`Dietary pattern: ${p.dietaryPattern}`,p.avoidedIngredients&&`User-declared ingredients or foods to avoid: ${p.avoidedIngredients}`,p.allergies&&`User-declared food allergies: ${p.allergies}`,p.intolerances&&`User-declared food intolerances: ${p.intolerances}`,p.portionPreferences&&`User portion preferences: ${p.portionPreferences}`,p.healthConsiderations&&`User-declared health considerations: ${p.healthConsiderations}`,p.goals&&`User goals: ${p.goals}`,p.ageGroup&&`Age group: ${p.ageGroup}`,p.sexOrReferenceGroup&&`Reference group: ${p.sexOrReferenceGroup}`,p.country&&`Country: ${p.country}`,p.locality&&`Locality: ${p.locality}`].filter(Boolean).join('\n');
 function normalized(n:Nutrient):{value:number;unit:string} {
   if(n.key==='energy')return {value:n.unit==='kJ'?n.value/4.184:n.value,unit:'kcal'};
   if(n.key==='sodium')return {value:n.unit==='g'?n.value*1000:n.value,unit:'mg'};
@@ -130,7 +130,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const ingredientEvidence=pkg.observations.filter(o=>o.field==='ingredients'||o.field==='allergens').map(o=>o.id);
   for(const mention of findDeclaredFoodMentions(pkg,profile)){
     const labelTextPresent=pkg.ingredients.length>0||pkg.allergens.length>0;
-    const kind=mention.kind==='allergy'?'Food allergy':'Food intolerance';
+    const kind=mention.kind==='allergy'?'Food allergy':mention.kind==='intolerance'?'Food intolerance':'Avoided ingredient';
     const evidenceLabels={
       'ingredient-list':'ingredient-list wording',
       'contains-declaration':'a Contains declaration',

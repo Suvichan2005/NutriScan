@@ -442,3 +442,9 @@
 ## 22 October 2026 — scanner crop revision and UX checkpoint
 
 Implemented non-destructive crop/rotation/enhancement state tied to immutable package photos. On real local Maggi package images, touch acceptance verified reopen/edit, fresh crop generation, exact reset, undo/redo, cancel, multiple sides and orientation. Full tests, TypeScript and optimized build passed. No provider call was made. Current UX screenshots show analysis still stacks a long report ahead of follow-up; Product Design alternatives are being prepared for owner selection. Synthetic text-path observations are not real-photo evidence.
+
+## 22 October 2026 — The Thread and first-run context
+
+- Implemented the owner-selected chat-first direction across the empty state and active scan, with a compact package context strip, in-thread portion card and persistent composer. Chrome on mobile and desktop completed the real local Saffola package-photo journey: 2,283 mg sodium per 100 g, then 456.6 mg for 20 g; no manual correction was used. Product identity and remaining fields stayed unresolved. This is one development image, not a population accuracy result.
+- No Gemini route or paid call occurred because cloud analysis was unavailable. First-run onboarding requires a goal but leaves sensitive fields optional; browser checks confirmed session-only default context and a new-tab setup prompt.
+- Full suite: 307 tests across 29 files; typecheck and isolated production build passed. Screenshots remain in ignored `.data/product-design-audit-20261022/`.

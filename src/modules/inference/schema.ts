@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { evidenceSpanSchema, normalizedCropSchema, tentativeStructuredCandidateSchema, visualEvidenceReferenceSchema } from '../../lib/contracts';
 
 const profileFieldIdSchema = z.enum([
-  'dietaryPattern', 'allergies', 'intolerances', 'healthConsiderations',
-  'goals', 'ageGroup', 'sexOrReferenceGroup', 'country', 'locality',
+  'dietaryPattern', 'avoidedIngredients', 'allergies', 'intolerances', 'healthConsiderations',
+  'goals', 'portionPreferences', 'ageGroup', 'sexOrReferenceGroup', 'country', 'locality',
 ]);
 
 const claimSchema = z.object({

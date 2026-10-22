@@ -603,3 +603,10 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 ## 22 October 2026 — store scanner edits as parameters against immutable originals
 
 Keep each scanned side's original image immutable. Persist normalized crop corners, rotation and enhancement parameters plus an edit-history cursor; regenerate previews and OCR-ready images from the original for every revision. This allows crop revision without cumulative transform loss, exact Reset, reversible Undo/Redo, and Cancel that discards only the draft. OCR signatures include the saved revision so stale results cannot survive an image edit. Verified with touch interaction on portrait and landscape package photos; no OCR accuracy claim.
+
+## 22 October 2026 — use The Thread as the primary application layout
+
+- Use one responsive `100dvh` workspace for both the empty start state and active package conversations. Keep scanner editing in its existing modal. Put package sides, answers, compact deterministic calculations and follow-up input in the main thread; keep detailed observations, corrections, source records and research controls in a collapsed inspector.
+- Require one user-selected goal during first-run setup while leaving medical and other sensitive disclosures optional. Keep context tab-scoped by default; device persistence is a separate opt-in. Keep Gemini profile sharing separately consented and disabled by default.
+- Show only calculations supported by current package facts. Preserve dashes for missing values, state that OCR readings are not independently verified, and keep tentative model candidates out of calculations. The current portion card is deterministic; a model-selected generative component system remains follow-up work.
+- Gemini is unavailable in the current session. Local results remain visible without silently substituting them for a missing model response, and no provider call was made for this checkpoint.
