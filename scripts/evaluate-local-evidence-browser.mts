@@ -80,7 +80,8 @@ try {
     const whoSugarScreenshot = `docs/evidence/private/local-evidence/${viewport.width === 390 ? 'mobile' : 'desktop'}-who-free-sugars.png`;
     await whoSugarCard.screenshot({ path: path.resolve(whoSugarScreenshot) });
 
-    await searchEvidence(page, 'INS 322');
+    await searchEvidence(page, 'What does INS 322 mean on a food label?');
+    const narrativeIdentifierQuery = await page.getByLabel('Public search terms').inputValue() === 'What does INS 322 mean on a food label?';
     const lecithinCard = page.locator('.research-results article').filter({ hasText: 'Lecithins (322)' }).first();
     await lecithinCard.waitFor({ state: 'visible', timeout: 30_000 });
     const lecithinText = await lecithinCard.innerText();
@@ -108,6 +109,10 @@ try {
     const fssaiNotice = page.locator('.remote-status').filter({ hasText: 'not a current-law source' });
     await fssaiNotice.waitFor({ state: 'visible', timeout: 30_000 });
     const fssaiQueryAbstained = await page.locator('.research-results article').count() === 0;
+
+    await searchEvidence(page, 'Does beta glucan in oats affect blood cholesterol?');
+    const unsupportedFoodEffectAbstained = await page.locator('.research-results article').count() === 0
+      && await page.locator('.remote-status').filter({ hasText: 'No local source candidate cleared the conservative relevance floor' }).count() > 0;
     const axe = await new AxeBuilder({ page }).analyze();
     const prefix = viewport.width === 390 ? 'mobile' : 'desktop';
     await page.screenshot({ path: path.join(screenshotDirectory, `${prefix}.png`), fullPage: true });
@@ -131,10 +136,12 @@ try {
       whoSugarOfficialSourceLink: whoSugarHref === 'https://www.who.int/publications/i/item/9789241549028',
       whoSugarPackageScopeLimitVisible: /not a product threshold, per-serving target or individualized prescription/i.test(whoSugarText),
       whoSugarScreenshot,
-      lecithinIdentifierQuery: true,
+      lecithinIdentifierQuery: narrativeIdentifierQuery,
       lecithinSourceVisible: /Lecithins \(322\)/.test(lecithinText),
       lecithinOfficialSourceLink: lecithinHref === 'https://www.fao.org/gsfaonline/additives/results.html?ins=322&searchBy=ins',
       lecithinSubtypeLimitVisible,
+      narrativeIdentifierQuery,
+      narrativeIdentifierResolved: /Lecithins \(322\)/.test(lecithinText),
       silicaIdentifierQuery: true,
       silicaSourceVisible: /Silicon dioxide, amorphous \(551\)/.test(silicaText),
       silicaOfficialSourceLink: silicaHref === 'https://www.fao.org/gsfaonline/additives/details.html?id=284',
@@ -142,6 +149,7 @@ try {
       unrelatedQueryAbstained,
       currentLawQueryAbstained,
       fssaiQueryAbstained,
+      unsupportedFoodEffectAbstained,
       evidenceRouteStatuses: evidenceStatuses,
       noNonLoopbackRequests: nonLoopbackRequests.length === 0,
       axeViolationIds: axe.violations.map((violation) => violation.id).sort(),
@@ -150,7 +158,7 @@ try {
     };
     outcomes.push(outcome);
     await context.close();
-    // The evidence route permits 12 requests per minute; each viewport makes eight.
+    // The evidence route permits 12 requests per minute; each viewport makes nine.
     if (viewport.width === 390) await new Promise((resolve) => setTimeout(resolve, 61_000));
   }
 } finally {
@@ -163,11 +171,11 @@ const receipt = {
   generatedAt: new Date().toISOString(),
   browser: 'Chrome via Playwright, headless',
   origin: 'loopback',
-  query: 'Potassium sorbate conversational follow-up; INS 211; WHO free-sugars and dietary-fibre guidance; INS 322 and INS 551 registry identities',
+  query: 'Potassium sorbate conversational follow-up; INS 211; WHO free-sugars and dietary-fibre guidance; natural-language INS 322 and INS 551 registry identities; irrelevant beta-glucan effect probe',
   sourceExpected: 'FAO/WHO additive identity records, WHO carbohydrate-quality guidance and WHO free-sugars guideline.',
   limitations: ['Uses explicitly typed queries and a small curated source corpus.', 'The development relevance floor and query-intent guard are not calibrated on independent user queries.', 'Source retrieval is not proof of product ingredients, dose, exposure, safety for an individual or current Indian permission.'],
   outcomes,
 };
 await writeFile('docs/evidence/local-evidence-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
 console.log(JSON.stringify({ receipt: 'docs/evidence/local-evidence-browser.json', outcomes }, null, 2));
-if (outcomes.length !== 2 || outcomes.some((outcome) => !outcome.exactIdentifierQuery || !outcome.officialJecfaSourceVisible || !outcome.officialSourceLink || !outcome.publisherAndJurisdictionVisible || !outcome.sourceLimitationsVisible || !outcome.additiveNameFollowupGrounded || !outcome.additiveQuestionDoesNotAssertPresence || !outcome.additiveAnswerSourceVisible || !outcome.whoFibreQuery || !outcome.whoGuidelineVisible || !outcome.whoOfficialSourceLink || !outcome.whoPackageScopeLimitVisible || !outcome.whoSugarQuery || !outcome.whoFreeSugarGuidelineVisible || !outcome.whoSugarOfficialSourceLink || !outcome.whoSugarPackageScopeLimitVisible || !outcome.lecithinIdentifierQuery || !outcome.lecithinSourceVisible || !outcome.lecithinOfficialSourceLink || !outcome.lecithinSubtypeLimitVisible || !outcome.silicaIdentifierQuery || !outcome.silicaSourceVisible || !outcome.silicaOfficialSourceLink || !outcome.silicaLimitsVisible || !outcome.unrelatedQueryAbstained || !outcome.currentLawQueryAbstained || !outcome.fssaiQueryAbstained || outcome.evidenceRouteStatuses.length !== 8 || outcome.evidenceRouteStatuses.some((status) => status !== 200) || !outcome.noNonLoopbackRequests || outcome.axeViolationIds.length || outcome.pageErrors.length)) process.exitCode = 1;
+if (outcomes.length !== 2 || outcomes.some((outcome) => !outcome.exactIdentifierQuery || !outcome.officialJecfaSourceVisible || !outcome.officialSourceLink || !outcome.publisherAndJurisdictionVisible || !outcome.sourceLimitationsVisible || !outcome.additiveNameFollowupGrounded || !outcome.additiveQuestionDoesNotAssertPresence || !outcome.additiveAnswerSourceVisible || !outcome.whoFibreQuery || !outcome.whoGuidelineVisible || !outcome.whoOfficialSourceLink || !outcome.whoPackageScopeLimitVisible || !outcome.whoSugarQuery || !outcome.whoFreeSugarGuidelineVisible || !outcome.whoSugarOfficialSourceLink || !outcome.whoSugarPackageScopeLimitVisible || !outcome.lecithinIdentifierQuery || !outcome.lecithinSourceVisible || !outcome.lecithinOfficialSourceLink || !outcome.lecithinSubtypeLimitVisible || !outcome.narrativeIdentifierQuery || !outcome.narrativeIdentifierResolved || !outcome.silicaIdentifierQuery || !outcome.silicaSourceVisible || !outcome.silicaOfficialSourceLink || !outcome.silicaLimitsVisible || !outcome.unrelatedQueryAbstained || !outcome.currentLawQueryAbstained || !outcome.fssaiQueryAbstained || !outcome.unsupportedFoodEffectAbstained || outcome.evidenceRouteStatuses.length !== 9 || outcome.evidenceRouteStatuses.some((status) => status !== 200) || !outcome.noNonLoopbackRequests || outcome.axeViolationIds.length || outcome.pageErrors.length)) process.exitCode = 1;

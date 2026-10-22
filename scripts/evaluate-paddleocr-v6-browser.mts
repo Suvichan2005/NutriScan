@@ -7,7 +7,7 @@ import { chromium } from '@playwright/test';
 import { parseLabel } from '../src/lib/parser';
 import type { NutrientKey, Observation, OcrCapture } from '../src/lib/contracts';
 
-type Annotation = { key: NutrientKey; value: number; unit: string };
+type Annotation = { key: NutrientKey; value: number; unit: string; printedAlternatives?: Array<{ value: number; unit: string }> };
 type RecordData = { file: string; hash: string; type: string; manualAnnotation: { basis: { amount: number; unit: 'g' | 'ml' } | null; nutrients: Annotation[] } };
 type Box = { text: string; score: number; poly: number[][] };
 const root = process.cwd();
@@ -134,12 +134,21 @@ const labels: Record<NutrientKey, string[]> = {
   protein: ['protein', 'protéines', 'proteínas', 'proteinas'], sodium: ['sodium', 'sodio'], salt: ['salt', 'sel', 'sal'], addedSugars: ['added sugars', 'sucres ajoutés', 'azúcares añadidos'],
 };
 function fold(value: string) { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
-function hasLabel(text: string, key: NutrientKey) { const normalized = fold(text); return labels[key].some(label => normalized.includes(fold(label))); }
+function hasLabel(text: string, key: NutrientKey) {
+  const normalized = fold(text);
+  const localized: Partial<Record<NutrientKey, string[]>> = { energy: ['contenido energetico'], saturatedFat: ['grasa saturada', 'grasas saturadas'] };
+  return [...labels[key], ...(localized[key] ?? [])].some(label => normalized.includes(fold(label)));
+}
+function printedReadings(expected: Annotation) { return [{ value: expected.value, unit: expected.unit }, ...(expected.printedAlternatives ?? [])]; }
+function matchesReading(reading: { value: number; unit: string }, expected: { value: number; unit: string }, key: NutrientKey) {
+  const expectedBase = normalize(key, expected.value, expected.unit);
+  return Math.abs(normalize(key, reading.value, reading.unit) - expectedBase) <= tolerance(expectedBase);
+}
 function hasExpectedNumber(text: string, expected: Annotation) {
-  const expectedBase = normalize(expected.key, expected.value, expected.unit);
-  const alternatives = [expectedBase];
-  if (expected.key === 'energy') alternatives.push(expectedBase * 4.184);
-  if (expected.key === 'sodium') alternatives.push(expectedBase / 1000);
+  const alternatives = printedReadings(expected).flatMap(reading => {
+    const expectedBase = normalize(expected.key, reading.value, reading.unit);
+    return [expectedBase, ...(expected.key === 'energy' ? [expectedBase * 4.184] : []), ...(expected.key === 'sodium' ? [expectedBase / 1000] : [])];
+  });
   const numbers = [...text.matchAll(/\d+(?:[.,]\d+)?/g)].map(match => Number(match[0].replace(',', '.')));
   return numbers.some(number => alternatives.some(value => Math.abs(number - value) <= Math.max(0.015, Math.abs(value) * 0.005)));
 }
@@ -154,13 +163,13 @@ function score(parsed: ReturnType<typeof parseLabel>, record: RecordData, rows: 
     const labelRecognized = rows.some(row => hasLabel(row, expected.key));
     const valueRecognized = rows.some(row => hasExpectedNumber(row, expected));
     const sameReconstructedRow = rows.some(row => hasLabel(row, expected.key) && hasExpectedNumber(row, expected));
-    const unitTextRecognized = rows.some(row => hasLabel(row, expected.key) && hasExpectedNumber(row, expected) && new RegExp(`\\b${expected.unit}\\b`, 'i').test(row));
+    const unitTextRecognized = rows.some(row => hasLabel(row, expected.key) && hasExpectedNumber(row, expected) && printedReadings(expected).some(reading => new RegExp(`\\b${reading.unit}\\b`, 'i').test(row)));
     let outcome: 'correct' | 'incorrect' | 'omitted' | 'withheld';
     if (!candidates.length) { omitted++; outcome = 'omitted'; }
     else if (!compatible.length || compatible.some(item => item.status === 'conflict')) { withheld++; outcome = 'withheld'; }
-    else if (compatible.some(item => Math.abs(normalize(expected.key, item.value, item.unit) - normalize(expected.key, expected.value, expected.unit)) <= tolerance(normalize(expected.key, expected.value, expected.unit)))) { correct++; outcome = 'correct'; }
+    else if (compatible.some(item => printedReadings(expected).some(reading => matchesReading(item, reading, expected.key)))) { correct++; outcome = 'correct'; }
     else { incorrect++; outcome = 'incorrect'; }
-    return { key: expected.key, outcome, stages: { labelRecognized, numericValueRecognized: valueRecognized, labelAndValueSameReconstructedRow: sameReconstructedRow, unitTextRecognized, declaredBasisObserved: basisObserved, parserCandidateEmitted: candidates.length > 0, parserCandidateOnDeclaredBasis: compatible.length > 0 }, unitExact: compatible.some(item => item.unit.toLowerCase() === expected.unit.toLowerCase()), basisExact: compatible.some(item => item.basis?.amount === basis?.amount && item.basis.unit === basis.unit) };
+    return { key: expected.key, outcome, stages: { labelRecognized, numericValueRecognized: valueRecognized, labelAndValueSameReconstructedRow: sameReconstructedRow, unitTextRecognized, declaredBasisObserved: basisObserved, parserCandidateEmitted: candidates.length > 0, parserCandidateOnDeclaredBasis: compatible.length > 0 }, candidateReadings: candidates.map(item => ({ value: item.value, unit: item.unit, basis: item.basis, status: item.status })), unitExact: compatible.some(item => printedReadings(expected).some(reading => item.unit.toLowerCase() === reading.unit.toLowerCase())), basisExact: compatible.some(item => item.basis?.amount === basis?.amount && item.basis.unit === basis.unit) };
   });
   return { correct, incorrect, omitted, withheld, fields, basisTextObserved: basisObserved };
 }

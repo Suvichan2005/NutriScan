@@ -1,20 +1,74 @@
-import {describe,it,expect} from 'vitest';
-import {parseLabel} from '../parser';
-import {reconcileVision} from '../reconcile';
-import {buildAudit} from '../engine';
-import {defaultProfile,packageSchema} from '../contracts';
-describe('independent image interpretation reconciliation',()=>{
- it('preserves 850 versus 85 and withholds sodium calculation',()=>{const a=parseLabel('Snack\nNutrition per 100 g\nSodium 850 mg',{origin:'ocr'});const b=parseLabel('Snack\nNutrition per 100 g\nSodium 85 mg',{origin:'vision'});const result=reconcileVision(a,b);expect(result.nutrients).toHaveLength(2);expect(result.nutrients.every(n=>n.status==='conflict')).toBe(true);expect(buildAudit(result,30,'g',defaultProfile).calculations).toHaveLength(0);expect(result.observations.some(o=>o.origin==='vision')).toBe(true);});
- it('does not elevate a same-value or incompatible-basis model reading into package fact',()=>{const a=parseLabel('Snack\nNutrition per 100 g\nSodium 850 mg',{origin:'ocr'});const b=parseLabel('Drink\nNutrition per 100 ml\nSodium 85 mg',{origin:'vision'});expect(reconcileVision(a,b).nutrients).toEqual(a.nutrients);expect(reconcileVision(a,b).observations.length).toBeGreaterThan(a.observations.length);});
- it('preserves selected-image and crop provenance on vision observations',()=>{
-  const imageId='package-photo-1',runId='vision-run-1';
-  const rawObservation={id:'vision-line-1',field:'vision-line',text:'Fibre 8 g',side:'back' as const,confidence:62,origin:'vision' as const,imageId};
-  const parsed=parseLabel('Nutrition per 100 g\nFibre 8 g',{origin:'vision',observations:[rawObservation]});
-  const capture={runId,imageId,side:'back' as const,sourceImage:{width:1600,height:2400},processing:{rotation:90 as const,contrast:true,invert:false,crop:{x:.1,y:.15,width:.8,height:.7}},model:'gemini-test'};
-  const linked=packageSchema.parse({...parsed,visionCaptures:[capture],observations:parsed.observations.map(observation=>observation.id===rawObservation.id?{...observation,visionRunId:runId}:observation)});
-  const merged=reconcileVision(parseLabel('Snack\nNutrition per 100 g\nSodium 850 mg',{origin:'ocr'}),linked);
-  expect(merged.visionCaptures).toEqual([capture]);
-  expect(merged.observations.find(observation=>observation.id===rawObservation.id)).toMatchObject({imageId,visionRunId:runId,origin:'vision'});
-  expect(packageSchema.safeParse({...linked,observations:linked.observations.map(observation=>observation.id===rawObservation.id?{...observation,imageId:'different-photo'}:observation)}).success).toBe(false);
- });
+import { describe, it, expect } from 'vitest';
+import { parseLabel } from '../parser';
+import { appendVisionEvidence } from '../reconcile';
+import { buildAudit } from '../engine';
+import { defaultProfile } from '../contracts';
+
+const capture = {
+  runId: 'vision-run-1',
+  imageId: 'package-photo-1',
+  side: 'back' as const,
+  sourceImage: { width: 1600, height: 2400 },
+  processing: {
+    rotation: 90 as const,
+    contrast: true,
+    invert: false,
+    crop: { x: 0.1, y: 0.15, width: 0.8, height: 0.7 },
+  },
+  model: 'gemini-test',
+};
+
+const visionObservation = {
+  id: 'vision-line-1',
+  field: 'nutrition-table',
+  text: 'Sodium may read 85 mg per 100 g',
+  side: 'back' as const,
+  confidence: 62,
+  origin: 'vision' as const,
+  imageId: capture.imageId,
+  visionRunId: capture.runId,
+};
+
+describe('image interpretation evidence attachment', () => {
+  it('keeps image interpretation separate from package facts and calculations', () => {
+    const original = parseLabel('Snack\nNutrition per 100 g\nSodium 850 mg', { origin: 'ocr' });
+    const merged = appendVisionEvidence(original, capture, [visionObservation]);
+
+    expect(merged.nutrients).toEqual(original.nutrients);
+    expect(merged.name).toBe(original.name);
+    expect(merged.ingredients).toEqual(original.ingredients);
+    expect(merged.observations).toContainEqual(expect.objectContaining({
+      id: visionObservation.id,
+      text: visionObservation.text,
+      origin: 'vision',
+      imageId: capture.imageId,
+      visionRunId: capture.runId,
+    }));
+    expect(merged.visionCaptures).toEqual([capture]);
+    expect(buildAudit(merged, 30, 'g', defaultProfile).calculations).toEqual(
+      buildAudit(original, 30, 'g', defaultProfile).calculations,
+    );
+  });
+
+  it('rejects observations that do not link to the selected image capture', () => {
+    const original = parseLabel('Snack\nNutrition per 100 g\nSodium 850 mg', { origin: 'ocr' });
+
+    expect(() => appendVisionEvidence(original, capture, [{
+      ...visionObservation,
+      imageId: 'different-photo',
+    }])).toThrow();
+  });
+
+  it('preserves the crop and original-image provenance for each appended observation', () => {
+    const original = parseLabel('Snack\nNutrition per 100 g\nSodium 850 mg', { origin: 'ocr' });
+    const merged = appendVisionEvidence(original, capture, [visionObservation]);
+
+    expect(merged.visionCaptures?.[0]).toMatchObject({
+      imageId: capture.imageId,
+      sourceImage: capture.sourceImage,
+      processing: capture.processing,
+    });
+    expect(merged.observations.find((observation) => observation.id === visionObservation.id))
+      .toMatchObject({ imageId: capture.imageId, visionRunId: capture.runId, origin: 'vision' });
+  });
 });

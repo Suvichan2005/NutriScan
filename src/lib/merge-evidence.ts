@@ -1,6 +1,14 @@
 import { packageSchema, type Nutrient, type PackageData, type ParserDiagnostic } from './contracts';
 
 const normalized = (n: Nutrient) => n.value * (n.unit === 'mg' ? 0.001 : n.unit === 'kJ' ? 1 / 4.184 : 1);
+function halfDisplayStep(pkg:PackageData,nutrient:Nutrient):number{
+  const candidates=(pkg.parserDiagnostics??[]).filter(diagnostic=>diagnostic.field===nutrient.key).flatMap(diagnostic=>diagnostic.numericCandidates);
+  const candidate=candidates.find(item=>item.value===nutrient.value&&(!item.unit||item.unit.toLowerCase()===nutrient.unit.toLowerCase()));
+  const raw=candidate?.rawValueText??String(nutrient.value);
+  const decimalPlaces=raw.match(/[.,](\d+)$/)?.[1].length??0;
+  const conversion=nutrient.unit==='mg'?0.001:nutrient.unit==='kJ'?1/4.184:1;
+  return (0.5*Math.pow(10,-decimalPlaces))*conversion;
+}
 const observationSignature = (observation: PackageData['observations'][number]) => observation.imageId
   ? `${observation.imageId}|${observation.field}|${observation.text.trim().toLocaleLowerCase()}${observation.readingOrder?`|${observation.readingOrder.runId}:${observation.readingOrder.lineIndex}`:''}`
   : observation.field === 'user-description' ? `user-description|${observation.text.trim().toLocaleLowerCase()}` : '';
@@ -32,15 +40,21 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
     idMap.set(observation.id, id);
   }
   const mergedNutrients = [...current.nutrients];
+  const nutrientSources=new Map<Nutrient,PackageData>(current.nutrients.map(nutrient=>[nutrient,current]));
   for (const n of incoming.nutrients) {
     const candidate = { ...n, observationIds: n.observationIds.map(id => idMap.get(id) ?? id) };
     const duplicate = mergedNutrients.find(old => old.key === candidate.key && old.unit === candidate.unit && old.value === candidate.value && old.basis?.amount === candidate.basis?.amount && old.basis?.unit === candidate.basis?.unit && old.status === candidate.status);
     if (duplicate) duplicate.observationIds = [...new Set([...duplicate.observationIds, ...candidate.observationIds])];
-    else mergedNutrients.push(candidate);
+    else { mergedNutrients.push(candidate); nutrientSources.set(candidate,incoming); }
   }
   for (const n of mergedNutrients) {
     const comparable = mergedNutrients.filter(other => other !== n && other.key === n.key && other.basis && n.basis && other.basis.unit === n.basis.unit && Math.abs(other.value / other.basis.amount - n.value / n.basis.amount) > 1e-6);
-    const disagreement = comparable.some(other => Math.abs(normalized(other) / other.basis!.amount - normalized(n) / n.basis!.amount) > Math.max(1e-6, normalized(n) / n.basis!.amount * 0.02));
+    const disagreement = comparable.some(other => {
+      const nRate=normalized(n)/n.basis!.amount;
+      const otherRate=normalized(other)/other.basis!.amount;
+      const roundingTolerance=halfDisplayStep(nutrientSources.get(n)??current,n)/n.basis!.amount+halfDisplayStep(nutrientSources.get(other)??current,other)/other.basis!.amount;
+      return Math.abs(otherRate-nRate)>Math.max(1e-6,nRate*0.02,roundingTolerance);
+    });
     if (disagreement) {
       n.status = 'conflict';
       const warning = `${n.key}: conflicting readings retained across photos; calculation withheld until verified.`;

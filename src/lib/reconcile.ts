@@ -1,12 +1,33 @@
-import type { PackageData, Nutrient } from './contracts';
+import {
+  observationSchema,
+  packageSchema,
+  visionCaptureSchema,
+  type Observation,
+  type PackageData,
+  type VisionCapture,
+} from './contracts';
 
-const amount=(n:Nutrient)=>n.value*(n.unit==='mg'?.001:n.unit==='kJ'?1/4.184:1)/(n.basis?.amount??1);
-/** Keep model observations separate; only mark an existing reading disputed. */
-export function reconcileVision(original:PackageData,vision:PackageData):PackageData{
- const conflicts=new Set<string>();
- for(const n of original.nutrients)for(const v of vision.nutrients){
-  if(n.key===v.key&&n.basis&&v.basis&&n.basis.unit===v.basis.unit&&Math.abs(amount(n)-amount(v))>Math.max(.00001,Math.abs(amount(n))*.02))conflicts.add(n.key);
- }
- const visionCaptures=[...(original.visionCaptures??[]),...(vision.visionCaptures??[])];
- return {...original,observations:[...original.observations,...vision.observations],nutrients:[...original.nutrients.map(n=>conflicts.has(n.key)?{...n,status:'conflict' as const}:n),...vision.nutrients.filter(n=>conflicts.has(n.key)).map(n=>({...n,status:'conflict' as const}))],...(visionCaptures.length?{visionCaptures}:{}),warnings:[...original.warnings,...[...conflicts].map(k=>`${k}: OCR and Gemini image interpretations disagree on a comparable basis. Both remain observations; calculation withheld.`),'Gemini image observations are unverified. Matching numbers do not independently verify the printed label.']};
+const visionWarning = 'Gemini image observations are unverified. They remain evidence and are not promoted to package facts or calculations.';
+
+/**
+ * Attach image-model output to the evidence record without parsing it into
+ * package fields. Vision observations can inform a later interpretation, but
+ * they are not OCR text and are not verified label readings.
+ */
+export function appendVisionEvidence(
+  original: PackageData,
+  capture: VisionCapture,
+  observations: Observation[],
+): PackageData {
+  const validatedCapture = visionCaptureSchema.parse(capture);
+  const validatedObservations = observations.map((observation) => observationSchema.parse(observation));
+
+  return packageSchema.parse({
+    ...original,
+    observations: [...original.observations, ...validatedObservations],
+    visionCaptures: [...(original.visionCaptures ?? []), validatedCapture],
+    warnings: original.warnings.includes(visionWarning)
+      ? original.warnings
+      : [...original.warnings, visionWarning],
+  });
 }

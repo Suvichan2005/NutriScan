@@ -27,6 +27,23 @@ describe('incremental package evidence', () => {
     expect(merged.warnings.join(' ')).toMatch(/conflict/i);
   });
 
+  it('allows cross-basis differences explained by each printed value rounding precision', () => {
+    const perHundred=parseLabel('Nutrition per 100 g\nTotal sugars 1.8 g',{origin:'ocr'});
+    const perServing=parseLabel('Nutrition per 70 g\nTotal sugars 1.3 g',{origin:'ocr'});
+    const merged=mergePackageEvidence(perHundred,perServing);
+    expect(merged.nutrients).toHaveLength(2);
+    expect(merged.nutrients.every(nutrient=>nutrient.status==='observed')).toBe(true);
+    expect(merged.warnings.some(warning=>warning.includes('conflicting readings retained across photos'))).toBe(false);
+  });
+
+  it('still marks cross-basis differences beyond displayed rounding as conflicts', () => {
+    const perHundred=parseLabel('Nutrition per 100 g\nTotal sugars 1.8 g',{origin:'ocr'});
+    const perServing=parseLabel('Nutrition per 30 g\nTotal sugars 0.4 g',{origin:'ocr'});
+    const merged=mergePackageEvidence(perHundred,perServing);
+    expect(merged.nutrients).toHaveLength(2);
+    expect(merged.nutrients.every(nutrient=>nutrient.status==='conflict')).toBe(true);
+  });
+
   it('keeps a usable primary reading when a secondary reader has only an unbased candidate', () => {
     const first = parseLabel('Nutrition per 100 g\nSugar 0 g', { origin: 'ocr' });
     const second = parseLabel('Sugar 3.6 g', { origin: 'ocr' });

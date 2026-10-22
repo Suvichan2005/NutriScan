@@ -4,9 +4,11 @@ import { prepareImage, type BrowserOcrOptions, type BrowserOcrResult } from './b
 type PaddleBox = { text: string; score: number; poly: number[][] };
 type PlacedBox = { box: PaddleBox; bounds: { x0: number; y0: number; x1: number; y1: number; cy: number; height: number } };
 type PaddleEngine = { predict(image: Blob): Promise<Array<{ image: { width: number; height: number }; items: PaddleBox[] }>>; dispose(): Promise<void> };
+export type PaddleLanguage = 'en' | 'es' | 'fr';
+type EngineLoading = { language: PaddleLanguage; promise: Promise<PaddleEngine> };
 
-let cachedEngine: PaddleEngine | undefined;
-let cachedEngineLoading: Promise<PaddleEngine> | undefined;
+let cachedEngine: { language: PaddleLanguage; engine: PaddleEngine } | undefined;
+let cachedEngineLoading: EngineLoading | undefined;
 let engineIdleTimer: ReturnType<typeof setTimeout> | undefined;
 let paddleReadActive = false;
 const engineIdleMs = 2 * 60 * 1000;
@@ -16,17 +18,63 @@ function clearEngineIdleTimer() {
   engineIdleTimer = undefined;
 }
 
-function disposeCachedEngine() {
+async function disposeCachedEngine() {
   clearEngineIdleTimer();
   const engine = cachedEngine;
   cachedEngine = undefined;
   cachedEngineLoading = undefined;
-  if (engine) void engine.dispose().catch(() => {});
+  if (engine) await engine.engine.dispose().catch(() => {});
 }
 
 function retainEngineBriefly() {
   clearEngineIdleTimer();
-  engineIdleTimer = setTimeout(disposeCachedEngine, engineIdleMs);
+  engineIdleTimer = setTimeout(() => { void disposeCachedEngine(); }, engineIdleMs);
+}
+
+/** Choose among SDK-supported recognition languages from already-local first-pass label text. */
+export function selectPaddleLanguage(observations: Observation[], imageId?: string): PaddleLanguage {
+  const text = observations
+    .filter(item => item.origin === 'ocr' && item.field === 'ocr-line' && (!imageId || item.imageId === imageId))
+    .map(item => item.text)
+    .join(' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const signals: Record<Exclude<PaddleLanguage, 'en'>, RegExp[]> = {
+    es: [/\binformacion\b/, /\bcontenido\b/, /\b(?:porcion|racion)\b/, /\bcarbohidratos?\b/, /\bazucares?\b/, /\bsodio\b/, /\bproteinas?\b/, /\bgrasas?\b/],
+    fr: [/\bvaleurs?\b/, /\bnutritionnelles?\b/, /\b(?:energie|energetique)\b/, /\b(?:matieres|lipides)\b/, /\bglucides\b/, /\bsucres?\b/, /\bproteines?\b/, /\bsel\b/, /\bpour\b/],
+  };
+  const spanish = signals.es.reduce((score, pattern) => score + Number(pattern.test(text)), 0);
+  const french = signals.fr.reduce((score, pattern) => score + Number(pattern.test(text)), 0);
+  if (spanish >= 2 && spanish > french) return 'es';
+  if (french >= 2 && french > spanish) return 'fr';
+  return 'en';
+}
+
+async function loadPaddleEngine(language: PaddleLanguage, shouldStop: () => boolean): Promise<PaddleEngine> {
+  if (cachedEngine?.language === language) return cachedEngine.engine;
+  if (cachedEngineLoading?.language === language) return cachedEngineLoading.promise;
+  await disposeCachedEngine();
+  if (shouldStop()) throw new Error('Reading stopped. Your photos are still here.');
+  let loading: EngineLoading;
+  const promise = import('@paddleocr/paddleocr-js').then(({ PaddleOCR }) => PaddleOCR.create({
+    lang: language,
+    ocrVersion: 'PP-OCRv6',
+    worker: true,
+    ortOptions: { backend: 'auto', wasmPaths: '/ocr/ort/', numThreads: 1, simd: true },
+  })).then(async created => {
+    const runtime = created as PaddleEngine;
+    if (shouldStop() || cachedEngineLoading !== loading) {
+      await runtime.dispose().catch(() => {});
+      throw new Error('Reading stopped. Your photos are still here.');
+    }
+    cachedEngine = { language, engine: runtime };
+    return runtime;
+  });
+  loading = { language, promise };
+  cachedEngineLoading = loading;
+  void promise.catch(() => { if (cachedEngineLoading === loading) cachedEngineLoading = undefined; });
+  return promise;
 }
 
 const nutritionText = /\b(nutri|nutrition|nutrient|energie|energy|calori|kcal|carbohyd|koolhyd|hidrato|sugar|suiker|az[uú]car|protein|eiwit|prote[ií]na|fat|vet|grasa|sodium|natrium|sodio|salt|zout|sal|ingredien|bestanddeel|per\s*100|serving|portion)\b/i;
@@ -37,18 +85,19 @@ export function shouldRunPaddleFallback(pkg: PackageData, assets: ImageAsset[]):
   const usableFields = new Set(pkg.nutrients.filter(item => item.status === 'observed' && item.basis).map(item => item.key));
   const unresolvedRows = pkg.parserDiagnostics?.some(item => item.decision !== 'accepted') ?? false;
   const missingMarkedPanel = assets.some(asset => asset.role === 'nutrition' && usableFields.size < 8 || asset.role === 'ingredients' && pkg.ingredients.length === 0);
-  return usableFields.size < 5 || usableFields.size < 8 && unresolvedRows || missingMarkedPanel;
+  const missingIdentityOnPhotograph = pkg.name === 'Unidentified package' && assets.some(asset => asset.role === 'front' || asset.role === 'unknown');
+  return usableFields.size < 5 || usableFields.size < 8 && unresolvedRows || missingMarkedPanel || missingIdentityOnPhotograph;
 }
 
 /** Prefer known label photos and OCR-dense candidates; bound repeated-model work on multi-photo scans. */
-export function selectPaddleFallbackAssets(assets: ImageAsset[], observations: Observation[]): ImageAsset[] {
+export function selectPaddleFallbackAssets(assets: ImageAsset[], observations: Observation[], missingIdentity = false): ImageAsset[] {
   if (!assets.length) return [];
   const scored = assets.map((asset, index) => {
     const lines = observations.filter(item => item.imageId === asset.id);
     const text = lines.map(item => item.text).join(' ');
     const labelHits = (text.match(/\b(?:nutrition|nutri|energy|energie|calori|carbohyd|sugar|suiker|az[uú]car|protein|eiwit|fat|vet|sodium|natrium|salt|zout|ingredien|per\s*100|serving)\w*\b/gi) ?? []).length;
     const quantityHits = (text.match(/\b\d+(?:[.,]\d+)?\s*(?:g|mg|mcg|ml|kcal|kj)\b/gi) ?? []).length;
-    const score = (asset.role === 'nutrition' ? 100 : asset.role === 'ingredients' ? 80 : 0)
+    const score = (asset.role === 'nutrition' ? 100 : asset.role === 'ingredients' ? 80 : asset.role === 'front' ? 40 : 0)
       + (asset.side === 'back' ? 12 : 0)
       + labelHits * 8
       + quantityHits * 2
@@ -58,6 +107,15 @@ export function selectPaddleFallbackAssets(assets: ImageAsset[], observations: O
     return { asset, score, lineCount: lines.length, index };
   });
   const explicit = scored.filter(item => item.asset.role === 'nutrition' || item.asset.role === 'ingredients');
+  if (missingIdentity) {
+    const panelCandidates = [...explicit].sort((a, b) => b.score - a.score || a.index - b.index).slice(0, 2);
+    const unmarkedPhotos = scored
+      .filter(item => item.asset.role !== 'nutrition' && item.asset.role !== 'ingredients')
+      .sort((a, b) => (b.score + (b.asset.role === 'front' ? 500 : 0)) - (a.score + (a.asset.role === 'front' ? 500 : 0)) || a.index - b.index);
+    const remainingSlots = Math.max(0, 3 - panelCandidates.length);
+    const selectedUnmarked = explicit.length ? unmarkedPhotos.slice(0, 1) : unmarkedPhotos.slice(0, remainingSlots);
+    return [...panelCandidates, ...selectedUnmarked].slice(0, 3).map(item => item.asset);
+  }
   const candidates = explicit.length
     ? explicit
     : scored.filter(item => item.score > 0).sort((a, b) => b.score - a.score || a.index - b.index).slice(0, 3);
@@ -130,13 +188,14 @@ export async function readPaddleOcrImages(
   onProgress: (label: string, progress: number) => void,
   signal: AbortSignal,
   options: BrowserOcrOptions,
+  firstPassObservations: Observation[] = [],
 ): Promise<BrowserOcrResult> {
   if (!assets.length) return { text: '', observations: [], confidence: 0, captures: [] };
   if (signal.aborted) throw new Error('Reading stopped. Your photos are still here.');
   if (paddleReadActive) throw new Error('The on-device recovery reader is already in use.');
   paddleReadActive = true;
   clearEngineIdleTimer();
-  onProgress('Loading the second on-device reader; model assets may download. Photos stay local.', 0.02);
+  onProgress('Loading the local recovery reader; language is selected from this photo’s first-pass text. Model assets may download; photos stay local.', 0.02);
   let engine: PaddleEngine | undefined;
   let succeeded = false;
   let rejectAbort: ((reason: Error) => void) | undefined;
@@ -150,35 +209,17 @@ export async function readPaddleOcrImages(
   const abort = () => stop('Reading stopped. Your photos are still here.');
   signal.addEventListener('abort', abort, { once: true });
   const timeout = setTimeout(() => stop('The on-device recovery reader took too long to load. The first-pass reading is still available.'), 60000);
-  let creation = cachedEngineLoading;
-  if (!cachedEngine && !creation) {
-    creation = import('@paddleocr/paddleocr-js').then(({ PaddleOCR }) => PaddleOCR.create({
-      lang: 'en',
-      ocrVersion: 'PP-OCRv6',
-      worker: true,
-      ortOptions: { backend: 'auto', wasmPaths: '/ocr/ort/', numThreads: 1, simd: true },
-    })).then(async created => {
-      const runtime = created as PaddleEngine;
-      if (stopped || signal.aborted) {
-        await runtime.dispose().catch(() => {});
-        throw new Error('Reading stopped. Your photos are still here.');
-      }
-      cachedEngine = runtime;
-      return runtime;
-    });
-    cachedEngineLoading = creation;
-    void creation.catch(() => { if (cachedEngineLoading === creation) cachedEngineLoading = undefined; });
-  }
   const texts: string[] = [];
   const observations: Observation[] = [];
   const captures: OcrCapture[] = [];
   let confidenceTotal = 0;
   let confidenceCount = 0;
   try {
-    engine = cachedEngine ?? await Promise.race([creation!, abortPromise]);
     for (const [index, asset] of assets.entries()) {
       if (signal.aborted) throw new Error('Reading stopped. Your photos are still here.');
-      onProgress(`Checking photo ${index + 1} of ${assets.length} with the second on-device reader`, 0.1 + index / assets.length * 0.85);
+      const language = selectPaddleLanguage(firstPassObservations, asset.id);
+      onProgress(`Checking photo ${index + 1} of ${assets.length} with the ${language.toUpperCase()} recovery model`, 0.1 + index / assets.length * 0.85);
+      engine = await Promise.race([loadPaddleEngine(language, () => stopped || signal.aborted), abortPromise]);
       const rotation = (asset.rotation ?? options.rotation) as 0 | 90 | 180 | 270;
       const crop = options.cropTarget === asset.id ? options.crop : undefined;
       const image = await prepareImage(asset, rotation, options.contrast, crop, options.invert ?? false);
@@ -196,7 +237,7 @@ export async function readPaddleOcrImages(
         sourceImage: { width: asset.width, height: asset.height },
         preparedImage: { width, height },
         bboxCoordinateSpace: 'prepared-image-pixels',
-        engine: { name: '@paddleocr/paddleocr-js/PP-OCRv6-small', version: '0.4.2', language: 'en', confidenceScale: '0-100', segmentationMode: 'auto' },
+        engine: { name: '@paddleocr/paddleocr-js/PP-OCRv6-small', version: '0.4.2', language, confidenceScale: '0-100', segmentationMode: 'auto' },
         processing: { rotation, contrast: options.contrast, invert: options.invert ?? false, cropPercent: crop ?? null },
       });
       for (const item of result.items) {
@@ -210,9 +251,9 @@ export async function readPaddleOcrImages(
     signal.removeEventListener('abort', abort);
     clearTimeout(timeout);
     paddleReadActive = false;
-    if (engine && succeeded && cachedEngine === engine) retainEngineBriefly();
+    if (engine && succeeded && cachedEngine?.engine === engine) retainEngineBriefly();
     else if (engine) {
-      if (cachedEngine === engine) { cachedEngine = undefined; cachedEngineLoading = undefined; }
+      if (cachedEngine?.engine === engine) { cachedEngine = undefined; cachedEngineLoading = undefined; }
       await engine.dispose().catch(() => {});
     }
   }

@@ -32,15 +32,20 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     calculation.evidenceText ?? calculationEvidenceText(calculation),
   ]));
   const profileFields = new Map(Object.entries(data.profile ?? {}).filter(([, value]) => value.trim().length > 0));
+  const imageIds = new Set((data.images ?? []).map(image => image.handle));
 
   const supported = result.data.claims.flatMap(claim => {
+    const visualEvidence = claim.visualEvidence ?? [];
     if (
-      (!claim.observationIds.length && !claim.sourceIds.length && !(claim.calculationIds?.length) && !(claim.profileFieldIds?.length))
+      (!claim.observationIds.length && !claim.sourceIds.length && !(claim.calculationIds?.length) && !(claim.profileFieldIds?.length) && !visualEvidence.length)
       || claim.observationIds.some(id => !observations.has(id))
       || claim.sourceIds.some(id => !sources.has(id))
       || (claim.calculationIds ?? []).some(id => !calculations.has(id))
       || (claim.profileFieldIds ?? []).some(id => !profileFields.has(id))
     ) fail('unknown_citation', 'The model used missing or unknown evidence identifiers. No result was accepted.');
+    if (visualEvidence.some(reference => !imageIds.has(reference.imageId))) {
+      fail('unknown_image', 'The model used an image that was not attached to this request. No result was accepted.');
+    }
 
     const refs = [
       ...claim.observationIds.map(id => ({ kind: 'observation' as const, id, text: observations.get(id)! })),
@@ -54,7 +59,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     // Exact spans establish traceability, not entailment; synthesis remains labeled.
     const mode = claim.mode;
     const literalClaim = spans.find(span => span.quote === claim.text);
-    if (mode === 'synthesis' && !numericMentionsAreSupported(claim.text, spans.map(span => span.quote))) return [];
+    if (mode === 'synthesis' && !numericMentionsAreSupported(claim.text, [...spans.map(span => span.quote), ...visualEvidence.map(reference => reference.visibleText)])) return [];
     const unsafeMedicalConclusion = /\b(?:safe|unsafe|suitable|unsuitable)\b|\b(?:diagnos(?:e|is)|treat(?:ment)?|cure|medication|medicine|dosage|dose|insulin)\b/i.test(claim.text);
     if (!allRefsHaveExactQuotes || !noUncitedSpan || mode === 'direct-quote' && !literalClaim || mode === 'synthesis' && unsafeMedicalConclusion) return [];
     return [{ ...claim, mode, text: mode === 'direct-quote' ? literalClaim!.quote : claim.text }];
@@ -68,7 +73,12 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     if (candidate.observationIds.some(id => !observations.has(id)) || candidate.sourceIds.some(id => !sources.has(id))) {
       fail('unknown_citation', 'A tentative candidate used missing or unknown evidence identifiers. No result was accepted.');
     }
-    if (!candidate.observationIds.some(id => data.package.observations.some(observation => observation.id === id && observation.origin === 'ocr' && observation.field === 'ocr-line'))) return false;
+    const visualEvidence = candidate.visualEvidence ?? [];
+    if (visualEvidence.some(reference => !imageIds.has(reference.imageId))) {
+      fail('unknown_image', 'A tentative candidate used an image that was not attached to this request. No result was accepted.');
+    }
+    const hasOcrEvidence = candidate.observationIds.some(id => data.package.observations.some(observation => observation.id === id && observation.origin === 'ocr' && observation.field === 'ocr-line'));
+    if (!hasOcrEvidence && !visualEvidence.length) return false;
 
     const refs = [
       ...candidate.observationIds.map(id => ({ kind: 'observation' as const, id, text: observations.get(id)! })),
@@ -99,58 +109,52 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
 
     return wordEvidenceIsValid
       && refs.every(ref => candidate.supportingSpans.some(span => span.kind === ref.kind && span.id === ref.id && ref.text.includes(span.quote)))
-      && candidate.supportingSpans.every(span => refs.some(ref => ref.kind === span.kind && ref.id === span.id));
+      && candidate.supportingSpans.every(span => refs.some(ref => ref.kind === span.kind && ref.id === span.id))
+      && visualEvidence.every(reference => imageIds.has(reference.imageId));
   });
 
   const displayedClaims: typeof supported = [];
   const answerLines: string[] = [];
   for (const claim of supported) {
     const direct = claim.mode === 'direct-quote';
+    const visualEvidence = claim.visualEvidence ?? [];
     const sourceQuote = direct && claim.supportingSpans.some(span => span.kind === 'source' && span.quote === claim.text);
     const calculationQuote = direct && claim.supportingSpans.some(span => span.kind === 'calculation' && span.quote === claim.text);
     const profileQuote = direct && claim.supportingSpans.some(span => span.kind === 'profile' && span.quote === claim.text);
-    const label = direct ? (sourceQuote ? 'Source excerpt' : calculationQuote ? 'Validated calculation' : profileQuote ? 'User-provided context' : 'Package observation') : 'Evidence-linked interpretation';
+    const label = direct ? (sourceQuote ? 'Source excerpt' : calculationQuote ? 'Validated calculation' : profileQuote ? 'User-provided context' : 'Package observation') : visualEvidence.length ? 'Tentative visual interpretation' : 'Evidence-linked interpretation';
     const markers = [
       ...claim.observationIds.map(id => `[observation:${id}]`),
       ...claim.sourceIds.map(id => `[source:${id}]`),
       ...(claim.calculationIds ?? []).map(id => `[calculation:${id}]`),
       ...(claim.profileFieldIds ?? []).map(id => `[profile:${id}]`),
+      ...visualEvidence.map(reference => `[image:${reference.imageId}]`),
     ].join(' ');
-    const excerpt = direct ? '' : ` Evidence spans: ${claim.supportingSpans.map(span => `“${span.quote}” [${span.kind}:${span.id}]`).join(' · ')}`;
+    const excerptParts = [
+      ...claim.supportingSpans.map(span => `“${span.quote}” [${span.kind}:${span.id}]`),
+      ...visualEvidence.map(reference => `Gemini-reported visible text (unverified): “${reference.visibleText}” [image:${reference.imageId}]`),
+    ];
+    const excerpt = direct || !excerptParts.length ? '' : ` Evidence links: ${excerptParts.join(' · ')}`;
     const line = direct ? `${label}: “${claim.text}” ${markers}` : `${label}: ${claim.text}${excerpt} ${markers}`;
-    if ([...answerLines, line].join('\n\n').length <= (tentativeCandidates.length ? 3400 : 6800)) {
+    if ([...answerLines, line].join('\n\n').length <= 6800) {
       answerLines.push(line);
       displayedClaims.push(claim);
     }
   }
 
+  const includesVisualInterpretation = displayedClaims.some(claim => (claim.visualEvidence?.length ?? 0) > 0);
   let answer = answerLines.length
-    ? `${displayedClaims.some(claim => claim.mode === 'synthesis') ? 'AI-generated paraphrase; inspect the exact cited spans below. Citation matches do not verify that the interpretation is entailed.\n\n' : ''}${answerLines.join('\n\n')}`
+    ? `${includesVisualInterpretation ? 'AI-generated interpretation; image-linked text and selected regions are unverified. Inspect the original package before relying on a visual reading.\n\n' : displayedClaims.some(claim => claim.mode === 'synthesis') ? 'AI-generated paraphrase; inspect the exact cited spans below. Citation matches do not verify that the interpretation is entailed.\n\n' : ''}${answerLines.join('\n\n')}`
     : result.data.inspectImage
       ? 'More package evidence is needed. A specific browser image has been requested for inspection.'
+      : tentativeCandidates.length
+        ? 'I found tentative package readings in the supplied label evidence. They are shown separately for review and are not used as confirmed package facts or calculations.'
       : 'No supported factual conclusion was returned. The available evidence does not establish personal health effects or product safety. Review the package observations or add a relevant source.';
-
-  if (tentativeCandidates.length) {
-    const suggestions = tentativeCandidates.map(candidate => {
-      const value = candidate.numericValue === null ? candidate.proposedValue : `${candidate.numericValue}${candidate.unit ? ` ${candidate.unit}` : ''}`;
-      const basis = candidate.basis ? ` per ${candidate.basis.amount} ${candidate.basis.unit}` : candidate.kind === 'nutrient' ? '; serving basis unknown' : '';
-      const spans = candidate.supportingSpans.slice(0, 3).map(span => `“${span.quote}” [${span.kind}:${span.id}]`).join(' · ');
-      return `Tentative model suggestion (${candidate.kind}: ${candidate.field}): ${value}${basis}. ${candidate.uncertainty} Supporting evidence spans: ${spans}. Not verified and not added to package facts.`;
-    });
-    let combined = `${answer}\n\nUnverified model suggestions — review against the original label:`;
-    for (const suggestion of suggestions) {
-      const next = `${combined}\n${suggestion}`;
-      if (next.length > 7000) break;
-      combined = next;
-    }
-    answer = combined;
-  }
   if (!answer && result.data.inspectImage) answer = 'More package evidence is needed. A specific browser image has been requested for inspection.';
 
   return {
     claims: displayedClaims,
     tentativeCandidates,
-    limitations: ['Generated explanations are not independently verified; exact cited evidence spans are provided for inspection. Tentative structured candidates never alter confirmed package observations. No diagnosis, medication advice, or safety assessment is provided.'],
+    limitations: ['Generated explanations are not independently verified. Tentative structured candidates never alter confirmed package observations or calculations. Image-linked text and region references are model-reported and unverified. No diagnosis, medication advice, or safety assessment is provided.'],
     inspectImage: result.data.inspectImage ? { ...result.data.inspectImage, reason: 'A specific package detail may need a closer look. Review the selected image before choosing to send it.' } : null,
     answer,
   };

@@ -67,6 +67,14 @@ export function lookupAdditive(query:string): AdditiveRecord | undefined {
   return additives.find(a => (code && a.code === canonicalAdditiveCode(code)) || a.aliases.some(alias=> normal(alias) === q));
 }
 
+/** Resolve one explicitly prefixed additive identifier inside a natural-language question. */
+export function lookupExplicitAdditiveMention(query:string): AdditiveRecord | undefined {
+  const codes = [...query.matchAll(/\b(?:ins|e)\s*[-:]?\s*(\d{3,4}(?:[a-z]|\([ivx]+\))?)(?![a-z0-9])/gi)]
+    .map(match => canonicalAdditiveCode(match[1].toLowerCase()));
+  const uniqueCodes = [...new Set(codes)];
+  return uniqueCodes.length === 1 ? lookupAdditive(uniqueCodes[0]) : undefined;
+}
+
 export type TentativeAdditiveIdentityCandidate = {
   status: 'tentative';
   kind: 'additive-identity-candidate';

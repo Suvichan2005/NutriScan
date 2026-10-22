@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { evidenceSpanSchema, normalizedCropSchema, tentativeStructuredCandidateSchema } from '../../lib/contracts';
+import { evidenceSpanSchema, normalizedCropSchema, tentativeStructuredCandidateSchema, visualEvidenceReferenceSchema } from '../../lib/contracts';
 
 const profileFieldIdSchema = z.enum([
   'dietaryPattern', 'allergies', 'intolerances', 'healthConsiderations',
@@ -13,7 +13,8 @@ const claimSchema = z.object({
   sourceIds: z.array(z.string().max(160)).max(20),
   calculationIds: z.array(z.string().max(120)).max(20).optional(),
   profileFieldIds: z.array(profileFieldIdSchema).max(9).optional(),
-  supportingSpans: z.array(evidenceSpanSchema).min(1).max(10),
+  supportingSpans: z.array(evidenceSpanSchema).max(10),
+  visualEvidence: z.array(visualEvidenceReferenceSchema).max(10).optional(),
 }).strict();
 
 /** Structured provider response contract for evidence-bounded assist. */

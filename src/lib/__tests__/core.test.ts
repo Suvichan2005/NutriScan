@@ -134,6 +134,16 @@ describe('conservative package extraction',()=>{
       expect(assumption).not.toMatch(/are correct/i);
     }
   });
+  it('marks scaled calculations as estimates when the package labels nutrition values approximate',()=>{
+    const pkg=parseLabel('Nutrition information (Approximate Values)\nPer 100 g\nTotal fat 9.9 g',{origin:'ocr'});
+    const audit=buildAudit(pkg,50,'g',defaultProfile,'How much fat is in 50 g?');
+    const calculation=audit.calculations.find(item=>item.nutrient==='fat');
+
+    expect(calculation?.result).toBeCloseTo(4.95,8);
+    expect(calculation?.assumptions[0]).toMatch(/labels its nutrition values as approximate/i);
+    expect(calculation?.assumptions[0]).toMatch(/scales the printed reading as an estimate/i);
+    expect(audit.limitations.join(' ')).toMatch(/labels its nutrition values as approximate/i);
+  });
   it('retains multiple columns and withholds ambiguous values',()=>{
     const pkg=label('Nutrition per 100 g | per serving (25 g)\nCarbohydrate 60 g | 15 g');
     expect(pkg.nutrients).toHaveLength(2);

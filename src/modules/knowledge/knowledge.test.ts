@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { sourceSchema } from '../../lib/contracts';
+import { clearsLocalEvidenceFloor, localEvidenceScoreFloor } from './server';
 import {
   additives,
   detectAdditives,
   evidenceSources,
   findNutrientContentClaimGuidance,
   lookupAdditive,
+  lookupExplicitAdditiveMention,
   resolveTentativeAdditiveIdentity,
   retrieveEvidence,
 } from './index';
@@ -38,6 +40,13 @@ describe('knowledge module offline contract', () => {
     expect(detectAdditives('Ingredients: soy lecithin, INS 322(ii), silica, E551')).toEqual(['322', '551']);
   });
 
+  it('retrieves only a single explicitly prefixed additive code from natural-language context', () => {
+    expect(lookupExplicitAdditiveMention('What does INS 322 mean on this label?')?.sourceIds).toEqual(['fao-322']);
+    expect(lookupExplicitAdditiveMention('Is E322(ii) the same lecithin family?')?.code).toBe('322');
+    expect(lookupExplicitAdditiveMention('The serving is 322 mg')).toBeUndefined();
+    expect(lookupExplicitAdditiveMention('Compare INS 322 with E551')).toBeUndefined();
+  });
+
   it('extracts additive codes from label text without inferring a nutrient value or dose', () => {
     expect(detectAdditives('Ingredients: water, preservative (202), INS 955')).toEqual(['955', '202']);
     expect(additives.length).toBeGreaterThan(0);
@@ -55,5 +64,13 @@ describe('knowledge module offline contract', () => {
   it('rejects invalid limits instead of silently broadening a retrieval request', () => {
     expect(() => retrieveEvidence('sodium', 0)).toThrow(/limit/i);
     expect(() => retrieveEvidence('x'.repeat(4001), 4)).toThrow(/too long/i);
+  });
+
+  it('suppresses candidates below the explicitly uncalibrated local relevance floor', () => {
+    expect(localEvidenceScoreFloor).toBe(0.4);
+    expect(clearsLocalEvidenceFloor(0.4)).toBe(true);
+    expect(clearsLocalEvidenceFloor(0.3999)).toBe(false);
+    expect(clearsLocalEvidenceFloor(Number.NaN)).toBe(false);
+    expect(clearsLocalEvidenceFloor(Number.POSITIVE_INFINITY)).toBe(false);
   });
 });

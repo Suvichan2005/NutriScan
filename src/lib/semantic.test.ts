@@ -32,9 +32,9 @@ describe('embedding retrieval integrity', () => {
     expect(isCurrentLawOrRegulatoryQuery('What is the current FSSAI labelling rule?')).toBe(true);
   });
   it('uses a finite, conservative local candidate floor without treating it as a probability', () => {
-    expect(localEvidenceScoreFloor).toBe(0.3);
-    expect(clearsLocalEvidenceFloor(0.29999)).toBe(false);
-    expect(clearsLocalEvidenceFloor(0.3)).toBe(true);
+    expect(localEvidenceScoreFloor).toBe(0.4);
+    expect(clearsLocalEvidenceFloor(0.39999)).toBe(false);
+    expect(clearsLocalEvidenceFloor(0.4)).toBe(true);
     expect(clearsLocalEvidenceFloor(Number.NaN)).toBe(false);
     expect(clearsLocalEvidenceFloor(Number.POSITIVE_INFINITY)).toBe(false);
   });

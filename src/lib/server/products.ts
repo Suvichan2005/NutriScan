@@ -3,6 +3,7 @@ import type { NutrientKey, ProductRecord } from '../contracts';
 import { ApiError, fixedFetch, plain } from './http';
 
 export const productInput = z.object({ query: z.string().trim().min(2).max(100).optional(), barcode: z.string().regex(/^\d{8,14}$/).optional(), alternatives: z.boolean().optional(), country:z.string().trim().min(2).max(80).optional(), excludeBarcode:z.string().regex(/^\d{8,14}$/).optional() }).strict().refine(v => Boolean(v.query || v.barcode), 'A query or barcode is required.');
+// Open Food Facts marks API v2 deprecated; keep exact product reads on current v3.
 const fields = 'code,product_name,brands,quantity,countries_tags,categories_tags,nutriments,ingredients_text,allergens_tags,last_modified_t,nutrition_data_per,nutrition_data_prepared_per,product_quantity_unit';
 const recordSchema = z.object({ code: z.union([z.string(), z.number()]).optional(), product_name: z.string().optional(), brands: z.union([z.string(), z.array(z.string())]).optional(), quantity: z.string().optional(), countries_tags: z.array(z.string()).optional(), categories_tags: z.array(z.string()).optional(), nutriments: z.record(z.string(), z.unknown()).optional(), ingredients_text: z.string().optional(), allergens_tags: z.array(z.string()).optional(), last_modified_t: z.number().optional(), nutrition_data_per: z.string().optional(), product_quantity_unit: z.string().optional() }).passthrough();
 const map: [string, NutrientKey, string, number][] = [['energy-kcal', 'energy', 'kcal', 1], ['carbohydrates', 'carbohydrate', 'g', 1], ['sugars', 'sugars', 'g', 1], ['added-sugars', 'addedSugars', 'g', 1], ['proteins', 'protein', 'g', 1], ['fat', 'fat', 'g', 1], ['saturated-fat', 'saturatedFat', 'g', 1], ['fiber', 'fiber', 'g', 1], ['sodium', 'sodium', 'mg', 1000], ['salt', 'salt', 'g', 1]];
@@ -38,7 +39,7 @@ export async function lookupProducts(data: z.infer<typeof productInput>) {
   let url: URL; let searchBody: object | undefined;
   const countrySlug=data.country?.trim().toLowerCase().replace(/\s+/g,'-');
   if(data.alternatives&&countrySlug&&!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(countrySlug))throw new ApiError(400,'invalid_country','Enter a country name in English to filter candidate listings.');
-  if (data.barcode && !data.alternatives) { url = new URL(`https://world.openfoodfacts.org/api/v2/product/${data.barcode}.json`); url.searchParams.set('fields', fields); }
+  if (data.barcode && !data.alternatives) { url = new URL(`https://world.openfoodfacts.org/api/v3/product/${data.barcode}.json`); url.searchParams.set('fields', fields); }
   else {
     // Official Search-a-licious POST supports full text. Free-text terms never
     // supply filter syntax; the optional country tag is normalized separately.
@@ -55,7 +56,7 @@ export async function lookupProducts(data: z.infer<typeof productInput>) {
     // only the four selected records through the canonical product endpoint.
     // Failed enrichment leaves the original candidate explicitly incomplete.
     const detailed = await Promise.allSettled(products.map(async product => {
-      const exactUrl = new URL(`https://world.openfoodfacts.org/api/v2/product/${product.barcode}.json`); exactUrl.searchParams.set('fields', fields);
+      const exactUrl = new URL(`https://world.openfoodfacts.org/api/v3/product/${product.barcode}.json`); exactUrl.searchParams.set('fields', fields);
       const detail = await fixedFetch(exactUrl) as { product?: unknown };
       const enriched = normalizeProduct(detail.product, data.barcode);
       return enriched && (!data.alternatives || !countryTag || enriched.countries.includes(countryTag)) ? enriched : product;

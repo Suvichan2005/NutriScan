@@ -62,6 +62,15 @@ try {
     const noMatchAbstained = await unrelatedTurn.locator('.conversation-evidence article').count() === 0
       && /does not mean relevant evidence does not exist/i.test(await unrelatedTurn.innerText());
 
+    const betaGlucanQuestion = 'Does beta glucan in oats affect blood cholesterol?';
+    await page.getByRole('textbox', { name: 'Ask about this package' }).fill(betaGlucanQuestion);
+    await page.getByRole('button', { name: 'Send follow-up' }).click();
+    const betaGlucanTurn = page.locator('.chat-turn').last();
+    await betaGlucanTurn.getByText(/did not return a source candidate above its development relevance floor/i)
+      .waitFor({ state: 'visible', timeout: 30_000 });
+    const betaGlucanFalseSourceSuppressed = await betaGlucanTurn.locator('.conversation-evidence article').count() === 0
+      && /does not mean relevant evidence does not exist/i.test(await betaGlucanTurn.innerText());
+
     const axe = await new AxeBuilder({ page }).analyze();
     const prefix = viewport.width === 390 ? 'mobile' : 'desktop';
     const screenshot = 'docs/evidence/private/conversational-evidence/' + prefix + '.png';
@@ -74,6 +83,7 @@ try {
       officialNiddkLink: niddkHref === 'https://www.niddk.nih.gov/health-information/diabetes/overview/healthy-living-with-diabetes',
       candidateCaveatVisible,
       noMatchAbstained,
+      betaGlucanFalseSourceSuppressed,
       evidenceRouteStatuses: evidenceStatuses,
       noNonLoopbackRequests: nonLoopbackRequests.length === 0,
       noAssistOrVisionCalls: providerRoutes.length === 0,
@@ -93,8 +103,8 @@ const receipt = {
   generatedAt: new Date().toISOString(),
   browser: 'Chrome via Playwright, headless',
   origin: 'loopback',
-  input: 'Synthetic typed label; explicit general meal-planning and unrelated follow-up questions.',
-  evidenceExpected: 'NIDDK Healthy Living with Diabetes source summary with its US scope and limitations; no match for quantum mechanics.',
+  input: 'Synthetic typed label; explicit meal-planning, unrelated-domain, and beta-glucan-in-oats follow-up questions.',
+  evidenceExpected: 'NIDDK Healthy Living with Diabetes source summary with its US scope and limitations; no match for quantum mechanics or the beta-glucan-in-oats effect question.',
   limitations: [
     'This verifies the UI-to-local-index journey and source presentation, not independent retrieval relevance or health-outcome accuracy.',
     'The package input is synthetic typed text; no real photo or OCR result is evaluated.',
@@ -107,8 +117,8 @@ await writeFile('docs/evidence/conversational-evidence-browser.json', JSON.strin
 console.log(JSON.stringify({ receipt: 'docs/evidence/conversational-evidence-browser.json', outcomes }, null, 2));
 if (outcomes.length !== 2 || outcomes.some((outcome) =>
   !outcome.summaryVisible || !outcome.sourceScopeVisible || !outcome.officialNiddkLink
-  || !outcome.candidateCaveatVisible || !outcome.noMatchAbstained
-  || (outcome.evidenceRouteStatuses as number[]).length !== 2 || (outcome.evidenceRouteStatuses as number[]).some((status) => status !== 200)
+  || !outcome.candidateCaveatVisible || !outcome.noMatchAbstained || !outcome.betaGlucanFalseSourceSuppressed
+  || (outcome.evidenceRouteStatuses as number[]).length !== 3 || (outcome.evidenceRouteStatuses as number[]).some((status) => status !== 200)
   || !outcome.noNonLoopbackRequests || !outcome.noAssistOrVisionCalls
   || (outcome.axeViolationIds as string[]).length > 0 || (outcome.pageErrors as string[]).length > 0
 )) process.exitCode = 1;

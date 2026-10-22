@@ -54,6 +54,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   question=question.trim()||'What does this label mean for this portion?';
   const findings:Finding[]=[];const calculations:Calculation[]=[];const sourceIds=new Set<string>();
   const limitations=unique([...pkg.warnings,'Package readings are observations and can contain OCR errors.','This answer uses local rules and calculations; it is not a general conversational model.','No live product, regulator or clinical source was contacted by this local audit.']);
+  const packageMarksNutritionValuesApproximate=pkg.warnings.some(warning=>/labels its nutrition values as approximate/i.test(warning));
   const nextQuestions:string[]=[];
   const userContext=profileText(profile);
   const explicitlyUnder18=isExplicitlyUnder18(profile.ageGroup);
@@ -179,7 +180,10 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     }
     const n=candidate.nutrient;
     const result=candidate.value*portion/n.basis!.amount;
-    const calc:Calculation={id:`calc-${key}`,label:`${display[key]} in ${portion} ${portionUnit}`,nutrient:key,input:candidate.value,inputUnit:candidate.unit,basisAmount:n.basis!.amount,portion,portionUnit,result,unit:candidate.unit,formula:`${candidate.value} ${candidate.unit} × ${portion} ${portionUnit} ÷ ${n.basis!.amount} ${n.basis!.unit}`,observationIds:candidate.observations,assumptions:['This calculation assumes the displayed reading and basis are accurate; NutriScan has not independently verified either.','The portion is assumed to have the same composition as the labelled product.']};
+    const readingAssumption=packageMarksNutritionValuesApproximate
+      ?'The package labels its nutrition values as approximate; this calculation scales the printed reading as an estimate. NutriScan has not independently verified the reading or basis.'
+      :'This calculation assumes the displayed reading and basis are accurate; NutriScan has not independently verified either.';
+    const calc:Calculation={id:`calc-${key}`,label:`${display[key]} in ${portion} ${portionUnit}`,nutrient:key,input:candidate.value,inputUnit:candidate.unit,basisAmount:n.basis!.amount,portion,portionUnit,result,unit:candidate.unit,formula:`${candidate.value} ${candidate.unit} × ${portion} ${portionUnit} ÷ ${n.basis!.amount} ${n.basis!.unit}`,observationIds:candidate.observations,assumptions:[readingAssumption,'The portion is assumed to have the same composition as the labelled product.']};
     calculations.push(calc);
     finding({title:calc.label,detail:`${rounded(result)} ${candidate.unit}, calculated from the printed ${n.basis!.description}.`,status:'calculated',observationIds:calc.observationIds,sourceIds:[],calculationIds:[calc.id]});
   }

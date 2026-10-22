@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { FeatureExtractionPipeline } from '@huggingface/transformers';
-import { corpusVersion, evidenceSources, lookupAdditive } from './index';
+import { corpusVersion, evidenceSources, lookupAdditive, lookupExplicitAdditiveMention } from './index';
 import type { EvidenceSource } from '../../lib/contracts';
 
 /** Node.js-only entry point. Client modules must import the static `index.ts` entry instead. */
@@ -10,7 +10,7 @@ import type { EvidenceSource } from '../../lib/contracts';
 export const embeddingModel = 'Xenova/all-MiniLM-L6-v2';
 export const embeddingRevision = '751bff37182d3f1213fa05d7196b954e230abad9';
 export const embeddingDimensions = 384;
-export const localEvidenceScoreFloor = 0.3;
+export const localEvidenceScoreFloor = 0.4;
 export const modelDirectory = path.join(process.cwd(), '.data', 'models');
 export const indexFile = path.join(process.cwd(), 'data', 'semantic-index.json');
 export const documentText = (source: EvidenceSource) => `${source.title}. ${source.summary}`;
@@ -119,7 +119,7 @@ export async function semanticRetrieve(query: string, limit = 4) {
     const index = await loadIndex();
     const [vector] = await embedLocally([query]);
     const lexical = lexicalRanking(query);
-    const exact = lookupAdditive(query);
+    const exact = lookupAdditive(query) ?? lookupExplicitAdditiveMention(query);
     const ranked: SemanticHit[] = evidenceSources.map(source => {
       const semanticScore = cosineSimilarity(vector, index.vectors.find(v => v.id === source.id)!.vector);
       const lexicalScore = lexical.find(v => v.source.id === source.id)!.lexicalScore;

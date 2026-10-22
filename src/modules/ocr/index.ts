@@ -4,5 +4,14 @@ export { readPaddleOcrImages, selectPaddleFallbackAssets, shouldRunPaddleFallbac
 export { parseLabel } from './parser';
 export type { ParseOptions } from './parser';
 export { summarizeLabelUncertainty } from './label-uncertainty';
+export {
+  adjustImage,
+  autoReadability,
+  isValidPerspectiveQuad,
+  projectiveMapping,
+  rectifyPerspective,
+  rotateImage,
+} from './perspective';
+export type { ImageAdjustments, PerspectiveQuad, Point } from './perspective';
 export * from './evaluation';
 export * from './annotation';

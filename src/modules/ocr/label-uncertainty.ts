@@ -6,6 +6,10 @@ export function summarizeLabelUncertainty(diagnostics: readonly ParserDiagnostic
   const warningText = warnings.join(' ').toLowerCase();
   const summaries: string[] = [];
 
+  if (/labels its nutrition values as approximate/.test(warningText)) {
+    summaries.push('The package labels its nutrition values as approximate; portion calculations use the printed readings as estimates.');
+  }
+
   const hasNutritionIssues = diagnostics.some(diagnostic => diagnostic.decision !== 'accepted' || diagnostic.reasonCodes.length > 0)
     || /nutrition columns|numeric values|conflicting readings|intended column|unit missing|no unit was guessed|incompatible unit|basis.*missing|mass or volume basis|serving basis is stated|invalid value|no readable numerical|approximate value|exact calculation withheld|ambiguous signed|no usable nutrition values/.test(warningText);
   if (hasNutritionIssues) summaries.push('Some nutrition entries need checking. NutriScan left unclear amounts out of calculations rather than guessing.');

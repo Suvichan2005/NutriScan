@@ -239,7 +239,7 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(data.package.observations.find(item=>item.id===noisyLine.id)?.ocrWords).toEqual(noisyLine.ocrWords);
     expect(pkg.additives).not.toContain('385');
     expect(result.tentativeCandidates).toEqual([candidate]);
-    expect(result.answer).toContain('Not verified and not added to package facts.');
+    expect(result.answer).toContain('not used as confirmed package facts or calculations');
     expect(validateClaims({answer:'ignored',claims:[],tentativeCandidates:[{...candidate,supportingSpans:[{...candidate.supportingSpans[0],quote:'Calciurn disodium'}]}],limitations:[],inspectImage:null},data).tentativeCandidates).toEqual([]);
   });
 

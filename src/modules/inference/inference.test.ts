@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { packageSchema, type Calculation, type PackageData } from '../../lib/contracts';
+import { packageSchema, tentativeStructuredCandidateSchema, type Calculation, type PackageData } from '../../lib/contracts';
 import { InferenceModuleError, validateInferenceOutput } from './index';
 
 const fixturePackage: PackageData = packageSchema.parse({
@@ -46,6 +46,11 @@ const fixturePackage: PackageData = packageSchema.parse({
 const observationSpan = { kind: 'observation' as const, id: 'ocr-line-1', quote: 'Protein approx 8.8 g' };
 
 describe('provider-independent inference output validation', () => {
+  it('supports source-linked allergen, warning and package-claim candidate kinds', () => {
+    const base = { candidateId: 'label-candidate', field: 'label-content', proposedValue: 'Contains wheat', numericValue: null, unit: null, basis: null, normalizedEntity: null, status: 'tentative' as const, observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [{ kind: 'observation' as const, id: 'ocr-line-1', quote: 'Protein approx 8.8 g' }], uncertainty: 'Preserved as an unverified example.' };
+    for (const kind of ['allergen', 'warning', 'package-claim'] as const) expect(tentativeStructuredCandidateSchema.safeParse({ ...base, kind }).success).toBe(true);
+  });
+
   it('renders a traceable synthesis while preserving uncertainty about the basis', () => {
     const output = {
       answer: 'Ignored free-form answer',
@@ -250,10 +255,82 @@ describe('provider-independent inference output validation', () => {
     }, { package: fixturePackage });
 
     expect(result.tentativeCandidates).toEqual([candidate]);
-    expect(result.answer).toContain('Tentative model suggestion');
-    expect(result.answer).toContain('Not verified and not added to package facts');
+    expect(result.answer).toContain('tentative package readings');
+    expect(result.answer).toContain('not used as confirmed package facts or calculations');
+    expect(result.answer).not.toContain('8.8 g');
     expect(fixturePackage).toEqual(before);
     expect(fixturePackage.nutrients).toEqual([]);
+  });
+
+  it('accepts image-linked claims and candidates as unverified without promoting package facts', () => {
+    const before = structuredClone(fixturePackage);
+    const visualEvidence = {
+      imageId: 'synthetic-image',
+      visibleText: 'Protein 5.7 g per 70 g',
+      region: { x: 0.2, y: 0.3, width: 0.4, height: 0.12 },
+    };
+    const candidate = {
+      candidateId: 'vision-protein-1',
+      kind: 'nutrient',
+      field: 'protein',
+      proposedValue: '5.7 g',
+      numericValue: 5.7,
+      unit: 'g',
+      basis: { amount: 70, unit: 'g', description: 'per serving' },
+      normalizedEntity: 'protein',
+      status: 'tentative',
+      observationIds: [],
+      sourceIds: [],
+      supportingSpans: [],
+      visualEvidence: [visualEvidence],
+      uncertainty: 'The image reading is model-reported and has not been independently verified.',
+    };
+
+    const result = validateInferenceOutput({
+      answer: '',
+      claims: [{
+        mode: 'synthesis',
+        text: 'The photo appears to show 5.7 g protein per 70 g serving.',
+        observationIds: [],
+        sourceIds: [],
+        supportingSpans: [],
+        visualEvidence: [visualEvidence],
+      }],
+      tentativeCandidates: [candidate],
+      limitations: [],
+      inspectImage: null,
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }] });
+
+    expect(result.claims).toHaveLength(1);
+    expect(result.answer).toContain('Tentative visual interpretation');
+    expect(result.answer).toContain('unverified');
+    expect(result.answer).toContain('[image:synthetic-image]');
+    expect(result.tentativeCandidates).toEqual([candidate]);
+    expect(fixturePackage).toEqual(before);
+    expect(fixturePackage.nutrients).toEqual([]);
+  });
+
+  it('rejects unknown image references and numeric visual claims unsupported by the reported text', () => {
+    const visualEvidence = { imageId: 'synthetic-image', visibleText: 'Protein 5.7 g per 70 g', region: null };
+    const output = {
+      answer: '',
+      claims: [{
+        mode: 'synthesis',
+        text: 'The photo appears to show 5.8 g protein per 70 g serving.',
+        observationIds: [],
+        sourceIds: [],
+        supportingSpans: [],
+        visualEvidence: [visualEvidence],
+      }],
+      limitations: [],
+      inspectImage: null,
+    };
+
+    expect(() => validateInferenceOutput(output, { package: fixturePackage })).toThrowError(InferenceModuleError);
+    const result = validateInferenceOutput(output, { package: fixturePackage, images: [{ handle: 'synthetic-image' }] });
+    expect(result.claims).toEqual([]);
+    expect(result.answer).toContain('No supported factual conclusion');
+    expect(result.answer).not.toContain('5.8 g');
   });
 
   it('returns typed errors for malformed output and unknown evidence identifiers', () => {
