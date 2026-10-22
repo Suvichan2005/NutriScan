@@ -599,3 +599,7 @@ See [acceptance](ACCEPTANCE.md), [core evaluation](CORE_EVALUATION.md), [retriev
 - The current `@google/genai` SDK counts `retryOptions.attempts` including the original request; `1` means no retry. Google's API guidance classifies 503 as temporary service overload/unavailability and recommends exponential backoff.
 - Permit at most two total attempts for a free-tier application request, retrying only HTTP 503 once after a short jittered delay. Keep paid application calls and synthetic benchmark probes single-attempt. The paid path stays single-attempt so the local spend ledger's one-call reservation cannot undercount a duplicated paid provider attempt.
 - This change does not enable Gemini or make another provider request. Verify retry behavior offline with a stubbed fetch; don't count a mocked 503→success as live provider acceptance.
+
+## 22 October 2026 — store scanner edits as parameters against immutable originals
+
+Keep each scanned side's original image immutable. Persist normalized crop corners, rotation and enhancement parameters plus an edit-history cursor; regenerate previews and OCR-ready images from the original for every revision. This allows crop revision without cumulative transform loss, exact Reset, reversible Undo/Redo, and Cancel that discards only the draft. OCR signatures include the saved revision so stale results cannot survive an image edit. Verified with touch interaction on portrait and landscape package photos; no OCR accuracy claim.

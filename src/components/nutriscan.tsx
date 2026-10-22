@@ -10,12 +10,12 @@ import { compareProductNutrition } from '@/lib/product-comparison';
 import { buildProductLookupRequest, defaultProductLookup, productIdentityDisclosure } from '@/lib/product-query';
 import { appendVisionEvidence } from '@/lib/reconcile';
 import { mergePackageEvidence, mergeSecondaryOcrEvidence } from '@/lib/merge-evidence';
-import { readPaddleOcrImages, rotateImage, selectPaddleFallbackAssets, shouldRunPaddleFallback } from '@/modules/ocr';
+import { readPaddleOcrImages, selectPaddleFallbackAssets, shouldRunPaddleFallback } from '@/modules/ocr';
 import { conversationContextForAssist, resolveLocalFollowUpQuestion } from '@/lib/conversation-context';
 import { buildLocalEvidenceFollowUp, buildLocalEvidenceUnavailableFollowUp, parseLocalEvidenceResponse, safeConversationEvidence, shouldSearchLocalEvidence } from '@/lib/followup-evidence';
 import { applyBarcodeReadings } from '@/lib/barcode';
 import { CommunityProductRecordDetails } from './community-product-record-details';
-import { PackagePhotoCard, type PhotoReviewAsset } from './package-photo-card';
+import { clonePhotoEditState, photoHasEdits, PackagePhotoCard, pristinePhotoEditState, renderPhotoEdit, type PhotoEditState, type PhotoReviewAsset } from './package-photo-card';
 import { applyNutrientCorrection } from '@/lib/correction';
 import { calculationEvidenceText, defaultProfile, hasUserContext, nutrientKeys, packageSchema, tentativeStructuredCandidateSchema, type Audit, type EvidenceSource, type ImageAsset, type NutrientKey, type Observation, type PackageData, type ProductRecord, type Profile, type ResearchItem, type SavedConversationTurn, type TentativeStructuredCandidate } from '@/lib/contracts';
 import { lookupAdditive } from '@/lib/knowledge';
@@ -86,7 +86,7 @@ export default function NutriScan(){
  const [question,setQuestion]=useState('');const [activeQuestion,setActiveQuestion]=useState('');const [auditQuestion,setAuditQuestion]=useState('');
  const [messages,setMessages]=useState<Message[]>([]);
  const [localEvidenceBusy,setLocalEvidenceBusy]=useState(false);const pendingLocalEvidenceRequests=useRef(new Set<symbol>());
- const [busy,setBusy]=useState(false);const [progress,setProgress]=useState({label:'',value:0});
+ const [busy,setBusy]=useState(false);const [photoEditBusy,setPhotoEditBusy]=useState(false);const [progress,setProgress]=useState({label:'',value:0});
  const [error,setError]=useState('');const [notice,setNotice]=useState('');
   const [panel,setPanel]=useState<Panel>(null);const dialog=useRef<HTMLDialogElement>(null);const [ocrRegion,setOcrRegion]=useState<OcrRegionPreview|null>(null);const [ocrRegionBusy,setOcrRegionBusy]=useState('');const [showAllOcrObservations,setShowAllOcrObservations]=useState(false);
  const [contrast,setContrast]=useState(false);const [invert,setInvert]=useState(false);const [cropEnabled,setCropEnabled]=useState(false);const [cropTarget,setCropTarget]=useState('');const [crop,setCrop]=useState({x:0,y:0,width:100,height:100});
@@ -127,7 +127,7 @@ export default function NutriScan(){
  const [semantic,setSemantic]=useState<(EvidenceSource&{score:number})[]>([]);
  const resultRef=useRef<HTMLElement>(null);const sourceRef=useRef<HTMLElement>(null);const lookupInputRef=useRef<HTMLInputElement>(null);
  const audit:Audit|null=useMemo(()=>pkg?buildAudit(pkg,portion,unit,profile,auditQuestion||activeQuestion):null,[pkg,portion,unit,profile,auditQuestion,activeQuestion]);
- const readSignature=(image:PhotoReviewAsset)=>JSON.stringify([image.editVersion??0,image.isOriginal??false,image.blob.size,image.rotation??0,image.side,contrast,invert,cropEnabled&&cropTarget===image.id?crop:null]);
+ const readSignature=(image:PhotoReviewAsset)=>JSON.stringify([image.editVersion??0,image.width,image.height,image.blob.size,image.editState??null,image.side,contrast,invert,cropEnabled&&cropTarget===image.id?crop:null]);
  const pendingPhotoCount=images.filter(image=>processedImages.current.get(image.id)!==readSignature(image)).length;
 
  useEffect(()=>{let active=true;fetch('/api/status').then(x=>x.json()).then(value=>{if(active)setStatus(value);}).catch(()=>{});readHistory().then(value=>{if(active)setHistory(value);}).catch(()=>{});readRememberedProfile().then(value=>{if(!active)return;if(value){setProfile(value);setRememberProfile(true);}setProfileReady(true);}).catch(()=>{if(active){setProfileReady(true);setNotice('Remembered context could not be loaded. You can continue with an empty session profile.');}});return()=>{active=false;abort.current?.abort();};},[]);
@@ -180,30 +180,66 @@ export default function NutriScan(){
  }
  async function loadReviewedPhoto(file:Blob,name:string):Promise<PhotoReviewAsset>{
    const original=await loadImage(file,'extra',name);
-   return {...original,originalBlob:original.blob,originalUrl:original.url,originalWidth:original.width,originalHeight:original.height,isOriginal:true,editVersion:0,role:'unknown',description:'',rotation:0};
+  return {...original,originalBlob:original.blob,originalUrl:original.url,originalWidth:original.width,originalHeight:original.height,originalOrientation:original.rotation??0,isOriginal:true,editVersion:0,editState:clonePhotoEditState(pristinePhotoEditState),editHistory:[clonePhotoEditState(pristinePhotoEditState)],editHistoryIndex:0,role:'unknown',description:'',rotation:0};
  }
   async function replaceImage(id:string,file:File){try{const replacement=await loadReviewedPhoto(file,file.name);setImages(previous=>previous.map(image=>{if(image.id!==id)return image;retiredPhotos.current.push(image);return {...replacement,role:image.role,description:image.description};}));processedImages.current.delete(id);setVisionImageId(current=>current===id?replacement.id:current);setCropTarget(current=>current===id?replacement.id:current);setScannerActiveImageId(current=>current===id?replacement.id:current);}catch(e){setError(e instanceof Error?e.message:'Could not replace this photo.');}}
  function releasePhoto(image:PhotoReviewAsset){for(const url of new Set([image.url,image.originalUrl,image.editedUrl].filter((value):value is string=>Boolean(value))))URL.revokeObjectURL(url);}
- function applyPhotoTransform(id:string,result:{blob:Blob;width:number;height:number}){
-  setImages(previous=>previous.map(image=>{
-   if(image.id!==id)return image;
-    const originalBlob=image.originalBlob??image.blob,originalUrl=image.originalUrl??image.url,editedUrl=URL.createObjectURL(result.blob);
-    retiredPhotos.current.push(image);
-   return {...image,originalBlob,originalUrl,originalWidth:image.originalWidth??image.width,originalHeight:image.originalHeight??image.height,editedBlob:result.blob,editedUrl,editedWidth:result.width,editedHeight:result.height,blob:result.blob,url:editedUrl,width:result.width,height:result.height,isOriginal:false,rotation:0,editVersion:(image.editVersion??0)+1};
+ async function restorePhotoEdit(image:PhotoReviewAsset,state:PhotoEditState,history:PhotoEditState[],historyIndex:number){
+  const originalBlob=image.originalBlob??image.blob;
+  const originalUrl=image.originalUrl??image.url;
+  const nextState=clonePhotoEditState(state);
+  const result=await renderPhotoEdit(originalBlob,nextState);
+  const hasEdits=photoHasEdits(nextState);
+  const url=hasEdits?URL.createObjectURL(result.blob):originalUrl;
+  retiredPhotos.current.push(image);
+  setImages(previous=>previous.map(current=>current.id!==image.id?current:{
+   ...current,
+   originalBlob,
+   originalUrl,
+   originalWidth:current.originalWidth??current.width,
+   originalHeight:current.originalHeight??current.height,
+   originalOrientation:current.originalOrientation??current.rotation??0,
+   blob:result.blob,
+   url,
+   width:result.width,
+   height:result.height,
+   editedBlob:hasEdits?result.blob:undefined,
+   editedUrl:hasEdits?url:undefined,
+   editedWidth:hasEdits?result.width:undefined,
+   editedHeight:hasEdits?result.height:undefined,
+   isOriginal:!hasEdits,
+   editState:nextState,
+   editHistory:history.map(clonePhotoEditState),
+   editHistoryIndex:historyIndex,
+   editVersion:(current.editVersion??0)+1,
+   rotation:0,
   }));
  }
- async function rotatePhoto(id:string){
+ async function commitPhotoEdit(id:string,state:PhotoEditState){
   const image=images.find(item=>item.id===id);if(!image)return;
-  try{applyPhotoTransform(id,await rotateImage(image.blob));}
-  catch(error){setError(error instanceof Error?error.message:'Could not rotate this photo.');}
+  setPhotoEditBusy(true);
+  try{
+   const history=(image.editHistory?.length?image.editHistory:[clonePhotoEditState(pristinePhotoEditState)]).map(clonePhotoEditState);
+   const currentIndex=Math.max(0,Math.min(image.editHistoryIndex??history.length-1,history.length-1));
+   const currentState=history[currentIndex]??image.editState??pristinePhotoEditState;
+   const nextState=clonePhotoEditState(state);
+   if(JSON.stringify(currentState)===JSON.stringify(nextState))return;
+   const nextHistory=history.slice(0,currentIndex+1);
+   nextHistory.push(nextState);
+   await restorePhotoEdit(image,nextState,nextHistory,nextHistory.length-1);
+  } finally {setPhotoEditBusy(false);}
  }
- function undoPhotoEdits(id:string){
-  setImages(previous=>previous.map(image=>{
-   if(image.id!==id)return image;
-    if(image.originalBlob&&image.originalUrl){retiredPhotos.current.push(image);return {...image,blob:image.originalBlob,url:image.originalUrl,width:image.originalWidth??image.width,height:image.originalHeight??image.height,editedBlob:undefined,editedUrl:undefined,editedWidth:undefined,editedHeight:undefined,isOriginal:true,rotation:0,editVersion:(image.editVersion??0)+1};}
-   return image;
-  }));
+ async function stepPhotoEditHistory(id:string,direction:-1|1){
+  const image=images.find(item=>item.id===id);if(!image)return;
+  const history=image.editHistory?.length?image.editHistory:[clonePhotoEditState(pristinePhotoEditState)];
+  const nextIndex=(image.editHistoryIndex??history.length-1)+direction;
+  if(nextIndex<0||nextIndex>=history.length)return;
+  setPhotoEditBusy(true);
+  try{await restorePhotoEdit(image,history[nextIndex],history,nextIndex);}
+  finally{setPhotoEditBusy(false);}
  }
+ function undoPhotoEdit(id:string){return stepPhotoEditHistory(id,-1);}
+ function redoPhotoEdit(id:string){return stepPhotoEditHistory(id,1);}
   function removePhoto(id:string){
    const removed=images.find(image=>image.id===id);if(removed)retiredPhotos.current.push(removed);
    processedImages.current.delete(id);setImages(previous=>previous.filter(image=>image.id!==id));
@@ -461,7 +497,7 @@ export default function NutriScan(){
    {panel==='scanner'&&<div className="scanner-workspace">
     <div className="scanner-workspace-header"><div><span>PACKAGE SCAN</span><strong>{images.length?images.length+' side'+(images.length===1?'':'s')+' ready':'Add a package side'}</strong></div><button type="button" className="scanner-close" aria-label="Cancel scan" onClick={cancelScanner}><X size={20}/></button></div>
     <div className="scanner-canvas-area">
-     {images.length>0&&images.some(image=>image.id===scannerActiveImageId)?(()=>{const image=images.find(item=>item.id===scannerActiveImageId)!;const index=images.findIndex(item=>item.id===image.id);return <PackagePhotoCard key={image.id} asset={image} index={index} busy={busy} onRotate={rotatePhoto} onTransform={applyPhotoTransform} onReset={undoPhotoEdits} onRemove={removePhoto} onReplace={(id,file)=>void replaceImage(id,file)} onError={setError}/>;})():<div className="scanner-empty-canvas"><ImagePlus size={32}/><strong>Add the front, nutrition panel or ingredients.</strong><span>Photos stay on this device until you choose Analyze.</span><label className="primary-button"><ImagePlus size={17}/>Add side<input type="file" multiple accept="image/jpeg,image/png,image/webp" aria-label="Choose package sides" disabled={images.length>=10} onChange={event=>{void addFiles(event.target.files);event.target.value='';}}/></label></div>}
+     {images.length>0&&images.some(image=>image.id===scannerActiveImageId)?(()=>{const image=images.find(item=>item.id===scannerActiveImageId)!;const index=images.findIndex(item=>item.id===image.id);return <PackagePhotoCard key={image.id} asset={image} index={index} busy={busy||photoEditBusy} onTransform={commitPhotoEdit} onUndo={undoPhotoEdit} onRedo={redoPhotoEdit} onRemove={removePhoto} onReplace={(id,file)=>void replaceImage(id,file)} onError={setError}/>;})():<div className="scanner-empty-canvas"><ImagePlus size={32}/><strong>Add the front, nutrition panel or ingredients.</strong><span>Photos stay on this device until you choose Analyze.</span><label className="primary-button"><ImagePlus size={17}/>Add side<input type="file" multiple accept="image/jpeg,image/png,image/webp" aria-label="Choose package sides" disabled={images.length>=10} onChange={event=>{void addFiles(event.target.files);event.target.value='';}}/></label></div>}
     </div>
     <div className="scanner-bottom-bar">
      <div className="scanner-thumbnail-strip" role="list" aria-label="Package sides">{images.map((image,index)=><button key={image.id} type="button" role="listitem" className={image.id===scannerActiveImageId?'scanner-thumbnail active':'scanner-thumbnail'} aria-pressed={image.id===scannerActiveImageId} aria-label={'Select side '+(index+1)} onClick={()=>setScannerActiveImageId(image.id)}><img src={image.url} alt=""/><span>Side {index+1}</span></button>)}<label className="scanner-add-side"><ImagePlus size={18}/><span>Add side</span><input type="file" multiple accept="image/jpeg,image/png,image/webp" aria-label="Add package side from files" disabled={images.length>=10} onChange={event=>{void addFiles(event.target.files);event.target.value='';}}/></label><button type="button" className="scanner-camera-action" onClick={()=>{setCameraError('');setPanel('camera');}} disabled={busy||images.length>=10}><Camera size={18}/><span>Camera</span></button></div>
