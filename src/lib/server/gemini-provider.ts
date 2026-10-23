@@ -278,7 +278,7 @@ async function settleCall(id: string, state: 'completed' | 'failed', response: G
 export async function generateTracked(context: GeminiContext, params: GenerateContentParameters): Promise<GenerateContentResponse> {
   if (params.model !== context.model) throw new ApiError(400, 'provider_model_mismatch', 'Request model does not match the selected provider configuration.');
   const maxOutputTokens = params.config?.maxOutputTokens ?? 0;
-  if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 1 || maxOutputTokens > 6000) throw new ApiError(400, 'output_limit', 'Gemini output must be explicitly bounded to at most 6000 tokens.');
+  if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 1 || maxOutputTokens > 9000) throw new ApiError(400, 'output_limit', 'Gemini output must be explicitly bounded to at most 9000 tokens.');
   const serializedBytes = Buffer.byteLength(JSON.stringify(params.contents));
   const containsInlineImage = (value: unknown): boolean => {
     if (Array.isArray(value)) return value.some(containsInlineImage);
