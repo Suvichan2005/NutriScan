@@ -11,9 +11,9 @@
 
 ## 23 October 2026 — resume paid Gemini under the owner's revised budget
 
-- The owner confirmed that exposed API keys were replaced and raised the project budget to ₹500. This supersedes the earlier four-call/$1 authorization and the temporary stop after HTTP 429. Keep the application on the exact stable `gemini-3.8-flash` model, with the local $5 spend cap, request/token caps and paid calls single-attempt. Never print credentials, prompts, image bytes, profile fields or model conversations.
+- The owner confirmed that exposed API keys were replaced and raised the project budget to ₹500. This supersedes the earlier four-call/$1 authorization and the temporary stop after HTTP 429. At this initial checkpoint the local spend cap was $5; later configuration set the current $4.20/220-call guard recorded below. Keep the application on the exact stable `gemini-3.8-flash` model, with request/token caps and paid calls single-attempt. Never print credentials, prompts, image bytes, profile fields or model conversations.
 - Live `/api/status` on isolated local port 3416 reports paid provider configured, authorized and enabled. Each consumer photo transfer still requires the app's explicit consent action; actual profile fields remain governed by the user's separate choice.
-- The current local usage ledger is an estimate, not a billing receipt: 64 paid requests, $0.6257445 estimated actual and $1.311534 reserved. Use this ledger for bounded development and avoid prompt sweeps or redundant retries.
+- At that early checkpoint, the local usage ledger estimated 64 paid requests, $0.6257445 actual and $1.311534 reserved; those figures are historical. The current ledger is recorded in `docs/STATUS.md`. Ledger amounts are estimates, not billing receipts.
 
 ## 23 October 2026 — keep OpenFoodTox 3.0 out of the derived corpus pending reuse review
 
@@ -721,7 +721,7 @@ The owner-authorized paid test is capped at $1 and four Gemini 3.8 Flash generat
 
 ## Gemini response budget and validation — 23 October 2026
 
-Use gemini-3.8-flash with the official @google/genai GenerateContent tool loop and structured JSON output. Google documents function calling, structured output, and a 64K-token output maximum for this model (model capabilities: https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash; structured output with tools: https://ai.google.dev/gemini-api/docs/generate-content/structured-output). Keep NutriScan's per-generation output bound at 6,000 tokens and retain the $5 aggregate spend cap; the prior 4,000-token ceiling caused observed truncation on the real two-photo assist. Use full local Zod validation and evidence checks. Gemini-enforced maxItems constraints were rejected for this nested response schema and remain disabled. Do not raise the spend cap without owner authorization.
+Use gemini-3.8-flash with the official @google/genai GenerateContent tool loop and structured JSON output. Google documents function calling, structured output, and a 64K-token output maximum for this model (model capabilities: https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash; structured output with tools: https://ai.google.dev/gemini-api/docs/generate-content/structured-output). Keep NutriScan's per-generation output bound at 6,000 tokens; the prior 4,000-token ceiling caused observed truncation on the real two-photo assist. The initial local spend cap was $5; current configuration uses the $4.20/220-call guard recorded below, within the owner-approved ₹500 project budget. Use full local Zod validation and evidence checks. Gemini-enforced maxItems constraints were rejected for this nested response schema and remain disabled. Do not exceed the owner-approved project budget without further authorization.
 
 Synthesis safety checks should reject definitive personalized safety/suitability verdicts and treatment directives, while allowing evidence-linked limitations that mention dose or exposure. Package facts and model candidates remain distinct; this change does not authorize medical conclusions or automatic confirmation of visual readings.
 
