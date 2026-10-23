@@ -2,6 +2,15 @@
 
 Updated: 2026-10-23. This is a local development application and research workspace. Feature levels below describe evidence available in this checkout; they do not imply clinical or production acceptance.
 
+## 23 October 2026 — FSSAI research tool now receives the exact source excerpt
+
+- Fixed the default PDF-extraction adapter used by `search_research`: it now honors the source-specific page/character bounds and the explicit OCR allowance already defined by each source. The previous generic 40-page/50,000-character bound hid the INS 319 row deep in FSSAI Appendix A even though `/api/research` used the broader source bounds.
+- A live local source/tool-boundary test now resolves INS 319 and retrieves the FSSAI Appendix A excerpt through `executeGeminiTool('search_research')`; it confirms the excerpt contains the TBHQ/319 entry and adjacent `100 mg/kg` text while retaining the category/conditions limitation. `NUTRISCAN_LIVE_RESEARCH_TEST=true npx vitest run src/lib/server/gemini-tools.test.ts` passed 15/15. This verifies source retrieval and tool handoff, not legal applicability.
+- On an isolated server with the updated code, a paid `gemini-3.8-flash` assist request completed HTTP 200 in 39.4 seconds. The response payload was not retained in a verifiable checkpoint, so this is provider/route completion evidence only; it does not establish that the model gave the correct direct conclusion. No package photo or user profile was included in this text-only test.
+- FSSAI PDF text remains flattened: the observed `100 mg/kg` cannot safely be assigned to a cream-cracker category from proximity. The source limitation and Gemini instruction now require the agent to say applicability is unresolved when the category, conditions, effective notification or amendments are not established. Do not present this excerpt as current authorization or product compliance.
+- Verification: full suite 390 passed / 1 skipped across 39 files, TypeScript passed, live FSSAI source/tool test 15/15, and isolated optimized build generated all app/API routes. The isolated server was stopped; generated `next-env.d.ts` and `tsconfig.json` changes were restored from pre-build snapshots. Yash's OCR edits remain unstaged.
+- Paid ledger at checkpoint: 288 attempts (277 completed, 11 failed), 3,633,543 reported tokens, $3.532988 estimated actual and $3.858853 conservatively committed under the $4.80 local guard; estimated remaining headroom is $0.941147. These are local SDK estimates, not Google billing records. Existing port 3413 was not restarted, so it still needs a restart to load current code and limits.
+
 ## 23 October 2026 — additive identity-to-regulation retrieval tightened
 
 - A real paid `gemini-3.8-flash` text-only turn interpreted a retained OCR phrase `antioxidant (319)`, retrieved local Codex GSFA and WHO/JECFA records, and distinguished identity from product dose/exposure. No photo or profile was sent in this test. It attempted FSSAI research, but the live agent received only a navigation card saying the exact identifier was not found; it did not receive the usable Appendix A excerpt.

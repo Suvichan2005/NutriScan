@@ -184,6 +184,8 @@ describe('official regulation PDF discovery', () => {
     expect(appendix?.limitations).toMatch(/not a legal document, current-law determination, additive authorization or package-compliance finding/i);
     expect(appendix?.limitations).toMatch(/original notifications prevail/i);
     expect(appendix?.limitations).toMatch(/exact food category and conditions of use/i);
+    expect(appendix?.limitations).toMatch(/flattened PDF text may lose table row, column and food-category relationships/i);
+    expect(appendix?.summary).toMatch(/flattened text may not preserve table row, column or category relationships/i);
     expect(appendix?.limitations).toMatch(/Gazette notifications and amendments/i);
     expect(amendments?.url).toBe('https://fssai.gov.in/food-law/regulations/amendments/food-products-standards');
     expect(amendments?.category).toMatch(/amendment index; source discovery only/i);

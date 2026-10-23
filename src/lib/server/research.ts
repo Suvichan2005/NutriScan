@@ -31,7 +31,7 @@ function registryScore(entry: Entry, query: string) {
 }
 
 function sourceLimitations(entry: Entry) {
-  if (entry.id === 'fssai-additive-compendium-appendix-a') return 'Navigation aid only, not a legal document, current-law determination, additive authorization or package-compliance finding. FSSAI states the compendium includes notified amendments but the original notifications prevail. Verify the exact food category and conditions of use, and review applicable Gazette notifications and amendments before drawing any conclusion.';
+  if (entry.id === 'fssai-additive-compendium-appendix-a') return 'Navigation aid only, not a legal document, current-law determination, additive authorization or package-compliance finding. Flattened PDF text may lose table row, column and food-category relationships; do not assign a numeric limit to a nearby category by proximity alone without checking the original page layout. FSSAI states the compendium includes notified amendments but the original notifications prevail. Verify the exact food category and conditions of use, and review applicable Gazette notifications and amendments before drawing any conclusion.';
   if (entry.id === 'fssai-food-additive-amendments-index') return 'Amendment discovery index only, not a consolidated rule, current additive authorization or package-compliance finding. Open and verify the relevant Gazette notification, commencement date, exact food category and later amendments before drawing any conclusion.';
   const orsCaseLimit = entry.id === 'delhi-hc-ors-2025-dr-reddys'
     ? ' This is a case-specific judgment dated 31 October 2025: the Delhi High Court dismissed this petitioner’s challenge to the FSSAI measures and directed FSSAI to consider a representation about existing stock. It does not decide every product, party, proceeding or later order.'
@@ -93,7 +93,11 @@ export async function researchRecalls(query: string) {
   return { status: items.length ? 'ok' : 'empty', items, message: items.length ? 'Historical US FDA food-enforcement candidates only. Match the precise product, firm, market and lot. This cannot determine brand-wide safety, current recall status or Indian regulatory compliance.' : 'No matching reports were returned by this bounded US FDA search. This does not prove absence of recalls, product safety, brand credibility or Indian compliance.' };
 }
 
-export async function research(data: z.infer<typeof researchInput>, pdfExtractor: ResearchPdfExtractor = (bytes) => extractPdfText(bytes)) {
+export async function research(data: z.infer<typeof researchInput>, pdfExtractor: ResearchPdfExtractor = (bytes, options) => extractPdfText(
+  bytes,
+  { pages: options.pages, characters: options.characters },
+  { ocr: options.allowOcr, maxOcrPages: options.allowOcr ? 2 : 0 },
+)) {
   if (data.topic === 'science') {
     const url = new URL('https://www.ebi.ac.uk/europepmc/webservices/rest/search');
     const query = europePmcScienceQuery(data.query);
@@ -143,7 +147,7 @@ export async function research(data: z.infer<typeof researchInput>, pdfExtractor
         ? pdf.ocrPages ? 'Official PDF OCR excerpt (machine-extracted; unverified; not interpreted)' : entry.category.includes('Gazette') ? 'Official Gazette PDF text excerpt' : 'Official PDF text excerpt'
         : 'Live page excerpt';
       const category = entry.allowOcr && pdf?.ocrPages ? `${entry.category}; machine OCR excerpt` : entry.category;
-      const sourceCaveat = entry.id === 'fssai-additive-compendium-appendix-a' ? ' This excerpt is a navigation aid only; the original legal notifications prevail.' : '';
+      const sourceCaveat = entry.id === 'fssai-additive-compendium-appendix-a' ? ' This excerpt is a navigation aid only; flattened text may not preserve table row, column or category relationships, and the original legal notifications prevail.' : '';
       return { ok: true as const, entry, item: { id: entry.id, title: entry.title, url: entry.url, publisher: entry.publisher, publishedAt: entry.publishedAt, ...(entry.effectiveAt ? { effectiveAt: entry.effectiveAt } : {}), retrievedAt: new Date().toISOString(), category, summary: `${sourceKind} (truncated; not interpreted): ${excerpt}${pdfDisclosure}${sourceCaveat}`, limitations: sourceLimitations(entry) } satisfies ResearchItem };
     } catch (error) {
       if (error instanceof ApiError) {

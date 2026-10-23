@@ -1,5 +1,11 @@
 # Chronological decisions
 
+## 23 October 2026 — honor per-source extraction limits in Gemini research tools
+
+- Decision: use the bounds declared by each `ResearchPdfExtractor` source when the Gemini tool invokes the local research function, including source-authorized OCR. The generic 40-page/50,000-character fallback was materially smaller than FSSAI Appendix A's source-specific limit and excluded the requested INS entry.
+- Keep flattened regulatory PDF excerpts explicitly qualified. Retrieval can return a relevant row string but cannot establish column/category linkage, current authorization or applicability without the original layout and governing notification.
+- Verification: an opt-in live source/tool test retrieved the official TBHQ/INS 319 excerpt through the same `executeGeminiTool('search_research')` boundary used by Gemini. A paid assist route completed after the fix, but its response payload was not retained for answer-quality review; do not count HTTP 200 as correct legal reasoning.
+
 ## 23 October 2026 — ingest structured U.S. composition sources without loading every nutrient into memory
 
 - Import USDA Foundation Foods April 2026 and FNDDS 2021–2023 from their official downloadable JSON, pinning the source hashes and validating record/nutrient counts. Keep source and generated records in ignored local `.data/`; retain attribution and CC0 terms in the committed provenance register. The importers count malformed/missing data instead of replacing it with zero.
