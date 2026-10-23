@@ -6,6 +6,17 @@ type GuidanceEntry = {
   source: EvidenceSource;
   terms: readonly string[];
   conditions: readonly string[];
+  numericCoverage?: {
+    queryTerms: readonly string[];
+    requiredValuePatterns: readonly string[];
+  };
+};
+
+export type NutritionGuidanceCoverageFact = {
+  sourceId: string;
+  statement: string;
+  supportingQuote: string;
+  requiredValuePatterns: readonly string[];
 };
 
 function guidanceSource(value: EvidenceSource): EvidenceSource {
@@ -48,6 +59,7 @@ const entries: readonly GuidanceEntry[] = [
     }),
     terms: ['ckd', 'chronic kidney', 'kidney', 'renal', 'sodium', 'salt', 'blood pressure', 'hypertension'],
     conditions: ['ckd', 'chronic kidney disease', 'kidney disease', 'kidney', 'renal'],
+    numericCoverage: { queryTerms: ['sodium', 'salt'], requiredValuePatterns: ['\\b2\\s*g(?:rams?)?\\s*(?:\\/|per\\s+)day\\b'] },
   },
   {
     source: guidanceSource({
@@ -67,24 +79,8 @@ const entries: readonly GuidanceEntry[] = [
     terms: ['healthy diet', 'free sugar', 'sugar', 'sodium', 'salt', 'saturated fat', 'trans fat', 'dietary pattern', 'population guidance'],
     conditions: [],
   },
-  {
-    source: guidanceSource({
-      id: 'icmr-nin-dietary-guidelines-2024',
-      title: 'Dietary Guidelines for Indians 2024',
-      publisher: 'ICMR–National Institute of Nutrition',
-      url: 'https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf',
-      category: 'guideline',
-      jurisdiction: 'India',
-      publishedAt: '2024',
-      effectiveAt: null,
-      retrievedAt: snapshotRetrievedAt,
-      summary: 'India-specific, population-level dietary guidance intended to support healthy eating patterns and food choices. It is a useful cultural and jurisdictional reference, not a clinical prescription for an individual condition.',
-      limitations: 'Population guidance, not a substitute for condition-specific care. The source publication’s reuse terms were not established in this review; NutriScan stores only a link and its own short summary.',
-      license: 'Reuse terms not established. Link and NutriScan-authored paraphrase only; source publication text is not bundled.',
-    }),
-    terms: ['icmr', 'nin', 'dietary guidelines', 'food groups', 'balanced diet', 'healthy eating', 'general nutrition'],
-    conditions: [],
-  },
+  // ICMR-NIN Dietary Guidelines 2024 is intentionally not searchable until
+  // written permission covers electronic use in a product (see docs/DECISIONS.md).
   {
     source: guidanceSource({
       id: 'aha-sodium-guidance-2025',
@@ -102,6 +98,10 @@ const entries: readonly GuidanceEntry[] = [
     }),
     terms: ['aha', 'american heart association', 'hypertension', 'high blood pressure', 'blood pressure', 'sodium', 'salt'],
     conditions: ['hypertension', 'high blood pressure'],
+    numericCoverage: {
+      queryTerms: ['sodium', 'salt'],
+      requiredValuePatterns: ['\\b2,?300\\s*mg\\s*(?:\\/|per\\s+)day\\b', '\\b1,?500\\s*mg\\s*(?:\\/|per\\s+)day\\b'],
+    },
   },
   {
     source: guidanceSource({
@@ -202,4 +202,20 @@ export function getNutritionGuidance(input: {
   return relevant
     .slice(0, maxResults)
     .map(item => item.entry.source);
+}
+
+export function getNutritionGuidanceCoverageFacts(question: string, sourceIds: readonly string[]): NutritionGuidanceCoverageFact[] {
+  const directGuidanceQuestion = /\b(guideline|guidance|recommend(?:ation|ed|s)?|according to)\b|\bwhat\s+(?:does\s+)?[\p{L}\p{N}-]+(?:\s+[\p{L}\p{N}-]+){0,2}\s+(?:say|says|recommend|recommends)\b/iu.test(question);
+  if (!directGuidanceQuestion) return [];
+  const selected = new Set(sourceIds);
+  return entries.flatMap(entry => {
+    const coverage = entry.numericCoverage;
+    if (!coverage || !selected.has(entry.source.id) || !coverage.queryTerms.some(term => mentions(question, term))) return [];
+    return [{
+      sourceId: entry.source.id,
+      statement: entry.source.summary,
+      supportingQuote: entry.source.summary,
+      requiredValuePatterns: coverage.requiredValuePatterns,
+    }];
+  });
 }

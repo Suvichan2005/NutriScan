@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { evidenceSources } from '../../modules/knowledge';
-import { attachGoogleGrounding, googleGroundingEvidence, normalizeModelImageRegions, supplementRequestedCompositionCoverage, toolResultForModel, type RetrievedCompositionFact } from './gemini';
+import { attachGoogleGrounding, googleGroundingEvidence, normalizeModelImageRegions, supplementRequestedCompositionCoverage, supplementRequestedNutritionGuidanceCoverage, toolResultForModel, type RetrievedCompositionFact } from './gemini';
+import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutrition-guidance';
 
 describe('explicit composition-answer coverage', () => {
   const facts:RetrievedCompositionFact[]=[
@@ -24,6 +25,42 @@ describe('explicit composition-answer coverage', () => {
     expect(repeated.added).toBe(0);
     const competing=[...facts,{...facts[0],sourceId:'fdc-rice',description:'Rice'}];
     expect(supplementRequestedCompositionCoverage(output,'Report protein for idli.',competing).added).toBe(0);
+  });
+});
+
+describe('explicit nutrition-guidance answer coverage', () => {
+  const question = 'Summarize what KDIGO 2024 says about sodium in chronic kidney disease.';
+  const evidence = getNutritionGuidance({ query: question, condition: 'CKD', jurisdiction: 'India' });
+  const facts = getNutritionGuidanceCoverageFacts(question, evidence.map(source => source.id));
+  const output = { answer: '', claims: [], limitations: [], inspectImage: null };
+
+  it('adds the source-backed numeric recommendation when Gemini only reports its caveat', () => {
+    const result = supplementRequestedNutritionGuidanceCoverage(output, facts);
+    expect(result.added).toBe(1);
+    expect((result.output as { claims: Array<{ text: string; sourceIds: string[]; supportingSpans: Array<{ quote: string }> }> }).claims).toEqual([
+      expect.objectContaining({
+        text: evidence[0].summary,
+        sourceIds: ['kdigo-ckd-2024-sodium'],
+        supportingSpans: [{ kind: 'source', id: 'kdigo-ckd-2024-sodium', quote: evidence[0].summary }],
+      }),
+    ]);
+  });
+
+  it('does not add a duplicate when the model already states every required amount', () => {
+    const complete = {
+      ...output,
+      claims: [{
+        mode: 'synthesis' as const,
+        text: 'KDIGO suggests sodium below 2 g/day for people with CKD.',
+        observationIds: [], sourceIds: ['kdigo-ckd-2024-sodium'], calculationIds: [], profileFieldIds: [],
+        supportingSpans: [{ kind: 'source' as const, id: 'kdigo-ckd-2024-sodium', quote: evidence[0].summary }], visualEvidence: [],
+      }],
+    };
+    expect(supplementRequestedNutritionGuidanceCoverage(complete, facts).added).toBe(0);
+  });
+
+  it('does not create coverage facts for an ordinary package question', () => {
+    expect(getNutritionGuidanceCoverageFacts('How much sodium is in this package?', evidence.map(source => source.id))).toEqual([]);
   });
 });
 

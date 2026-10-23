@@ -2,8 +2,13 @@
 
 ## 2026-10-23 — expose condition-aware dietary guidance to Gemini tools
 
-- Added seven source-linked official guidance summaries behind a bounded local Gemini function. Condition-specific records require matching context; jurisdiction mismatches and unavailable condition targets abstain. No network or provider call is made by this lookup.
+- Added six source-linked official guidance summaries behind a bounded local Gemini function. Condition-specific records require matching user/profile context; unsupported model-supplied conditions and jurisdiction mismatches abstain. No network or provider call is made by this lookup. ICMR-NIN 2024 is excluded pending prior written product-use permission.
 - Added offline tests for CKD/India sodium context, absent India-specific diabetes targets, and avoiding a CKD-to-hypertension cross-match. Full suite: 395 passed, 1 skipped; TypeScript and optimized build passed. No live Gemini call was made for this change; model selection and clinical answer quality remain unverified. Corpus breadth remains limited.
+
+## 2026-10-23 — close a live guidance answer-coverage gap
+
+- A consented text-only Gemini turn called the local guidance tool, but initially omitted KDIGO’s printed sodium amount while discussing the exception. The later request returned the conditional <2 g/day sodium recommendation, its sodium-wasting caveat and no invented CKD potassium allowance. A tested source-linked coverage guard now supplies a required numeric source finding if the model omits it from a direct guideline answer; that guard did not need to fire in the observed final response.
+- Added a server boundary so model tool arguments cannot create diagnoses, goals or jurisdictions; retrieval uses the user question and explicitly passed profile context only. The live test included neither photos nor profile data. Source-use review removed ICMR-NIN 2024 from runtime retrieval until written permission is obtained. Full tests: 400 passed, 1 skipped; TypeScript/build passed. Provider estimates and remaining limitations are recorded in STATUS.
 
 ## 2026-10-23 — add USDA food-composition retrieval to the live agent
 

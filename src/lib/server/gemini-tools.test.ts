@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { evidenceSources } from '../../modules/knowledge';
-import { sourceSchema, type PackageData, type TentativeStructuredCandidate } from '../contracts';
+import { defaultProfile, sourceSchema, type PackageData, type Profile, type TentativeStructuredCandidate } from '../contracts';
 import { executeGeminiTool, type GeminiToolContext } from './gemini-tools';
 
 const mocks = vi.hoisted(() => ({ semanticRetrieve: vi.fn(), searchOpenFoodTox: vi.fn(), research: vi.fn() }));
@@ -16,13 +16,13 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019'): GeminiToolContext {
+function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019', profile?: Profile): GeminiToolContext {
   const packageData: PackageData = {
     id: 'package-test', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [],
     observations: [{ id: 'ocr-1', field: 'ocr-line', text: line, side: 'back', confidence: 60, origin: 'ocr', imageId: 'image-1', readingOrder: { runId: 'run-1', blockIndex: 0, paragraphIndex: 0, lineIndex: 0 } }],
     rawText: line, warnings: [], synthetic: true, createdAt: new Date().toISOString(),
   };
-  return { question, package: packageData, visualImages: [], searchTerms: new Set(), prepareImage: async image => image.base64 };
+  return { question, package: packageData, ...(profile ? { profile } : {}), visualImages: [], searchTerms: new Set(), prepareImage: async image => image.base64 };
 }
 
 describe('Gemini tool retrieval boundaries', () => {
@@ -31,10 +31,10 @@ describe('Gemini tool retrieval boundaries', () => {
     vi.stubGlobal('fetch', fetcher);
 
     const result = await executeGeminiTool('get_nutrition_guidance', {
-      query: 'How should adults with CKD handle sodium and potassium?',
+      query: 'How should adults in India with CKD handle sodium and potassium?',
       condition: 'CKD',
       jurisdiction: 'India',
-    }, context('How should adults with CKD handle sodium and potassium?'));
+    }, context('How should adults in India with CKD handle sodium and potassium?'));
 
     expect(result.status).toBe('ok');
     expect(result.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium']);
@@ -61,6 +61,16 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it('does not retrieve ICMR-NIN 2024 content until its product-use permission is cleared', async () => {
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'ICMR NIN dietary guidelines 2024 balanced diet India',
+      jurisdiction: 'India',
+    }, context('What does ICMR NIN 2024 say about a balanced diet in India?'));
+
+    expect(result.status).toBe('empty');
+    expect(result.evidence).toEqual([]);
+  });
+
   it('does not cross-apply CKD sodium guidance to hypertension without a kidney context', async () => {
     const result = await executeGeminiTool('get_nutrition_guidance', {
       query: 'How should I manage sodium for hypertension in India?',
@@ -70,6 +80,24 @@ describe('Gemini tool retrieval boundaries', () => {
 
     expect(result.status).toBe('empty');
     expect(result.evidence?.some(source => source.id === 'kdigo-ckd-2024-sodium')).toBe(false);
+  });
+
+  it('uses only the user question or explicitly supplied profile, not invented tool arguments', async () => {
+    const irrelevant = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'CKD sodium hypertension diabetes potassium',
+      condition: 'diabetes',
+      jurisdiction: 'United States',
+    }, context('What package details are visible?'));
+
+    expect(irrelevant.status).toBe('empty');
+    expect(irrelevant.evidence).toEqual([]);
+
+    const profile = { ...defaultProfile, healthConsiderations: 'Chronic kidney disease', country: 'India' };
+    const authorized = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'CKD sodium', condition: 'CKD', jurisdiction: 'India',
+    }, context('How does this fit my context?', 'INGREDIENTS: REFINED WHEAT FLOUR', profile));
+
+    expect(authorized.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium']);
   });
 
   it('rejects oversized guidance lookups without executing retrieval', async () => {

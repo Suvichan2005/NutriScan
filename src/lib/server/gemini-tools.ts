@@ -5,6 +5,7 @@ import {
   calculationSchema,
   nutrientKeys,
   normalizedCropSchema,
+  profileSchema,
   sourceSchema,
   type Calculation,
   type EvidenceSource,
@@ -20,10 +21,15 @@ import { isValidGtin, findOcrGtinCandidate } from '../barcode';
 import { productInput, lookupProducts } from './products';
 import { researchInput, research } from './research';
 import { fixedFetch } from './http';
-import { getNutritionGuidance } from './nutrition-guidance';
+import { getNutritionGuidance, getNutritionGuidanceCoverageFacts, type NutritionGuidanceCoverageFact } from './nutrition-guidance';
 
 const imageIdSchema = z.string().min(1).max(160);
 const querySchema = z.string().trim().min(2).max(180);
+function matchesAuthorizedContext(contextText: string, candidate: string): boolean {
+  const normalizedContext = ' ' + contextText.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
+  const normalizedCandidate = candidate.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  return normalizedCandidate.length > 0 && normalizedContext.includes(' ' + normalizedCandidate + ' ');
+}
 const toolArgs = {
   inspect_package_image: z.object({ imageId: imageIdSchema, crop: normalizedCropSchema.optional() }).strict(),
   search_knowledge: z.object({ query: querySchema }).strict(),
@@ -80,6 +86,7 @@ export type GeminiToolResult = {
   output: Record<string, unknown>;
   evidence?: EvidenceSource[];
   calculations?: Calculation[];
+  guidanceCoverageFacts?: NutritionGuidanceCoverageFact[];
   image?: { mimeType: 'image/jpeg'; base64: string };
   /** Canonical terms returned by a successful local identity lookup; only these may extend later research queries. */
   searchTerms?: string[];
@@ -90,6 +97,7 @@ export type GeminiToolResult = {
 export type GeminiToolContext = {
   question: string;
   package: PackageData;
+  profile?: z.infer<typeof profileSchema>;
   interpretedCandidates?: TentativeStructuredCandidate[];
   visualImages: GeminiToolImage[];
   searchTerms: Set<string>;
@@ -275,12 +283,32 @@ async function searchKnowledge(args: z.infer<typeof toolArgs.search_knowledge>):
   }
 }
 
-function retrieveNutritionGuidance(args: z.infer<typeof toolArgs.get_nutrition_guidance>): GeminiToolResult {
-  const evidence = getNutritionGuidance(args);
+function retrieveNutritionGuidance(args: z.infer<typeof toolArgs.get_nutrition_guidance>, context: GeminiToolContext): GeminiToolResult {
+  const authorizedContext = [
+    context.question,
+    context.profile?.dietaryPattern,
+    context.profile?.healthConsiderations,
+    context.profile?.goals,
+    context.profile?.country,
+  ].filter(Boolean).join(' ');
+  const condition = args.condition && matchesAuthorizedContext(authorizedContext, args.condition) ? args.condition : undefined;
+  const goal = args.goal && matchesAuthorizedContext(authorizedContext, args.goal) ? args.goal : undefined;
+  const jurisdiction = args.jurisdiction && matchesAuthorizedContext(authorizedContext, args.jurisdiction)
+    ? args.jurisdiction
+    : context.profile?.country.trim() || undefined;
+  const evidence = getNutritionGuidance({
+    query: authorizedContext,
+    ...(condition ? { condition } : {}),
+    ...(goal ? { goal } : {}),
+    ...(jurisdiction ? { jurisdiction } : {}),
+    ...(args.maxResults ? { maxResults: args.maxResults } : {}),
+  });
+  const guidanceCoverageFacts = getNutritionGuidanceCoverageFacts(context.question, evidence.map(source => source.id));
   return {
     status: evidence.length ? 'ok' : 'empty',
     resultCount: evidence.length,
     evidence,
+    guidanceCoverageFacts,
     output: {
       status: evidence.length ? 'ok' : 'empty',
       results: evidence,
@@ -590,7 +618,7 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
     }
     case 'get_nutrition_guidance': {
       const parsed = toolArgs.get_nutrition_guidance.safeParse(args);
-      return parsed.success ? retrieveNutritionGuidance(parsed.data) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The nutrition-guidance query was invalid.' } };
+      return parsed.success ? retrieveNutritionGuidance(parsed.data, context) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The nutrition-guidance query was invalid.' } };
     }
     case 'search_food_composition': {
       const parsed = toolArgs.search_food_composition.safeParse(args);

@@ -6,6 +6,7 @@ import { packageForAssist, validateInferenceOutput, InferenceModuleError, assist
 import { calculationEvidenceText, calculationSchema, conversationEvidenceSourceSchema, normalizedCropSchema, observationSchema, packageSchema, profileSchema, sourceSchema, tentativeStructuredCandidateSchema, visionCaptureSchema, type Observation, type VisionCapture } from '../contracts';
 import { applicationGeminiContext, generateTracked, providerStatus } from './gemini-provider';
 import { executeGeminiTool, geminiToolDeclarations, type GeminiToolImage, type GeminiToolResult } from './gemini-tools';
+import type { NutritionGuidanceCoverageFact } from './nutrition-guidance';
 import { ApiError } from './http';
 
 export { providerStatus };
@@ -57,7 +58,7 @@ const calculationToolInstruction='Only call calculate_nutrition when a complete 
 const toolCitationInstruction='When tool feedback contains citationEvidence, use its exact sourceId in sourceIds and copy a short exact substring of that record’s summary into supportingSpans. The full attributed record is available to the client. If the user asks what a retrieved record reports, include at least one concise claim explaining its actual finding and one relevant limitation; do not perform a lookup and then omit its result. If the record does not answer the requested conclusion, say what it supports and what additional evidence is missing. Do not leave the answer empty merely because package exposure or individual safety is unknown.';
 const regulatoryScopeInstruction='When interpreting flattened regulatory PDF table text, report only relationships the excerpt supports. Row, column, numeric-limit and food-category associations are not established by proximity alone; if the source layout does not clearly link them, state that the association is unresolved and do not apply the provision to the product. If asked whether an additive use is authorized for a specific product, answer directly that the excerpt cannot establish applicability when the exact food category, conditions, effective notification and amendments are not supported; name the missing evidence rather than leaving the answer implicit.';
 const assessmentFollowupInstruction='A local assessment index can return identity, reference values and linked publication titles without the publication conclusion. If the user asks for that conclusion, use search_research on the exact identity and assessment topic returned by the local tool; never infer a publication finding from its title or date alone.';
-const nutritionGuidanceInstruction='Use get_nutrition_guidance when a condition-specific or goal-specific dietary question makes a source material. Pass only context stated by the user or present in authorized profile context, and preserve each source’s jurisdiction and date. These are population or clinical-care references, not personal targets or judgments about one product. Do not infer a diagnosis or compare one package with a daily limit as a pass/fail threshold. CKD potassium, phosphorus, fluid and protein needs require individual clinical context; never invent an allowance.';
+const nutritionGuidanceInstruction='Use get_nutrition_guidance when a condition-specific or goal-specific dietary question makes a source material. Pass only context stated by the user or present in authorized profile context, and preserve each source’s jurisdiction and date. When the user directly asks what a cited guideline recommends, state the supported recommendation with its exact amount and unit when present, who it applies to, whether it is conditional, and its material exception; do not give only a caveat while omitting the requested number. These are population or clinical-care references, not personal targets or judgments about one product. Do not infer a diagnosis or compare one package with a daily limit as a pass/fail threshold. CKD potassium, phosphorus, fluid and protein needs require individual clinical context; never invent an allowance.';
 const presentationInstruction=`Optionally return uiComponents as a short list of typed presentation choices for this exact question. Choose only components that materially help, at most four, and include only evidence IDs that directly support the displayed data. Allowed types are nutrition-table, portion-calculator, ingredient-explorer, allergen-explanation, product-comparison, package-evidence, source-reference-cards, personalized-finding, and package-details. Each entry must contain type, observationIds, sourceIds and calculationIds arrays. These are presentation instructions only: they do not create facts, change calculations or validate a package reading. Use package-evidence for relevant raw OCR, ingredient-explorer/allergen-explanation only when relevant label evidence exists, source-reference-cards only when a relevant source is supplied, and personalized-finding only when a validated claim cites an explicitly supplied profile field. product-comparison is available only when a selected community product record appears among supplied product evidence; call it a candidate record, not verified product truth. Omit components with insufficient evidence or irrelevant to the user's intent.`;
 
 /** Keep Google's constrained-decoding schema within its supported JSON Schema subset.
@@ -259,6 +260,27 @@ export function supplementRequestedCompositionCoverage(output:unknown,question:s
   return {output:{...parsed.data,claims:claims.slice(0,15)},added};
 }
 
+export function supplementRequestedNutritionGuidanceCoverage(output: unknown, facts: readonly NutritionGuidanceCoverageFact[]) {
+  const parsed = assistOutput.safeParse(output);
+  if (!parsed.success || !facts.length) return { output, added: 0 };
+  const claims = [...parsed.data.claims];
+  let added = 0;
+  for (const fact of facts) {
+    const sourcedText = claims.filter(claim => claim.sourceIds.includes(fact.sourceId)).map(claim => claim.text).join(' ');
+    const covered = fact.requiredValuePatterns.every(pattern => new RegExp(pattern, 'iu').test(sourcedText));
+    if (covered || claims.length >= 15) continue;
+    claims.push({
+      mode: 'synthesis',
+      text: fact.statement,
+      observationIds: [],
+      sourceIds: [fact.sourceId],
+      supportingSpans: [{ kind: 'source', id: fact.sourceId, quote: fact.supportingQuote }],
+    });
+    added += 1;
+  }
+  return { output: { ...parsed.data, claims }, added };
+}
+
 function cleanGroundingSegment(value: string) {
   const segment = value.trim().replace(/\s+/g, ' ');
   const parseText = (candidate: string) => {
@@ -378,6 +400,7 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
   const calculations = new Map((data.calculations ?? []).map(item => [item.id, item]));
   const trace: GeminiToolTrace[] = [];
   const compositionFacts:RetrievedCompositionFact[]=[];
+  const guidanceCoverageFacts = new Map<string, NutritionGuidanceCoverageFact>();
   const cache = new Map<string, Promise<GeminiToolResult>>();
   let executedToolCalls = 0;
   let groundedQueryCount = 0;
@@ -385,6 +408,7 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
   const toolContext = {
     question: data.question,
     package: data.package,
+    profile: data.profile,
     interpretedCandidates: data.interpretedCandidates ?? [],
     visualImages: (data.visualImages ?? []) as GeminiToolImage[],
     searchTerms: new Set<string>(),
@@ -447,7 +471,9 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
         const groundedOutput=attachGoogleGrounding(normalized.output, groundingSources);
         const completedOutput=supplementRequestedCompositionCoverage(groundedOutput,data.question,compositionFacts);
         if(completedOutput.added)trace.push({name:'requested_composition_coverage',status:'ok',resultCount:completedOutput.added,elapsedMs:0});
-        return { output: completedOutput.output, evidence: [...toolEvidence.values()], calculations: [...calculations.values()], trace };
+        const guidanceOutput = supplementRequestedNutritionGuidanceCoverage(completedOutput.output, [...guidanceCoverageFacts.values()]);
+        if (guidanceOutput.added) trace.push({ name: 'requested_guidance_coverage', status: 'ok', resultCount: guidanceOutput.added, elapsedMs: 0 });
+        return { output: guidanceOutput.output, evidence: [...toolEvidence.values()], calculations: [...calculations.values()], trace };
       }
       catch { throw new ApiError(502, 'provider_invalid', 'The model returned invalid structured output. No result was accepted.'); }
     }
@@ -474,6 +500,7 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
       }
       const result = await resultPromise;
       if (state === 'error') state = result.status;
+      for (const fact of result.guidanceCoverageFacts ?? []) guidanceCoverageFacts.set(fact.sourceId, fact);
       if(name==='search_food_composition'&&result.status==='ok'){
         const composition=compositionToolResultSchema.safeParse(result.output);
         if(composition.success)for(const record of composition.data.results){
