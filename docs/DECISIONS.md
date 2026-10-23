@@ -799,3 +799,7 @@ Raw OCR, source records and package-detail components belong in the on-demand Ev
 ## 23 October 2026 — model-selected evidence for package suitability
 
 Do not force a condition-keyword-specific local guidance call ahead of every product-suitability answer. Let Gemini choose available tools when they add evidence; require a local lookup when the user explicitly asks what a guideline says. Preserve source-jurisdiction filtering and reject unsupported model prose. If response validation fails, retain a clearly labeled local result and offer retry. The latest live package retry still failed to produce a validated grounded answer, so provider integration is not accepted yet.
+
+## 23 October 2026 — prioritize declared serving evidence in answer repair
+
+When the bounded conversational repair runs, move exact OCR lines explicitly labeled as a serving size ahead of other noisy OCR lines and identify those observation IDs to Gemini. This makes an existing package declaration easier to use in regular-use and portion answers without parsing or confirming the amount or unit. On the Bisk Farm run, the answer advanced from saying only that a serving was printed to including the two-biscuit / approximate 13.4 declaration. The OCR line omitted `g`; the attached original photo showed it on visual inspection, but Gemini did not verify that unit in this run. Preserve that gap and leave carbohydrate values unresolved. This change improves answer evidence coverage only; it does not improve OCR or establish package truth.

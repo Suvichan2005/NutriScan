@@ -2,7 +2,15 @@
 
 Updated: 2026-10-23. This is a local development application and research workspace. Feature levels below describe evidence available in this checkout; they do not imply clinical or production acceptance.
 
-## Current checkpoint — 23 October 2026: Bisk Farm question and follow-up complete
+## Current checkpoint — 23 October 2026: Bisk Farm serving evidence surfaced in the answer
+
+- The earlier real-photo answer said only that a serving size was printed. The one bounded repair pass now receives explicit serving-declaration OCR lines first, while retaining the complete line set and source IDs. On a fresh isolated local server, the exact daily-snacking question now includes the printed two-biscuit serving and approximate 13.4 amount alongside the refined-wheat-flour ingredient and sugar claims. This is answer-context prioritization, not an OCR-accuracy gain or numeric fact promotion.
+- The OCR line omits the unit after 13.4. The original photo crop visibly shows a trailing “g”, but Gemini did not verify it from the image in this run; the answer therefore leaves the unit unstated. Carbohydrate digits remain unresolved, and the tentative 9.28 g per serving reading is not used in arithmetic. This is a remaining visual-verification/model-completeness gap.
+- Live request: `gemini-3.8-flash`, two supplied photos, no profile transmitted. HTTP 200; provider-schema JSON parsed. The first generation had 1 accepted and 2 rejected answer parts; one targeted repair produced 2 accepted parts with no rejected parts. Final validation retained 5 claims. The model’s nutrition-guidance tool call returned no applicable record; no disease-keyword-specific guidance was forced.
+- End-to-end route time was about 45 seconds across three provider calls; the local token ledger reports 82,490 total tokens and estimates about $0.0500 / ₹4.50. This is an SDK/token-price estimate, not a Google billing receipt. Screenshot is local and ignored at `.data/gemini-bisk-serving-priority-desktop.png`; the isolated server ran on port 3418 and did not disturb the open 3413 session.
+- Verification: focused answer-repair tests passed (24/24), TypeScript passed, optimized production build passed, and the full suite passed (455 passed, 1 skipped). The initial suite run overlapped the build and hit two 5-second PDF-source test timeouts; the full post-build rerun passed all tests.
+
+## Earlier checkpoint — 23 October 2026: Bisk Farm question and follow-up (superseded)
 
 - A controlled Chrome run used the two supplied Bisk Farm photographs on a clean production build. The exact daily-snack question now gets one Gemini-led assistant turn with a qualified judgment, the refined-flour-heavy ingredient observation, the package sugar claims, and a concise statement that the carbohydrate amount is not established. It does not invent a carbohydrate value, diagnose, or present a universal allowance. The first answer says a serving size is printed but does not state its quantity; the follow-up identifies the printed two-biscuit serving and keeps carbohydrate unresolved.
 - The provider returned HTTP 200 for both turns. The first response parsed in provider-schema mode; claim validation accepted 4 claims and rejected 0, and accepted all 3 answer parts. One bounded repair completed. The follow-up returned HTTP 200, tried deterministic calculation, and correctly withheld it because the OCR value/basis was not established. This was a real-photo product-path check, not an independent OCR accuracy measurement or personalized clinical evaluation; no profile was sent.
@@ -13,7 +21,7 @@ Updated: 2026-10-23. This is a local development application and research worksp
 - Current local knowledge assets: 24 curated semantic records/vectors, 11 additive identities, six source-linked guidance summaries, USDA Foundation Foods April 2026 plus FNDDS 2021–2023 (local search smoke test succeeded), and EFSA OpenFoodTox 3.0 (7,880 substances; local TBHQ search succeeded). Read-only live adapters cover Open Food Facts v3/Search-a-licious, PubChem identity lookup, Europe PMC research and bounded official FSSAI source retrieval. These are not comprehensive authoritative databases. IFCT/INDB values remain un-ingested pending reuse rights; ICMR-NIN is metadata-only, and clinical guidance is a small curated set rather than a complete Indian guidance corpus.
 - Verification after the final changes: 454 tests passed, 1 skipped; TypeScript passed; isolated optimized production build passed. The local paid ledger reports about $5.900630 cumulative conservative spend across 407 paid records; this estimate is separate from the owner-reported AI Studio bill.
 
-Earlier Bisk Farm entries below are historical checkpoints and were superseded by this live run.
+The checkpoint above supersedes the earlier Bisk Farm entries below; they remain as chronological history.
 
 ## 23 October 2026 — one answer-led thread turn and compact evidence review
 

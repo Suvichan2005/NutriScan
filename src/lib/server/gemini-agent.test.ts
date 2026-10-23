@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { packageSchema } from '../contracts';
 import { validateInferenceOutput } from '../../modules/inference/core';
 import { evidenceSources } from '../../modules/knowledge';
-import { attachGoogleGrounding, googleGroundingEvidence, needsConversationalAnswerRepair, normalizeModelImageRegions, normalizeProviderAssistOutput, parseAgentProviderOutput, requestedIngredientIdentityCoverageFacts, requiresExplicitNutritionGuidanceLookup, supplementRequestedCompositionCoverage, supplementRequestedIngredientIdentityCoverage, supplementRequestedNutritionGuidanceCoverage, toolResultForModel, type RetrievedCompositionFact } from './gemini';
+import { attachGoogleGrounding, googleGroundingEvidence, needsConversationalAnswerRepair, normalizeModelImageRegions, normalizeProviderAssistOutput, parseAgentProviderOutput, prioritizeAnswerRepairObservations, requestedIngredientIdentityCoverageFacts, requiresExplicitNutritionGuidanceLookup, supplementRequestedCompositionCoverage, supplementRequestedIngredientIdentityCoverage, supplementRequestedNutritionGuidanceCoverage, toolResultForModel, type RetrievedCompositionFact } from './gemini';
 import { executeGeminiTool } from './gemini-tools';
 import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutrition-guidance';
 
@@ -25,6 +25,21 @@ describe('model answer-part recovery', () => {
     expect(needsConversationalAnswerRepair(1, 0, true, false)).toBe(false);
     expect(needsConversationalAnswerRepair(0, 4, true, true)).toBe(false);
     expect(needsConversationalAnswerRepair(0, 0, false, false)).toBe(false);
+  });
+
+  it('surfaces explicit package serving declarations before noisy OCR without changing or dropping other lines', () => {
+    const observations = [
+      { id: 'ingredients', field: 'ocr-line', text: 'INGREDIENTS: REFINED WHEAT FLOUR', side: 'back', confidence: 85, origin: 'ocr' },
+      { id: 'carbs', field: 'ocr-line', text: 'CARBOHYDRATES 6329g 928g', side: 'back', confidence: 70, origin: 'ocr' },
+      { id: 'serving', field: 'ocr-line', text: 'SERVING SIZE:2 BISCUITS (APPROX. 13.4 g)', side: 'back', confidence: 90, origin: 'ocr' },
+      { id: 'description', field: 'user-description', text: 'Cream crackers', side: 'text', confidence: null, origin: 'user' },
+    ] as const;
+
+    const prioritized = prioritizeAnswerRepairObservations([...observations]);
+
+    expect(prioritized.priorityServingObservationIds).toEqual(['serving']);
+    expect(prioritized.observations.map(item => item.id)).toEqual(['serving', 'ingredients', 'carbs']);
+    expect(prioritized.observations[0].text).toBe(observations[2].text);
   });
 
   it('keeps valid evidence-linked claims when only answer-to-claim indexes are malformed', () => {
