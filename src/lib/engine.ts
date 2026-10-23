@@ -33,7 +33,7 @@ function normalized(n:Nutrient):{value:number;unit:string} {
   if(n.key==='sodium')return {value:n.unit==='g'?n.value*1000:n.value,unit:'mg'};
   return {value:n.unit==='mg'?n.value/1000:n.value,unit:'g'};
 }
-type Usable = {key:NutrientKey;value:number;unit:string;basis:NonNullable<Nutrient['basis']>;observations:string[];interpretationIds?:string[]};
+type Usable = {key:NutrientKey;value:number;unit:string;basis:NonNullable<Nutrient['basis']>;observations:string[];imageIds?:string[];interpretationIds?:string[]};
 function usable(pkg:PackageData,key:NutrientKey,unit:'g'|'ml'):Usable|undefined {
   const rows=pkg.nutrients.filter(n=>n.key===key);
   if(!rows.length||rows.some(n=>n.status==='conflict'||!n.basis||n.basis.unit!==unit))return;
@@ -44,7 +44,7 @@ function usable(pkg:PackageData,key:NutrientKey,unit:'g'|'ml'):Usable|undefined 
 }
 
 /** Reuses the same package for follow-ups. Pure and local: no hidden network call. */
-export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'ml',profileInput:Profile,question='What does this label mean for this portion?',interpretedCandidates:TentativeStructuredCandidate[]=[]):Audit {
+export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'ml',profileInput:Profile,question='What does this label mean for this portion?',interpretedCandidates:TentativeStructuredCandidate[]=[],attachedImageIds:string[]=[]):Audit {
   const pkg=packageSchema.parse(pkgInput);const profile=profileSchema.parse(profileInput);
   const observationIds=new Set(pkg.observations.map(o=>o.id));
   if(observationIds.size!==pkg.observations.length)throw new Error('Observation identifiers must be unique.');
@@ -150,7 +150,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   }
   const candidates=new Map<NutrientKey,Usable>();
   for(const key of nutrientKeys){const candidate=usable(pkg,key,portionUnit);if(candidate)candidates.set(key,candidate);}
-  const interpretedNutrition=reconcileInterpretedNutrition(pkg,interpretedCandidates);
+  const interpretedNutrition=reconcileInterpretedNutrition(pkg,interpretedCandidates,attachedImageIds);
   for(const key of nutrientKeys){
     if(candidates.has(key))continue;
     const rows=pkg.nutrients.filter(nutrient=>nutrient.key===key);
@@ -158,7 +158,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     if(!options.length)continue;
     // Prefer a standard 100-unit declaration; equivalent serving columns stay linked.
     const selected=[...options].sort((a,b)=>Number(b.basis.amount===100)-Number(a.basis.amount===100))[0];
-    candidates.set(key,{key,value:selected.value,unit:selected.unit,basis:selected.basis,observations:unique([...selected.observationIds,...rows.flatMap(row=>row.observationIds)]),interpretationIds:selected.candidateIds});
+    candidates.set(key,{key,value:selected.value,unit:selected.unit,basis:selected.basis,observations:unique([...selected.observationIds,...rows.flatMap(row=>row.observationIds)]),imageIds:selected.imageIds,interpretationIds:selected.candidateIds});
   }
   const salt=candidates.get('salt');const sodium=candidates.get('sodium');
   if(salt&&sodium){
@@ -191,13 +191,15 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     }
     const result=candidate.value*portion/candidate.basis.amount;
     const readingAssumption=candidate.interpretationIds?.length
-      ?'Gemini associated the nutrient, number, unit and printed basis with exact OCR word evidence. This remains an unverified model interpretation; it has not been confirmed against the original pixels.'
+      ?candidate.imageIds?.length
+        ?'Gemini associated the nutrient, number, unit and printed basis with supplied package-photo regions. This remains an unverified model interpretation, not a confirmed package fact.'
+        :'Gemini associated the nutrient, number, unit and printed basis with exact OCR word evidence. This remains an unverified model interpretation; it has not been confirmed against the original pixels.'
       :packageMarksNutritionValuesApproximate
       ?'The package labels its nutrition values as approximate; this calculation scales the printed reading as an estimate. NutriScan has not independently verified the reading or basis.'
       :'This calculation assumes the displayed reading and basis are accurate; NutriScan has not independently verified either.';
-    const calc:Calculation={id:`calc-${key}`,label:`${display[key]} in ${portion} ${portionUnit}`,nutrient:key,input:candidate.value,inputUnit:candidate.unit,basisAmount:candidate.basis.amount,portion,portionUnit,result,unit:candidate.unit,formula:`${candidate.value} ${candidate.unit} × ${portion} ${portionUnit} ÷ ${candidate.basis.amount} ${candidate.basis.unit}`,observationIds:candidate.observations,...(candidate.interpretationIds?.length?{interpretationIds:candidate.interpretationIds}:{}),assumptions:[readingAssumption,'The portion is assumed to have the same composition as the labelled product.']};
+    const calc:Calculation={id:`calc-${key}`,label:`${display[key]} in ${portion} ${portionUnit}`,nutrient:key,input:candidate.value,inputUnit:candidate.unit,basisAmount:candidate.basis.amount,portion,portionUnit,result,unit:candidate.unit,formula:`${candidate.value} ${candidate.unit} × ${portion} ${portionUnit} ÷ ${candidate.basis.amount} ${candidate.basis.unit}`,observationIds:candidate.observations,...(candidate.imageIds?.length?{imageIds:candidate.imageIds}:{}),...(candidate.interpretationIds?.length?{interpretationIds:candidate.interpretationIds}:{}),assumptions:[readingAssumption,'The portion is assumed to have the same composition as the labelled product.']};
     calculations.push(calc);
-    finding({title:calc.label,detail:`${rounded(result)} ${candidate.unit}, calculated from the printed ${candidate.basis.description}${candidate.interpretationIds?.length?' under an OCR-linked Gemini interpretation that remains unverified.':'.'}`,status:'calculated',observationIds:calc.observationIds,sourceIds:[],calculationIds:[calc.id]});
+    finding({title:calc.label,detail:`${rounded(result)} ${candidate.unit}, calculated from the printed ${candidate.basis.description}${candidate.interpretationIds?.length?' under a Gemini interpretation that remains unverified.':'.'}`,status:'calculated',observationIds:calc.observationIds,sourceIds:[],calculationIds:[calc.id]});
   }
   // Convert rather than double-counting when only one of salt/sodium is declared.
   if(!candidates.has('sodium')&&candidates.has('salt')&&!pkg.nutrients.some(n=>n.key==='sodium')){

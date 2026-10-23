@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyNutrientCorrection } from '../correction';
-import { defaultProfile, packageSchema, type Observation, type PackageData, type TentativeStructuredCandidate } from '../contracts';
+import { calculationEvidenceText, calculationSchema, defaultProfile, packageSchema, type Observation, type PackageData, type TentativeStructuredCandidate } from '../contracts';
 import { buildAudit } from '../engine';
 import { reconcileInterpretedNutrition } from '../interpreted-nutrients';
 import { parseLabel } from '../parser';
@@ -149,5 +149,66 @@ describe('OCR-linked model nutrition interpretations', () => {
     expect(result.calculations.find(item => item.nutrient === 'protein')).toMatchObject({ input: 9.2, result: 1.84 });
     expect(result.calculations.find(item => item.nutrient === 'protein')?.interpretationIds).toBeUndefined();
     expect(corrected.observations.find(item => item.origin === 'user')?.derivedFromObservationIds).toEqual(interpreted.observationIds);
+  });
+
+  it('uses a complete attached-photo reading for labeled arithmetic while retaining image provenance and unverified status', () => {
+    const pkg = makePackage();
+    const photoReading: TentativeStructuredCandidate = {
+      ...candidate(pkg), candidateId: 'visual-protein', observationIds: [], sourceIds: [], supportingSpans: [], ocrWordEvidence: [],
+      visualEvidence: [{ imageId, visibleText: 'PROTEIN 8.8 g · QUANTITY PER 100 g', region: { x: 0.08, y: 0.22, width: 0.6, height: 0.18 } }],
+    };
+
+    expect(reconcileInterpretedNutrition(pkg, [photoReading]).readings).toEqual([]);
+    const audit = buildAudit(pkg, 20, 'g', defaultProfile, 'How much protein?', [photoReading], [imageId]);
+    const calculation = audit.calculations.find(item => item.nutrient === 'protein');
+
+    expect(calculation).toMatchObject({ result: 1.76, observationIds: [], imageIds: [imageId], interpretationIds: ['visual-protein'] });
+    expect(calculation?.assumptions.join(' ')).toMatch(/unverified model interpretation/i);
+    expect(calculationSchema.parse({ ...calculation, evidenceText: calculationEvidenceText(calculation!) })).toMatchObject({ imageIds: [imageId] });
+    expect(pkg.nutrients).toEqual([]);
+  });
+
+  it('withholds a photo reading when its region omits the printed basis or is not attached', () => {
+    const pkg = makePackage();
+    const photoReading: TentativeStructuredCandidate = {
+      ...candidate(pkg), candidateId: 'visual-protein', observationIds: [], sourceIds: [], supportingSpans: [], ocrWordEvidence: [],
+      visualEvidence: [{ imageId, visibleText: 'PROTEIN 8.8 g', region: { x: 0.08, y: 0.22, width: 0.6, height: 0.18 } }],
+    };
+    const noBasis = reconcileInterpretedNutrition(pkg, [photoReading], [imageId]);
+    const unattached = reconcileInterpretedNutrition(pkg, [{ ...photoReading, visualEvidence: [{ ...photoReading.visualEvidence![0], visibleText: 'PROTEIN 8.8 g · QUANTITY PER 100 g' }] }], []);
+
+    expect(noBasis.readings).toEqual([]);
+    expect(noBasis.withheld[0].reason).toMatch(/printed column or serving basis/i);
+    expect(unattached.readings).toEqual([]);
+  });
+
+  it('joins distinct photo regions for a serving column, exact row and printed serving declaration', () => {
+    const pkg = makePackage();
+    const servingReading: TentativeStructuredCandidate = {
+      ...candidate(pkg), candidateId: 'visual-carb-serving', field: 'carbohydrate', normalizedEntity: 'carbohydrate', proposedValue: '9.28 g per serving (13.4 g)', numericValue: 9.28,
+      basis: { amount: 13.4, unit: 'g', description: 'quantity per serving' }, observationIds: [], sourceIds: [], supportingSpans: [], ocrWordEvidence: [],
+      visualEvidence: [
+        { imageId, visibleText: 'CARBOHYDRATES 9.28 g', region: { x: 0.31, y: 0.49, width: 0.34, height: 0.05 } },
+        { imageId, visibleText: 'QUANTITY PER SERVING', region: { x: 0.54, y: 0.35, width: 0.21, height: 0.06 } },
+        { imageId, visibleText: 'SERVING SIZE: 2 BISCUITS (APPROX. 13.4 g)', region: { x: 0.1, y: 0.21, width: 0.5, height: 0.06 } },
+      ],
+    };
+
+    const result = buildAudit(pkg, 13.4, 'g', defaultProfile, 'How much carbohydrate is in two biscuits?', [servingReading], [imageId]);
+
+    expect(result.calculations.find(item => item.nutrient === 'carbohydrate')).toMatchObject({ input: 9.28, basisAmount: 13.4, portion: 13.4, result: 9.28, observationIds: [], imageIds: [imageId] });
+  });
+
+  it('lets a complete photo reading remain usable beside an OCR conflict without changing the conflicted package record', () => {
+    const pkg = makePackage();
+    pkg.nutrients = [{ key: 'protein', value: 8.4, unit: 'g', basis: { amount: 100, unit: 'g', description: 'per 100 g' }, observationIds: ['row-0'], status: 'conflict' }];
+    const photoReading: TentativeStructuredCandidate = {
+      ...candidate(pkg), candidateId: 'visual-protein', observationIds: [], sourceIds: [], supportingSpans: [], ocrWordEvidence: [],
+      visualEvidence: [{ imageId, visibleText: 'PROTEIN 8.8 g · QUANTITY PER 100 g', region: { x: 0.08, y: 0.22, width: 0.6, height: 0.18 } }],
+    };
+    const audit = buildAudit(pkg, 20, 'g', defaultProfile, 'How much protein?', [photoReading], [imageId]);
+
+    expect(audit.calculations.find(item => item.nutrient === 'protein')).toMatchObject({ input: 8.8, result: 1.76, imageIds: [imageId], observationIds: ['row-0'] });
+    expect(pkg.nutrients[0]).toMatchObject({ value: 8.4, status: 'conflict' });
   });
 });

@@ -9,9 +9,12 @@ import {
   type Calculation,
   type EvidenceSource,
   type PackageData,
+  type TentativeStructuredCandidate,
 } from '../contracts';
+import { matchesPackageRows, reconcileInterpretedNutrition } from '../interpreted-nutrients';
 import { evidenceSources, lookupAdditive, resolveTentativeAdditiveIdentity } from '../../modules/knowledge';
 import { searchOpenFoodTox, semanticRetrieve } from '../semantic';
+import { searchFoodComposition, type FoodCompositionFood } from './food-composition';
 import type { OpenFoodToxHit, OpenFoodToxSearch } from '../../modules/knowledge/server';
 import { isValidGtin, findOcrGtinCandidate } from '../barcode';
 import { productInput, lookupProducts } from './products';
@@ -23,10 +26,11 @@ const querySchema = z.string().trim().min(2).max(180);
 const toolArgs = {
   inspect_package_image: z.object({ imageId: imageIdSchema, crop: normalizedCropSchema.optional() }).strict(),
   search_knowledge: z.object({ query: querySchema }).strict(),
+  search_food_composition: z.object({ query: z.string().trim().min(2).max(180), nutrients: z.array(z.string().trim().min(2).max(80)).max(8).optional() }).strict(),
   resolve_ingredient: z.object({ query: querySchema }).strict(),
   lookup_chemical_identity: z.object({ query: querySchema }).strict(),
   get_substance_assessments: z.object({ query: querySchema }).strict(),
-  calculate_nutrition: z.object({ nutrient: z.enum(nutrientKeys), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml']) }).strict(),
+  calculate_nutrition: z.object({ nutrient: z.enum(nutrientKeys), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml']), candidateId:z.string().min(1).max(120).optional() }).strict(),
   lookup_product: z.object({ query: z.string().trim().min(2).max(80).optional(), barcode: z.string().regex(/^\d{8,14}$/).optional() }).strict().refine(value => Number(Boolean(value.query)) + Number(Boolean(value.barcode)) === 1),
   search_research: z.object({ query: querySchema, topic: z.enum(['science', 'regulation', 'claims']) }).strict(),
 };
@@ -45,10 +49,11 @@ const cropParameters = {
 export const geminiToolDeclarations: FunctionDeclaration[] = [
   { name: 'inspect_package_image', description: 'Inspect an attached original package photo or a focused crop using your visual understanding. Use only when OCR is unclear or visual confirmation adds evidence. The photo must already be attached to this request.', parameters: { type: Type.OBJECT, properties: { imageId: { type: Type.STRING, description: 'Exact imageId from the attached package images.' }, crop: cropParameters }, required: ['imageId'] } },
   { name: 'search_knowledge', description: 'Search NutriScan’s local, attributed food and ingredient evidence index. This does not make a network request.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A focused food, nutrient, ingredient, or guidance query.' } }, required: ['query'] } },
+  { name: 'search_food_composition', description: 'Search local USDA FoodData Central Foundation Foods and FNDDS structured snapshots for generic food-composition reference values. FNDDS includes U.S. survey records for some Indian-style dishes, not authoritative Indian recipes. Use when the user asks how a basic food compares or requests composition context; request relevant nutrient families. Values are source-reported per 100 g edible portion, not facts about a branded Indian product, its package, portion or an individual. Survey portion examples are not package servings. Missing nutrient rows are unavailable, not zero. Includes release, source citation, license and limitations. No external query is sent.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific generic food name or phrase, such as dry chickpeas, idli, chapatti or roti.' }, nutrients: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Up to eight requested nutrient families, such as protein, carbohydrate, fiber, sodium, potassium, energy, or saturated fat. Omit to return common macronutrient and sodium fields.' } }, required: ['query'] } },
   { name: 'resolve_ingredient', description: 'Resolve an observed additive name or INS/E identifier against NutriScan’s local identity registry. Presence and amount still require package evidence.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'Observed ingredient phrase or additive identifier.' } }, required: ['query'] } },
   { name: 'lookup_chemical_identity', description: 'Read-only PubChem PUG REST lookup of a chemical name already present in the user question/package text or returned by exact local ingredient or assessment lookup. Returns registry identity candidates only, not food-use authorization, dose, hazard assessment or personal safety. Sends only the name; never photos or profile data.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific chemical name from the question, printed package text or an exact local identity result, not a numeric value or general food question.' } }, required: ['query'] } },
   { name: 'get_substance_assessments', description: 'Search the locally imported EFSA OpenFoodTox 3.0 assessment snapshot for a named substance or exact identifier. Returns attributed EFSA assessment records and toxicological reference values when available. The local snapshot may only link a scientific output without its conclusion; if the user asks what the linked assessment found, follow that title with search_research using the exact local identity returned. Use to distinguish hazard assessments from package exposure; this does not establish Indian authorization, package dose, product presence or personal safety. No network request is made.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A substance name, synonym, CAS number or PubChem CID from the question, package text or a locally resolved ingredient identity.' } }, required: ['query'] } },
-  { name: 'calculate_nutrition', description: 'Calculate a portion from one unconflicted package nutrient with a known matching mass or volume basis. Uses deterministic arithmetic only.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Portion amount in grams or millilitres.' }, unit: { type: Type.STRING, enum: ['g', 'ml'] } }, required: ['nutrient', 'amount', 'unit'] } },
+  { name: 'calculate_nutrition', description: 'Calculate a portion from an unconflicted package nutrient or a complete, currently attached photo/OCR-linked Gemini candidate. Candidate-based arithmetic remains explicitly unverified and never changes the package record. A matching known mass or volume basis is required.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Portion amount in grams or millilitres.' }, unit: { type: Type.STRING, enum: ['g', 'ml'] }, candidateId:{type:Type.STRING,description:'Optional exact candidateId from the supplied tentative interpretations; only use when that candidate has been reconciled to its evidence.'} }, required: ['nutrient', 'amount', 'unit'] } },
   { name: 'lookup_product', description: 'Read-only Open Food Facts search by an exact barcode or product text explicitly present in the user question or package observations. Sends only that query to the public catalog; never sends images or profile data. Results are community candidates, not confirmed package facts.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A product name or brand present in the question or visible package OCR.' }, barcode: { type: Type.STRING, description: 'An exact 8–14 digit barcode present in the question or package OCR.' } } } },
   { name: 'search_research', description: 'Read-only search of Europe PMC or NutriScan’s fixed official India regulation sources. External query terms must be present in the user question/package OCR or a successful exact local identity lookup. If a local registry supplies only publication links and the user asks for the assessment finding, search the linked entity/topic rather than inferring the finding from metadata. Search results are candidates, not an evidence synthesis.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'Focused terms drawn from the explicit question, package OCR or successful exact local identity results.' }, topic: { type: Type.STRING, enum: ['science', 'regulation', 'claims'] } }, required: ['query', 'topic'] } },
 ];
@@ -76,10 +81,82 @@ export type GeminiToolResult = {
 export type GeminiToolContext = {
   question: string;
   package: PackageData;
+  interpretedCandidates?: TentativeStructuredCandidate[];
   visualImages: GeminiToolImage[];
   searchTerms: Set<string>;
   prepareImage: (image: GeminiToolImage) => Promise<string>;
 };
+
+const defaultFdcNutrientIds = new Set([1003, 1004, 1005, 1079, 1092, 1093, 1258, 2000, 2033, 2047, 2048, 1008]);
+function nutrientFamilyIds(query: string) {
+  const value = query.normalize('NFKC').toLocaleLowerCase('en');
+  if (/protein/.test(value)) return new Set([1003]);
+  if (/carb|starch/.test(value)) return new Set([1005, 1050]);
+  if (/sugar/.test(value)) return new Set([1063, 2000]);
+  if (/fib(er|re)/.test(value)) return new Set([1079, 2033]);
+  if (/sodium|salt/.test(value)) return new Set([1093]);
+  if (/potassium/.test(value)) return new Set([1092]);
+  if (/saturat/.test(value)) return new Set([1258]);
+  if (/energy|calor|kcal/.test(value)) return new Set([1008, 1062, 2047, 2048]);
+  if (/fat|lipid/.test(value)) return new Set([1004]);
+  if (/calcium/.test(value)) return new Set([1087]);
+  if (/iron/.test(value)) return new Set([1089]);
+  if (/magnesium/.test(value)) return new Set([1090]);
+  if (/cholesterol/.test(value)) return new Set([1253]);
+  return null;
+}
+export function selectFdcNutrients(food: FoodCompositionFood, requested?: string[]) {
+  const requestedIds = requested?.map(nutrientFamilyIds) ?? [];
+  const exactNames = (requested ?? []).map(value => value.normalize('NFKC').toLocaleLowerCase('en').replace(/[^\p{L}\p{N}]+/gu, ' ').trim()).filter(Boolean);
+  return food.nutrients.filter(item => {
+    if (!requested?.length) return defaultFdcNutrientIds.has(item.nutrientId);
+    if (requestedIds.some(ids => ids?.has(item.nutrientId))) return true;
+    const name = item.name.normalize('NFKC').toLocaleLowerCase('en').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    return exactNames.some(value => name === value || name.includes(value) || value.includes(name));
+  }).slice(0, 18);
+}
+export function fdcAmountText(item: { amount: number; unit: string; loq: number | null }) {
+  if (item.amount === 0 && item.loq !== null && item.loq > 0) return `<${item.loq} ${item.unit} (below source quantification limit)`;
+  return `${item.amount} ${item.unit}`;
+}
+
+async function searchFoodCompositionTool(args: z.infer<typeof toolArgs.search_food_composition>): Promise<GeminiToolResult> {
+  try {
+    const response = await searchFoodComposition(args.query, 3);
+    if (response.status === 'unavailable') return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', reason: response.reason, message: response.reason === 'not-imported' ? 'The pinned local USDA Foundation Foods and FNDDS snapshots have not been imported in this checkout.' : 'The USDA food-composition index failed validation.' } };
+    if (response.status === 'no_match') return { status: 'empty', resultCount: 0, output: { status: 'no_match', query: args.query, message: 'No sufficiently specific generic-food match was found in the local USDA Foundation Foods or FNDDS snapshots. This does not establish that no suitable reference exists.' } };
+    const retrievedAt = new Date().toISOString();
+    const matches = response.results.map(({ food, score, source: dataset }) => {
+      const limitations = food.dataType === 'Foundation'
+        ? 'USDA Foundation Foods describes analyzed or derived generic foods in the U.S. food supply, not an Indian branded package or its formulation. The record may reflect small, unweighted samples and source-specific methods. Missing nutrient rows mean unavailable, not zero. These values do not establish a user’s intake or individualized dietary advice.'
+        : 'USDA FNDDS describes foods reported in U.S. dietary surveys, including generic recipes and food forms; it is not an Indian branded package or a canonical Indian recipe. Survey portions are references only and never substitute for the package serving declaration. Missing nutrient rows mean unavailable, not zero. These values do not establish a user’s intake or individualized dietary advice.';
+      const nutrients = selectFdcNutrients(food, args.nutrients);
+      const nutrientText = nutrients.length
+        ? nutrients.map(item => `${item.name} (nutrient ID ${item.nutrientId}): ${fdcAmountText(item)} per 100 g edible portion${item.dataPoints !== null ? `; ${item.dataPoints} source data points` : ''}${item.min !== null && item.max !== null && item.min !== item.max ? `; source range ${item.min}–${item.max} ${item.unit}` : ''}${item.derivation ? `; ${item.derivation}` : ''}`).join('; ')
+        : `No source values were available for requested nutrients (${(args.nutrients ?? []).join(', ') || 'default nutrients'}); absence is not zero.`;
+      const sourceId = `usda-${food.dataType === 'Foundation' ? 'fdc-foundation' : 'fdc-fndds'}-${food.fdcId}-${dataset.releaseDate}`;
+      const source = sourceSchema.parse({
+        id: sourceId,
+        title: `${food.description} — ${dataset.name}`,
+        publisher: dataset.attribution,
+        url: `https://fdc.nal.usda.gov/food-details/${food.fdcId}/nutrients`,
+        category: 'food-composition',
+        jurisdiction: food.dataType === 'Foundation' ? 'United States; generic Foundation Foods reference record, not a local branded-product record.' : 'United States; FNDDS dietary survey food reference, not an Indian branded-product record or national Indian food-composition reference.',
+        publishedAt: food.publicationDate,
+        effectiveAt: null,
+        retrievedAt,
+        summary: `FoodData Central food ID ${food.fdcId}: ${food.description}${food.category ? ` (${food.category})` : ''}. Dataset ${dataset.dataType}, release ${dataset.releaseDate}; source food publication date ${food.publicationDate}. Values are per 100 g edible portion. ${nutrientText}`.slice(0, 1600),
+        limitations,
+        license: `${dataset.license}. Source attribution: ${dataset.attribution}. ${dataset.licenseUrl}`,
+      });
+      return { source, score, fdcId: food.fdcId, description: food.description, category: food.category, dataType: food.dataType, publicationDate: food.publicationDate, portionBasis: { amount: 100, unit: 'g', description: 'edible portion' }, surveyPortionExamples: food.dataType === 'Survey (FNDDS)' ? food.portions.slice(0, 8).map(portion => ({ description: portion.description, gramWeight: portion.gramWeight, note: 'FNDDS reference portion; not this package’s declared serving.' })) : [], nutrients: nutrients.map(item => ({ nutrientId: item.nutrientId, name: item.name, amount: item.amount, unit: item.unit, loq: item.loq, reportedValue: fdcAmountText(item), dataPoints: item.dataPoints, min: item.min, max: item.max, median: item.median, derivation: item.derivation })), sourceId };
+    });
+    const evidence = matches.map(item => item.source);
+    return { status: 'ok', resultCount: matches.length, evidence, output: { status: 'ok', datasets: response.sources, requestedQuery: args.query, nutrientSelection: args.nutrients ?? 'common macronutrients and sodium', results: matches, note: 'Foundation Foods and FNDDS are U.S. generic-food references. They can contextualize a question about a basic food but cannot confirm a photographed package formulation, an Indian population value, or an individualized target.' } };
+  } catch {
+    return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', message: 'The local USDA food-composition snapshot could not be read or validated. Do not substitute a package value or infer that no reference data exists.' } };
+  }
+}
 
 function tokens(value: string) {
   return value.normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
@@ -328,6 +405,36 @@ async function lookupChemicalIdentity(args: z.infer<typeof toolArgs.lookup_chemi
 }
 
 function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, context: GeminiToolContext): GeminiToolResult {
+  if (args.candidateId) {
+    const candidate = context.interpretedCandidates?.find(item => item.candidateId === args.candidateId && item.kind === 'nutrient' && item.field === args.nutrient);
+    if (!candidate) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'The requested interpretation is not among the supplied current candidates.' } };
+    const rows = context.package.nutrients.filter(item => item.key === args.nutrient);
+    if (rows.some(row => row.status === 'corrected')) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'A user correction takes precedence over the model candidate.' } };
+    const reconciliation = reconcileInterpretedNutrition(context.package, [candidate], context.visualImages.map(image => image.imageId));
+    const reading = reconciliation.readings.find(item => item.key === args.nutrient && item.candidateIds.includes(candidate.candidateId));
+    if (!reading || !matchesPackageRows(reading, rows) || reading.basis.unit !== args.unit) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: reconciliation.withheld.find(item => item.candidateId === candidate.candidateId)?.reason ?? 'The interpretation does not have complete, attached evidence and a matching portion unit.' } };
+    const resultValue = reading.value * args.amount / reading.basis.amount;
+    if (!Number.isFinite(resultValue) || resultValue > 100000) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'The requested calculation exceeds validated numeric limits.' } };
+    const calculation = calculationSchema.parse({
+      id: `modelcalc-${candidate.candidateId.slice(0, 64)}-${args.amount}-${args.unit}`,
+      label: `${reading.key} in ${args.amount} ${args.unit}`,
+      nutrient: reading.key,
+      input: reading.value,
+      inputUnit: reading.unit,
+      basisAmount: reading.basis.amount,
+      portion: args.amount,
+      portionUnit: args.unit,
+      result: resultValue,
+      unit: reading.unit,
+      formula: `${reading.value} ${reading.unit} × ${args.amount} ${args.unit} ÷ ${reading.basis.amount} ${reading.basis.unit}`,
+      observationIds: [...new Set([...reading.observationIds, ...rows.flatMap(row => row.observationIds)])],
+      ...(reading.imageIds.length ? { imageIds: reading.imageIds } : {}),
+      interpretationIds: reading.candidateIds,
+      assumptions: ['This deterministic arithmetic uses a tentative Gemini interpretation linked to the attached package evidence; the package reading remains unverified.'],
+    });
+    const unverifiedCalculation = { ...calculation, evidenceText: calculationEvidenceText(calculation) };
+    return { status: 'ok', resultCount: 1, calculations: [unverifiedCalculation], output: { status: 'ok', calculation: unverifiedCalculation, note: 'Deterministic arithmetic from a tentative evidence-linked interpretation. It does not confirm or overwrite the package reading.' } };
+  }
   const matches = context.package.nutrients.filter(item => item.key === args.nutrient);
   if (matches.length !== 1) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: matches.length ? 'Conflicting or duplicate package values prevent a single calculation.' : 'No usable package value exists for this nutrient.' } };
   const reading = matches[0];
@@ -425,6 +532,10 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
     case 'search_knowledge': {
       const parsed = toolArgs.search_knowledge.safeParse(args);
       return parsed.success ? searchKnowledge(parsed.data) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The local knowledge query was invalid.' } };
+    }
+    case 'search_food_composition': {
+      const parsed = toolArgs.search_food_composition.safeParse(args);
+      return parsed.success ? searchFoodCompositionTool(parsed.data) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The USDA food-composition query was invalid.' } };
     }
     case 'resolve_ingredient': {
       const parsed = toolArgs.resolve_ingredient.safeParse(args);

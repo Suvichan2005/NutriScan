@@ -14,6 +14,7 @@ export type InterpretedNutrientReading = {
   basis: NonNullable<TentativeStructuredCandidate['basis']>;
   candidateIds: string[];
   observationIds: string[];
+  imageIds: string[];
   uncertainty: string;
 };
 
@@ -149,20 +150,67 @@ function candidateKey(candidate: TentativeStructuredCandidate): NutrientKey | nu
   return field;
 }
 
-function validateCandidate(pkg: PackageData, candidate: TentativeStructuredCandidate): { reading?: InterpretedNutrientReading; key: NutrientKey | null; reason?: string } {
+function visualReadingEvidence(candidate: TentativeStructuredCandidate, key: NutrientKey, attachedImageIds: Set<string>): { imageIds: string[]; basisDescription: string } | null {
+  const references = candidate.visualEvidence ?? [];
+  if (!references.length || references.some(reference => !attachedImageIds.has(reference.imageId) || !reference.region)) return null;
+  const byImage = new Map<string, string[]>();
+  for (const reference of references) byImage.set(reference.imageId, [...(byImage.get(reference.imageId) ?? []), reference.visibleText]);
+
+  const numberUnitPattern = /(?:^|[^\p{L}\p{N}])([0-9]+(?:[.,][0-9]+)?)\s*(kcal|kj|mg|g|ml)(?=$|[^\p{L}])/giu;
+  const hasExactValueAndUnit = (text: string) => [...text.matchAll(numberUnitPattern)].some(match =>
+    close(Number(match[1].replace(',', '.')), candidate.numericValue!) && match[2].toLocaleLowerCase('en-IN') === candidate.unit!.toLocaleLowerCase('en-IN'));
+  const rowImageIds = [...byImage.entries()].filter(([, texts]) => {
+    const text = texts.join(' ');
+    return labels[key].some(label => {
+      const normalizedLabel = normalizedText(label);
+      return ` ${normalizedText(text)} `.includes(` ${normalizedLabel} `);
+    }) && hasExactValueAndUnit(text);
+  }).map(([imageId]) => imageId);
+  if (!rowImageIds.length || !candidate.basis || !candidate.unit || candidate.numericValue === null) return null;
+
+  const evidenceText = [...byImage.values()].flat().join(' ');
+  const basisAmountPattern = new RegExp(`(?:^|[^\\p{L}\\p{N}])${candidate.basis.amount.toString().replace('.', '[.,]')}\\s*${candidate.basis.unit}(?=$|[^\\p{L}])`, 'iu');
+  const hasBasisAmount = basisAmountPattern.test(evidenceText);
+  const basisAmount = candidate.basis.amount;
+  const isPerHundred = basisAmount === 100 && new RegExp(`\\bper\\s*100\\s*${candidate.basis.unit}\\b`, 'iu').test(evidenceText);
+  const hasServingBasis = /\bper\s*(?:serve|serving)\b/i.test(evidenceText) && hasBasisAmount;
+  if (!isPerHundred && !hasServingBasis) return null;
+
+  return {
+    imageIds: [...new Set([...rowImageIds, ...references.map(reference => reference.imageId)])],
+    basisDescription: isPerHundred ? `Per 100 ${candidate.basis.unit} (Gemini photo interpretation)` : `${candidate.basis.description} (Gemini photo interpretation)`,
+  };
+}
+
+function validateCandidate(pkg: PackageData, candidate: TentativeStructuredCandidate, attachedImageIds: Set<string>): { reading?: InterpretedNutrientReading; key: NutrientKey | null; reason?: string } {
   const key = candidateKey(candidate);
   if (candidate.kind !== 'nutrient' || !key) return { key, reason: 'The model did not identify a supported nutrient row.' };
   if (candidate.numericValue === null || !candidate.unit || !candidate.basis) return { key, reason: 'A numeric value, printed unit, or serving basis is unresolved.' };
-  if (candidate.visualEvidence?.length && !candidate.ocrWordEvidence?.length) return { key, reason: 'Image-only interpretations need a separate visual review before they can support local calculations.' };
   const candidateObservations = candidate.observationIds.map(id => pkg.observations.find(item => item.id === id));
-  if (!candidateObservations.length || candidateObservations.some(item => !item || item.origin !== 'ocr' || item.field !== 'ocr-line')) return { key, reason: 'The candidate does not point only to retained raw OCR lines.' };
+  if (candidateObservations.some(item => !item || item.origin !== 'ocr' || item.field !== 'ocr-line')) return { key, reason: 'The candidate does not point only to retained raw OCR lines.' };
   const evidence = {
     label: wordsForRole(pkg, candidate, 'label'),
     value: wordsForRole(pkg, candidate, 'value'),
     unit: wordsForRole(pkg, candidate, 'unit'),
     basis: wordsForRole(pkg, candidate, 'basis'),
   };
-  if (!evidence.label || !evidence.value || !evidence.unit || !evidence.basis) return { key, reason: 'The label, value, unit and basis are not all linked to exact OCR words.' };
+  if (!evidence.label || !evidence.value || !evidence.unit || !evidence.basis) {
+    const visual = visualReadingEvidence(candidate, key, attachedImageIds);
+    if (!visual) return { key, reason: 'The label, exact value and unit, and printed column or serving basis are not all linked to exact OCR words or an attached photo region.' };
+    return {
+      key,
+      reading: {
+        key,
+        value: candidate.numericValue,
+        unit: candidate.unit,
+        basis: { ...candidate.basis, description: visual.basisDescription },
+        candidateIds: [candidate.candidateId],
+        observationIds: [...new Set(candidate.observationIds)],
+        imageIds: visual.imageIds,
+        uncertainty: candidate.uncertainty,
+      },
+    };
+  }
   const roles = Object.values(evidence) as RoleEvidence[];
   if (roles.some(item => item.imageId !== evidence.value!.imageId || item.runId !== evidence.value!.runId)) return { key, reason: 'The evidence roles come from different photos or OCR runs.' };
   if (!candidateObservations.every(item => item!.imageId === evidence.value!.imageId && item!.readingOrder?.runId === evidence.value!.runId)) return { key, reason: 'The supporting lines span multiple photos or OCR runs.' };
@@ -184,6 +232,7 @@ function validateCandidate(pkg: PackageData, candidate: TentativeStructuredCandi
       basis: { ...candidate.basis, description: evidence.basis.text },
       candidateIds: [candidate.candidateId],
       observationIds: [...new Set(candidate.observationIds)],
+      imageIds: [],
       uncertainty: candidate.uncertainty,
     },
   };
@@ -210,11 +259,11 @@ function comparable(a: InterpretedNutrientReading, b: InterpretedNutrientReading
  * arithmetic only when all four roles match exact OCR words and their geometry
  * identifies one row and column. Cross-reader or image-only guesses remain out.
  */
-export function reconcileInterpretedNutrition(pkg: PackageData, candidates: TentativeStructuredCandidate[]): InterpretedNutrition {
+export function reconcileInterpretedNutrition(pkg: PackageData, candidates: TentativeStructuredCandidate[], attachedImageIds: string[] = []): InterpretedNutrition {
   const valid: InterpretedNutrientReading[] = [];
   const withheld: WithheldNutrientInterpretation[] = [];
   for (const candidate of candidates.slice(0, 20)) {
-    const result = validateCandidate(pkg, candidate);
+    const result = validateCandidate(pkg, candidate, new Set(attachedImageIds));
     if (result.reading) valid.push(result.reading);
     else if (candidate.kind === 'nutrient') withheld.push({ candidateId: candidate.candidateId, key: result.key, observationIds: candidate.observationIds, reason: result.reason ?? 'The candidate could not be reconciled with the OCR evidence.' });
   }
@@ -224,7 +273,7 @@ export function reconcileInterpretedNutrition(pkg: PackageData, candidates: Tent
     const group = valid.filter(item => item.key === key);
     if (!group.length) continue;
     if (group.some((reading, index) => group.slice(index + 1).some(other => !comparable(reading, other)))) {
-      for (const reading of group) for (const candidateId of reading.candidateIds) withheld.push({ candidateId, key, observationIds: reading.observationIds, reason: 'OCR-linked model interpretations disagree across values, units, or printed bases; none is used for calculation.' });
+      for (const reading of group) for (const candidateId of reading.candidateIds) withheld.push({ candidateId, key, observationIds: reading.observationIds, reason: 'Model interpretations disagree across values, units, or printed bases; none is used for calculation.' });
       continue;
     }
     const byBasis = new Map<string, InterpretedNutrientReading>();
@@ -235,6 +284,7 @@ export function reconcileInterpretedNutrition(pkg: PackageData, candidates: Tent
       else {
         existing.candidateIds = [...new Set([...existing.candidateIds, ...reading.candidateIds])];
         existing.observationIds = [...new Set([...existing.observationIds, ...reading.observationIds])];
+        existing.imageIds = [...new Set([...existing.imageIds, ...reading.imageIds])];
       }
     }
     readings.push(...byBasis.values());
@@ -242,14 +292,19 @@ export function reconcileInterpretedNutrition(pkg: PackageData, candidates: Tent
   return { readings, withheld };
 }
 
-/** Converts a complete OCR-backed candidate into the shared numeric unit. */
+/** Converts a complete evidence-linked candidate into the shared numeric unit. */
 export function normalizedInterpretedAmount(reading: InterpretedNutrientReading): { value: number; unit: string } | null {
   return normalizedAmount(reading.key, reading.value, reading.unit);
 }
 
 /** Compare a model candidate with any already-parsed package row before use. */
 export function matchesPackageRows(reading: InterpretedNutrientReading, rows: Nutrient[]): boolean {
-  if (rows.some(row => row.status === 'corrected' || row.status === 'conflict')) return false;
+  if (rows.some(row => row.status === 'corrected')) return false;
+  // A complete, currently attached photo interpretation can resolve an OCR
+  // conflict without erasing it. Keep the package rows untouched and expose
+  // the resulting arithmetic as unverified model-derived context.
+  if (reading.imageIds.length) return true;
+  if (rows.some(row => row.status === 'conflict')) return false;
   if (!rows.length) return true;
   const interpreted = normalizedInterpretedAmount(reading);
   if (!interpreted) return false;

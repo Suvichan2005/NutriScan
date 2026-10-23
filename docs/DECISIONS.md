@@ -1,5 +1,14 @@
 # Chronological decisions
 
+## 23 October 2026 — ingest structured U.S. composition sources without loading every nutrient into memory
+
+- Import USDA Foundation Foods April 2026 and FNDDS 2021–2023 from their official downloadable JSON, pinning the source hashes and validating record/nutrient counts. Keep source and generated records in ignored local `.data/`; retain attribution and CC0 terms in the committed provenance register. The importers count malformed/missing data instead of replacing it with zero.
+- Store a compact food-name catalog plus checksum-verified seekable JSONL records. Search ranks only food metadata, then reads full nutrient data for the matched record. Three cold-process lookups sampled +21.6 MB RSS and 167 ms total; parsing the earlier full-object snapshots sampled +376.2 MB. Do not claim production memory capacity from this local measurement.
+- Add FNDDS only as a clearly labeled U.S. dietary-survey reference. Its Indian-style food names (idli, roti) do not make it an Indian composition standard or recipe ground truth. Do not treat generic records or source portions as product facts or package servings.
+- Let Gemini choose the local `search_food_composition` tool. When it omits a nutrient the user explicitly asked for despite the unique retrieved record containing it, deterministic code may add that exact returned row with its source span. It cannot select among multiple candidate foods or invent a missing nutrient. The parsed package, user profile and package photographs remain separate from these reference records.
+- Verification used actual paid Gemini calls, the pinned local data, exact source evidence and no profile/photo data for the FNDDS query. One model response omitted protein; one later response returned it. Keep that variability in the record; the application coverage guard protects only this explicit structured-reference path, not general model-answer quality.
+- Keep higher-reuse clinical and toxicology sources on a separate rights review. No unrestricted EFSA dataset transformation, restricted INDB/IFCT ingestion, current clinical target or Indian population accuracy claim is introduced here.
+
 ## 23 October 2026 — resume paid Gemini under the owner's revised budget
 
 - The owner confirmed that exposed API keys were replaced and raised the project budget to ₹500. This supersedes the earlier four-call/$1 authorization and the temporary stop after HTTP 429. Keep the application on the exact stable `gemini-3.8-flash` model, with the local $5 spend cap, request/token caps and paid calls single-attempt. Never print credentials, prompts, image bytes, profile fields or model conversations.

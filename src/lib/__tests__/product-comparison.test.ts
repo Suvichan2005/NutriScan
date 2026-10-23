@@ -5,7 +5,7 @@ import { compareProductNutrition } from '../product-comparison';
 
 const reading = (key: Nutrient['key'], value: number, unit: Nutrient['unit'], amount: number | null, basisUnit: 'g' | 'ml' = 'g', status: Nutrient['status'] = 'observed'): Nutrient => ({ key, value, unit, basis: amount ? { amount, unit: basisUnit, description: `per ${amount} ${basisUnit}` } : null, observationIds: ['observation-1'], status });
 const record = (key: ProductRecord['nutrients'][number]['key'], value: number, unit: string, basis: ProductRecord['nutrients'][number]['basis'] = { amount: 100, unit: 'g' }): ProductRecord['nutrients'][number] => ({ key, value, unit, basis });
-const interpreted = (value: number, amount: number, id = `candidate-${value}`): InterpretedNutrientReading => ({ key: 'protein', value, unit: 'g', basis: { amount, unit: 'g', description: `per ${amount} g` }, candidateIds: [id], observationIds: [`line-${id}`], uncertainty: 'OCR words and layout linked; original pixels not confirmed.' });
+const interpreted = (value: number, amount: number, id = `candidate-${value}`): InterpretedNutrientReading => ({ key: 'protein', value, unit: 'g', basis: { amount, unit: 'g', description: `per ${amount} g` }, candidateIds: [id], observationIds: [`line-${id}`], imageIds: [], uncertainty: 'OCR words and layout linked; original pixels not confirmed.' });
 
 describe('evidence-aligned product nutrition comparison', () => {
   it('normalizes package serving values to the same explicit 100 g basis', () => {

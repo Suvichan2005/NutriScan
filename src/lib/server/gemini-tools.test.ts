@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { evidenceSources } from '../../modules/knowledge';
-import type { PackageData } from '../contracts';
+import type { PackageData, TentativeStructuredCandidate } from '../contracts';
 import { executeGeminiTool, type GeminiToolContext } from './gemini-tools';
 
 const mocks = vi.hoisted(() => ({ semanticRetrieve: vi.fn(), searchOpenFoodTox: vi.fn() }));
@@ -21,6 +21,32 @@ function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019
 }
 
 describe('Gemini tool retrieval boundaries', () => {
+  it('calculates from a prior photo-linked candidate only while its source image is attached', async () => {
+    const imageContext = context('How much protein is in 20 g?');
+    const candidate: TentativeStructuredCandidate = {
+      candidateId: 'visual-protein', kind: 'nutrient', field: 'protein', proposedValue: '8.8 g per 100 g', numericValue: 8.8, unit: 'g',
+      basis: { amount: 100, unit: 'g', description: 'per 100 g' }, normalizedEntity: 'protein', status: 'tentative', observationIds: [], sourceIds: [], supportingSpans: [],
+      visualEvidence: [
+        { imageId: 'package-photo', visibleText: 'PROTEIN 8.8 g', region: { x: 0.1, y: 0.2, width: 0.4, height: 0.1 } },
+        { imageId: 'package-photo', visibleText: 'QUANTITY PER 100 g', region: { x: 0.4, y: 0.1, width: 0.3, height: 0.1 } },
+      ], uncertainty: 'Tentative photo interpretation; not independently verified.',
+    };
+    imageContext.interpretedCandidates = [candidate];
+    imageContext.visualImages.push({
+      imageId: 'package-photo', mimeType: 'image/jpeg', base64: 'a'.repeat(20), side: 'back', sourceImage: { width: 100, height: 100 },
+      preprocessing: { rotation: 0, contrast: false, invert: false, crop: null },
+    });
+
+    const result = await executeGeminiTool('calculate_nutrition', { nutrient: 'protein', amount: 20, unit: 'g', candidateId: candidate.candidateId }, imageContext);
+    const calculation = result.calculations?.[0];
+
+    expect(result.status).toBe('ok');
+    expect(calculation).toMatchObject({ result: 1.76, imageIds: ['package-photo'], interpretationIds: ['visual-protein'] });
+    expect(result.output.note).toMatch(/does not confirm or overwrite/i);
+    imageContext.visualImages = [];
+    expect((await executeGeminiTool('calculate_nutrition', { nutrient: 'protein', amount: 20, unit: 'g', candidateId: candidate.candidateId }, imageContext)).status).toBe('withheld');
+  });
+
   it('does not send a numeric OCR fragment to the product catalog', async () => {
     const fetcher = vi.fn();
     vi.stubGlobal('fetch', fetcher);

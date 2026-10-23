@@ -1,6 +1,31 @@
 import { describe, expect, it } from 'vitest';
 import { evidenceSources } from '../../modules/knowledge';
-import { attachGoogleGrounding, googleGroundingEvidence, normalizeModelImageRegions, toolResultForModel } from './gemini';
+import { attachGoogleGrounding, googleGroundingEvidence, normalizeModelImageRegions, supplementRequestedCompositionCoverage, toolResultForModel, type RetrievedCompositionFact } from './gemini';
+
+describe('explicit composition-answer coverage', () => {
+  const facts:RetrievedCompositionFact[]=[
+    {batchId:'call-1',sourceId:'fdc-idli',description:'Idli',dataType:'Survey (FNDDS)',nutrientId:1003,name:'Protein',reportedValue:'6.36 g',sourceSummary:'Idli. Values are per 100 g edible portion. Protein (nutrient ID 1003): 6.36 g per 100 g edible portion.'},
+    {batchId:'call-1',sourceId:'fdc-idli',description:'Idli',dataType:'Survey (FNDDS)',nutrientId:1005,name:'Carbohydrate, by difference',reportedValue:'25 g',sourceSummary:'Idli. Values are per 100 g edible portion. Carbohydrate, by difference (nutrient ID 1005): 25 g per 100 g edible portion.'},
+  ];
+  const output={answer:'A retrieved reference is available.',claims:[],limitations:[],inspectImage:null};
+
+  it('fills a missing explicitly requested nutrient only from the unique retrieved food record', () => {
+    const result=supplementRequestedCompositionCoverage(output,'Report protein and total carbohydrate per 100 g for idli.',facts);
+    expect(result.added).toBe(2);
+    expect((result.output as {claims:Array<{text:string;sourceIds:string[];supportingSpans:Array<{quote:string}>}>}).claims.map(claim=>claim.text)).toEqual([
+      'The USDA FNDDS survey reference entry “Idli” reports protein at 6.36 g per 100 g edible portion.',
+      'The USDA FNDDS survey reference entry “Idli” reports carbohydrate at 25 g per 100 g edible portion.',
+    ]);
+  });
+
+  it('does not duplicate a supported value or choose among competing foods returned by one search', () => {
+    const complete=supplementRequestedCompositionCoverage(output,'Report protein and total carbohydrate for idli.',facts);
+    const repeated=supplementRequestedCompositionCoverage(complete.output,'Report protein and total carbohydrate for idli.',facts);
+    expect(repeated.added).toBe(0);
+    const competing=[...facts,{...facts[0],sourceId:'fdc-rice',description:'Rice'}];
+    expect(supplementRequestedCompositionCoverage(output,'Report protein for idli.',competing).added).toBe(0);
+  });
+});
 
 describe('Gemini tool citation feedback', () => {
   it('returns the exact bounded evidence summary that final citation validation checks', () => {

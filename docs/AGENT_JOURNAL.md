@@ -1,5 +1,13 @@
 # Sanitized engineering journal
 
+## 2026-10-23 — add USDA food-composition retrieval to the live agent
+
+- Imported SHA-pinned USDA Foundation Foods April 2026 and FNDDS 2021–2023 sources locally: 5,795 records and 368,171 nutrient rows. Added compact catalog/seekable record storage; three cold lookups sampled 167 ms and +21.6 MB process RSS, compared with +376.2 MB when the complete source objects were loaded. Source artifacts and package photos remain ignored/private.
+- Gemini selected the FNDDS lookup on an actual paid `gemini-3.8-flash` request and cited the idli record for 6.36 g protein and 25 g carbohydrate per 100 g. The response stated that FNDDS represents U.S. survey foods, not Indian recipes or branded products. This did not verify package OCR or population accuracy.
+- A real response omitted one explicitly requested row once. Added a deterministic, source-span-backed coverage guard that only fills explicitly requested fields from one unique retrieved food record. Offline tests cover coverage, no duplication and ambiguous-result abstention. No photos or user profile were sent during the FNDDS calls.
+- The earlier two-photo package analysis already completed a paid visual inspection and a source-backed USDA chickpea follow-up. The local paid ledger now has 198 attempts (189 complete, 9 failed), $2.0424765 estimated actual and $2.25343475 conservatively committed. These are local estimates, not an invoice.
+- Validation: targeted Gemini/FDC tests and TypeScript passed; final full-suite/build results are in `docs/STATUS.md`. FNDDS remains U.S.-scoped. IFCT/INDB license clearance, clinical-content ingestion, independent package annotation and broader ingredient assessments remain open work.
+
 ## 2026-10-23 — paid Gemini request returned 429
 
 - One owner-authorized, synthetic text-only request reached paid `gemini-3.8-flash` and returned HTTP 429 in 1.45 s. The local usage ledger records a $0.01514 reservation but no model version or token counts; actual billing is unknown. No package photos, product details, profile data or conversation were sent. No retry was made; quota/billing access is an owner-side blocker.

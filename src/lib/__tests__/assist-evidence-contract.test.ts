@@ -328,6 +328,14 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(result.answer).toContain(`Validated calculation: “${quote}”`);
     expect(assistInput.safeParse({consent:true,question:'How much protein?',package:pkg,calculations:[{...calculation,observationIds:['missing-observation']}]}).success).toBe(false);
     expect(assistInput.safeParse({consent:true,question:'How much protein?',package:pkg,calculations:[{...calculation,evidenceText:'forged calculation text'}]}).success).toBe(false);
+
+    const imageId='photo-nutrition-side';
+    const imageCalculation={...baseCalculation,id:'calc-photo-protein',observationIds:[],imageIds:[imageId],interpretationIds:['visual-protein'],evidenceText:undefined};
+    const attachedPhoto={imageId,mimeType:'image/jpeg' as const,base64:'A'.repeat(32),side:'back' as const,sourceImage:{width:1200,height:1800},preprocessing:{rotation:0 as const,contrast:false,invert:false,crop:null}};
+    const imageRequest={consent:true as const,question:'How much protein?',package:pkg,images:[{handle:imageId,side:'back' as const,width:1200,height:1800}],visualImages:[attachedPhoto],calculations:[{...imageCalculation,evidenceText:calculationEvidenceText(imageCalculation)}]};
+    expect(assistInput.safeParse(imageRequest).success).toBe(true);
+    expect(assistInput.safeParse({...imageRequest,visualImages:[],images:[]}).success).toBe(false);
+    expect(assistInput.safeParse({...imageRequest,visualImages:[{...attachedPhoto,imageId:'another-photo'}]}).success).toBe(false);
   });
 
   it('rejects paraphrases without exact evidence spans and unsupported health-safety conclusions',()=>{
