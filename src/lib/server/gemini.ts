@@ -402,7 +402,7 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
         systemInstruction: `${packageAssistInstruction} ${questionCoverageInstruction} ${compactPackageOutputInstruction} ${retrievedCompositionCoverageInstruction} ${candidateEvidenceInstruction} ${photoCandidateInstruction} ${calculationToolInstruction} ${interpretationContinuityInstruction} ${toolCitationInstruction} ${assessmentFollowupInstruction} ${presentationInstruction}`,
         responseMimeType: 'application/json',
         responseJsonSchema: geminiResponseJsonSchema(assistOutput),
-        maxOutputTokens: 9000,
+        maxOutputTokens: 12000,
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         automaticContinuation: false,
         tools: [...(allowGoogleSearch ? [{ googleSearch: {} }] : []), { functionDeclarations: geminiToolDeclarations }],
@@ -410,7 +410,7 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
           ...(allowGoogleSearch ? { includeServerSideToolInvocations: true } : {}),
           functionCallingConfig: { mode: finalOnly ? FunctionCallingConfigMode.NONE : allowGoogleSearch ? FunctionCallingConfigMode.VALIDATED : FunctionCallingConfigMode.AUTO },
         },
-        abortSignal: AbortSignal.timeout(Math.min(50_000, remaining)),
+        abortSignal: AbortSignal.timeout(Math.min(65_000, remaining)),
       },
     });
     const candidate = response.candidates?.[0];
