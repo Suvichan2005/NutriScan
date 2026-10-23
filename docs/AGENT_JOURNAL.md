@@ -1,5 +1,10 @@
 # Sanitized engineering journal
 
+## 2026-10-23 — expose condition-aware dietary guidance to Gemini tools
+
+- Added seven source-linked official guidance summaries behind a bounded local Gemini function. Condition-specific records require matching context; jurisdiction mismatches and unavailable condition targets abstain. No network or provider call is made by this lookup.
+- Added offline tests for CKD/India sodium context, absent India-specific diabetes targets, and avoiding a CKD-to-hypertension cross-match. Full suite: 395 passed, 1 skipped; TypeScript and optimized build passed. No live Gemini call was made for this change; model selection and clinical answer quality remain unverified. Corpus breadth remains limited.
+
 ## 2026-10-23 — add USDA food-composition retrieval to the live agent
 
 - Imported SHA-pinned USDA Foundation Foods April 2026 and FNDDS 2021–2023 sources locally: 5,795 records and 368,171 nutrient rows. Added compact catalog/seekable record storage; three cold lookups sampled 167 ms and +21.6 MB process RSS, compared with +376.2 MB when the complete source objects were loaded. Source artifacts and package photos remain ignored/private.

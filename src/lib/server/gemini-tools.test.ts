@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { evidenceSources } from '../../modules/knowledge';
-import type { PackageData, TentativeStructuredCandidate } from '../contracts';
+import { sourceSchema, type PackageData, type TentativeStructuredCandidate } from '../contracts';
 import { executeGeminiTool, type GeminiToolContext } from './gemini-tools';
 
 const mocks = vi.hoisted(() => ({ semanticRetrieve: vi.fn(), searchOpenFoodTox: vi.fn(), research: vi.fn() }));
@@ -26,6 +26,62 @@ function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019
 }
 
 describe('Gemini tool retrieval boundaries', () => {
+  it('retrieves India-compatible CKD guidance locally without inventing a potassium allowance', async () => {
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'How should adults with CKD handle sodium and potassium?',
+      condition: 'CKD',
+      jurisdiction: 'India',
+    }, context('How should adults with CKD handle sodium and potassium?'));
+
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium']);
+    expect(sourceSchema.array().safeParse(result.evidence).success).toBe(true);
+    expect(result.evidence?.[0].summary).toMatch(/below 2 g\/day/i);
+    expect(result.evidence?.[0].limitations).toMatch(/sodium-wasting nephropathy/i);
+    expect(result.output).toMatchObject({ externalRequestMade: false });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('does not present U.S. diabetes guidance as India-specific when the local corpus lacks a condition-specific source', async () => {
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'What carbohydrate target applies to diabetes in India?',
+      condition: 'diabetes',
+      jurisdiction: 'India',
+    }, context('What carbohydrate target applies to diabetes in India?'));
+
+    expect(result.status).toBe('empty');
+    expect(result.evidence).toEqual([]);
+    expect(result.output).toMatchObject({ status: 'empty', externalRequestMade: false });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('does not cross-apply CKD sodium guidance to hypertension without a kidney context', async () => {
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'How should I manage sodium for hypertension in India?',
+      condition: 'hypertension',
+      jurisdiction: 'India',
+    }, context('How should I manage sodium for hypertension in India?'));
+
+    expect(result.status).toBe('empty');
+    expect(result.evidence?.some(source => source.id === 'kdigo-ckd-2024-sodium')).toBe(false);
+  });
+
+  it('rejects oversized guidance lookups without executing retrieval', async () => {
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'CKD sodium',
+      maxResults: 6,
+    }, context('What should I eat?'));
+
+    expect(result.status).toBe('error');
+    expect(result.output).toMatchObject({ status: 'invalid_arguments' });
+  });
+
   it('calculates from a prior photo-linked candidate only while its source image is attached', async () => {
     const imageContext = context('How much protein is in 20 g?');
     const candidate: TentativeStructuredCandidate = {

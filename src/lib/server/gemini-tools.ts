@@ -20,12 +20,20 @@ import { isValidGtin, findOcrGtinCandidate } from '../barcode';
 import { productInput, lookupProducts } from './products';
 import { researchInput, research } from './research';
 import { fixedFetch } from './http';
+import { getNutritionGuidance } from './nutrition-guidance';
 
 const imageIdSchema = z.string().min(1).max(160);
 const querySchema = z.string().trim().min(2).max(180);
 const toolArgs = {
   inspect_package_image: z.object({ imageId: imageIdSchema, crop: normalizedCropSchema.optional() }).strict(),
   search_knowledge: z.object({ query: querySchema }).strict(),
+  get_nutrition_guidance: z.object({
+    query: z.string().trim().min(2).max(300),
+    condition: z.string().trim().min(2).max(100).optional(),
+    goal: z.string().trim().min(2).max(120).optional(),
+    jurisdiction: z.string().trim().min(2).max(80).optional(),
+    maxResults: z.number().int().min(1).max(5).optional(),
+  }).strict(),
   search_food_composition: z.object({ query: z.string().trim().min(2).max(180), nutrients: z.array(z.string().trim().min(2).max(80)).max(8).optional() }).strict(),
   resolve_ingredient: z.object({ query: querySchema }).strict(),
   lookup_chemical_identity: z.object({ query: querySchema }).strict(),
@@ -49,6 +57,7 @@ const cropParameters = {
 export const geminiToolDeclarations: FunctionDeclaration[] = [
   { name: 'inspect_package_image', description: 'Inspect an attached original package photo or a focused crop using your visual understanding. Use only when OCR is unclear or visual confirmation adds evidence. The photo must already be attached to this request.', parameters: { type: Type.OBJECT, properties: { imageId: { type: Type.STRING, description: 'Exact imageId from the attached package images.' }, crop: cropParameters }, required: ['imageId'] } },
   { name: 'search_knowledge', description: 'Search NutriScan’s local, attributed food and ingredient evidence index. This does not make a network request.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A focused food, nutrient, ingredient, or guidance query.' } }, required: ['query'] } },
+  { name: 'get_nutrition_guidance', description: 'Retrieve a small local set of source-linked nutrition guidance for an explicitly relevant condition or goal. Uses only NutriScan-authored summaries of official sources and sends no query, profile, or image to an external service. Prefer the user’s stated jurisdiction when known. Keep population guidance separate from personal targets and package facts; do not infer diagnoses or prescribe a nutrient allowance.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'The nutrition question and relevant words from the user’s request.' }, condition: { type: Type.STRING, description: 'Only a condition explicitly stated by the user or included in authorized profile context.' }, goal: { type: Type.STRING, description: 'Only a nutrition goal stated by the user or included in authorized profile context.' }, jurisdiction: { type: Type.STRING, description: 'A jurisdiction stated by the user or available in authorized context, such as India.' }, maxResults: { type: Type.NUMBER, description: 'Optional result limit from 1 to 5.' } }, required: ['query'] } },
   { name: 'search_food_composition', description: 'Search local USDA FoodData Central Foundation Foods and FNDDS structured snapshots for generic food-composition reference values. FNDDS includes U.S. survey records for some Indian-style dishes, not authoritative Indian recipes. Use when the user asks how a basic food compares or requests composition context; request relevant nutrient families. Values are source-reported per 100 g edible portion, not facts about a branded Indian product, its package, portion or an individual. Survey portion examples are not package servings. Missing nutrient rows are unavailable, not zero. Includes release, source citation, license and limitations. No external query is sent.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific generic food name or phrase, such as dry chickpeas, idli, chapatti or roti.' }, nutrients: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Up to eight requested nutrient families, such as protein, carbohydrate, fiber, sodium, potassium, energy, or saturated fat. Omit to return common macronutrient and sodium fields.' } }, required: ['query'] } },
   { name: 'resolve_ingredient', description: 'Resolve an observed additive name or INS/E identifier against NutriScan’s local identity registry. Presence and amount still require package evidence.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'Observed ingredient phrase or additive identifier.' } }, required: ['query'] } },
   { name: 'lookup_chemical_identity', description: 'Read-only PubChem PUG REST lookup of a chemical name already present in the user question/package text or returned by exact local ingredient or assessment lookup. Returns registry identity candidates only, not food-use authorization, dose, hazard assessment or personal safety. Sends only the name; never photos or profile data.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific chemical name from the question, printed package text or an exact local identity result, not a numeric value or general food question.' } }, required: ['query'] } },
@@ -264,6 +273,23 @@ async function searchKnowledge(args: z.infer<typeof toolArgs.search_knowledge>):
   } catch {
     return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', message: 'The local knowledge index could not be queried. Do not infer that no relevant evidence exists.' } };
   }
+}
+
+function retrieveNutritionGuidance(args: z.infer<typeof toolArgs.get_nutrition_guidance>): GeminiToolResult {
+  const evidence = getNutritionGuidance(args);
+  return {
+    status: evidence.length ? 'ok' : 'empty',
+    resultCount: evidence.length,
+    evidence,
+    output: {
+      status: evidence.length ? 'ok' : 'empty',
+      results: evidence,
+      message: evidence.length
+        ? 'Local source-linked summaries only. Treat population guidance as context, not an individualized target or a verdict about one package.'
+        : 'No sufficiently relevant local guidance summary matched. Do not invent a target; use an explicitly authorized current research lookup if the user needs a current source.',
+      externalRequestMade: false,
+    },
+  };
 }
 
 function resolveIngredient(args: z.infer<typeof toolArgs.resolve_ingredient>): GeminiToolResult {
@@ -561,6 +587,10 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
     case 'search_knowledge': {
       const parsed = toolArgs.search_knowledge.safeParse(args);
       return parsed.success ? searchKnowledge(parsed.data) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The local knowledge query was invalid.' } };
+    }
+    case 'get_nutrition_guidance': {
+      const parsed = toolArgs.get_nutrition_guidance.safeParse(args);
+      return parsed.success ? retrieveNutritionGuidance(parsed.data) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The nutrition-guidance query was invalid.' } };
     }
     case 'search_food_composition': {
       const parsed = toolArgs.search_food_composition.safeParse(args);
