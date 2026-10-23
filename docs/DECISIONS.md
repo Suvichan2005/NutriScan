@@ -780,3 +780,7 @@ Model-selected package-evidence and package-details cards may link dozens of noi
 ## 23 October 2026 — browser profile reads must not block first run
 
 Bound the remembered-profile startup read with a 2.5-second deadline. Let the user continue with session-only onboarding while IndexedDB is slow, then apply a late result only if the user has not edited onboarding/profile state. A session-only choice must not delete a remembered copy whose read has not completed; explicit opt-out after successful loading and Clear context retain their deletion behavior. Do not clear browser storage to make startup succeed.
+
+## 23 October 2026 — one authoritative answer turn per question
+
+Keep a pending question and its eventual answer in one conversational turn. Gemini completion replaces that pending turn; an explicitly local-only response or provider failure also fills the same turn, clearly labeled and with retry when relevant. Package changes mark earlier answers stale and remove them from future Gemini context. Do not add a second local answer, detached Gemini answer panel, or unconditional nutrition dashboard. Keep raw observations, tentative readings and full source details in the collapsed evidence inspector; show interactive components only when the answer selects them. Reject OCR-like package titles in favor of supported identity, an explicitly tentative model suggestion or a generic title.
