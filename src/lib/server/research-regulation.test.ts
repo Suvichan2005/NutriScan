@@ -208,6 +208,46 @@ describe('official regulation PDF discovery', () => {
     expect(appendix?.summary).toMatch(/01\.0 Dairy products — Xanthan gum INS 415/);
   });
 
+  it('withholds unrelated additive rows when the exact requested INS code is absent', async () => {
+    fixedFetchMock.mockImplementation(async (_url: URL, format: string) => format === 'pdf'
+      ? new Uint8Array([37, 80, 68, 70, 45])
+      : '<html><body>Official FSSAI food products standards and food additives amendment index. Review applicable notices and dates in the original source.</body></html>');
+    const unrelatedRows = 'Food Additive INS No. 150c Caramel III 1,000 mg/kg. '.repeat(20);
+    const result = await research({ query: 'INS 319 food additive India', topic: 'regulation' }, async (_bytes, options) => ({
+      text: unrelatedRows,
+      pagesRead: options.pages,
+      totalPages: 361,
+      truncated: true,
+      extraction: 'selectable-text',
+      ocrPages: 0,
+    }));
+    const appendix = result.items.find(item => item.id === 'fssai-additive-compendium-appendix-a');
+
+    expect(appendix?.summary).toMatch(/exact INS identifier requested was not present/i);
+    expect(appendix?.summary).not.toContain('Caramel III');
+    expect(appendix?.limitations).toMatch(/navigation only/i);
+  });
+
+  it('anchors a requested INS code above earlier table rows and repeated boilerplate', async () => {
+    fixedFetchMock.mockImplementation(async (_url: URL, format: string) => format === 'pdf'
+      ? new Uint8Array([37, 80, 68, 70, 45])
+      : '<html><body>Official FSSAI food products standards index; read original notices.</body></html>');
+    const boilerplate = 'Food Additive INS No. 150c Caramel III 1,000 mg/kg. Food category index. '.repeat(18);
+    const result = await research({ query: 'INS 319 food additive India', topic: 'regulation' }, async (_bytes, options) => ({
+      text: `${boilerplate}\nTertiary butylhydroquinone INS 319 100 mg/kg. Exact food category and conditions are set in the adjacent table headings.`,
+      pagesRead: options.pages,
+      totalPages: 361,
+      truncated: true,
+      extraction: 'selectable-text',
+      ocrPages: 0,
+    }));
+    const appendix = result.items.find(item => item.id === 'fssai-additive-compendium-appendix-a');
+
+    expect(appendix?.summary).toContain('Tertiary butylhydroquinone INS 319');
+    expect(appendix?.summary.indexOf('INS 319')).toBeGreaterThanOrEqual(0);
+    expect(appendix?.summary.indexOf('INS 319')).toBeLessThan(500);
+  });
+
   it('does not fetch Appendix A for unrelated food-labelling or ORS regulation queries', async () => {
     fixedFetchMock.mockResolvedValue('<html><body>Official FSSAI regulations index for food labelling and claims. This page contains enough content for a bounded source excerpt.</body></html>');
     const labelResult = await research({ query: 'FSSAI food labelling regulations', topic: 'regulation' });

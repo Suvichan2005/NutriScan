@@ -736,3 +736,7 @@ EFSA OpenFoodTox 3.0 is a local structured lookup for substance identities and a
 ## Gemini agent request duration and follow-up context — 23 October 2026
 
 The server agent has a bounded 110-second wall-clock budget and each provider generation aborts after at most 65 seconds. Set the assist route `maxDuration` to 120 seconds and the browser abort to 125 seconds so ordinary tool sequences can return their final response. Keep model-produced package candidates separate from confirmed package data, and retain prior candidates when a follow-up supplies no replacement candidates; a missing candidate array is not a correction or retraction.
+
+## Exact regulatory identifier retrieval — 23 October 2026
+
+When a regulation query explicitly names an INS code, require that exact code in the extracted source text and center the bounded excerpt on its occurrence. If it is missing, keep the official source link and report no text match; never substitute a nearby additive row. Flattened PDF text remains unverified and may not preserve table columns or category inheritance. FSSAI Appendix A stays labeled as a navigation aid, while the underlying notification, effective date, exact food category and later amendments remain necessary for any legal conclusion.

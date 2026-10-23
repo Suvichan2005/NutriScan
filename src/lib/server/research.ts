@@ -129,6 +129,9 @@ export async function research(data: z.infer<typeof researchInput>, pdfExtractor
         throw new Error('No selectable PDF text');
       }
       const excerpt = pdf ? excerptPlain(pdf.text, data.query, entry.maxExcerpt) : excerptHtml(source as string, data.query);
+      if (excerpt === null) {
+        return { ok: false as const, entry, failureReason: 'the exact INS identifier requested was not present in the retrieved text' };
+      }
       if (excerpt.length < 100 || /access denied|captcha|request rejected/i.test(excerpt)) {
         failureReason = 'the source text was too short or blocked for a reliable excerpt';
         throw new Error('Unusable source page');
@@ -196,12 +199,20 @@ export async function research(data: z.infer<typeof researchInput>, pdfExtractor
   };
 }
 
-function excerptPlain(text: string, query: string, max = 1200) {
+function excerptPlain(text: string, query: string, max = 1200): string | null {
   const stopWords = new Set(['a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'does', 'for', 'from', 'how', 'in', 'is', 'it', 'of', 'on', 'or', 'the', 'to', 'was', 'what', 'when', 'where', 'which', 'who', 'why', 'with']);
   const words = [...new Set(query.normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])]
     .filter(word => word.length >= 3 && !stopWords.has(word));
-  if (!words.length) return text.slice(0, max).trim();
+  const requestedIns = query.normalize('NFKC').match(/\bINS\s*(?:No\.?\s*)?(\d{3,4}[A-Z]?)\b/i)?.[1];
+  const requestedInsPattern = requestedIns ? new RegExp(`\\b${requestedIns}\\b`, 'i') : null;
   const normalizedText = text.toLowerCase();
+  if (requestedInsPattern) {
+    const codePosition = normalizedText.search(requestedInsPattern);
+    if (codePosition < 0) return null;
+    const start = Math.max(0, codePosition - Math.floor(max * 0.3));
+    return text.slice(start, start + max).trim();
+  }
+  if (!words.length) return text.slice(0, max).trim();
   const weights = new Map(words.map(word => {
     let count = 0;
     let position = normalizedText.indexOf(word);
