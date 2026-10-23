@@ -6,6 +6,7 @@ import {
   buildLocalEvidenceFollowUp,
   buildLocalEvidenceUnavailableFollowUp,
   buildLocalAuditConversationReply,
+  isGuidanceEvidenceInScope,
   isSafeEvidenceUrl,
   parseLocalEvidenceResponse,
   safeConversationEvidence,
@@ -43,6 +44,25 @@ const retrievalResponse = (overrides: Record<string, unknown> = {}) => ({
 });
 
 describe('local evidence follow-ups', () => {
+  it('keeps clinical guidance aligned to India/global scope unless another country is requested or shared', () => {
+    const usGuidance: EvidenceSource = {
+      ...source,
+      id: 'niddk-meals',
+      title: 'Healthy Living with Diabetes',
+      publisher: 'US National Institute of Diabetes and Digestive and Kidney Diseases',
+      jurisdiction: 'United States; general diabetes education',
+    };
+    const globalGuidance: EvidenceSource = { ...source, id: 'who-global', jurisdiction: 'Global' };
+    const indianGuidance: EvidenceSource = source;
+
+    expect(isGuidanceEvidenceInScope(usGuidance, 'Is this suitable as a daily snack?')).toBe(false);
+    expect(isGuidanceEvidenceInScope(usGuidance, 'Compare with U.S. diabetes guidance.')).toBe(true);
+    expect(isGuidanceEvidenceInScope(usGuidance, 'Is this suitable as a daily snack?', 'United States')).toBe(true);
+    expect(isGuidanceEvidenceInScope(globalGuidance, 'Is this suitable as a daily snack?')).toBe(true);
+    expect(isGuidanceEvidenceInScope(indianGuidance, 'Is this suitable as a daily snack?')).toBe(true);
+    expect(isGuidanceEvidenceInScope({ ...usGuidance, category: 'literature' }, 'Is this suitable as a daily snack?')).toBe(true);
+  });
+
   it('routes a genuinely unsupported follow-up to retrieval, but leaves package answers on the local path', () => {
     const pkg = parseLabel('Product: Test food', { origin: 'user' });
     const broad = buildAudit(pkg, 100, 'g', defaultProfile, 'What does ICMR-NIN 2024 say about healthy meal planning?');
@@ -75,11 +95,11 @@ describe('local evidence follow-ups', () => {
   it('keeps source candidates tentative in the reply and distinguishes no-match from missing evidence', () => {
     const answer = buildLocalEvidenceFollowUp('The package alone does not answer this.', [source]);
     expect(answer).toContain(source.title);
-    expect(answer).toContain(source.summary);
-    expect(answer).toContain('does not establish that this source applies');
+    expect(answer).not.toContain(source.summary);
+    expect(answer).toContain('Review its jurisdiction and scope there');
 
     const noMatch = buildLocalEvidenceFollowUp('The package alone does not answer this.', []);
-    expect(noMatch).toContain('did not return a source candidate');
+    expect(noMatch).toContain('No strong match came from the local evidence library');
     expect(noMatch).toContain('does not mean relevant evidence does not exist');
     expect(buildLocalEvidenceUnavailableFollowUp('The package alone does not answer this.'))
       .toContain('remains a package-only response');
@@ -92,7 +112,7 @@ describe('local evidence follow-ups', () => {
     const reply = buildLocalAuditConversationReply(audit, comparisonQuestion);
 
     expect(reply.answer).toContain('456.6 mg sodium');
-    expect(reply.answer).toContain('WHO general adult reference');
+    expect(reply.answer).not.toContain('WHO general adult reference');
     expect(reply.evidence?.map((item) => item.id)).toContain('who-sodium');
 
     const quantityOnly = buildLocalAuditConversationReply(audit, 'How much sodium is in a 20 g portion?');
@@ -102,6 +122,16 @@ describe('local evidence follow-ups', () => {
     const unrelated = buildLocalAuditConversationReply(audit, 'What remains uncertain on this label?');
     expect(unrelated.evidence).toBeUndefined();
     expect(unrelated.answer).not.toContain('WHO general adult reference');
+  });
+
+  it('does not paste US-only diabetes education into the local fallback for an Indian-market snack question', () => {
+    const pkg = parseLabel('Bisk Farm Sugar Free Cream Cracker\nIngredients: Refined wheat flour (maida) (89.98%)', { origin: 'user' });
+    const question = 'Is this good to have for diabetic patients daily for snacking?';
+    const audit = buildAudit(pkg, 26.8, 'g', defaultProfile, question);
+    const reply = buildLocalAuditConversationReply(audit, question);
+
+    expect(reply.answer).not.toMatch(/NIDDK|United States|not everyone with diabetes/i);
+    expect(reply.evidence?.some(item => item.jurisdiction.startsWith('United States'))).not.toBe(true);
   });
 
   it('bounds restored conversation citations and removes unsafe links', () => {

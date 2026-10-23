@@ -3,6 +3,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { GoogleGenAI, type GenerateContentParameters, type GenerateContentResponse } from '@google/genai';
 import { ApiError, readBounded } from './http';
+import { recordGeminiDiagnostic } from './gemini-diagnostics';
 
 export type GeminiTier = 'free' | 'paid';
 export type GeminiPurpose = 'application' | 'synthetic-smoke';
@@ -24,10 +25,23 @@ type UsageRecord = {
   state: 'reserved' | 'completed' | 'failed';
   reservedUsd: number;
   promptTokens: number | null;
+  cachedPromptTokens?: number | null;
   outputTokens: number | null;
   thoughtTokens: number | null;
+  toolUsePromptTokens?: number | null;
+  initialPromptTokens?: number | null;
   totalTokens: number | null;
   estimatedActualUsd: number | null;
+  estimatedActualInr?: number | null;
+  fxRateInrPerUsd?: number | null;
+  priceInputUsdPerMillion?: number | null;
+  priceCachedInputUsdPerMillion?: number | null;
+  priceOutputUsdPerMillion?: number | null;
+  promptTokensDetails?: unknown;
+  cacheTokensDetails?: unknown;
+  candidatesTokensDetails?: unknown;
+  toolUsePromptTokensDetails?: unknown;
+  trafficType?: string | null;
   groundedSearchQueryCount?: number | null;
   estimatedGroundingCostUpperUsd?: number | null;
   elapsedMs: number | null;
@@ -197,11 +211,25 @@ async function updateLedger<T>(update: (ledger: UsageLedger) => T | Promise<T>):
 }
 
 function modelPrice(tier: GeminiTier) {
-  if (tier === 'free') return { input: 0, output: 0 };
+  if (tier === 'free') return { input: 0, cachedInput: 0, output: 0 };
   const input = positiveNumber('GEMINI_PAID_INPUT_USD_PER_MILLION');
   const output = positiveNumber('GEMINI_PAID_OUTPUT_USD_PER_MILLION');
   if (input === null || output === null) throw new ApiError(503, 'paid_price_missing', 'Paid Gemini is blocked until current model prices are configured.');
-  return { input, output };
+  // If no cache price is configured, assume the full input rate (a safe upper bound).
+  const cachedInput = positiveNumber('GEMINI_PAID_CACHED_INPUT_USD_PER_MILLION') ?? input;
+  return { input, cachedInput, output };
+}
+
+export function estimateGeminiTokenCostUsd(
+  usage: { promptTokenCount?: number; cachedContentTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number } | undefined,
+  price: { input: number; cachedInput: number; output: number },
+) {
+  if (usage?.promptTokenCount === undefined || usage.candidatesTokenCount === undefined) return null;
+  const prompt = Math.max(0, usage.promptTokenCount);
+  const cached = Math.min(prompt, Math.max(0, usage.cachedContentTokenCount ?? 0));
+  const inputUsd = (prompt - cached) * price.input + cached * price.cachedInput + Math.max(0, usage.toolUsePromptTokenCount ?? 0) * price.input;
+  const outputUsd = (Math.max(0, usage.candidatesTokenCount) + Math.max(0, usage.thoughtsTokenCount ?? 0)) * price.output;
+  return (inputUsd + outputUsd) / 1_000_000;
 }
 
 async function reserveCall(context: GeminiContext, record: UsageRecord) {
@@ -237,28 +265,77 @@ function safeProviderFailure(error: unknown) {
   return { status, failureClass };
 }
 
+function requestContentMetadata(contents: unknown) {
+  const metadata = { contentPartCount: 0, textPartCount: 0, imageCount: 0, imageBytes: 0, functionResponseCount: 0 };
+  const visit = (value: unknown) => {
+    if (Array.isArray(value)) { value.forEach(visit); return; }
+    if (!value || typeof value !== 'object') return;
+    const record = value as Record<string, unknown>;
+    if (typeof record.text === 'string') { metadata.contentPartCount += 1; metadata.textPartCount += 1; }
+    if ('functionResponse' in record) { metadata.contentPartCount += 1; metadata.functionResponseCount += 1; }
+    if (record.inlineData && typeof record.inlineData === 'object') {
+      const inlineData = record.inlineData as Record<string, unknown>;
+      const bytes = typeof inlineData.data === 'string' ? Buffer.from(inlineData.data, 'base64').byteLength : 0;
+      metadata.contentPartCount += 1;
+      metadata.imageCount += 1;
+      metadata.imageBytes += bytes;
+      return;
+    }
+    Object.entries(record).forEach(([key, child]) => { if (key !== 'data') visit(child); });
+  };
+  visit(contents);
+  return metadata;
+}
+
+function requestToolNames(params: GenerateContentParameters) {
+  return (params.config?.tools ?? []).flatMap(tool => {
+    const record = tool as unknown as Record<string, unknown>;
+    const declarations = record.functionDeclarations;
+    if (Array.isArray(declarations)) return declarations.flatMap(declaration => {
+      if (!declaration || typeof declaration !== 'object') return [];
+      const name = (declaration as Record<string, unknown>).name;
+      return typeof name === 'string' ? [name] : [];
+    });
+    return 'googleSearch' in record ? ['googleSearch'] : [];
+  });
+}
+
 async function settleCall(id: string, state: 'completed' | 'failed', response: GenerateContentResponse | undefined, elapsedMs: number, context: GeminiContext, failure?: unknown) {
   const price = modelPrice(context.tier);
   const usage = response?.usageMetadata;
   const promptTokens = usage?.promptTokenCount ?? null;
+  const cachedPromptTokens = usage?.cachedContentTokenCount ?? null;
   const outputTokens = usage?.candidatesTokenCount ?? null;
   const thoughtTokens = usage?.thoughtsTokenCount ?? null;
+  const toolUsePromptTokens = usage?.toolUsePromptTokenCount ?? null;
+  const initialPromptTokens = usage?.initialPromptTokenCount ?? null;
   const totalTokens = usage?.totalTokenCount ?? null;
-  const billableOutput = (outputTokens ?? 0) + (thoughtTokens ?? 0);
-  const estimate = promptTokens === null || outputTokens === null
-    ? null
-    : ((promptTokens * price.input) + (billableOutput * price.output)) / 1_000_000;
+  const estimate = estimateGeminiTokenCostUsd(usage, price);
     const groundedSearchQueryCount = countGoogleSearchQueries(response);
   await updateLedger((ledger) => {
     const record = ledger.calls.find((call) => call.id === id);
     if (!record) throw new ApiError(503, 'usage_ledger_unavailable', 'Provider usage could not be reconciled locally.');
     record.state = state;
     record.promptTokens = promptTokens;
+    record.cachedPromptTokens = cachedPromptTokens;
     record.outputTokens = outputTokens;
     record.thoughtTokens = thoughtTokens;
+    record.toolUsePromptTokens = toolUsePromptTokens;
+    record.initialPromptTokens = initialPromptTokens;
     record.totalTokens = totalTokens;
     record.modelVersion = response?.modelVersion ?? null;
     record.estimatedActualUsd = estimate;
+    const fxRateInrPerUsd = positiveNumber('GEMINI_USD_TO_INR_ASSUMPTION');
+    record.fxRateInrPerUsd = fxRateInrPerUsd;
+    record.estimatedActualInr = estimate !== null && fxRateInrPerUsd !== null ? estimate * fxRateInrPerUsd : null;
+    record.priceInputUsdPerMillion = price.input;
+    record.priceCachedInputUsdPerMillion = price.cachedInput;
+    record.priceOutputUsdPerMillion = price.output;
+    record.promptTokensDetails = usage?.promptTokensDetails ?? null;
+    record.cacheTokensDetails = usage?.cacheTokensDetails ?? null;
+    record.candidatesTokensDetails = usage?.candidatesTokensDetails ?? null;
+    record.toolUsePromptTokensDetails = usage?.toolUsePromptTokensDetails ?? null;
+    record.trafficType = usage?.trafficType ?? null;
     record.groundedSearchQueryCount = groundedSearchQueryCount;
     // Gross upper bound assumes the project's monthly free search allowance
     // has already been exhausted; actual billing can be lower.
@@ -275,7 +352,7 @@ async function settleCall(id: string, state: 'completed' | 'failed', response: G
   });
 }
 
-export async function generateTracked(context: GeminiContext, params: GenerateContentParameters): Promise<GenerateContentResponse> {
+export async function generateTracked(context: GeminiContext, params: GenerateContentParameters, diagnosticContext: { analysisId?: string; stage?: string; round?: number; profileIncluded?: boolean } = {}): Promise<GenerateContentResponse> {
   if (params.model !== context.model) throw new ApiError(400, 'provider_model_mismatch', 'Request model does not match the selected provider configuration.');
   const maxOutputTokens = params.config?.maxOutputTokens ?? 0;
   if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 1 || maxOutputTokens > 12000) throw new ApiError(400, 'output_limit', 'Gemini output must be explicitly bounded to at most 12000 tokens.');
@@ -294,7 +371,19 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
   let reservedUsd = 0;
   if (context.tier === 'paid') {
     if (context.purpose !== 'application' || !paidAuthorizationReady()) throw new ApiError(503, 'paid_provider_unauthorized', 'Paid Gemini is blocked until an explicit positive spend cap and limits are configured.');
-    const tokenCount = await context.client.models.countTokens({ model: context.model, contents: params.contents });
+    const countStarted = Date.now();
+    let tokenCount;
+    try {
+      tokenCount = await context.client.models.countTokens({ model: context.model, contents: params.contents });
+      await recordGeminiDiagnostic({
+        event: 'count_tokens', analysisId: diagnosticContext.analysisId ?? id, callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null,
+        model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false, elapsedMs: Date.now() - countStarted, promptTokens: tokenCount.totalTokens,
+      });
+    } catch (error) {
+      const safeFailure = safeProviderFailure(error);
+      await recordGeminiDiagnostic({ event: 'count_tokens_failed', analysisId: diagnosticContext.analysisId ?? id, callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null, model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false, elapsedMs: Date.now() - countStarted, failure: safeFailure });
+      throw error;
+    }
     const promptTokens = tokenCount.totalTokens;
     const maxInputTokens = positiveNumber('GEMINI_PAID_MAX_INPUT_TOKENS')!;
     if (!Number.isInteger(promptTokens) || promptTokens! < 0 || promptTokens! > maxInputTokens) throw new ApiError(413, 'paid_input_cap', 'The estimated paid input exceeds its configured token limit.');
@@ -324,13 +413,51 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
     elapsedMs: null,
   };
   await reserveCall(context, record);
+  await recordGeminiDiagnostic({
+    event: 'provider_request', analysisId: diagnosticContext.analysisId ?? id, callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null,
+    tier: context.tier, purpose: context.purpose, model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false,
+    requestMetadata: {
+      ...requestContentMetadata(params.contents), maxOutputTokens, responseMimeType: params.config?.responseMimeType ?? null,
+      responseSchemaPresent: Boolean(params.config?.responseJsonSchema), toolNames: requestToolNames(params),
+      googleSearchOffered: params.config?.tools?.some(tool => 'googleSearch' in tool) ?? false,
+    },
+  });
   try {
     const response = await context.client.models.generateContent(params);
     await settleCall(id, 'completed', response, Date.now() - started, context);
+    const headers = response.sdkHttpResponse?.headers ?? {};
+    const safeHeader = (name: string) => Object.entries(headers).find(([key]) => key.toLowerCase() === name)?.[1] ?? null;
+    const responseUsage = response.usageMetadata;
+    const responsePrices = modelPrice(context.tier);
+    const estimatedTokenUsd = estimateGeminiTokenCostUsd(responseUsage, responsePrices);
+    const groundingQueryCount = countGoogleSearchQueries(response);
+    const estimatedGroundingUpperUsd = groundingQueryCount * 0.014;
+    const fxRateInrPerUsd = positiveNumber('GEMINI_USD_TO_INR_ASSUMPTION');
+    const estimatedTotalUsd = estimatedTokenUsd === null ? null : estimatedTokenUsd + estimatedGroundingUpperUsd;
+    await recordGeminiDiagnostic({
+      event: 'provider_response', analysisId: diagnosticContext.analysisId ?? id, callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null,
+      tier: context.tier, purpose: context.purpose, model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false, elapsedMs: Date.now() - started,
+      responseMetadata: {
+        responseId: response.responseId, createTime: response.createTime, modelVersion: response.modelVersion, modelStatus: response.modelStatus,
+        promptBlockReason: response.promptFeedback?.blockReason ?? null,
+        candidateCount: response.candidates?.length ?? 0,
+        finishReasons: (response.candidates ?? []).map(candidate => candidate.finishReason ?? null),
+        functionCallNames: (response.functionCalls ?? []).flatMap(call => typeof call.name === 'string' ? [call.name] : []),
+        usageMetadata: response.usageMetadata,
+        costEstimate: {
+          estimatedTokenUsd, groundingQueryCount, estimatedGroundingUpperUsd, estimatedTotalUsd,
+          fxRateInrPerUsd, estimatedTotalInr: estimatedTotalUsd !== null && fxRateInrPerUsd !== null ? estimatedTotalUsd * fxRateInrPerUsd : null,
+          basis: 'Token usage × configured Google list rates; search assumes every query is beyond the monthly free allowance. Not a Google billing receipt.',
+          pricesUsdPerMillion: responsePrices,
+        },
+        http: { status: response.sdkHttpResponse?.responseInternal?.status, requestId: safeHeader('x-goog-request-id') ?? safeHeader('x-request-id'), date: safeHeader('date'), contentType: safeHeader('content-type') },
+      },
+    });
     return response;
   } catch (error) {
     // Keep the full reservation on failure; ambiguous network failures may have reached the provider.
     await settleCall(id, 'failed', undefined, Date.now() - started, context, error);
+    await recordGeminiDiagnostic({ event: 'provider_error', analysisId: diagnosticContext.analysisId ?? id, callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null, tier: context.tier, purpose: context.purpose, model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false, elapsedMs: Date.now() - started, failure: safeProviderFailure(error) });
     throw error;
   }
 }

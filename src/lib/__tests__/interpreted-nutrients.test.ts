@@ -151,7 +151,7 @@ describe('OCR-linked model nutrition interpretations', () => {
     expect(corrected.observations.find(item => item.origin === 'user')?.derivedFromObservationIds).toEqual(interpreted.observationIds);
   });
 
-  it('uses a complete attached-photo reading for labeled arithmetic while retaining image provenance and unverified status', () => {
+  it('keeps a complete photo-only reading tentative until OCR words corroborate it', () => {
     const pkg = makePackage();
     const photoReading: TentativeStructuredCandidate = {
       ...candidate(pkg), candidateId: 'visual-protein', observationIds: [], sourceIds: [], supportingSpans: [], ocrWordEvidence: [],
@@ -159,12 +159,11 @@ describe('OCR-linked model nutrition interpretations', () => {
     };
 
     expect(reconcileInterpretedNutrition(pkg, [photoReading]).readings).toEqual([]);
+    expect(reconcileInterpretedNutrition(pkg, [photoReading], [imageId]).withheld[0].reason).toMatch(/exact OCR words must corroborate/i);
     const audit = buildAudit(pkg, 20, 'g', defaultProfile, 'How much protein?', [photoReading], [imageId]);
     const calculation = audit.calculations.find(item => item.nutrient === 'protein');
 
-    expect(calculation).toMatchObject({ result: 1.76, observationIds: [], imageIds: [imageId], interpretationIds: ['visual-protein'] });
-    expect(calculation?.assumptions.join(' ')).toMatch(/unverified model interpretation/i);
-    expect(calculationSchema.parse({ ...calculation, evidenceText: calculationEvidenceText(calculation!) })).toMatchObject({ imageIds: [imageId] });
+    expect(calculation).toBeUndefined();
     expect(pkg.nutrients).toEqual([]);
   });
 
@@ -182,7 +181,7 @@ describe('OCR-linked model nutrition interpretations', () => {
     expect(unattached.readings).toEqual([]);
   });
 
-  it('joins distinct photo regions for a serving column, exact row and printed serving declaration', () => {
+  it('retains a multi-region photo interpretation without using it for serving arithmetic', () => {
     const pkg = makePackage();
     const servingReading: TentativeStructuredCandidate = {
       ...candidate(pkg), candidateId: 'visual-carb-serving', field: 'carbohydrate', normalizedEntity: 'carbohydrate', proposedValue: '9.28 g per serving (13.4 g)', numericValue: 9.28,
@@ -196,10 +195,11 @@ describe('OCR-linked model nutrition interpretations', () => {
 
     const result = buildAudit(pkg, 13.4, 'g', defaultProfile, 'How much carbohydrate is in two biscuits?', [servingReading], [imageId]);
 
-    expect(result.calculations.find(item => item.nutrient === 'carbohydrate')).toMatchObject({ input: 9.28, basisAmount: 13.4, portion: 13.4, result: 9.28, observationIds: [], imageIds: [imageId] });
+    expect(result.calculations.find(item => item.nutrient === 'carbohydrate')).toBeUndefined();
+    expect(reconcileInterpretedNutrition(pkg, [servingReading], [imageId]).withheld[0].reason).toMatch(/exact OCR words must corroborate/i);
   });
 
-  it('lets a complete photo reading remain usable beside an OCR conflict without changing the conflicted package record', () => {
+  it('keeps a photo-only number withheld beside an OCR conflict', () => {
     const pkg = makePackage();
     pkg.nutrients = [{ key: 'protein', value: 8.4, unit: 'g', basis: { amount: 100, unit: 'g', description: 'per 100 g' }, observationIds: ['row-0'], status: 'conflict' }];
     const photoReading: TentativeStructuredCandidate = {
@@ -208,7 +208,7 @@ describe('OCR-linked model nutrition interpretations', () => {
     };
     const audit = buildAudit(pkg, 20, 'g', defaultProfile, 'How much protein?', [photoReading], [imageId]);
 
-    expect(audit.calculations.find(item => item.nutrient === 'protein')).toMatchObject({ input: 8.8, result: 1.76, imageIds: [imageId], observationIds: ['row-0'] });
+    expect(audit.calculations.find(item => item.nutrient === 'protein')).toBeUndefined();
     expect(pkg.nutrients[0]).toMatchObject({ value: 8.4, status: 'conflict' });
   });
 });

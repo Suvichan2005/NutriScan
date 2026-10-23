@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fixedFetch, input, localGate, readBounded, route } from './http';
 import { lookupProducts, normalizeProduct, productInput } from './products';
-import { assist, assistInput, assistOutput, assistPromptPayload, geminiResponseJsonSchema, linkVisionResponseToCapture, providerStatus, validateClaims, validateImage, vision, visionInput } from './gemini';
+import { assist, assistInput, assistOutput, assistPromptPayload, geminiResponseJsonSchema, linkVisionResponseToCapture, providerAssistOutput, providerStatus, validateClaims, validateImage, vision, visionInput } from './gemini';
 import { applicationGeminiContext, committedPaidSpendUsd, countGoogleSearchQueries, freeTierSyntheticSmokeContext, resetGeminiUsageLedgerForTests } from './gemini-provider';
 import { research, researchInput, researchRecalls } from './research';
 import { z } from 'zod';
@@ -43,6 +43,34 @@ describe('bounded server boundary', () => {
     expect(assistInput.safeParse({...combined,images:[]}).success).toBe(false);
     expect(assistInput.safeParse({...combined,visualImages:[{...visionTestImage,sourceImage:{width:1500,height:2400}}]}).success).toBe(false);
     expect(assistInput.safeParse({...combined,visualImages:[visionTestImage,visionTestImage]}).success).toBe(false);
+  });
+  it('accepts one original plus one OCR-guided crop under the original handle and keeps source-relative crop metadata', () => {
+    const packageData={id:'package-1',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:false,createdAt:new Date().toISOString()};
+    const original={...visionTestImage,preprocessing:{...visionTestImage.preprocessing,crop:null}};
+    const crop={...visionTestImage,preprocessing:{...visionTestImage.preprocessing,crop:{x:0.12,y:0.28,width:0.48,height:0.31}}};
+    const handle={handle:original.imageId,side:original.side,width:original.sourceImage.width,height:original.sourceImage.height};
+    const input={consent:true,question:'Read the small nutrition values.',package:packageData,images:[handle],visualImages:[original,crop]};
+    const parsed=assistInput.parse(input);
+    const prompt=assistPromptPayload(parsed);
+    expect(parsed.visualImages).toHaveLength(2);
+    expect(parsed.visualImages?.map(image=>image.imageId)).toEqual([original.imageId,original.imageId]);
+    expect(prompt.visualImages?.[1]).toMatchObject({imageId:original.imageId,sourceImage:original.sourceImage,preprocessing:{crop:{x:0.12,y:0.28,width:0.48,height:0.31}}});
+    expect(JSON.stringify(prompt)).not.toContain(original.base64);
+  });
+  it('limits supplemental OCR-guided crops to one, requires a full view for duplicated handles, and caps aggregate image bytes', () => {
+    const packageData={id:'package-1',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:false,createdAt:new Date().toISOString()};
+    const image=(imageId:string,crop:{x:number;y:number;width:number;height:number}|null,base64=visionTestImage.base64)=>({...visionTestImage,imageId,base64,preprocessing:{...visionTestImage.preprocessing,crop}});
+    const handle=(imageId:string)=>({handle:imageId,side:'back' as const,width:1600,height:2400});
+    const base={consent:true,question:'Read the nutrition table.',package:packageData};
+    const source=image('photo-a',null); const cropA=image('photo-a',{x:0.1,y:0.2,width:0.4,height:0.3});
+    expect(assistInput.safeParse({...base,images:[handle('photo-a')],visualImages:[source,cropA]}).success).toBe(true);
+    const sourceB=image('photo-b',null); const sourceC=image('photo-c',null);
+    expect(assistInput.safeParse({...base,images:[handle('photo-a'),handle('photo-b'),handle('photo-c')],visualImages:[source,cropA,sourceB,sourceC]}).success).toBe(true);
+    expect(assistInput.safeParse({...base,images:[handle('photo-a')],visualImages:[cropA]}).success).toBe(true); // A single saved crop remains a normal package-photo attachment.
+    expect(assistInput.safeParse({...base,images:[handle('photo-a'),handle('photo-b')],visualImages:[source,cropA,image('photo-b',null),image('photo-b',{x:0.2,y:0.2,width:0.3,height:0.3})]}).success).toBe(false);
+    const large='A'.repeat(1_000_000);
+    const largeViews=['one','two','three','four'].map(id=>image(id,null,large));
+    expect(assistInput.safeParse({...base,images:largeViews.map(item=>handle(item.imageId)),visualImages:largeViews}).success).toBe(false);
   });
   it('keeps image bytes out of the serialized text prompt while retaining photo lineage', () => {
     const data=assistInput.parse({consent:true,question:'What does the package say?',package:{id:'package-1',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:false,createdAt:new Date().toISOString()},images:[{handle:visionTestImage.imageId,side:visionTestImage.side,width:1600,height:2400}],visualImages:[visionTestImage]});
@@ -290,7 +318,7 @@ describe('provider validation, independent of provider invocation', () => {
     expect(assistOutput.safeParse({answer:'',claims:[{text:'A paraphrase',observationIds:[],sourceIds:[],supportingSpans:[]}],limitations:[],inspectImage:null}).success).toBe(false);
   });
   it('reduces Zod JSON Schema to Google-supported grammar while retaining full local validation', () => {
-    const schema = geminiResponseJsonSchema(assistOutput) as Record<string, unknown>;
+    const schema = geminiResponseJsonSchema(providerAssistOutput) as Record<string, unknown>;
     const keys = new Set<string>();
     const walk = (value: unknown) => {
       if (Array.isArray(value)) { value.forEach(walk); return; }
@@ -303,6 +331,8 @@ describe('provider validation, independent of provider invocation', () => {
     expect(keys.has('const')).toBe(false);
     expect(keys.has('maxItems')).toBe(false);
     expect(keys.has('exclusiveMinimum')).toBe(false);
+    expect(((schema.required as string[]) ?? [])).toContain('answerParts');
+    expect(providerAssistOutput.safeParse({ answer: '', claims: [], limitations: [], inspectImage: null }).success).toBe(false);
     expect((schema as { required?: string[] }).required).toContain('answer');
     expect((schema as { properties?: Record<string, unknown> }).properties).toHaveProperty('tentativeCandidates');
   });
@@ -337,37 +367,34 @@ describe('provider validation, independent of provider invocation', () => {
   });
   it('sends Gemini structured output through the supported generateContent config and validates the returned answer', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
-    const resultText = JSON.stringify({ answer: 'BISK FARM CREAM CRACKER', claims: [{ mode: 'direct-quote', text: 'BISK FARM CREAM CRACKER', observationIds: ['input-1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'input-1', quote: 'BISK FARM CREAM CRACKER' }] }], limitations: [], inspectImage: null });
+    const resultText = JSON.stringify({ answer: 'BISK FARM CREAM CRACKER', answerParts: [{ text: 'BISK FARM CREAM CRACKER', claimIndexes: [0] }], claims: [{ mode: 'direct-quote', text: 'BISK FARM CREAM CRACKER', observationIds: ['input-1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'input-1', quote: 'BISK FARM CREAM CRACKER' }] }], limitations: [], inspectImage: null });
     const payload = JSON.stringify({ candidates: [{ content: { parts: [{ text: resultText }], role: 'model' }, finishReason: 'STOP', index: 0 }], modelVersion: 'gemini-3.8-flash-test', usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 20, totalTokenCount: 32 } });
     const fetcher = vi.fn().mockResolvedValue(new Response(payload, { status: 200, headers: { 'content-type': 'application/json' } }));
     vi.stubGlobal('fetch', fetcher);
     const data = assistInput.parse({ consent: true, question: 'What product is this?', package: { id: 'package-1', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'input-1', field: 'user-description', text: 'BISK FARM CREAM CRACKER', side: 'text', confidence: null, origin: 'user' }], rawText: 'BISK FARM CREAM CRACKER', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
 
-    await expect(assist(data)).resolves.toMatchObject({ status: 'ok', answer: 'Package observation: “BISK FARM CREAM CRACKER” [observation:input-1]' });
+    await expect(assist(data)).resolves.toMatchObject({ status: 'ok', answer: 'BISK FARM CREAM CRACKER' });
     expect(fetcher).toHaveBeenCalledTimes(1);
     const wireRequest = JSON.parse(String(fetcher.mock.calls[0][1]?.body));
     expect(wireRequest.generationConfig).toMatchObject({ responseMimeType: 'application/json', responseJsonSchema: { type: 'object' } });
     expect(wireRequest.generationConfig).not.toHaveProperty('responseFormat');
     expect(JSON.stringify(wireRequest.generationConfig.responseJsonSchema)).not.toMatch(/"(?:anyOf|const|maxItems|exclusiveMinimum)"/);
   });
-  it('keeps supported claims when citation repair is incomplete and drops unsupported citations', async () => {
+  it('keeps a supported answer and withholds sibling claims with unknown citations', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
-    const invalid = JSON.stringify({ answer: 'unsupported', claims: [
+    const invalid = JSON.stringify({ answer: 'Protein 3 g', answerParts: [{ text: 'Protein 3 g', claimIndexes: [0] }], claims: [
       { mode: 'direct-quote', text: 'Protein 3 g', observationIds: ['protein-observation'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'protein-observation', quote: 'Protein 3 g' }] },
       { mode: 'direct-quote', text: 'invented citation', observationIds: ['unknown-observation'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'unknown-observation', quote: 'invented citation' }] },
       { mode: 'synthesis', text: 'An unsupported uncited claim.', observationIds: [], sourceIds: [], supportingSpans: [] },
     ], limitations: [], inspectImage: null });
     const payload = JSON.stringify({ candidates: [{ content: { parts: [{ text: invalid }], role: 'model' }, finishReason: 'STOP', index: 0 }], modelVersion: 'gemini-3.8-flash-test', usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 20, totalTokenCount: 32 } });
-    const incompleteRepair = JSON.stringify({ candidates: [{ content: { parts: [{ text: invalid }], role: 'model' }, finishReason: 'MAX_TOKENS', index: 0 }], modelVersion: 'gemini-3.8-flash-test', usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 20, totalTokenCount: 32 } });
-    const fetcher = vi.fn()
-      .mockResolvedValueOnce(new Response(payload, { status: 200, headers: { 'content-type': 'application/json' } }))
-      .mockResolvedValueOnce(new Response(incompleteRepair, { status: 200, headers: { 'content-type': 'application/json' } }));
+    const fetcher = vi.fn().mockResolvedValue(new Response(payload, { status: 200, headers: { 'content-type': 'application/json' } }));
     vi.stubGlobal('fetch', fetcher);
     const data = assistInput.parse({ consent: true, question: 'What does this package show?', package: { id: 'package-1', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'protein-observation', field: 'protein', text: 'Protein 3 g', side: 'text', confidence: 100, origin: 'ocr' }], rawText: 'Protein 3 g', warnings: [], synthetic: true, createdAt: new Date().toISOString() } });
 
     const result = await assist(data);
-    expect(fetcher).toHaveBeenCalledTimes(2);
-    expect(result).toMatchObject({ status: 'ok', answer: 'Package observation: “Protein 3 g” [observation:protein-observation]', agentTrace: [{ name: 'citation_repair', status: 'withheld', resultCount: 1 }] });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ status: 'ok', answer: 'Protein 3 g', agentDiagnostics: { acceptedClaims: 1, rejectedClaims: 2, answerStatus: 'model-answer' } });
     expect(result.claims.map(claim => claim.text)).toEqual(['Protein 3 g']);
   });
   it('keeps paid application and free synthetic-smoke calls single-attempt', async () => {
@@ -384,23 +411,29 @@ describe('provider validation, independent of provider invocation', () => {
     await expect(smoke.client.models.generateContent({ model: smoke.model, contents: 'offline smoke-policy probe' })).rejects.toThrow();
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
-  it('rejects forged citations and unknown browser image handles', () => {
+  it('withholds forged claims and unknown browser image handles without fabricating an answer from claim records', () => {
     const data = assistInput.parse({ consent: true, question: 'What is visible?', package: { id: 'test', name: 'Test', userDescription: 'User says it is a cereal snack.', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'o1', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'user' }, { id: 'o2', field: 'user-description', text: 'User says it is a cereal snack.', side: 'text', confidence: null, origin: 'user' }], rawText: '', warnings: [], synthetic: true, createdAt: new Date().toISOString() } });
     expect(data.package.userDescription).toBe('User says it is a cereal snack.');
     const valid = { answer: 'Unsupported extra medical assertion', claims: [{ mode:'direct-quote',text: 'sugar 3g', observationIds: ['o1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'o1', quote: 'sugar 3g' }] }], limitations: ['Take this amount to manage diabetes.'], inspectImage: null };
     expect(validateClaims(valid, data).claims).toHaveLength(1);
-    expect(validateClaims(valid, data).answer).toBe('Package observation: “sugar 3g” [observation:o1]');
+    expect(validateClaims(valid, data).answer).toContain('could not safely assemble it into a clear answer');
     expect(validateClaims(valid, data).answer).not.toContain('medical assertion');
     expect(validateClaims(valid, data).answer).not.toContain('diabetes');
     expect(validateClaims(valid, data).limitations.join(' ')).not.toContain('manage diabetes');
     expect(validateClaims(valid, data).limitations).toEqual(['Generated explanations are not independently verified. Tentative candidates never alter original package observations. The application may use a complete OCR-linked candidate only for explicitly labeled arithmetic after checking its evidence and layout; that reading remains unverified. Image-only text and region references stay outside calculations. No diagnosis, medication advice, or safety assessment is provided.']);
-    expect(() => validateClaims({ ...valid, claims: [{ mode:'direct-quote',text: 'Claim', observationIds: ['missing'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'missing', quote: 'Claim' }] }] }, data)).toThrow('unknown evidence');
-    expect(() => validateClaims({ ...valid, inspectImage: { handle: 'not-owned', reason: 'Read label' } }, data)).toThrow('unknown browser image');
+    const forgedOnly = validateClaims({ ...valid, claims: [{ mode:'direct-quote',text: 'Claim', observationIds: ['missing'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'missing', quote: 'Claim' }] }] }, data);
+    expect(forgedOnly.claims).toEqual([]);
+    expect(forgedOnly.answer).toContain('can’t establish a reliable answer');
+    expect(validateClaims({ ...valid, inspectImage: { handle: 'not-owned', reason: 'Read label' } }, data).inspectImage).toBeNull();
     const visualClaim = { answer: '', claims: [{ mode: 'synthesis', text: 'The image may show sugar 3 g.', observationIds: [], sourceIds: [], supportingSpans: [], visualEvidence: [{ imageId: 'package-photo', visibleText: 'Sugar 3g', region: null }] }], limitations: [], inspectImage: null };
     const imageMetadataOnly = assistInput.parse({ ...data, images: [{ handle: 'package-photo', side: 'back', width: 100, height: 100 }] });
-    expect(() => validateClaims(visualClaim, imageMetadataOnly)).toThrow('not attached to this request');
+    expect(validateClaims(visualClaim, imageMetadataOnly).claims).toEqual([]);
     const imageAttached = assistInput.parse({ ...data, images: [{ handle: 'package-photo', side: 'back', width: 100, height: 100 }], visualImages: [{ imageId: 'package-photo', mimeType: 'image/jpeg', base64: 'YWJjZGVmZ2hpamtsbW5vcA==', side: 'back', sourceImage: { width: 100, height: 100 }, preprocessing: { rotation: 0, contrast: false, invert: false, crop: null } }] });
-    expect(validateClaims(visualClaim, imageAttached).claims).toHaveLength(1);
+    const withheldNumericVisualClaim = validateClaims(visualClaim, imageAttached);
+    expect(withheldNumericVisualClaim.claims).toEqual([]);
+    expect(withheldNumericVisualClaim.answer).not.toContain('3 g');
+    const nonnumericVisualClaim = { ...visualClaim, claims: [{ ...visualClaim.claims[0], text: 'The image may show a nutrition panel.', visualEvidence: [{ imageId: 'package-photo', visibleText: 'NUTRITIONAL INFORMATION', region: null }] }] };
+    expect(validateClaims(nonnumericVisualClaim, imageAttached).claims).toHaveLength(1);
   });
   it('withholds unsupported diabetes safety advice even when it cites a real sugar observation', () => {
     const data = assistInput.parse({ consent: true, question: 'Is this safe for diabetes?', package: { id: 'test', name: 'Test', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'sugar-observation', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'ocr' }], rawText: '', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
@@ -408,8 +441,8 @@ describe('provider validation, independent of provider invocation', () => {
     const result = validateClaims(output, data);
     expect(result.claims).toEqual([]);
     expect(result.answer).not.toMatch(/safe for diabetes|suitable for diabetes/i);
-    expect(result.answer).toContain('No supported factual conclusion');
-    expect(result.answer).toContain('does not establish personal health effects or product safety');
+    expect(result.answer).toContain('can’t establish a reliable answer');
+    expect(result.answer).not.toMatch(/personal health effects or product safety/);
   });
   it('withholds a claim when its quoted span does not occur in the cited item', () => {
     const data = assistInput.parse({ consent: true, question: 'What does it say?', package: { id: 'test', name: 'Test', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'o1', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'ocr' }], rawText: '', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });

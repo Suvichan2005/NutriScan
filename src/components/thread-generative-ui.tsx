@@ -5,6 +5,7 @@ import { BookOpen, ChevronDown, CircleHelp, Eye, PackageSearch, ScanLine, Sparkl
 import { compareProductNutrition, type ProductComparisonRow } from '@/lib/product-comparison';
 import { productEvidenceSource } from '@/lib/product-evidence';
 import { isSafeEvidenceUrl, safeConversationEvidence } from '@/lib/followup-evidence';
+import { shouldShowLabelExplorer, shouldShowNutritionTable } from '@/lib/thread-presentation';
 import type { AssistantUiComponent, Audit, EvidenceSource, Observation, PackageData, ProductRecord, TentativeStructuredCandidate, NutrientKey } from '@/lib/contracts';
 import type { NutrientCorrection } from '@/lib/correction';
 import type { InterpretedNutrientReading } from '@/lib/interpreted-nutrients';
@@ -18,6 +19,7 @@ const nutrientLabels: Record<NutrientKey, string> = {
 function formatNumber(value: number) { return Number(value.toFixed(2)).toLocaleString('en-IN'); }
 
 type Props = {
+  question?: string;
   components: AssistantUiComponent[];
   pkg: PackageData;
   audit: Audit;
@@ -36,8 +38,19 @@ type Props = {
 };
 
 export function ThreadGenerativeUI(props: Props) {
-  const { components, pkg, audit, candidates, interpretedReadings, sources, selectedProduct } = props;
-  if (!components.length) return null;
+  const { components, pkg, audit, candidates, interpretedReadings, sources, selectedProduct, question = '' } = props;
+  // Keep evidence references in the on-demand inspector; reserve the thread for
+  // interactive tools that help answer the current question.
+  const completeNutrients = new Set(pkg.nutrients.filter(item => item.status !== 'conflict' && item.basis).map(item => item.key));
+  for (const reading of interpretedReadings) {
+    if (audit.calculations.some(item => item.nutrient === reading.key && reading.candidateIds.some(id => item.interpretationIds?.includes(id)))) completeNutrients.add(reading.key);
+  }
+  const showNutrition = shouldShowNutritionTable(question, completeNutrients.size);
+  const conversationComponents = components.filter(component => component.type !== 'package-evidence' && component.type !== 'package-details' && component.type !== 'source-reference-cards'
+    && (component.type !== 'nutrition-table' || showNutrition)
+    && (component.type !== 'ingredient-explorer' || shouldShowLabelExplorer(question, 'ingredient'))
+    && (component.type !== 'allergen-explanation' || shouldShowLabelExplorer(question, 'allergen')));
+  if (!conversationComponents.length) return null;
 
   const observations = new Map(pkg.observations.map(observation => [observation.id, observation]));
   const sourceMap = new Map(sources.map(source => [source.id, source]));
@@ -84,16 +97,18 @@ export function ThreadGenerativeUI(props: Props) {
     'source-reference-cards': component => {
       const selected = safeConversationEvidence(component.sourceIds.flatMap(id => sourceMap.has(id) ? [sourceMap.get(id)!] : []));
       if (!selected.length) return null;
-      return <section className="thread-ui-card" aria-label="Supporting sources" data-testid="thread-ui-component-source-reference-cards" key={component.type}>
-        <div className="thread-ui-heading"><span className="eyebrow">SOURCE SCOPE AVAILABLE</span><strong>Review supporting sources</strong></div>
-        <div className="thread-ui-source-list">{selected.map(source => <article key={source.id}><a href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a><small>{source.publisher} · {source.jurisdiction} · Retrieved {new Date(source.retrievedAt).toLocaleDateString('en-IN')}</small><p>{source.summary}</p><p className="thread-ui-caveat">{source.limitations}</p></article>)}</div>
-      </section>;
+      return <details className="thread-ui-card thread-ui-evidence-disclosure" aria-label="Supporting sources" data-testid="thread-ui-component-source-reference-cards" key={component.type}>
+        <summary><span><strong>Supporting sources</strong><small>{selected.map(source => source.title).join(' · ')}</small></span><ChevronDown size={15}/></summary>
+        <div className="thread-ui-evidence-content"><div className="thread-ui-source-list">{selected.map(source => <article key={source.id}><a href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a><small>{source.publisher} · {source.jurisdiction} · Retrieved {new Date(source.retrievedAt).toLocaleDateString('en-IN')}</small><p>{source.summary}</p><p className="thread-ui-caveat">{source.limitations}</p></article>)}</div></div>
+      </details>;
     },
     'personalized-finding': () => <section className="thread-ui-card thread-ui-personalized" aria-label="Personalized interpretation" data-testid="thread-ui-component-personalized-finding" key="personalized-finding"><Sparkles size={16}/><div><strong>Personal context considered</strong><p>A declared profile statement was cited in this answer. It remains user-provided context, not a verified health fact.</p></div></section>,
     'package-details': component => renderObservationCard(component, observations, props, 'Other package details', 'These source lines may include incomplete or misclassified OCR.', true),
   };
 
-  return <div className="thread-ui-stack" aria-label="Interactive food information">{components.map(component => registry[component.type](component))}</div>;
+  const renderedComponents = conversationComponents.map(component => registry[component.type](component));
+  if (!renderedComponents.some(component => component !== null && component !== undefined && component !== false)) return null;
+  return <div className="thread-ui-stack" aria-label="Interactive food information">{renderedComponents}</div>;
 }
 
 function renderComparisonPackageValue(row: ProductComparisonRow, observations: Map<string, Observation>, props: Props): ReactNode {
@@ -125,12 +140,12 @@ function renderEvidenceExplorer(component: AssistantUiComponent, observations: M
   const ids = new Set(component.observationIds.filter(id => observations.has(id)));
   const lines = [...ids].map(id => observations.get(id)!);
   const possible = candidates.filter(candidate => (!kinds || kinds.includes(candidate.kind)) && candidate.observationIds.some(id => ids.has(id)));
-  if (!lines.length) return null;
+  if (!lines.length || !possible.length) return null;
   return <section className="thread-ui-card" aria-label={title} data-testid={'thread-ui-component-' + (kinds ? 'allergen-explanation' : 'ingredient-explorer')} key={component.type}>
-    <div className="thread-ui-heading"><span className="eyebrow">OBSERVATION-LED REVIEW</span><strong>{title}</strong></div>
+    <div className="thread-ui-heading"><span className="eyebrow">LABEL DETAILS</span><strong>{title}</strong></div>
     <p className="thread-ui-caveat">{caveat}</p>
-    {possible.length > 0 && <ul className="thread-ui-candidates">{possible.map(candidate => <li key={candidate.candidateId}><span className="badge neutral">Tentative {candidate.kind}</span><strong>{candidate.proposedValue}</strong><small>{candidate.uncertainty}</small></li>)}</ul>}
-    <ul className="thread-ui-observations">{lines.map(observation => <li key={observation.id}><q>{observation.text}</q><small>{observation.origin === 'ocr' ? `OCR · ${observation.side} side` : `${observation.origin} observation`}</small></li>)}</ul>
+    <ul className="thread-ui-candidates">{possible.slice(0, 6).map(candidate => <li key={candidate.candidateId}><span className="badge neutral">Possible · unverified</span><strong>{candidate.proposedValue}</strong><small>{candidate.uncertainty}</small></li>)}</ul>
+    <details className="thread-ui-evidence-disclosure"><summary><span><strong>View supporting label text</strong><small>{lines.length} linked observation{lines.length === 1 ? '' : 's'}</small></span><ChevronDown size={15}/></summary><div className="thread-ui-evidence-content"><ul className="thread-ui-observations">{lines.map(observation => <li key={observation.id}><q>{observation.text}</q><small>{observation.origin === 'ocr' ? `OCR · ${observation.side} side` : `${observation.origin} observation`}</small></li>)}</ul></div></details>
   </section>;
 }
 

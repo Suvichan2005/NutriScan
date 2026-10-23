@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 23 October 2026 — answer repair must answer the decision question before listing evidence
+
+- Decision: keep the provider's grounded claims and the user-facing answer as distinct stages. When an initial answer omits a direct response or drops supported package context, allow one bounded Gemini repair over exact OCR/source/calculation spans, then run each repaired claim through the same evidence validator. Do not turn validation failure into a generic OCR-warning paragraph or concatenate claim records.
+- For suitability questions about regular use, require the repair to lead with a qualified practical judgment only when supplied evidence supports one. Do not force a condition lookup solely from a condition keyword. Keep numeric values out of calculations when value, unit, or basis remains unresolved.
+- Evidence: the Bisk Farm live run returned parsed structured output, 4 accepted/0 rejected claims, and 3 accepted answer parts after one repair. The resulting answer gave a qualified daily-use judgment tied to the printed ingredients and package claims; its two-biscuit follow-up withheld calculation of the unclear carbohydrate row. This is a successful product behavior on these two photos, not a population accuracy claim.
+- Diagnostic contract: retain sanitized operational metadata and validation categories only. The repository's privacy contract forbids storing request bodies, model conversations, images or health context. Do not log chain-of-thought; the API does not provide private reasoning as an auditable field.
+
 ## 23 October 2026 — resolve unambiguous additive OCR before parallel research lookups
 
 - Decision: allow `search_research` to map a unique additive identity from the current question/query/raw OCR context, including a printed functional class followed by its parenthesized code (for example, `antioxidant (319)`). This covers Gemini issuing identity resolution and research calls in the same round before either tool result can depend on the other.
@@ -784,3 +791,11 @@ Bound the remembered-profile startup read with a 2.5-second deadline. Let the us
 ## 23 October 2026 — one authoritative answer turn per question
 
 Keep a pending question and its eventual answer in one conversational turn. Gemini completion replaces that pending turn; an explicitly local-only response or provider failure also fills the same turn, clearly labeled and with retry when relevant. Package changes mark earlier answers stale and remove them from future Gemini context. Do not add a second local answer, detached Gemini answer panel, or unconditional nutrition dashboard. Keep raw observations, tentative readings and full source details in the collapsed evidence inspector; show interactive components only when the answer selects them. Reject OCR-like package titles in favor of supported identity, an explicitly tentative model suggestion or a generic title.
+
+## 23 October 2026 — keep evidence in a compact inspector and preserve valid answer parts
+
+Raw OCR, source records and package-detail components belong in the on-demand Evidence & tools inspector, not repeated inline under every chat answer. Render only context-relevant nutrition/ingredient components in the conversation. When a Gemini answer has multiple parts, validate each part against its own surviving claim links; withhold broken parts without discarding separately grounded parts. Keep the local-only diabetes guidance route distinct from Gemini output and visibly labeled.
+
+## 23 October 2026 — model-selected evidence for package suitability
+
+Do not force a condition-keyword-specific local guidance call ahead of every product-suitability answer. Let Gemini choose available tools when they add evidence; require a local lookup when the user explicitly asks what a guideline says. Preserve source-jurisdiction filtering and reject unsupported model prose. If response validation fails, retain a clearly labeled local result and offer retry. The latest live package retry still failed to produce a validated grounded answer, so provider integration is not accepted yet.

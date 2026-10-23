@@ -2,9 +2,69 @@ import { describe, expect, it } from 'vitest';
 import { packageSchema } from '../contracts';
 import { validateInferenceOutput } from '../../modules/inference/core';
 import { evidenceSources } from '../../modules/knowledge';
-import { attachGoogleGrounding, googleGroundingEvidence, normalizeModelImageRegions, requestedIngredientIdentityCoverageFacts, supplementRequestedCompositionCoverage, supplementRequestedIngredientIdentityCoverage, supplementRequestedNutritionGuidanceCoverage, toolResultForModel, type RetrievedCompositionFact } from './gemini';
+import { attachGoogleGrounding, googleGroundingEvidence, needsConversationalAnswerRepair, normalizeModelImageRegions, normalizeProviderAssistOutput, parseAgentProviderOutput, requestedIngredientIdentityCoverageFacts, requiresExplicitNutritionGuidanceLookup, supplementRequestedCompositionCoverage, supplementRequestedIngredientIdentityCoverage, supplementRequestedNutritionGuidanceCoverage, toolResultForModel, type RetrievedCompositionFact } from './gemini';
 import { executeGeminiTool } from './gemini-tools';
 import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutrition-guidance';
+
+describe('nutrition-guidance tool routing', () => {
+  it('forces a local lookup when the user explicitly asks for guideline guidance', () => {
+    expect(requiresExplicitNutritionGuidanceLookup('According to WHO, what does the guideline say about added sugars?')).toBe(true);
+  });
+
+  it('does not force a diabetes-specific lookup merely because suitability mentions diabetes', () => {
+    expect(requiresExplicitNutritionGuidanceLookup('Is this good to have for diabetic patients daily for snacking?')).toBe(false);
+    expect(requiresExplicitNutritionGuidanceLookup('Is this a reasonable daily snack?')).toBe(false);
+    expect(requiresExplicitNutritionGuidanceLookup('How much carbohydrate is printed?')).toBe(false);
+  });
+});
+
+describe('model answer-part recovery', () => {
+  it('uses one repair when answer parts are absent or some grounded evidence was omitted', () => {
+    expect(needsConversationalAnswerRepair(1, 2, true, false)).toBe(true);
+    expect(needsConversationalAnswerRepair(0, 4, true, false)).toBe(true);
+    expect(needsConversationalAnswerRepair(1, 0, true, false)).toBe(false);
+    expect(needsConversationalAnswerRepair(0, 4, true, true)).toBe(false);
+    expect(needsConversationalAnswerRepair(0, 0, false, false)).toBe(false);
+  });
+
+  it('keeps valid evidence-linked claims when only answer-to-claim indexes are malformed', () => {
+    const output = normalizeProviderAssistOutput({
+      answer: 'A supported label statement.',
+      answerParts: [{ text: 'A supported label statement.', claimIndexes: [20] }],
+      claims: [{
+        mode: 'synthesis', text: 'The ingredient list names refined wheat flour.',
+        observationIds: ['ocr-ingredients'], sourceIds: [], calculationIds: [], profileFieldIds: [],
+        supportingSpans: [{ kind: 'observation', id: 'ocr-ingredients', quote: 'INGREDIENTS: REFINED WHEAT FLOUR' }],
+        visualEvidence: [],
+      }],
+      limitations: [], inspectImage: null,
+    });
+
+    expect(output?.claims).toHaveLength(1);
+    expect(output?.answerParts).toBeUndefined();
+  });
+
+  it('retains schema-valid empty evidence output for the caller to classify as unsupported quality', () => {
+    const output = normalizeProviderAssistOutput({ answer: 'Unsupported prose.', answerParts: [], claims: [], limitations: [], inspectImage: null });
+    expect(output?.claims).toEqual([]);
+    expect(output?.answerParts).toBeUndefined();
+  });
+});
+
+describe('Gemini final-response failure classification', () => {
+  it('keeps no grounded claims, invalid JSON and schema failure as distinct outcomes', () => {
+    const noClaims = parseAgentProviderOutput(JSON.stringify({ answer: 'Text without linked claims.', claims: [], limitations: [], inspectImage: null }));
+    let malformedJsonError: unknown;
+    try { parseAgentProviderOutput('{not json'); } catch (error) { malformedJsonError = error; }
+    let schemaError: unknown;
+    try { parseAgentProviderOutput(JSON.stringify({ answer: 'bad schema', claims: 'not an array', limitations: [], inspectImage: null })); } catch (error) { schemaError = error; }
+
+    expect(noClaims.modelOutputStatus).toBe('no-grounded-claims');
+    expect(noClaims.output.claims).toEqual([]);
+    expect(malformedJsonError).toMatchObject({ code: 'provider_invalid_json', status: 502 });
+    expect(schemaError).toMatchObject({ code: 'provider_schema_invalid', status: 502 });
+  });
+});
 
 describe('explicit composition-answer coverage', () => {
   const facts:RetrievedCompositionFact[]=[
@@ -88,7 +148,8 @@ describe('explicit nutrition-guidance answer coverage', () => {
     expect(result.added).toBe(1);
     expect((result.output as { claims: Array<{ text: string }> }).claims.at(-1)?.text).toBe(evidence[0].summary);
     expect(validated.claims).toHaveLength(1);
-    expect(validated.answer).toContain('sodium below 2 g/day');
+    expect(validated.claims[0].text).toContain('sodium below 2 g/day');
+    expect(validated.answer).toContain('could not safely assemble it into a clear answer');
   });
 
   it('does not create coverage facts for an ordinary package question', () => {
@@ -110,7 +171,8 @@ describe('explicit nutrition-guidance answer coverage', () => {
 
     expect(supplemented.added).toBe(1);
     expect(validated.claims).toHaveLength(1);
-    expect(validated.answer).toContain('sodium below 2 g/day');
+    expect(validated.claims[0].text).toContain('sodium below 2 g/day');
+    expect(validated.answer).toContain('could not safely assemble it into a clear answer');
     expect(validated.claims[0].sourceIds).toEqual(['kdigo-ckd-2024-sodium']);
   });
 });
@@ -137,8 +199,9 @@ describe('explicit additive-identity answer coverage', () => {
     expect(validated.claims).toHaveLength(1);
     expect(validated.claims[0].sourceIds).toContain('who-jecfa-tbhq-319');
     expect(validated.claims[0].observationIds).toEqual(['ocr-additive-319']);
-    expect(validated.answer).toMatch(/INS 319.*Tertiary butylhydroquinone/i);
-    expect(validated.answer).toMatch(/not the product.s additive amount or authorization/i);
+    expect(validated.claims[0].text).toMatch(/INS 319.*Tertiary butylhydroquinone/i);
+    expect(validated.claims[0].text).toMatch(/not the product.s additive amount or authorization/i);
+    expect(validated.answer).toContain('could not safely assemble it into a clear answer');
   });
 
   it('does not promote an identity result without an explicit identity question and matching OCR declaration', async () => {

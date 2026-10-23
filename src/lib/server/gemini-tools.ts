@@ -13,6 +13,7 @@ import {
   type TentativeStructuredCandidate,
 } from '../contracts';
 import { matchesPackageRows, reconcileInterpretedNutrition } from '../interpreted-nutrients';
+import { isGuidanceEvidenceInScope } from '../followup-evidence';
 import { evidenceSources, lookupAdditive, lookupExplicitAdditiveMention, resolveTentativeAdditiveIdentity } from '../../modules/knowledge';
 import { searchOpenFoodTox, semanticRetrieve } from '../semantic';
 import { searchFoodComposition, type FoodCompositionFood } from './food-composition';
@@ -245,7 +246,10 @@ function productEvidence(product: Awaited<ReturnType<typeof lookupProducts>>['pr
 }
 
 async function inspectImage(args: z.infer<typeof toolArgs.inspect_package_image>, context: GeminiToolContext): Promise<GeminiToolResult> {
-  const image = context.visualImages.find(item => item.imageId === args.imageId);
+  // Model-reported regions are normalized against the original package photo.
+  // Prefer its uncropped view when a same-handle OCR-guided crop is also attached.
+  const image = context.visualImages.find(item => item.imageId === args.imageId && item.preprocessing.crop === null)
+    ?? context.visualImages.find(item => item.imageId === args.imageId);
   if (!image) return { status: 'withheld', resultCount: 0, output: { status: 'image_not_attached', message: 'That image is not attached to this consented request.' } };
   const cleanBase64 = await context.prepareImage(image);
   const bytes = Buffer.from(cleanBase64, 'base64');
@@ -269,12 +273,13 @@ async function inspectImage(args: z.infer<typeof toolArgs.inspect_package_image>
   };
 }
 
-async function searchKnowledge(args: z.infer<typeof toolArgs.search_knowledge>): Promise<GeminiToolResult> {
+async function searchKnowledge(args: z.infer<typeof toolArgs.search_knowledge>, context: GeminiToolContext): Promise<GeminiToolResult> {
   try {
     const response = await semanticRetrieve(args.query, 3);
     const queryTerms = new Set(distinctiveKnowledgeTokens(args.query));
     const hits = response.results
       .filter(item => item.exactIdentity || distinctiveKnowledgeTokens(`${item.source.title} ${item.source.summary}`).some(term => queryTerms.has(term)))
+      .filter(item => isGuidanceEvidenceInScope(item.source, context.question, context.profile?.country ?? ''))
       .map(item => ({ source: item.source, score: item.score, exactIdentity: item.exactIdentity }));
     const evidence = hits.map(hit => asEvidenceSource(hit.source)).filter((item): item is EvidenceSource => item !== null);
     return { status: evidence.length ? 'ok' : 'empty', resultCount: evidence.length, evidence, output: { status: response.status, mode: response.mode, corpusVersion: response.corpusVersion, results: hits.filter(hit => evidence.some(item => item.id === hit.source.id)), limitations: response.limitations.slice(0, 4), message: response.message ?? 'No sufficiently relevant local source was found.' } };
@@ -614,7 +619,7 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
     }
     case 'search_knowledge': {
       const parsed = toolArgs.search_knowledge.safeParse(args);
-      return parsed.success ? searchKnowledge(parsed.data) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The local knowledge query was invalid.' } };
+      return parsed.success ? searchKnowledge(parsed.data, context) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The local knowledge query was invalid.' } };
     }
     case 'get_nutrition_guidance': {
       const parsed = toolArgs.get_nutrition_guidance.safeParse(args);

@@ -31,6 +31,25 @@ export function isSafeEvidenceUrl(value: string): boolean {
   }
 }
 
+/** Keep clinical guidance aligned to NutriScan's Indian-market default unless the user names another jurisdiction. */
+export function isGuidanceEvidenceInScope(
+  source: Pick<EvidenceSource, 'category' | 'jurisdiction'>,
+  question: string,
+  explicitlySharedCountry = '',
+): boolean {
+  if (source.category !== 'guideline') return true;
+  const jurisdiction = source.jurisdiction.normalize('NFKC').toLocaleLowerCase('en-IN');
+  if (/\b(?:global|international|worldwide)\b/.test(jurisdiction)) return true;
+  if (/\bindia(?:n)?\b/.test(jurisdiction)) return true;
+
+  const request = `${question} ${explicitlySharedCountry}`.normalize('NFKC').toLocaleLowerCase('en-IN');
+  const namedJurisdiction = jurisdiction.split(/[;,|]/, 1)[0].trim();
+  if (namedJurisdiction && request.includes(namedJurisdiction)) return true;
+  if (/united states/.test(jurisdiction) && /(?:^|\W)(?:u\.?s\.?a?|american)(?:$|\W)/.test(request)) return true;
+  if (/united kingdom/.test(jurisdiction) && /(?:^|\W)(?:u\.?k\.?|british)(?:$|\W)/.test(request)) return true;
+  return false;
+}
+
 /** Validate the shared local retrieval response before it enters chat or saved state. */
 export function parseLocalEvidenceResponse(value: unknown): {
   status: 'ok' | 'no_match';
@@ -54,11 +73,9 @@ export function buildLocalEvidenceFollowUp(
 ): string {
   const first = sources[0];
   if (!first) {
-    return baseAnswer + ' The curated local library did not return a source candidate above its development relevance floor. That does not mean relevant evidence does not exist; refine the question or use a current source search when needed.';
+    return baseAnswer + ' No strong match came from the local evidence library. That does not mean relevant evidence does not exist.';
   }
-  return baseAnswer + ' The local evidence library surfaced ' + first.publisher + ': ' + first.title +
-    '. Its curated summary says: ' + first.summary +
-    ' Review the linked source and its scope below. A retrieval match is a discovery cue; it does not establish that this source applies to this package or your personal situation.';
+  return baseAnswer + ' A related source is available in Evidence & tools: ' + first.publisher + ', ' + first.title + '. Review its jurisdiction and scope there.';
 }
 
 export function buildLocalEvidenceUnavailableFollowUp(baseAnswer: string): string {
@@ -88,17 +105,13 @@ export function buildLocalAuditConversationReply(audit: Audit, question: string)
     (asksForEvidenceContext && finding.status === 'context') || finding.status === 'calculated'
   ));
   const referencedSourceIds = new Set(relevantFindings.flatMap((finding) => finding.sourceIds));
-  const evidence = safeConversationEvidence(audit.sources.filter((source) => referencedSourceIds.has(source.id)));
-  const safeSourceIds = new Set(evidence.map((source) => source.id));
-  const groundedContext = relevantFindings
-    .filter((finding) => finding.status === 'context' && finding.detail.trim() && finding.sourceIds.some((id) => safeSourceIds.has(id)))
-    .slice(0, 2)
-    .map((finding) => finding.detail.trim());
-  const answer = [...new Set([
-    audit.answer.trim(),
-    ...groundedContext,
-    ...audit.nextQuestions.slice(0, 2).map((question) => question.trim())
-  ])].filter(Boolean).join('\n\n').slice(0, 8000);
+  const evidence = safeConversationEvidence(audit.sources.filter((source) => referencedSourceIds.has(source.id) && isGuidanceEvidenceInScope(source, question)));
+  // A local fallback is a concise status, not a second research essay. Keep
+  // source summaries in the evidence inspector, where their jurisdiction and
+  // limitations remain visible on demand.
+  const lead = audit.answer.trim().split(/\n\s*\n/, 1)[0]?.trim() ?? '';
+  const sentence = lead.match(/^(.{1,700}?[.!?])(?:\s|$)/s)?.[1];
+  const answer = (sentence ?? lead.slice(0, 700)).trim();
 
   return { answer, ...(evidence.length ? { evidence } : {}) };
 }

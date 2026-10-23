@@ -113,6 +113,7 @@ export function PackagePhotoCard({ asset, index, busy, onTransform, onUndo, onRe
   const displayFilter = showOriginal || cropOpen || thresholdPreviewReady || !enhanceOpen || !adjustmentBase || neutralPreview
     ? 'none'
     : 'brightness(' + adjustments.brightness + '%) contrast(' + adjustments.contrast + '%) grayscale(' + (adjustments.grayscale ? '1' : '0') + ')';
+  const perspectivePoints = corners.map(point => point.x * 100 + ',' + point.y * 100);
 
   useEffect(() => {
     setCropOpen(false);
@@ -270,7 +271,8 @@ export function PackagePhotoCard({ asset, index, busy, onTransform, onUndo, onRe
         />
         {cropOpen && !showOriginal && <div className="perspective-overlay" aria-label="Perspective adjustment corners">
           <svg className="perspective-guide" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-            <polygon points={corners.map(point => point.x * 100 + ',' + point.y * 100).join(' ')} />
+            <path className="perspective-mask" d={'M0 0H100V100H0Z M' + perspectivePoints.join('L') + 'Z'} fillRule="evenodd" />
+            <polygon points={perspectivePoints.join(' ')} />
           </svg>
           {corners.map((point, cornerIndex) => <button
             key={cornerIndex}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultProfile, packageSchema, tentativeStructuredCandidateSchema, type Calculation, type PackageData } from '../../lib/contracts';
+import { reconcileInterpretedNutrition } from '../../lib/interpreted-nutrients';
 import { InferenceModuleError, validateInferenceOutput } from './index';
 
 const fixturePackage: PackageData = packageSchema.parse({
@@ -51,9 +52,9 @@ describe('provider-independent inference output validation', () => {
     for (const kind of ['allergen', 'warning', 'package-claim'] as const) expect(tentativeStructuredCandidateSchema.safeParse({ ...base, kind }).success).toBe(true);
   });
 
-  it('renders a traceable synthesis while preserving uncertainty about the basis', () => {
+  it('uses conversational answer text when it links accepted claims and preserves supported numbers', () => {
     const output = {
-      answer: 'Ignored free-form answer',
+      answer: 'The label appears to show about 8.8 g of protein, but the serving basis is not established.',
       claims: [{
         mode: 'synthesis',
         text: 'The OCR line appears to show about 8.8 g of protein, but its serving basis is unresolved.',
@@ -61,6 +62,7 @@ describe('provider-independent inference output validation', () => {
         sourceIds: [],
         supportingSpans: [observationSpan],
       }],
+      answerParts: [{ text: 'The label may show about 8.8 g of protein, but I cannot tell what amount that applies to.', claimIndexes: [0] }],
       limitations: [],
       inspectImage: null,
     };
@@ -68,10 +70,99 @@ describe('provider-independent inference output validation', () => {
     const result = validateInferenceOutput(output, { package: fixturePackage });
 
     expect(result.claims).toHaveLength(1);
-    expect(result.answer).toContain('Evidence-linked interpretation');
-    expect(result.answer).toContain('serving basis is unresolved');
-    expect(result.answer).toContain('Protein approx 8.8 g');
-    expect(result.answer).not.toContain('Ignored free-form answer');
+    expect(result.answer).toBe(output.answerParts[0].text);
+    expect(result.answer).not.toContain('Evidence-linked interpretation');
+    expect(result.answer).not.toContain('[observation:');
+  });
+
+  it('keeps valid answer parts when a sibling part cites a claim that did not survive validation', () => {
+    const supportedAnswer = 'The label may show about 8.8 g of protein, but its serving basis is unresolved.';
+    const result = validateInferenceOutput({
+      answer: 'ignored compatibility field',
+      claims: [{
+        mode: 'synthesis', text: 'The OCR line appears to show about 8.8 g of protein, but its serving basis is unresolved.',
+        observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [observationSpan],
+      }],
+      answerParts: [
+        { text: supportedAnswer, claimIndexes: [0] },
+        { text: 'Unsupported extra sentence.', claimIndexes: [7] },
+      ],
+      limitations: [], inspectImage: null,
+    }, { package: fixturePackage });
+
+    expect(result.answer).toBe(supportedAnswer);
+    expect(result.answer).not.toContain('Unsupported extra sentence');
+    expect(result.answer).not.toContain('Some details are interpreted');
+  });
+
+  it('retains a valid claim but does not substitute a claim record for a rejected conversational answer', () => {
+    const result = validateInferenceOutput({
+      answer: 'The label shows 9 g of protein per serving.',
+      claims: [{
+        mode: 'synthesis', text: 'The OCR line appears to show 8.8 g of protein, but the basis is unresolved.',
+        observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [observationSpan],
+      }],
+      limitations: [], inspectImage: null,
+    }, { package: fixturePackage });
+
+    expect(result.claims[0].text).toContain('8.8 g of protein');
+    expect(result.answer).toContain('could not safely assemble it into a clear answer');
+    expect(result.answer).not.toContain('8.8 g of protein');
+    expect(result.answer).not.toContain('9 g');
+  });
+
+  it('does not use an unsafe natural answer even when nearby package claims are supported', () => {
+    const result = validateInferenceOutput({
+      answer: 'You should eat these biscuits every day to manage diabetes.',
+      claims: [{
+        mode: 'synthesis', text: 'The label appears to show 8.8 g of protein, but the basis is unresolved.',
+        observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [observationSpan],
+      }],
+      limitations: [], inspectImage: null,
+    }, { package: fixturePackage });
+
+    expect(result.claims[0].text).toContain('8.8 g of protein');
+    expect(result.answer).toContain('could not safely assemble it into a clear answer');
+    expect(result.answer).not.toContain('8.8 g of protein');
+    expect(result.answer).not.toMatch(/eat these biscuits every day/i);
+  });
+
+  it('keeps a cautious suitability answer when it states that the evidence is insufficient', () => {
+    const cautiousAnswer = 'The package evidence does not provide enough information to establish whether this is suitable for daily snacking.';
+    const result = validateInferenceOutput({
+      answer: '',
+      claims: [{
+        mode: 'synthesis',
+        text: 'The OCR line appears to show about 8.8 g of protein, but its serving basis is unresolved.',
+        observationIds: ['ocr-line-1'],
+        sourceIds: [],
+        supportingSpans: [observationSpan],
+      }],
+      answerParts: [{ text: cautiousAnswer, claimIndexes: [0] }],
+      limitations: [],
+      inspectImage: null,
+    }, { package: fixturePackage });
+
+    expect(result.answer).toBe(cautiousAnswer);
+  });
+
+  it('classifies answer-assembly rejection separately and retains individually valid claims', () => {
+    const claim = 'The OCR line appears to show about 8.8 g of protein, but its serving basis is unresolved.';
+    const events: { stage: string; index: number; decision: string; reason?: string }[] = [];
+    const result = validateInferenceOutput({
+      answer: 'This is a great daily snack.',
+      claims: [{ mode: 'synthesis', text: claim, observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [observationSpan] }],
+      answerParts: [{ text: 'This is a great daily snack with 9 g sugar. ' + claim, claimIndexes: [0] }],
+      limitations: [], inspectImage: null,
+    }, { package: fixturePackage, diagnostic: event => events.push(event) });
+
+    expect(result.claims[0].text).toBe(claim);
+    expect(result.answer).toContain('could not safely assemble it into a clear answer');
+    expect(result.answer).not.toContain('8.8 g of protein');
+    expect(result.answer).not.toContain('9 g sugar');
+    expect(result.answer).not.toContain('great daily snack');
+    expect(events).toContainEqual({ stage: 'answer-part', index: 0, decision: 'rejected', reason: 'unsupported-numeric-value' });
+    expect(events).toContainEqual({ stage: 'answer-part', index: -1, decision: 'rejected', reason: 'grounded-claims-answer-unavailable' });
   });
 
   it('accepts exact citations to a source record limitation', () => {
@@ -93,7 +184,8 @@ describe('provider-independent inference output validation', () => {
     }, { package: fixturePackage, evidence: [source] });
 
     expect(result.claims).toHaveLength(1);
-    expect(result.answer).toContain('product presence, dose or personal safety');
+    expect(result.claims[0].text).toContain('dose or personal safety');
+    expect(result.answer).toContain('could not safely assemble it into a clear answer');
   });
 
   it('keeps dose and exposure limitations while withholding personalized safety and treatment advice', () => {
@@ -134,10 +226,11 @@ describe('provider-independent inference output validation', () => {
     }, { package: fixturePackage });
 
     expect(result.claims).toHaveLength(2);
-    expect(result.answer).toContain('does not state a dose');
-    expect(result.answer).not.toContain('This product is safe for you.');
-    expect(result.answer).toContain('does not establish that this product is safe');
-    expect(result.answer).not.toContain('avoid this product');
+    expect(result.claims.map(claim => claim.text).join(' ')).toContain('does not state a dose');
+    expect(result.claims.map(claim => claim.text).join(' ')).not.toContain('This product is safe for you.');
+    expect(result.claims.map(claim => claim.text).join(' ')).toContain('does not establish that this product is safe');
+    expect(result.claims.map(claim => claim.text).join(' ')).not.toContain('avoid this product');
+    expect(result.answer).toContain('could not safely assemble it into a clear answer');
   });
 
   it('withholds numeric synthesis that conflicts with cited OCR while allowing equivalent units', () => {
@@ -289,7 +382,7 @@ describe('provider-independent inference output validation', () => {
     }, { package: fixturePackage });
 
     expect(result.claims).toEqual([]);
-    expect(result.answer).toContain('No supported factual conclusion');
+    expect(result.answer).toContain('can’t establish a reliable answer');
     expect(result.answer).not.toContain('Sodium 500 mg');
   });
 
@@ -320,16 +413,56 @@ describe('provider-independent inference output validation', () => {
       inspectImage: null,
     }, { package: fixturePackage });
 
-    expect(result.tentativeCandidates).toEqual([candidate]);
-    expect(result.answer).toContain('tentative package readings');
-    expect(result.answer).toContain('clearly labeled arithmetic');
-    expect(result.answer).toContain('remain outside calculations');
+    expect(result.tentativeCandidates).toHaveLength(1);
+    expect(result.tentativeCandidates[0]).toMatchObject({
+      status: 'tentative', numericValue: candidate.numericValue, observationIds: candidate.observationIds,
+    });
+    expect(result.tentativeCandidates[0].uncertainty).toMatch(/links are incomplete/i);
+    expect(result.answer).toContain('possible readings');
     expect(result.answer).not.toContain('8.8 g');
     expect(fixturePackage).toEqual(before);
     expect(fixturePackage.nutrients).toEqual([]);
   });
 
-  it('accepts image-linked claims and candidates as unverified without promoting package facts', () => {
+  it('preserves a photo-backed candidate with partial OCR links but keeps it out of calculations', () => {
+    const unlinkedObservation = {
+      id: 'ocr-line-unlinked-basis', field: 'ocr-line' as const, text: 'QUANTITY PER 100 g', side: 'back' as const,
+      confidence: 80, origin: 'ocr' as const, imageId: 'synthetic-image',
+      readingOrder: { runId: 'synthetic-run', blockIndex: 0, paragraphIndex: 0, lineIndex: 1 },
+    };
+    const pkg = packageSchema.parse({
+      ...fixturePackage,
+      observations: [...fixturePackage.observations, unlinkedObservation],
+      rawText: `${fixturePackage.rawText}\n${unlinkedObservation.text}`,
+    });
+    const candidate = {
+      candidateId: 'vision-protein-partial-links',
+      kind: 'nutrient', field: 'protein', proposedValue: '9.2 g', numericValue: 9.2, unit: 'g',
+      basis: { amount: 100, unit: 'g', description: 'per 100 g' }, normalizedEntity: 'protein', status: 'tentative',
+      observationIds: ['ocr-line-1', unlinkedObservation.id], sourceIds: [], supportingSpans: [observationSpan],
+      ocrWordEvidence: [{ observationId: 'ocr-line-1', role: 'value', wordIndexes: [2, 3] }],
+      visualEvidence: [
+        { imageId: 'synthetic-image', visibleText: 'Protein 9.2 g', region: { x: 0.2, y: 0.3, width: 0.3, height: 0.05 } },
+        { imageId: 'synthetic-image', visibleText: 'Per 100 g', region: { x: 0.5, y: 0.25, width: 0.2, height: 0.05 } },
+      ],
+      uncertainty: 'The OCR line and photo reading disagree; confirm the printed value.',
+    };
+
+    const result = validateInferenceOutput({ answer: '', claims: [], tentativeCandidates: [candidate], limitations: [], inspectImage: null }, {
+      package: pkg, images: [{ handle: 'synthetic-image' }],
+    });
+
+    expect(result.tentativeCandidates).toHaveLength(1);
+    expect(result.tentativeCandidates[0]).toMatchObject({
+      status: 'tentative', observationIds: ['ocr-line-1'], supportingSpans: [observationSpan],
+    });
+    expect(result.tentativeCandidates[0].uncertainty).toMatch(/links are incomplete/i);
+    const reconciled = reconcileInterpretedNutrition(pkg, result.tentativeCandidates, ['synthetic-image']);
+    expect(reconciled.readings).toEqual([]);
+    expect(reconciled.withheld[0].reason).toMatch(/interpretation of the photo/i);
+  });
+
+  it('keeps image-linked numbers tentative and does not let the model corroborate its own visual reading', () => {
     const before = structuredClone(fixturePackage);
     const visualEvidence = {
       imageId: 'synthetic-image',
@@ -368,11 +501,15 @@ describe('provider-independent inference output validation', () => {
       inspectImage: null,
     }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }] });
 
-    expect(result.claims).toHaveLength(1);
-    expect(result.answer).toContain('Tentative visual interpretation');
-    expect(result.answer).toContain('unverified');
-    expect(result.answer).toContain('[image:synthetic-image]');
-    expect(result.tentativeCandidates).toEqual([candidate]);
+    expect(result.claims).toHaveLength(0);
+    expect(result.answer).toContain('possible readings');
+    expect(result.answer).not.toContain('5.7 g protein');
+    expect(result.answer).not.toContain('[image:synthetic-image]');
+    expect(result.tentativeCandidates).toHaveLength(1);
+    expect(result.tentativeCandidates[0]).toMatchObject({
+      status: 'tentative', numericValue: candidate.numericValue, visualEvidence: [visualEvidence],
+    });
+    expect(result.tentativeCandidates[0].uncertainty).toMatch(/links are incomplete/i);
     expect(fixturePackage).toEqual(before);
     expect(fixturePackage.nutrients).toEqual([]);
   });
@@ -393,16 +530,17 @@ describe('provider-independent inference output validation', () => {
       inspectImage: null,
     };
 
-    expect(() => validateInferenceOutput(output, { package: fixturePackage })).toThrowError(InferenceModuleError);
+    expect(validateInferenceOutput(output, { package: fixturePackage }).claims).toEqual([]);
     const result = validateInferenceOutput(output, { package: fixturePackage, images: [{ handle: 'synthetic-image' }] });
     expect(result.claims).toEqual([]);
-    expect(result.answer).toContain('No supported factual conclusion');
+    expect(result.answer).toContain('can’t establish a reliable answer');
     expect(result.answer).not.toContain('5.8 g');
   });
 
-  it('returns typed errors for malformed output and unknown evidence identifiers', () => {
+  it('returns typed errors for malformed output while withholding only a claim with unknown evidence', () => {
     expect(() => validateInferenceOutput({ nope: true }, { package: fixturePackage })).toThrowError(InferenceModuleError);
-    expect(() => validateInferenceOutput({
+    const decisions: Array<{ stage: string; index: number; decision: string; reason?: string }> = [];
+    const result = validateInferenceOutput({
       answer: '',
       claims: [{
         mode: 'direct-quote',
@@ -413,7 +551,10 @@ describe('provider-independent inference output validation', () => {
       }],
       limitations: [],
       inspectImage: null,
-    }, { package: fixturePackage })).toThrowError(expect.objectContaining({ code: 'unknown_citation' }));
+    }, { package: fixturePackage, diagnostic: event => decisions.push(event) });
+    expect(result.claims).toEqual([]);
+    expect(result.answer).toContain('can’t establish a reliable answer');
+    expect(decisions).toContainEqual({ stage: 'claim', index: 0, decision: 'rejected', reason: 'unknown-evidence-id' });
   });
 
   it('keeps only unique UI requests whose backing evidence exists and can be rendered', () => {

@@ -196,19 +196,11 @@ function validateCandidate(pkg: PackageData, candidate: TentativeStructuredCandi
   };
   if (!evidence.label || !evidence.value || !evidence.unit || !evidence.basis) {
     const visual = visualReadingEvidence(candidate, key, attachedImageIds);
-    if (!visual) return { key, reason: 'The label, exact value and unit, and printed column or serving basis are not all linked to exact OCR words or an attached photo region.' };
     return {
       key,
-      reading: {
-        key,
-        value: candidate.numericValue,
-        unit: candidate.unit,
-        basis: { ...candidate.basis, description: visual.basisDescription },
-        candidateIds: [candidate.candidateId],
-        observationIds: [...new Set(candidate.observationIds)],
-        imageIds: visual.imageIds,
-        uncertainty: candidate.uncertainty,
-      },
+      reason: visual
+        ? 'The reading is linked only to Gemini’s interpretation of the photo. Exact OCR words must corroborate the label, value, unit and basis before arithmetic.'
+        : 'The label, exact value and unit, and printed column or serving basis are not all linked to exact OCR words or an attached photo region.',
     };
   }
   const roles = Object.values(evidence) as RoleEvidence[];
@@ -300,10 +292,6 @@ export function normalizedInterpretedAmount(reading: InterpretedNutrientReading)
 /** Compare a model candidate with any already-parsed package row before use. */
 export function matchesPackageRows(reading: InterpretedNutrientReading, rows: Nutrient[]): boolean {
   if (rows.some(row => row.status === 'corrected')) return false;
-  // A complete, currently attached photo interpretation can resolve an OCR
-  // conflict without erasing it. Keep the package rows untouched and expose
-  // the resulting arithmetic as unverified model-derived context.
-  if (reading.imageIds.length) return true;
   if (rows.some(row => row.status === 'conflict')) return false;
   if (!rows.length) return true;
   const interpreted = normalizedInterpretedAmount(reading);

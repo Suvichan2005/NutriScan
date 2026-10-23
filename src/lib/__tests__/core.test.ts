@@ -274,35 +274,34 @@ describe('nutrition numerical invariants',()=>{
     expect(audit.calculations.find(c=>c.nutrient==='carbohydrate')?.result).toBe(12);
     expect(pkg.nutrients[0].value).toBe(60);expect(pkg.observations.length).toBeGreaterThan(0);
    });
-  it('answers diabetes carbohydrate questions without inventing a daily target',()=>{
+  it('keeps the deterministic local audit from inventing a diabetes-specific answer',()=>{
     const profile={...defaultProfile,healthConsiderations:'Type 2 diabetes'};
     const missing=buildAudit(label('Per 100 g\nSaturated fat 4 g'),50,'g',profile,'How much carbohydrate should I eat daily with diabetes?');
-    expect(missing.answer).toMatch(/does not establish total carbohydrate/i);
-    expect(missing.answer).toMatch(/cannot calculate a package amount or a daily target/i);
-    expect(missing.answer).toMatch(/health care team/i);
-    expect(missing.answer).toMatch(/not everyone with diabetes needs to count carbs/i);
-    expect(missing.findings.some(f=>f.sourceIds.includes('niddk-meals'))).toBe(true);
-    expect(missing.nextQuestions).toContain('Do you have a carbohydrate amount from your health care team that you want compared with this label?');
+    expect(missing.answer).toMatch(/readable label values|unknown/i);
+    expect(missing.answer).not.toMatch(/NIDDK|diabetes|health care team|carb counting/i);
+    expect(missing.findings.some(f=>f.sourceIds.includes('niddk-meals'))).toBe(false);
     expect(missing.answer).not.toMatch(/\b\d+(?:\.\d+)?\s*g\s*\/\s*day/i);
 
     const known=buildAudit(label('Per 100 g\nCarbohydrate 60 g'),50,'g',profile,'How many carbs should I eat each day with diabetes?');
-    expect(known.answer).toMatch(/30 g total carbohydrate in 50 g/i);
-    expect(known.answer).toMatch(/package amount, not a personal daily target/i);
-    expect(known.answer).toMatch(/NIDDK provides general education, not an individual allowance/i);
-    expect(known.answer).toMatch(/not everyone with diabetes needs to count carbs/i);
+    expect(known.answer).toMatch(/For 50 g: 30 g carbohydrate from the readable label values/i);
+    expect(known.answer).not.toMatch(/NIDDK|diabetes|health care team|carb counting/i);
     expect(known.answer).not.toMatch(/\b\d+(?:\.\d+)?\s*g\s*\/\s*day/i);
   });
-  it('does not attach diabetes education to generic label arithmetic, but retains it for explicit diabetes questions',()=>{
+  it('does not route ordinary Indian diabetes-snacking questions to U.S.-specific NIDDK education',()=>{
     const pkg=label('Sugar-free example\nNutrition per 100 g\nEnergy 180 kcal\nCarbohydrate 30 g\nSugars 4 g');
     const generic=buildAudit(pkg,30,'g',defaultProfile,'What does this nutrition label report for calories, carbohydrates, and sugars per serving?');
     expect(generic.sources.some(source=>source.id==='niddk-meals')).toBe(false);
     expect(generic.findings.some(finding=>finding.sourceIds.includes('niddk-meals'))).toBe(false);
     expect(generic.answer).toMatch(/carbohydrate|calories|sugars/i);
 
-    const explicit=buildAudit(pkg,30,'g',defaultProfile,'How many carbs should someone with diabetes eat daily?');
+    const suitability=buildAudit(pkg,30,'g',defaultProfile,'Is this good to have for diabetic patients daily for snacking?');
+    expect(suitability.sources.some(source=>source.id==='niddk-meals')).toBe(false);
+    expect(suitability.findings.some(finding=>finding.sourceIds.includes('niddk-meals'))).toBe(false);
+
+    const explicit=buildAudit(pkg,30,'g',defaultProfile,'According to NIDDK, what meal-planning options are described for diabetes?');
     expect(explicit.sources.some(source=>source.id==='niddk-meals')).toBe(true);
     expect(explicit.findings.some(finding=>finding.sourceIds.includes('niddk-meals'))).toBe(true);
-    expect(explicit.answer).toMatch(/not everyone with diabetes needs to count carbs/i);
+    expect(explicit.answer).not.toMatch(/NIDDK|diabetes|carb counting/i);
   });
   it('surfaces literal allergy and intolerance mentions as separate unverified label observations',()=>{
     const pkg=label('Ingredients: Milk powder, sugar\nContains: Milk');
@@ -374,7 +373,7 @@ describe('nutrition numerical invariants',()=>{
     const pkg=label('Sugar-free example\nPer 100 g\nCarbohydrate 50 g\nSugars 0 g\nIngredients: flour, INS 955');
     const sugarClaim=buildAudit(pkg,30,'g',defaultProfile,'Does sugar-free mean no carbs?');
     expect(sugarClaim.answer).toMatch(/does not establish zero carbohydrate.*15 g/);
-    expect(sugarClaim.findings.some(finding=>finding.sourceIds.includes('niddk-meals'))).toBe(true);
+    expect(sugarClaim.findings.some(finding=>finding.sourceIds.includes('niddk-meals'))).toBe(false);
     const additive=buildAudit(pkg,30,'g',defaultProfile,'What is INS 955?');
     expect(additive.answer).toMatch(/INS 955 is Sucralose.*does not establish dose/);
     expect(buildAudit(pkg,30,'g',defaultProfile,'What is ingredient code INS 955?').answer).toMatch(/INS 955 is Sucralose.*does not establish dose/);

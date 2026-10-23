@@ -4,6 +4,7 @@ import { assistEvidenceContext, packageForAssist } from '../assist-evidence';
 import { BROWSER_OCR_ENGINE_VERSION } from '../browser';
 import { calculationEvidenceText, defaultProfile, packageSchema, type PackageData } from '../contracts';
 import { applyNutrientCorrection } from '../correction';
+import { reconcileInterpretedNutrition } from '../interpreted-nutrients';
 import { retrieveEvidence } from '../knowledge';
 import { mergePackageEvidence } from '../merge-evidence';
 import { parseLabel } from '../parser';
@@ -102,7 +103,9 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(data.conversationContext).toEqual(conversationContext);
     expect(assistInput.safeParse({...base,conversationContext:[...conversationContext,{question:'too many',answer:''}]}).success).toBe(false);
     expect(assistInput.safeParse({...base,conversationContext:[{question:'   ',answer:'context'}]}).success).toBe(false);
-    expect(()=>validateClaims({answer:'ignored',claims:[{mode:'synthesis',text:'A prior answer said this is suitable.',observationIds:['conversation-turn-1'],sourceIds:[],supportingSpans:[{kind:'observation',id:'conversation-turn-1',quote:'A previous local reply'}]}],limitations:[],inspectImage:null},data)).toThrow('unknown evidence');
+    const priorTurnClaim=validateClaims({answer:'ignored',claims:[{mode:'synthesis',text:'A prior answer said this is suitable.',observationIds:['conversation-turn-1'],sourceIds:[],supportingSpans:[{kind:'observation',id:'conversation-turn-1',quote:'A previous local reply'}]}],limitations:[],inspectImage:null},data);
+    expect(priorTurnClaim.claims).toEqual([]);
+    expect(priorTurnClaim.answer).toContain('can’t establish a reliable answer');
   });
 
   it('keeps imperfect raw lines, reading order, prepared-image geometry, capture provenance, and parse rejections/conflicts',()=>{
@@ -190,24 +193,34 @@ describe('OCR-to-assist evidence contract',()=>{
     const output={
       answer:'ignored free-form answer',
       claims:[{mode:'synthesis',text:'The protein row appears to contain an approximate 8.8 g reading, but its serving basis is not established.',observationIds:['line-2'],sourceIds:[],supportingSpans:[span]}],
+      answerParts:[{text:'The protein row appears to contain an approximate 8.8 g reading, but its serving basis is not established.',claimIndexes:[0]}],
       tentativeCandidates:[candidate],
       limitations:[],inspectImage:null
     };
     const result=validateClaims(output,data);
-    expect(result.answer).toContain('AI-generated paraphrase');
+    expect(result.answer).not.toContain('AI-generated paraphrase');
     expect(result.answer).toContain('The protein row appears to contain');
-    expect(result.answer).toContain('Protein approx 8.8 g');
+    expect(result.answer).not.toContain('Protein approx 8.8 g');
     expect(result.tentativeCandidates).toHaveLength(1);
     expect(result.tentativeCandidates[0]).toMatchObject({status:'tentative',numericValue:8.8,basis:null,observationIds:['line-2'],ocrWordEvidence:candidate.ocrWordEvidence});
     expect(data.package.nutrients.some(item=>item.key==='protein')).toBe(false);
     const carried=assistInput.parse({...data,interpretedCandidates:[candidate]});
     expect(assistPromptPayload(carried).interpretedCandidates).toEqual([candidate]);
     expect(assistInput.safeParse({...data,interpretedCandidates:[{...candidate,observationIds:['stale-line']}]}).success).toBe(false);
-    expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[]}]},data).tentativeCandidates).toEqual([]);
-    expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-2',role:'value',wordIndexes:[99]}]}]},data).tentativeCandidates).toEqual([]);
+    const withoutWords=validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[]}]},data).tentativeCandidates;
+    expect(withoutWords).toHaveLength(1);
+    expect(withoutWords[0]).toMatchObject({status:'tentative',ocrWordEvidence:[],uncertainty:expect.stringContaining('unverified')});
+    expect(reconcileInterpretedNutrition(pkg,withoutWords,[imageId]).readings).toEqual([]);
+    const invalidWordIndex=validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-2',role:'value',wordIndexes:[99]}]}]},data).tentativeCandidates;
+    expect(invalidWordIndex).toHaveLength(1);
+    expect(invalidWordIndex[0].ocrWordEvidence).toEqual([]);
     expect(validateClaims({...output,tentativeCandidates:[{...candidate,supportingSpans:[{...span,quote:'Protein approx'}]}]},data).tentativeCandidates).toEqual([]);
-    expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-2',role:'value',wordIndexes:[3,2]}]}]},data).tentativeCandidates).toEqual([]);
-    expect(validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-1',role:'value',wordIndexes:[0]}]}]},data).tentativeCandidates).toEqual([]);
+    const unorderedWords=validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-2',role:'value',wordIndexes:[3,2]}]}]},data).tentativeCandidates;
+    expect(unorderedWords).toHaveLength(1);
+    expect(unorderedWords[0].ocrWordEvidence).toEqual([]);
+    const mismatchedWordLine=validateClaims({...output,tentativeCandidates:[{...candidate,ocrWordEvidence:[{observationId:'line-1',role:'value',wordIndexes:[0]}]}]},data).tentativeCandidates;
+    expect(mismatchedWordLine).toHaveLength(1);
+    expect(mismatchedWordLine[0]).toMatchObject({observationIds:['line-2'],ocrWordEvidence:[],status:'tentative'});
   });
 
   it('keeps a noisy OCR entity normalization tentative while linking both retrieved knowledge and original words',()=>{
@@ -242,9 +255,10 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(data.package.observations.find(item=>item.id===noisyLine.id)?.ocrWords).toEqual(noisyLine.ocrWords);
     expect(pkg.additives).not.toContain('385');
     expect(result.tentativeCandidates).toEqual([candidate]);
-    expect(result.answer).toContain('clearly labeled arithmetic');
-    expect(result.answer).toContain('remain outside calculations');
-    expect(validateClaims({answer:'ignored',claims:[],tentativeCandidates:[{...candidate,supportingSpans:[{...candidate.supportingSpans[0],quote:'Calciurn disodium'}]}],limitations:[],inspectImage:null},data).tentativeCandidates).toEqual([]);
+    expect(result.answer).toContain('possible readings');
+    const partialEntity=validateClaims({answer:'ignored',claims:[],tentativeCandidates:[{...candidate,supportingSpans:[{...candidate.supportingSpans[0],quote:'Calciurn disodium'}]}],limitations:[],inspectImage:null},data).tentativeCandidates;
+    expect(partialEntity).toHaveLength(1);
+    expect(partialEntity[0]).toMatchObject({status:'tentative',observationIds:[noisyLine.id],uncertainty:expect.stringContaining('Some evidence links are incomplete')});
   });
 
   it('supports careful profile-aware paraphrases with exact user-context and OCR spans',()=>{
@@ -262,17 +276,16 @@ describe('OCR-to-assist evidence contract',()=>{
     }],limitations:[],inspectImage:null};
     const result=validateClaims(output,data);
     expect(result.claims).toHaveLength(1);
-    expect(result.answer).toContain('Evidence-linked interpretation');
-    expect(result.answer).toContain('[profile:goals]');
-    expect(result.answer).toContain('Sodium 850 mg');
-    expect(result.answer).toContain('Sodium 85 mg');
+    expect(result.claims[0].text).toContain('You said you are comparing quick breakfast options.');
+    expect(result.answer).toContain('could not safely assemble it into a clear answer');
+    expect(result.answer).not.toContain('850 mg and 85 mg');
 
     const unsupportedProfileQuote=validateClaims({...output,claims:[{...output.claims[0],supportingSpans:[...output.claims[0].supportingSpans.slice(1),{kind:'profile' as const,id:'goals',quote:'I have diabetes'}]}]},data);
     expect(unsupportedProfileQuote.claims).toEqual([]);
     const profileCannotValidateSafety=validateClaims({...output,claims:[{...output.claims[0],text:'This product is safe.',supportingSpans:output.claims[0].supportingSpans}]},data);
     expect(profileCannotValidateSafety.claims).toEqual([]);
     const withoutProfile=assistInput.parse({consent:true,question:'What do I want?',package:pkg});
-    expect(()=>validateClaims(output,withoutProfile)).toThrow('unknown evidence');
+    expect(validateClaims(output,withoutProfile).claims).toEqual([]);
     expect(data.package.nutrients.some(item=>item.key==='sodium'&&item.status==='observed')).toBe(false);
   });
 
@@ -292,9 +305,10 @@ describe('OCR-to-assist evidence contract',()=>{
     }],limitations:[],inspectImage:null};
     const result=validateClaims(output,data);
     expect(result.claims).toHaveLength(1);
-    expect(result.answer).toContain('Evidence-linked interpretation');
-    expect(result.answer).toContain('whole diet');
-    expect(result.answer).toContain('[source:who-sugars-2015]');
+    expect(result.claims[0].text).toContain('The package line reports 12 g of sugars per 100 g.');
+    expect(result.claims[0].text).toContain('whole diet');
+    expect(result.answer).toContain('could not safely assemble it into a clear answer');
+    expect(result.answer).not.toContain('[source:who-sugars-2015]');
   });
 
   it('makes user-requested research results available as cited candidate evidence',()=>{
@@ -314,7 +328,8 @@ describe('OCR-to-assist evidence contract',()=>{
       ]
     }],limitations:[],inspectImage:null},data);
     expect(result.claims).toHaveLength(1);
-    expect(result.answer).toContain('applicability has not been assessed');
+    expect(result.claims[0].text).toContain('applicability has not been assessed');
+    expect(result.answer).toContain('could not safely assemble it into a clear answer');
     expect(data.evidence?.[0].category).toBe('literature');
   });
 
@@ -325,7 +340,8 @@ describe('OCR-to-assist evidence contract',()=>{
     const data=assistInput.parse({consent:true,question:'How much protein is in 30 g?',package:pkg,calculations:[calculation]});
     const quote=calculation.evidenceText;
     const result=validateClaims({answer:'ignored',claims:[{mode:'direct-quote',text:quote,observationIds:[],sourceIds:[],calculationIds:[calculation.id],supportingSpans:[{kind:'calculation',id:calculation.id,quote}]}],limitations:[],inspectImage:null},data);
-    expect(result.answer).toContain(`Validated calculation: “${quote}”`);
+    expect(result.claims[0].text).toBe(quote);
+    expect(result.answer).toContain('could not safely assemble it into a clear answer');
     expect(assistInput.safeParse({consent:true,question:'How much protein?',package:pkg,calculations:[{...calculation,observationIds:['missing-observation']}]}).success).toBe(false);
     expect(assistInput.safeParse({consent:true,question:'How much protein?',package:pkg,calculations:[{...calculation,evidenceText:'forged calculation text'}]}).success).toBe(false);
 
@@ -345,7 +361,7 @@ describe('OCR-to-assist evidence contract',()=>{
     const base={answer:'ignored',claims:[],limitations:[],inspectImage:null};
     const unsupported=validateClaims({...base,claims:[{mode:'synthesis',text:'This product is safe for diabetes.',observationIds:['line-3'],sourceIds:[],supportingSpans:[validSpan]}]},data);
     expect(unsupported.claims).toEqual([]);
-    expect(unsupported.answer).toContain('No supported factual conclusion');
+    expect(unsupported.answer).toContain('can’t establish a reliable answer');
     const forged=validateClaims({...base,claims:[{mode:'synthesis',text:'Sodium is low.',observationIds:['line-3'],sourceIds:[],supportingSpans:[{...validSpan,quote:'Sodium is low'}]}]},data);
     expect(forged.claims).toEqual([]);
     expect(forged.answer).not.toContain('Sodium is low.');

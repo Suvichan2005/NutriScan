@@ -233,7 +233,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   }
   if(pkg.additives.length)trace.push({tool:'lookup_additive',reason:'Resolve exact INS codes and aliases before considering evidence applicability.',status:`${pkg.additives.length} declarations examined locally`});
   if(pkg.additives.includes('955')||/sweetener|sucralose/i.test(question))finding({title:'Sweetener guidance has a defined scope',detail:'WHO’s conditional 2023 recommendation concerns weight control and prevention of noncommunicable disease. It excludes people with existing diabetes and is not a toxicological safety assessment. Ingredient presence provides no dose for an exposure calculation.',status:'context',observationIds:pkg.observations.filter(o=>o.field==='additive:955').map(o=>o.id),sourceIds:['who-nss'],calculationIds:[]});
-  if(/sugar[ -]free|no added sugar|sugar claim/i.test(question))finding({title:'Sugar-free does not establish zero carbohydrate',detail:carbs?`The selected portion still has ${amountText(carbs.result)} g total carbohydrate in the label reading. Evaluate that total separately from sugar claims.`:'Total carbohydrate is not established for this portion. A sugar claim alone cannot fill that missing value.',status:carbs?'calculated':'context',observationIds:unique([...pkg.observations.filter(o=>o.field==='claim').map(o=>o.id),...(carbs?.observationIds??[])]),sourceIds:['niddk-meals'],calculationIds:carbs?[carbs.id]:[]});
+  if(/sugar[ -]free|no added sugar|sugar claim/i.test(question))finding({title:'Sugar-free does not establish zero carbohydrate',detail:carbs?`The selected portion still has ${amountText(carbs.result)} g total carbohydrate in the label reading. Evaluate that total separately from sugar claims.`:'Total carbohydrate is not established for this portion. A sugar claim alone cannot fill that missing value.',status:carbs?'calculated':'context',observationIds:unique([...pkg.observations.filter(o=>o.field==='claim').map(o=>o.id),...(carbs?.observationIds??[])]),sourceIds:[],calculationIds:carbs?[carbs.id]:[]});
   const personalSuitability=/\b(safe|suitable|can i eat|should i eat|fit for me|for my|my diet|allerg|intoler)\b/i.test(question);
   const dietRelevant=personalSuitability&&!!userContext;
   if(personalSuitability&&userContext){
@@ -257,7 +257,10 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       {id:'who-nss',matches:/\b(sweeteners?|sucralose|aspartame|non[- ]sugar|nss)\b/i.test(question)},
       {id:'who-sugars-2015',matches:/\b(?:free|added) sugars?\b|\bsugars?\b.{0,30}\bfree\b|\b(?:honey|syrups?|fruit juice|fruit juice concentrate)\b|\bWHO\b.{0,40}\bsugars?\b/i.test(question)},
       {id:'who-carbohydrate-2023',matches:wholeDietCarbohydrateGuidance},
-      {id:'niddk-meals',matches:/\b(diabetes|diabetic|blood[- ]glucose)\b/i.test(question)},
+      // NIDDK is U.S. education. Do not attach it to an Indian product merely
+      // because a suitability question mentions diabetes; retrieve it only
+      // when the user explicitly asks about NIDDK or U.S. guidance.
+      {id:'niddk-meals',matches:/\bNIDDK\b|\b(?:U\.?S\.?|United States)\s+(?:guidance|education|recommendations?)\b/i.test(question)},
       {id:'icmrnin-dgi-2024',matches:/\b(icmr|nin|indian dietary guidelines?|dietary guidelines? for india)\b/i.test(question)},
       {id:'fssai-labelling-display-2020',matches:asksAllergenLabelMeaning||(/\bfssai\b/i.test(question)&&/allerg|may\s+contain|cross[- ]?(?:contamination|contact)/i.test(question))},
       {id:'fssai-labelling-allergen-faq-2023',matches:asksAllergenLabelMeaning||(/\bfssai\b/i.test(question)&&/allerg|may\s+contain|cross[- ]?(?:contamination|contact)/i.test(question))},
@@ -280,7 +283,6 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   const overview=primary.length?primary:calculations.slice(0,3);
   const important=overview.map(c=>`${amountText(c.result)} ${c.unit} ${display[c.nutrient].toLowerCase()}`);
   const conflict=findings.some(f=>f.status==='conflict');
-  const asksDiabetesCarbohydrateAmount=/\b(diabetes|diabetic|blood glucose)\b/i.test(question)&&/\b(carbs?|carbohydrates?)\b/i.test(question)&&/\b(daily|day|amount|how many|how much|allowance|target)\b/i.test(question);
   let answer=important.length?`For ${amountText(portion)} ${portionUnit}: ${important.join(', ')} from the readable label values.`:`A reliable ${amountText(portion)} ${portionUnit} calculation needs readable nutrient amounts, units and a matching basis.`;
   let answerIntent='label overview';
   if(currentRegulatoryQuestion){
@@ -341,13 +343,6 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       ?fibreCalculation?` The recorded package reading calculates to ${amountText(fibreCalculation.result)} ${fibreCalculation.unit} fibre in ${amountText(portion)} ${portionUnit}, if the printed value was read correctly. This is one package portion, not a measure of whole-day intake.`:' No usable package fibre reading with a matching basis is available here, so the portion amount remains unknown.'
       :'';
     answer=`${recommendation}${fibreRecommendation} This is population guidance for the whole diet, not a product-specific threshold or individual prescription.${packageContext}`;
-  }else if(asksDiabetesCarbohydrateAmount){
-    answerIntent='diabetes carbohydrate context';
-    const labelCarbs=calculations.find(c=>c.nutrient==='carbohydrate');
-    answer=labelCarbs
-      ?`The readable label gives ${amountText(labelCarbs.result)} g total carbohydrate in ${amountText(portion)} ${portionUnit}. This is a package amount, not a personal daily target. NIDDK describes carb counting and the plate method as planning options and says not everyone with diabetes needs to count carbs. A personal plan can depend on medication, activity and other conditions, so discuss what fits with your health care team. NIDDK provides general education, not an individual allowance.`
-      :`This scan does not establish total carbohydrate for the selected portion, so it cannot calculate a package amount or a daily target. NIDDK describes carb counting and the plate method as planning options and says not everyone with diabetes needs to count carbs. A personal plan can depend on medication, activity and other conditions, so discuss what fits with your health care team. NIDDK provides general education, not an individual allowance.`;
-    nextQuestions.push('Do you have a carbohydrate amount from your health care team that you want compared with this label?');
   }else if(/sugar[ -]free|no added sugar/i.test(question)){
     answerIntent='sugar claim';answer=`A sugar-free or no-added-sugar claim does not establish zero carbohydrate. ${carbs?`The readable label gives ${amountText(carbs.result)} g total carbohydrate in ${amountText(portion)} ${portionUnit}.`:'Total carbohydrate for this portion remains unknown; confirm its amount and basis.'}`;
   }else if(askedAdditives.length||/additive|sweetener|sucralose|ingredient code/i.test(question)){

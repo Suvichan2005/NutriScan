@@ -26,6 +26,34 @@ function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019
 }
 
 describe('Gemini tool retrieval boundaries', () => {
+  it('filters out-of-scope country guidance from semantic retrieval before returning it to Gemini', async () => {
+    const usGuidance = evidenceSources.find(source => source.id === 'niddk-meals')!;
+    mocks.semanticRetrieve.mockResolvedValue({
+      status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
+      results: [{ source: usGuidance, score: 0.92, exactIdentity: false }],
+    });
+    const result = await executeGeminiTool('search_knowledge', { query: 'diabetes daily snacking' }, context('Is this suitable for daily snacking with diabetes?'));
+
+    expect(result.status).toBe('empty');
+    expect(result.evidence).toEqual([]);
+    expect(result.resultCount).toBe(0);
+  });
+
+  it('inspects the full source image when an OCR-guided crop shares its image handle', async () => {
+    const imageContext=context('Read the nutrient row.');
+    const original={imageId:'image-1',mimeType:'image/jpeg' as const,base64:'b3JpZ2luYWwgaW1hZ2UgYnl0ZXM=',side:'back' as const,sourceImage:{width:1000,height:500},preprocessing:{rotation:0 as const,contrast:false,invert:false,crop:null}};
+    const crop={...original,base64:'Y3JvcCBieXRlcw==',preprocessing:{...original.preprocessing,crop:{x:0.1,y:0.2,width:0.4,height:0.3}}};
+    imageContext.visualImages.push(crop,original);
+    imageContext.prepareImage=vi.fn(async image=>image.base64);
+
+    const result=await executeGeminiTool('inspect_package_image',{imageId:'image-1'},imageContext);
+
+    expect(imageContext.prepareImage).toHaveBeenCalledWith(original);
+    expect(result.status).toBe('ok');
+    expect(result.output).toMatchObject({imageId:'image-1',side:'back'});
+    expect(result.image?.base64).toBe(original.base64);
+  });
+
   it('retrieves India-compatible CKD guidance locally without inventing a potassium allowance', async () => {
     const fetcher = vi.fn();
     vi.stubGlobal('fetch', fetcher);
@@ -126,7 +154,7 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.output).toMatchObject({ status: 'invalid_arguments' });
   });
 
-  it('calculates from a prior photo-linked candidate only while its source image is attached', async () => {
+  it('withholds prior photo-only nutrition candidates even while the source image is attached', async () => {
     const imageContext = context('How much protein is in 20 g?');
     const candidate: TentativeStructuredCandidate = {
       candidateId: 'visual-protein', kind: 'nutrient', field: 'protein', proposedValue: '8.8 g per 100 g', numericValue: 8.8, unit: 'g',
@@ -143,11 +171,9 @@ describe('Gemini tool retrieval boundaries', () => {
     });
 
     const result = await executeGeminiTool('calculate_nutrition', { nutrient: 'protein', amount: 20, unit: 'g', candidateId: candidate.candidateId }, imageContext);
-    const calculation = result.calculations?.[0];
-
-    expect(result.status).toBe('ok');
-    expect(calculation).toMatchObject({ result: 1.76, imageIds: ['package-photo'], interpretationIds: ['visual-protein'] });
-    expect(result.output.note).toMatch(/does not confirm or overwrite/i);
+    expect(result.status).toBe('withheld');
+    expect(result.output.message).toMatch(/exact OCR words must corroborate/i);
+    expect(result.calculations).toBeUndefined();
     imageContext.visualImages = [];
     expect((await executeGeminiTool('calculate_nutrition', { nutrient: 'protein', amount: 20, unit: 'g', candidateId: candidate.candidateId }, imageContext)).status).toBe('withheld');
   });

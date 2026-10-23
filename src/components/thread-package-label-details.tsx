@@ -10,6 +10,7 @@ type Props = {
   isInspecting: (observation: Observation) => boolean;
   onInspect: (observation: Observation) => void;
   ocrSideLabel?: (observation: Observation) => string;
+  openByDefault?: boolean;
 };
 
 function sourceLabel(observation: Observation) {
@@ -20,7 +21,7 @@ function sourceLabel(observation: Observation) {
   return 'Entered text';
 }
 
-export function ThreadPackageLabelDetails({ pkg, canInspect, isInspecting, onInspect, ocrSideLabel }: Props) {
+export function ThreadPackageLabelDetails({ pkg, canInspect, isInspecting, onInspect, ocrSideLabel, openByDefault = false }: Props) {
   const groups = packageLabelEvidenceGroups(pkg);
   const otherLines = otherPackageOcrLines(pkg, groups);
   const readableLines = otherLines.filter(observation => !isLowSignalPackageOcrLine(observation));
@@ -41,7 +42,7 @@ export function ThreadPackageLabelDetails({ pkg, canInspect, isInspecting, onIns
     </li>
   );
 
-  return <details className="thread-label-details" data-testid="package-label-details">
+  return <details className="thread-label-details" data-testid="package-label-details" open={openByDefault || undefined}>
     <summary><span><strong>Package text</strong><small>{count} observation{count === 1 ? '' : 's'}</small></span><ChevronDown size={15}/></summary>
     <div className="thread-label-details-content">
       <p className="thread-label-caveat"><CircleHelp size={14}/>Unconfirmed text. Open a photo region to check the package.</p>
@@ -55,7 +56,7 @@ export function ThreadPackageLabelDetails({ pkg, canInspect, isInspecting, onIns
         <h3>{group.label} <span>{group.observations.length}</span></h3><ul>{group.observations.map(row)}</ul>
       </section>)}
       {!hasGroupedAllergenText && <p className="thread-label-missing">No allergen statement was recognized. Check the package; absence is not confirmed.</p>}
-      {otherLines.length > 0 && <details className="thread-other-ocr-lines">
+      {otherLines.length > 0 && <details className="thread-other-ocr-lines" open={openByDefault || undefined}>
         <summary><span>Other label text <small>{readableLines.length} lines</small></span><ChevronDown size={14}/></summary>
         {readableLines.length > 0 && <ul>{readableLines.map(row)}</ul>}
         {shortFragments.length > 0 && <details className="thread-low-signal-lines">

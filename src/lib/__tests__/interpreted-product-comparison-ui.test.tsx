@@ -62,20 +62,50 @@ it('renders a reconciled missing nutrient in the selected-record comparison with
   expect(markup).toContain('Inspect photo region');
 });
 
-it('keeps long package-evidence OCR collapsed in the conversation while preserving photo inspection', () => {
+it('keeps raw package-evidence OCR out of the assistant conversation cards', () => {
   const observation: Observation = { id: 'raw-label-line', field: 'ocr-line', text: 'INGREDIENTS: wheat flour, edible oil, antioxidant (319)', side: 'back', confidence: 88, origin: 'ocr', imageId };
   const pkg = packageSchema.parse({ ...parseLabel('Package label', { origin: 'user' }), name: 'Unidentified package', observations: [observation], rawText: observation.text });
   const markup = renderToStaticMarkup(<ThreadGenerativeUI
-    components={[{ type: 'package-evidence', observationIds: [observation.id], sourceIds: [], calculationIds: [] }]}
+    components={[
+      { type: 'package-evidence', observationIds: [observation.id], sourceIds: [], calculationIds: [] },
+      { type: 'package-details', observationIds: [observation.id], sourceIds: [], calculationIds: [] },
+    ]}
     pkg={pkg} audit={buildAudit(pkg, 30, 'g', defaultProfile, 'Inspect this package')} portion={30} portionUnit="g"
     onPortionChange={() => {}} onPortionUnitChange={() => {}} onSaveCorrection={() => true}
     canInspect={() => true} isInspecting={() => false} onInspect={() => {}} candidates={[]}
     interpretedReadings={[]} sources={[]} selectedProduct={null}
   />);
 
-  expect(markup).toContain('thread-ui-evidence-disclosure');
-  expect(markup).toContain('1 observation · OCR and source evidence');
-  expect(markup).not.toMatch(/<details\b[^>]*\bopen(?:=|>|\s)/);
-  expect(markup).toContain('INGREDIENTS: wheat flour, edible oil, antioxidant (319)');
-  expect(markup).toContain('Inspect photo region');
+  // Raw OCR and photo inspection now live in the on-demand Evidence & tools
+  // drawer; model-selected package-evidence cards must not append another
+  // technical panel to every answer.
+  expect(markup).toBe('');
+});
+
+it('keeps ingredient review out of a general answer and collapses OCR detail when requested', () => {
+  const observation: Observation = { id: 'ingredient-line', field: 'ocr-line', text: 'INGREDIENTS: refined wheat flour (maida), edible vegetable oil', side: 'back', confidence: 90, origin: 'ocr', imageId };
+  const pkg = packageSchema.parse({ ...parseLabel('Package label', { origin: 'user' }), name: 'Unidentified package', observations: [observation], rawText: observation.text });
+  const candidate: TentativeStructuredCandidate = {
+    candidateId: 'ingredient-reading-1', kind: 'ingredient', field: 'ingredient', proposedValue: 'Refined wheat flour (maida)', numericValue: null, unit: null, basis: null,
+    normalizedEntity: 'refined wheat flour', status: 'tentative', observationIds: [observation.id], sourceIds: [],
+    supportingSpans: [{ kind: 'observation', id: observation.id, quote: observation.text }], uncertainty: 'Possible package reading; check the original image.',
+  };
+  const render = (question: string) => renderToStaticMarkup(<ThreadGenerativeUI
+    question={question} components={[{ type: 'ingredient-explorer', observationIds: [observation.id], sourceIds: [], calculationIds: [] }]}
+    pkg={pkg} audit={buildAudit(pkg, 30, 'g', defaultProfile, question)} portion={30} portionUnit="g"
+    onPortionChange={() => {}} onPortionUnitChange={() => {}} onSaveCorrection={() => true}
+    canInspect={() => true} isInspecting={() => false} onInspect={() => {}} candidates={[candidate]}
+    interpretedReadings={[]} sources={[]} selectedProduct={null}
+  />);
+
+  const suitabilityMarkup = render('Is this a good daily snack?');
+  expect(suitabilityMarkup).toContain('Ingredient and additive readings');
+  expect(suitabilityMarkup).toContain('Possible · unverified');
+  expect(suitabilityMarkup).toContain('View supporting label text');
+  expect(render('What is the package weight?')).toBe('');
+  const markup = render('What ingredients are listed?');
+  expect(markup).toContain('Refined wheat flour (maida)');
+  expect(markup).toContain('Possible · unverified');
+  expect(markup).toContain('View supporting label text');
+  expect(markup).toContain('<details class="thread-ui-evidence-disclosure">');
 });
