@@ -172,12 +172,30 @@ describe('Gemini tool retrieval boundaries', () => {
   });
 
   const liveResearchIt = process.env.NUTRISCAN_LIVE_RESEARCH_TEST === 'true' ? it : it.skip;
-  liveResearchIt('retrieves the official INS excerpt through the Gemini research-tool boundary', async () => {
-    const toolContext = context('Does INS 319 have applicable FSSAI authorization for cream crackers in India?', 'INGREDIENTS: antioxidant (319)');
-    const identity = await executeGeminiTool('resolve_ingredient', { query: '319' }, toolContext);
-    for (const term of identity.searchTerms ?? []) toolContext.searchTerms.add(term);
+  it('canonicalizes a context-linked additive code when identity and research tools run in parallel', async () => {
+    const toolContext = context(
+      'What does the label code 319 refer to, and can the FSSAI entry mentioning 100 mg/kg apply to this cream cracker?',
+      'INGREDIENTS: refined wheat flour; antioxidant (319)',
+    );
+    mocks.research.mockResolvedValueOnce({ status: 'ok', items: [], message: 'fixture response' });
 
-    const result = await executeGeminiTool('search_research', { query: 'FSSAI authorization for cream crackers', topic: 'claims' }, toolContext);
+    await Promise.all([
+      executeGeminiTool('resolve_ingredient', { query: '319' }, toolContext),
+      executeGeminiTool('search_research', { query: 'FSSAI 100 mg/kg cream cracker', topic: 'claims' }, toolContext),
+    ]);
+
+    expect(mocks.research).toHaveBeenCalledWith(expect.objectContaining({ query: 'INS 319 food additive India', topic: 'claims' }));
+  });
+
+  liveResearchIt('retrieves the official INS excerpt through the Gemini research-tool boundary', async () => {
+    const toolContext = context(
+      'What does the label code 319 refer to, and can the FSSAI entry mentioning 100 mg/kg apply to this cream cracker?',
+      'INGREDIENTS: refined wheat flour; antioxidant (319)',
+    );
+    const [, result] = await Promise.all([
+      executeGeminiTool('resolve_ingredient', { query: '319' }, toolContext),
+      executeGeminiTool('search_research', { query: 'FSSAI 100 mg/kg cream cracker', topic: 'claims' }, toolContext),
+    ]);
     const excerpt = result.evidence?.find(item => item.id === 'fssai-additive-compendium-appendix-a');
 
     expect(mocks.research).toHaveBeenCalledWith(expect.objectContaining({ query: 'INS 319 food additive India', topic: 'claims' }));

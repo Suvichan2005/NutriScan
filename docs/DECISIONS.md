@@ -1,5 +1,11 @@
 # Chronological decisions
 
+## 23 October 2026 — resolve unambiguous additive OCR before parallel research lookups
+
+- Decision: allow `search_research` to map a unique additive identity from the current question/query/raw OCR context, including a printed functional class followed by its parenthesized code (for example, `antioxidant (319)`). This covers Gemini issuing identity resolution and research calls in the same round before either tool result can depend on the other.
+- Keep the source query grounded: accept only known local additive identities and only canonicalize when the context resolves to one code. Conflicting or multiple codes remain unresolved. The source adapter still applies its own source-specific bounds and applicability limitations.
+- Evidence: a paid text-only Gemini run now returned a successful FSSAI tool result and cited the flattened-table caveat without applying the numeric entry to the cracker. It omitted the literal `100 mg/kg` row from the answer, so this improves retrieval integration but does not complete exact row interpretation.
+
 ## 23 October 2026 — honor per-source extraction limits in Gemini research tools
 
 - Decision: use the bounds declared by each `ResearchPdfExtractor` source when the Gemini tool invokes the local research function, including source-authorized OCR. The generic 40-page/50,000-character fallback was materially smaller than FSSAI Appendix A's source-specific limit and excluded the requested INS entry.

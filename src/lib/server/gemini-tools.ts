@@ -509,15 +509,29 @@ function toResearchEvidence(item: Awaited<ReturnType<typeof research>>['items'][
   return asEvidenceSource({ id: item.id, title: item.title, publisher: item.publisher, url: item.url, category: topic === 'science' ? 'literature' : 'regulation', jurisdiction, publishedAt: item.publishedAt, effectiveAt: item.effectiveAt ?? null, retrievedAt: item.retrievedAt, summary: item.summary.slice(0, 1600), limitations: item.limitations.slice(0, 600) });
 }
 
+function additiveIdentitiesMentioned(text: string) {
+  const explicitCodes = [...text.matchAll(/\b(?:ins|e)\s*[-:]?\s*(\d{3,4}(?:[a-z]|\([ivx]+\))?)(?![a-z0-9])/gi)];
+  const functionCodes = [...text.matchAll(/\b(?:antioxidant|preservative|emulsifier|stabilizer|thickener|acidity regulator|raising agent|colou?r)\s*\(\s*(\d{3,4}(?:[a-z]|\([ivx]+\))?)\s*\)/gi)];
+  const identities = new Map<string, NonNullable<ReturnType<typeof lookupAdditive>>>();
+  for (const match of [...explicitCodes, ...functionCodes]) {
+    const identity = lookupAdditive(match[1]);
+    if (identity) identities.set(identity.code, identity);
+  }
+  return [...identities.values()];
+}
+
 async function searchResearch(args: z.infer<typeof toolArgs.search_research>, context: GeminiToolContext): Promise<GeminiToolResult> {
   if (!externalQueryIsSupported(args.query, context)) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'External research search was not run because its terms are absent from the explicit question and package evidence.' } };
   if (args.topic === 'science' && !researchTextTokens(args.query).length) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'A numeric additive code alone cannot identify relevant research. Resolve the substance name first, then search the named substance and outcome.' } };
   let query = args.query;
   if (args.topic !== 'science' && /\b(?:india|indian|fssai)\b/i.test(context.question)) {
     const explicitIdentity = lookupExplicitAdditiveMention(context.question)
-      ?? lookupExplicitAdditiveMention(args.query)
-      ?? lookupExplicitAdditiveMention(context.package.rawText);
-    const candidates = explicitIdentity ? [explicitIdentity] : [...context.searchTerms].map(term => lookupAdditive(term));
+      ?? lookupExplicitAdditiveMention(args.query);
+    const contextText = [context.question, args.query, context.package.rawText, ...context.package.observations.filter(item => item.origin === 'ocr').map(item => item.text)].join('\n');
+    const candidates = explicitIdentity ? [explicitIdentity] : [
+      ...additiveIdentitiesMentioned(contextText),
+      ...[...context.searchTerms].map(term => lookupAdditive(term)).filter((identity): identity is NonNullable<typeof identity> => Boolean(identity)),
+    ];
     const identities = new Map(candidates.filter((identity): identity is NonNullable<ReturnType<typeof lookupAdditive>> => Boolean(identity)).map(identity => [identity.code, identity] as const));
     if (identities.size === 1) {
       const [identity] = identities.values();
