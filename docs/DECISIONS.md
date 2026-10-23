@@ -772,3 +772,7 @@ The official NIN 2024 publication says it may not be stored or reproduced in an 
 ## 23 October 2026 — complete explicitly requested local identity results after validation
 
 When Gemini successfully resolves a printed additive code but omits it from the answer, append the identity only if the user explicitly asks what that exact code means, a retained OCR additive declaration contains the same code, and an exact local identity record supplies a matching source. Run this after ordinary evidence validation so unsupported model text cannot suppress the answer. Keep the statement about identity separate from package amount, exposure, authorization and safety; link exact OCR and source spans. Do not create a claim for a generic question or missing OCR evidence.
+
+## 23 October 2026 — collapse raw package-evidence cards in the chat
+
+Model-selected package-evidence and package-details cards may link dozens of noisy OCR observations. Keep those cards collapsed by default so the answer is primary; expose the exact recognized lines and region-inspection controls after an intentional expansion. Structured ingredient findings, nutrition data and attributed sources remain in their question-specific components.

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { BookOpen, CircleHelp, Eye, PackageSearch, ScanLine, Sparkles } from 'lucide-react';
+import { BookOpen, ChevronDown, CircleHelp, Eye, PackageSearch, ScanLine, Sparkles } from 'lucide-react';
 import { compareProductNutrition, type ProductComparisonRow } from '@/lib/product-comparison';
 import { productEvidenceSource } from '@/lib/product-evidence';
 import { isSafeEvidenceUrl, safeConversationEvidence } from '@/lib/followup-evidence';
@@ -80,7 +80,7 @@ export function ThreadGenerativeUI(props: Props) {
         {isSafeEvidenceUrl(selectedProduct.url) && <a className="thread-ui-source-link" href={selectedProduct.url} target="_blank" rel="noreferrer"><BookOpen size={14}/>Inspect community record</a>}
       </section>;
     },
-    'package-evidence': component => renderObservationCard(component, observations, props, 'Package evidence', 'OCR text is shown as recognized, not verified.'),
+    'package-evidence': component => renderObservationCard(component, observations, props, 'Package evidence', 'OCR text is shown as recognized, not verified.', true),
     'source-reference-cards': component => {
       const selected = safeConversationEvidence(component.sourceIds.flatMap(id => sourceMap.has(id) ? [sourceMap.get(id)!] : []));
       if (!selected.length) return null;
@@ -90,7 +90,7 @@ export function ThreadGenerativeUI(props: Props) {
       </section>;
     },
     'personalized-finding': () => <section className="thread-ui-card thread-ui-personalized" aria-label="Personalized interpretation" data-testid="thread-ui-component-personalized-finding" key="personalized-finding"><Sparkles size={16}/><div><strong>Personal context considered</strong><p>A declared profile statement was cited in this answer. It remains user-provided context, not a verified health fact.</p></div></section>,
-    'package-details': component => renderObservationCard(component, observations, props, 'Other package details', 'These source lines may include incomplete or misclassified OCR.'),
+    'package-details': component => renderObservationCard(component, observations, props, 'Other package details', 'These source lines may include incomplete or misclassified OCR.', true),
   };
 
   return <div className="thread-ui-stack" aria-label="Interactive food information">{components.map(component => registry[component.type](component))}</div>;
@@ -134,11 +134,18 @@ function renderEvidenceExplorer(component: AssistantUiComponent, observations: M
   </section>;
 }
 
-function renderObservationCard(component: AssistantUiComponent, observations: Map<string, Observation>, props: Props, title: string, caveat: string): ReactNode {
+function renderObservationCard(component: AssistantUiComponent, observations: Map<string, Observation>, props: Props, title: string, caveat: string, collapsed = false): ReactNode {
   const rows = component.observationIds.flatMap(id => observations.has(id) ? [observations.get(id)!] : []);
   if (!rows.length) return null;
-  return <section className="thread-ui-card" aria-label={title} data-testid={'thread-ui-component-' + component.type} key={component.type}>
-    <div className="thread-ui-heading"><span className="eyebrow">SOURCE-LINKED</span><strong>{title}</strong></div><p className="thread-ui-caveat">{caveat}</p>
+  const content = <>
+    <p className="thread-ui-caveat">{caveat}</p>
     <ul className="thread-ui-observations">{rows.map(observation => <li key={observation.id}><q>{observation.text}</q><small>{observation.origin === 'ocr' ? `OCR · ${observation.side} side` : `${observation.origin} observation`}</small>{props.canInspect(observation) && <button className="thread-region-link" type="button" disabled={props.isInspecting(observation)} onClick={() => props.onInspect(observation)}><ScanLine size={13}/><Eye size={13}/>{props.isInspecting(observation) ? 'Opening photo…' : 'Inspect photo region'}</button>}</li>)}</ul>
+  </>;
+  if (collapsed) return <details className="thread-ui-card thread-ui-evidence-disclosure" aria-label={title} data-testid={'thread-ui-component-' + component.type} key={component.type}>
+    <summary><span><strong>{title}</strong><small>{rows.length} observation{rows.length === 1 ? '' : 's'} · OCR and source evidence</small></span><ChevronDown size={15}/></summary>
+    <div className="thread-ui-evidence-content">{content}</div>
+  </details>;
+  return <section className="thread-ui-card" aria-label={title} data-testid={'thread-ui-component-' + component.type} key={component.type}>
+    <div className="thread-ui-heading"><span className="eyebrow">SOURCE-LINKED</span><strong>{title}</strong></div>{content}
   </section>;
 }

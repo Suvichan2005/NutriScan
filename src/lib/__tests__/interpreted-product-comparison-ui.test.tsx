@@ -61,3 +61,21 @@ it('renders a reconciled missing nutrient in the selected-record comparison with
   expect(markup).toContain('Trace to OCR (2)');
   expect(markup).toContain('Inspect photo region');
 });
+
+it('keeps long package-evidence OCR collapsed in the conversation while preserving photo inspection', () => {
+  const observation: Observation = { id: 'raw-label-line', field: 'ocr-line', text: 'INGREDIENTS: wheat flour, edible oil, antioxidant (319)', side: 'back', confidence: 88, origin: 'ocr', imageId };
+  const pkg = packageSchema.parse({ ...parseLabel('Package label', { origin: 'user' }), name: 'Unidentified package', observations: [observation], rawText: observation.text });
+  const markup = renderToStaticMarkup(<ThreadGenerativeUI
+    components={[{ type: 'package-evidence', observationIds: [observation.id], sourceIds: [], calculationIds: [] }]}
+    pkg={pkg} audit={buildAudit(pkg, 30, 'g', defaultProfile, 'Inspect this package')} portion={30} portionUnit="g"
+    onPortionChange={() => {}} onPortionUnitChange={() => {}} onSaveCorrection={() => true}
+    canInspect={() => true} isInspecting={() => false} onInspect={() => {}} candidates={[]}
+    interpretedReadings={[]} sources={[]} selectedProduct={null}
+  />);
+
+  expect(markup).toContain('thread-ui-evidence-disclosure');
+  expect(markup).toContain('1 observation · OCR and source evidence');
+  expect(markup).not.toMatch(/<details\b[^>]*\bopen(?:=|>|\s)/);
+  expect(markup).toContain('INGREDIENTS: wheat flour, edible oil, antioxidant (319)');
+  expect(markup).toContain('Inspect photo region');
+});
