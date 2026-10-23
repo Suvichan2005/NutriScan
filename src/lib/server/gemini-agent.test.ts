@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { packageSchema } from '../contracts';
+import { validateInferenceOutput } from '../../modules/inference/core';
 import { evidenceSources } from '../../modules/knowledge';
-import { attachGoogleGrounding, googleGroundingEvidence, normalizeModelImageRegions, supplementRequestedCompositionCoverage, supplementRequestedNutritionGuidanceCoverage, toolResultForModel, type RetrievedCompositionFact } from './gemini';
+import { attachGoogleGrounding, googleGroundingEvidence, normalizeModelImageRegions, requestedIngredientIdentityCoverageFacts, supplementRequestedCompositionCoverage, supplementRequestedIngredientIdentityCoverage, supplementRequestedNutritionGuidanceCoverage, toolResultForModel, type RetrievedCompositionFact } from './gemini';
+import { executeGeminiTool } from './gemini-tools';
 import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutrition-guidance';
 
 describe('explicit composition-answer coverage', () => {
@@ -59,8 +62,91 @@ describe('explicit nutrition-guidance answer coverage', () => {
     expect(supplementRequestedNutritionGuidanceCoverage(complete, facts).added).toBe(0);
   });
 
+  it('does not treat an unsupported numeric answer as coverage when its cited span omits the amount', () => {
+    const unsupported = {
+      ...output,
+      claims: [{
+        mode: 'synthesis' as const,
+        text: 'KDIGO recommends sodium below 2 g/day as a personal target.',
+        observationIds: [], sourceIds: ['kdigo-ckd-2024-sodium'], calculationIds: [], profileFieldIds: [],
+        supportingSpans: [{ kind: 'source' as const, id: 'kdigo-ckd-2024-sodium', quote: 'the guideline notes that this restriction is usually inappropriate in sodium-wasting nephropathy.' }],
+        visualEvidence: [],
+      }],
+    };
+    const packageData = packageSchema.parse({
+        id: 'unsupported-guidance-coverage-test', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [],
+        observations: [], rawText: '', warnings: [], synthetic: true, createdAt: '2026-10-23T00:00:00.000Z',
+    });
+    const validatedModelOutput = validateInferenceOutput(unsupported, {
+      package: packageData,
+      evidence,
+    });
+    const result = supplementRequestedNutritionGuidanceCoverage(validatedModelOutput, facts);
+    const validated = validateInferenceOutput(result.output, { package: packageData, evidence });
+
+    expect(validatedModelOutput.claims).toHaveLength(0);
+    expect(result.added).toBe(1);
+    expect((result.output as { claims: Array<{ text: string }> }).claims.at(-1)?.text).toBe(evidence[0].summary);
+    expect(validated.claims).toHaveLength(1);
+    expect(validated.answer).toContain('sodium below 2 g/day');
+  });
+
   it('does not create coverage facts for an ordinary package question', () => {
     expect(getNutritionGuidanceCoverageFacts('How much sodium is in this package?', evidence.map(source => source.id))).toEqual([]);
+  });
+
+  it('keeps the recovered recommendation usable through final inference validation', () => {
+    const question = 'For a general CKD question with unknown country, summarize what NutriScan guidance establishes about sodium and whether it establishes a potassium target. Do not personalize.';
+    const sources = getNutritionGuidance({ query: question, condition: 'CKD' });
+    const facts = getNutritionGuidanceCoverageFacts(question, sources.map(source => source.id));
+    const supplemented = supplementRequestedNutritionGuidanceCoverage({ answer: '', claims: [], limitations: [], inspectImage: null }, facts);
+    const validated = validateInferenceOutput(supplemented.output, {
+      package: packageSchema.parse({
+        id: 'guidance-coverage-test', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [],
+        observations: [], rawText: '', warnings: [], synthetic: true, createdAt: '2026-10-23T00:00:00.000Z',
+      }),
+      evidence: sources,
+    });
+
+    expect(supplemented.added).toBe(1);
+    expect(validated.claims).toHaveLength(1);
+    expect(validated.answer).toContain('sodium below 2 g/day');
+    expect(validated.claims[0].sourceIds).toEqual(['kdigo-ckd-2024-sodium']);
+  });
+});
+
+describe('explicit additive-identity answer coverage', () => {
+  const question = 'What does printed antioxidant code (319) mean? Please resolve it.';
+  const packageData = packageSchema.parse({
+    id: 'tbhq-identity-coverage-test', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [],
+    observations: [{ id: 'ocr-additive-319', field: 'ocr-line', text: 'INGREDIENTS: antioxidant (319), raising agents [500(i), 503(ii)]', side: 'back', confidence: 78, origin: 'ocr', imageId: 'back-photo' }],
+    rawText: '', warnings: [], synthetic: true, createdAt: '2026-10-23T00:00:00.000Z',
+  });
+
+  it('keeps a specifically requested local identity result usable with the OCR declaration and amount/authorization limits', async () => {
+    const lookup = await executeGeminiTool('resolve_ingredient', { query: 'INS 319' }, {
+      question, package: packageData, visualImages: [], searchTerms: new Set(), prepareImage: async () => '',
+    });
+    const facts = requestedIngredientIdentityCoverageFacts(question, packageData.observations, lookup);
+    const supplemented = supplementRequestedIngredientIdentityCoverage({ answer: '', claims: [], limitations: [], inspectImage: null }, facts);
+    const validated = validateInferenceOutput(supplemented.output, { package: packageData, evidence: lookup.evidence ?? [] });
+
+    expect(lookup.status).toBe('ok');
+    expect(facts).toHaveLength(1);
+    expect(supplemented.added).toBe(1);
+    expect(validated.claims).toHaveLength(1);
+    expect(validated.claims[0].sourceIds).toContain('who-jecfa-tbhq-319');
+    expect(validated.claims[0].observationIds).toEqual(['ocr-additive-319']);
+    expect(validated.answer).toMatch(/INS 319.*Tertiary butylhydroquinone/i);
+    expect(validated.answer).toMatch(/not the product.s additive amount or authorization/i);
+  });
+
+  it('does not promote an identity result without an explicit identity question and matching OCR declaration', async () => {
+    const lookup = await executeGeminiTool('resolve_ingredient', { query: 'INS 319' }, {
+      question: 'What nutrients are printed?', package: packageData, visualImages: [], searchTerms: new Set(), prepareImage: async () => '',
+    });
+    expect(requestedIngredientIdentityCoverageFacts('What nutrients are printed?', packageData.observations, lookup)).toEqual([]);
+    expect(requestedIngredientIdentityCoverageFacts(question, [], lookup)).toEqual([]);
   });
 });
 

@@ -763,6 +763,12 @@ Keep `gemini-3.8-flash` as the paid development default. Google's current model 
 
 Expose compact, source-linked guidance summaries through the existing Gemini function loop; do not send user queries, profile fields or package photos to retrieve this curated subset. Require a matching condition for condition-specific records, filter by jurisdiction grounded in the user question or explicitly shared profile, and return no result when the local sources do not cover the condition/jurisdiction pairing. Ignore model-generated condition, goal or jurisdiction arguments unless the user or profile states them. Keep generic population sources separate from clinical guidance and package judgments. The current six-record corpus is a useful retrieval slice, not comprehensive clinical coverage; broaden it only with verified source scope, dates and reuse terms.
 
+When neither the user question nor explicitly shared profile provides a jurisdiction, return only Global/International guidance unless the user explicitly requests a named source. If a specifically requested source is jurisdiction-specific, preserve and show that scope; never imply it applies locally by default.
+
 ## 23 October 2026 — gate ICMR–NIN Dietary Guidelines 2024 on product-use permission
 
 The official NIN 2024 publication says it may not be stored or reproduced in an electronic format for creating a product without prior written permission. Remove its substantive summary from active retrieval until that permission is obtained; a link or a newly authored paraphrase is not assumed to resolve the product-use restriction. The source remains an owner-side permission blocker, not a reason to stop other India-relevant work. See the [official publication](https://www.nin.res.in/dietaryguidelines/pdfjs/locale/DGI24thJune2024fin.pdf).
+
+## 23 October 2026 — complete explicitly requested local identity results after validation
+
+When Gemini successfully resolves a printed additive code but omits it from the answer, append the identity only if the user explicitly asks what that exact code means, a retained OCR additive declaration contains the same code, and an exact local identity record supplies a matching source. Run this after ordinary evidence validation so unsupported model text cannot suppress the answer. Keep the statement about identity separate from package amount, exposure, authorization and safety; link exact OCR and source spans. Do not create a claim for a generic question or missing OCR evidence.

@@ -153,19 +153,23 @@ function mentions(text: string, term: string): boolean {
 
 function explicitlyNamesSource(query: string, record: EvidenceSource): boolean {
   const normalized = normalize(query);
-  const aliases = record.publisher === 'American Heart Association'
-    ? ['AHA']
-    : record.publisher === 'American Diabetes Association'
-      ? ['ADA']
-      : [];
+  const publisherAliases: Record<string, string[]> = {
+    'American Heart Association': ['AHA'],
+    'American Diabetes Association': ['ADA'],
+    'World Health Organization': ['WHO'],
+    'National Institute of Diabetes and Digestive and Kidney Diseases': ['NIDDK'],
+    'Kidney Disease: Improving Global Outcomes': ['KDIGO'],
+  };
+  const aliases = publisherAliases[record.publisher] ?? [];
   return [record.publisher, record.title, ...aliases]
     .some(value => normalized.includes(normalize(value)));
 }
 
 function jurisdictionCompatible(record: EvidenceSource, jurisdiction: string | undefined, explicitSource: boolean): boolean {
-  if (!jurisdiction || explicitSource) return true;
-  const requested = normalize(jurisdiction);
+  if (explicitSource) return true;
   const source = normalize(record.jurisdiction);
+  if (!jurisdiction) return source === 'global' || source === 'international';
+  const requested = normalize(jurisdiction);
   if (source === 'global' || source === 'international') return true;
   if (requested === 'india') return source === 'india';
   if (requested === 'united states' || requested === 'us' || requested === 'usa') return source === 'united states';
@@ -196,7 +200,8 @@ export function getNutritionGuidance(input: {
     .sort((a, b) => b.score - a.score || a.entry.source.id.localeCompare(b.entry.source.id));
   const conditionSpecificIntent = entries.some(entry => entry.conditions.some(condition => mentions(contextualText, condition)));
   const relevant = conditionSpecificIntent
-    ? ranked.filter(item => item.entry.conditions.some(condition => mentions(contextualText, condition)) || explicitlyNamesSource(query, item.entry.source))
+    ? ranked.filter(item => item.entry.conditions.some(condition => mentions(contextualText, condition))
+      || explicitlyNamesSource(query, item.entry.source) && item.entry.terms.some(term => mentions(contextualText, term)))
     : ranked;
 
   return relevant

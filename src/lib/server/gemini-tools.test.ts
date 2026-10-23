@@ -82,6 +82,22 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.evidence?.some(source => source.id === 'kdigo-ckd-2024-sodium')).toBe(false);
   });
 
+  it('defaults to international guidance when no user jurisdiction is available, but honors an explicit source request', async () => {
+    const general = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'How should adults with CKD handle sodium and potassium?',
+      condition: 'CKD',
+    }, context('How should adults with CKD handle sodium and potassium?'));
+
+    expect(general.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium']);
+
+    const explicit = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'What does NIDDK say about potassium in CKD?',
+    }, context('What does NIDDK say about potassium in CKD?'));
+
+    expect(explicit.evidence?.map(source => source.id)).toEqual(['niddk-ckd-adult-eating', 'kdigo-ckd-2024-sodium']);
+    expect(explicit.evidence?.some(source => source.id === 'niddk-celiac-eating-2020')).toBe(false);
+  });
+
   it('uses only the user question or explicitly supplied profile, not invented tool arguments', async () => {
     const irrelevant = await executeGeminiTool('get_nutrition_guidance', {
       query: 'CKD sodium hypertension diabetes potassium',
