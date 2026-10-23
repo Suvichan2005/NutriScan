@@ -740,3 +740,9 @@ The server agent has a bounded 110-second wall-clock budget and each provider ge
 ## Exact regulatory identifier retrieval — 23 October 2026
 
 When a regulation query explicitly names an INS code, require that exact code in the extracted source text and center the bounded excerpt on its occurrence. If it is missing, keep the official source link and report no text match; never substitute a nearby additive row. Flattened PDF text remains unverified and may not preserve table columns or category inheritance. FSSAI Appendix A stays labeled as a navigation aid, while the underlying notification, effective date, exact food category and later amendments remain necessary for any legal conclusion.
+
+## Exact additive handoff from Gemini to Indian source retrieval — 23 October 2026
+
+For a uniquely identified additive and an explicit India/FSSAI question, normalize regulation or claims retrieval to `INS <code> food additive India`. This avoids treating a printed limit such as `100 mg/kg` as the identifier and removes dependence on whether Gemini calls identity resolution before or alongside research. Preserve the original question and user evidence for reasoning; this normalization only selects the source excerpt. A direct FSSAI fetch is not enough: the live agent must receive and correctly scope the excerpt before we count this integration as working.
+
+Keep `gemini-3.8-flash` as the paid development default. Google's current model catalog lists it as the stable Flash model for autonomous agents and multimodal work; `gemini-4-argon` is the paid flagship reasoning model. The current working photo/tool loop is already demonstrated on 3.8, while Argon is materially more expensive and has not been compared on NutriScan tasks; do not change the default without a bounded quality/cost test. See the official [model catalog](https://ai.google.dev/gemini-api/docs/models) and [pricing](https://ai.google.dev/gemini-api/docs/pricing) checked 23 October 2026.

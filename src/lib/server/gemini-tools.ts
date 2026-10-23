@@ -12,7 +12,7 @@ import {
   type TentativeStructuredCandidate,
 } from '../contracts';
 import { matchesPackageRows, reconcileInterpretedNutrition } from '../interpreted-nutrients';
-import { evidenceSources, lookupAdditive, resolveTentativeAdditiveIdentity } from '../../modules/knowledge';
+import { evidenceSources, lookupAdditive, lookupExplicitAdditiveMention, resolveTentativeAdditiveIdentity } from '../../modules/knowledge';
 import { searchOpenFoodTox, semanticRetrieve } from '../semantic';
 import { searchFoodComposition, type FoodCompositionFood } from './food-composition';
 import type { OpenFoodToxHit, OpenFoodToxSearch } from '../../modules/knowledge/server';
@@ -271,7 +271,7 @@ function resolveIngredient(args: z.infer<typeof toolArgs.resolve_ingredient>): G
   const tentative = exact ? undefined : resolveTentativeAdditiveIdentity(args.query);
   const sourceIds = exact?.sourceIds ?? tentative?.sourceIds ?? [];
   const evidence = sourceIds.map(id => evidenceSources.find(item => item.id === id)).filter((item): item is EvidenceSource => Boolean(item));
-  if (exact) return { status: 'ok', resultCount: evidence.length, evidence, searchTerms: [exact.name, ...exact.aliases, exact.code], output: { status: 'identity_match', identity: exact, caveat: 'Identity and synonyms only. This does not establish package presence, dose, current national authorization or individual safety.' } };
+  if (exact) return { status: 'ok', resultCount: evidence.length, evidence, searchTerms: [exact.name, ...exact.aliases, exact.code, `INS ${exact.code}`], output: { status: 'identity_match', identity: exact, caveat: 'Identity and synonyms only. This does not establish package presence, dose, current national authorization or individual safety.' } };
   if (tentative) return { status: 'ok', resultCount: evidence.length, evidence, output: { status: 'tentative_identity_candidate', identity: tentative, caveat: 'Possible fuzzy identity only. It does not establish package presence or amount; compare the original observation.' } };
   return { status: 'empty', resultCount: 0, output: { status: 'no_identity_match', message: 'No supported identity match was found in the local additive registry.' } };
 }
@@ -512,7 +512,22 @@ function toResearchEvidence(item: Awaited<ReturnType<typeof research>>['items'][
 async function searchResearch(args: z.infer<typeof toolArgs.search_research>, context: GeminiToolContext): Promise<GeminiToolResult> {
   if (!externalQueryIsSupported(args.query, context)) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'External research search was not run because its terms are absent from the explicit question and package evidence.' } };
   if (args.topic === 'science' && !researchTextTokens(args.query).length) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'A numeric additive code alone cannot identify relevant research. Resolve the substance name first, then search the named substance and outcome.' } };
-  const parsed = researchInput.safeParse({ query: args.query, topic: args.topic });
+  let query = args.query;
+  if (args.topic !== 'science' && /\b(?:india|indian|fssai)\b/i.test(context.question)) {
+    const explicitIdentity = lookupExplicitAdditiveMention(context.question)
+      ?? lookupExplicitAdditiveMention(args.query)
+      ?? lookupExplicitAdditiveMention(context.package.rawText);
+    const candidates = explicitIdentity ? [explicitIdentity] : [...context.searchTerms].map(term => lookupAdditive(term));
+    const identities = new Map(candidates.filter((identity): identity is NonNullable<ReturnType<typeof lookupAdditive>> => Boolean(identity)).map(identity => [identity.code, identity] as const));
+    if (identities.size === 1) {
+      const [identity] = identities.values();
+      // Search the fixed identifier form first. Model-authored queries may mix
+      // nutrient limits (for example "100 mg/kg") with INS codes, which can
+      // otherwise make a regex mistake the quantity for the requested code.
+      query = `INS ${identity.code} food additive India`;
+    }
+  }
+  const parsed = researchInput.safeParse({ query, topic: args.topic });
   if (!parsed.success) return { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The research query did not match a supported topic.' } };
   try {
     const result = await research(parsed.data);

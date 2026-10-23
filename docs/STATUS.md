@@ -2,6 +2,14 @@
 
 Updated: 2026-10-23. This is a local development application and research workspace. Feature levels below describe evidence available in this checkout; they do not imply clinical or production acceptance.
 
+## 23 October 2026 — additive identity-to-regulation retrieval tightened
+
+- A real paid `gemini-3.8-flash` text-only turn interpreted a retained OCR phrase `antioxidant (319)`, retrieved local Codex GSFA and WHO/JECFA records, and distinguished identity from product dose/exposure. No photo or profile was sent in this test. It attempted FSSAI research, but the live agent received only a navigation card saying the exact identifier was not found; it did not receive the usable Appendix A excerpt.
+- The same local FSSAI research endpoint returns the INS 319 row when queried directly; its flattened PDF text places `100 mg/kg` near the TBHQ row but also contains a different food-category heading. This cannot establish that the amount or provision applies to cream crackers, current authorization, or product compliance.
+- To reduce model-query ambiguity, the tool now canonicalizes an explicit, uniquely resolved INS code into `INS <code> food additive India` for Indian regulation/claims lookups, including when research and identity tools run in parallel. This code path is covered by module tests, but its effect on the live model-selected query is not yet verified. Do not treat FSSAI retrieval as fixed until a live agent turn returns the excerpt.
+- Focused Gemini-tool and regulation tests passed 27/27; full suite passed 390/390 across 39 files; TypeScript and the isolated optimized build passed. `next-env.d.ts` and the pre-existing teammate-edited `tsconfig.json` were restored byte-for-byte. Existing port 3413 was left untouched; all isolated test servers were stopped.
+- The current paid ledger is 263 attempts (252 completed, 11 failed), 3,511,702 reported tokens, $3.403762 SDK-estimated actual and $3.729627 conservatively committed, leaving $0.470373 under the $4.20 local cap. These are estimates, not invoice data. Gemini 3.8 Flash remains the working model; no Gemini 4 Argon quality trial was run.
+
 ## 23 October 2026 — paid Gemini photo analysis reaches the conversation
 
 - Repeated the real two-photo Bisk Farm Cream Cracker flow in mobile Chrome after the timeout, output-budget and follow-up state fixes. Initial analysis and the INS 319 follow-up both returned HTTP 200 from `gemini-3.8-flash` (57 s and 20.7 s in the local Next server log). The paid-cloud disclosure was present; the user profile remained local and no profile fields were sent.

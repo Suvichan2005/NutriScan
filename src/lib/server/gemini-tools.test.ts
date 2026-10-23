@@ -3,8 +3,13 @@ import { evidenceSources } from '../../modules/knowledge';
 import type { PackageData, TentativeStructuredCandidate } from '../contracts';
 import { executeGeminiTool, type GeminiToolContext } from './gemini-tools';
 
-const mocks = vi.hoisted(() => ({ semanticRetrieve: vi.fn(), searchOpenFoodTox: vi.fn() }));
+const mocks = vi.hoisted(() => ({ semanticRetrieve: vi.fn(), searchOpenFoodTox: vi.fn(), research: vi.fn() }));
 vi.mock('../semantic', () => ({ semanticRetrieve: mocks.semanticRetrieve, searchOpenFoodTox: mocks.searchOpenFoodTox }));
+vi.mock('./research', async importOriginal => {
+  const actual = await importOriginal<typeof import('./research')>();
+  mocks.research.mockImplementation((args: Parameters<typeof actual.research>[0]) => actual.research(args));
+  return { ...actual, research: mocks.research };
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -112,6 +117,58 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(followup.status).toBe('empty');
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(new URL(String(fetcher.mock.calls[0][0])).hostname).toBe('www.ebi.ac.uk');
+  });
+
+  it('expands an India regulation lookup with one exactly resolved additive identity', async () => {
+    mocks.research.mockResolvedValueOnce({
+      status: 'ok',
+      items: [{
+        id: 'fssai-additive-compendium-appendix-a', title: 'FSSAI Food Products Standards and Food Additives Compendium, Appendix A',
+        url: 'https://www.fssai.gov.in/docs/food-law/regulations/compendium/food-products-standards/Appendix%20A(4).pdf',
+        publisher: 'Food Safety and Standards Authority of India', publishedAt: null, retrievedAt: '2026-10-23T00:00:00.000Z',
+        category: 'food standards and additives compendium; navigation aid only',
+        summary: 'Official PDF excerpt; Tertiary butylhydroquinone INS 319 100 mg/kg.',
+        limitations: 'Navigation aid only; category and applicable notification remain unverified.',
+      }],
+      message: 'Source discovery only.',
+    });
+    const toolContext = context('Does this additive have an applicable authorization in India?', 'INGREDIENTS: antioxidant (319)');
+    const identity = await executeGeminiTool('resolve_ingredient', { query: '319' }, toolContext);
+    expect(identity.status).toBe('ok');
+    for (const term of identity.searchTerms ?? []) toolContext.searchTerms.add(term);
+
+    const result = await executeGeminiTool('search_research', { query: 'authorization India', topic: 'regulation' }, toolContext);
+
+    expect(result.status).toBe('ok');
+    expect(mocks.research).toHaveBeenCalledWith(expect.objectContaining({
+      topic: 'regulation', query: 'INS 319 food additive India',
+    }));
+    expect(result.evidence?.[0]).toMatchObject({ id: 'fssai-additive-compendium-appendix-a', category: 'regulation' });
+    expect(result.evidence?.[0].limitations).toMatch(/category and applicable notification remain unverified/i);
+  });
+
+  it('expands same-round India regulation calls from an explicit INS mention without relying on tool order', async () => {
+    mocks.research.mockResolvedValueOnce({ status: 'empty', items: [], message: 'No matching text was returned.' });
+    const toolContext = context('Please check the FSSAI rules for INS 319 in India.', 'INGREDIENTS: antioxidant (319)');
+    toolContext.searchTerms.add('INS 955');
+
+    const result = await executeGeminiTool('search_research', { query: 'INS 319', topic: 'regulation' }, toolContext);
+
+    expect(result.status).toBe('empty');
+    expect(mocks.research).toHaveBeenCalledWith(expect.objectContaining({
+      topic: 'regulation', query: 'INS 319 food additive India',
+    }));
+  });
+
+  it('keeps an exact Indian additive identity when the model labels the research topic as a claim', async () => {
+    mocks.research.mockResolvedValueOnce({ status: 'empty', items: [], message: 'No matching text was returned.' });
+    const toolContext = context('Does INS 319 have applicable authorization in India?');
+
+    await executeGeminiTool('search_research', { query: 'INS 319 authorization India', topic: 'claims' }, toolContext);
+
+    expect(mocks.research).toHaveBeenCalledWith(expect.objectContaining({
+      topic: 'claims', query: 'INS 319 food additive India',
+    }));
   });
 
   it('resolves INS 319 to the WHO JECFA assessment without implying dose or exposure', async () => {
