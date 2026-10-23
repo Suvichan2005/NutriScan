@@ -776,3 +776,7 @@ When Gemini successfully resolves a printed additive code but omits it from the 
 ## 23 October 2026 — collapse raw package-evidence cards in the chat
 
 Model-selected package-evidence and package-details cards may link dozens of noisy OCR observations. Keep those cards collapsed by default so the answer is primary; expose the exact recognized lines and region-inspection controls after an intentional expansion. Structured ingredient findings, nutrition data and attributed sources remain in their question-specific components.
+
+## 23 October 2026 — browser profile reads must not block first run
+
+Bound the remembered-profile startup read with a 2.5-second deadline. Let the user continue with session-only onboarding while IndexedDB is slow, then apply a late result only if the user has not edited onboarding/profile state. A session-only choice must not delete a remembered copy whose read has not completed; explicit opt-out after successful loading and Clear context retain their deletion behavior. Do not clear browser storage to make startup succeed.

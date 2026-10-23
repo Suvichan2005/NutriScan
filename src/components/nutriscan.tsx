@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, BookOpen, Camera, Check, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Download, FileText, FlaskConical, History, ImagePlus, Leaf, LoaderCircle, LockKeyhole, MessageCircle, Plus, ScanLine, Search, Settings2, ShieldCheck, Sparkles, Trash2, Upload, X } from 'lucide-react';
 import { buildAudit } from '@/lib/engine';
+import { observeAsyncRead } from '@/lib/async-read-deadline';
 import { reconcileInterpretedNutrition } from '@/lib/interpreted-nutrients';
 import { assistEvidenceContext, packageForAssist } from '@/lib/assist-evidence';
 import { parseLabel } from '@/lib/parser';
@@ -113,6 +114,7 @@ export default function NutriScan(){
  const [profile,setProfile]=useState<Profile>(defaultProfile);
  const [rememberProfile,setRememberProfile]=useState(false);const [profileReady,setProfileReady]=useState(false);const [profileSaving,setProfileSaving]=useState(false);
  const [onboardingGoalChoice,setOnboardingGoalChoice]=useState('');const [onboardingCustomGoal,setOnboardingCustomGoal]=useState('');const onboardingGateChecked=useRef(false);
+ const profileTouched=useRef(false);const profileReadSettled=useRef(false);const rememberedProfileAvailable=useRef(false);
  const [portion,setPortion]=useState(100);const [unit,setUnit]=useState<'g'|'ml'>('g');
  const [question,setQuestion]=useState('');const [activeQuestion,setActiveQuestion]=useState('');const [auditQuestion,setAuditQuestion]=useState('');
  const [messages,setMessages]=useState<Message[]>([]);
@@ -145,23 +147,27 @@ export default function NutriScan(){
  }
  async function chooseRememberedProfile(remember:boolean){
   if(!profileReady||profileSaving)return;
+  profileTouched.current=true;
   const previous=rememberProfile;setRememberProfile(remember);
   setProfileSaving(true);
-  try{await queueProfilePersistence(remember,profile);setNotice(remember?'Your context is saved separately on this device.':'The remembered copy was removed. Your context remains in this session.');}
+  try{await queueProfilePersistence(remember,profile);rememberedProfileAvailable.current=remember&&hasProfile(profile);setNotice(remember?'Your context is saved separately on this device.':'The remembered copy was removed. Your context remains in this session.');}
   catch{setRememberProfile(previous);setNotice('Could not update remembered context in this browser. Your current session still works.');}
   finally{setProfileSaving(false);}
  }
  function clearProfileContext(){
-  setProfile(defaultProfile);setRememberProfile(false);
+  profileTouched.current=true;setProfile(defaultProfile);setRememberProfile(false);rememberedProfileAvailable.current=false;
   if(profileReady)void queueProfilePersistence(false,defaultProfile).then(()=>setNotice('Current and remembered context cleared from this browser.')).catch(()=>{});
  }
  async function finishOnboarding(){
   const selected=onboardingGoalOptions.find(option=>option.id===onboardingGoalChoice);
   const goal=onboardingGoalChoice==='custom'?onboardingCustomGoal.trim():selected?.value??'';
   if(!goal){setNotice('Choose a focus or write your own before continuing.');return;}
-  const nextProfile={...profile,goals:goal};setProfile(nextProfile);setProfileSaving(true);
+  profileTouched.current=true;const nextProfile={...profile,goals:goal};setProfile(nextProfile);setProfileSaving(true);
   let saveFailed=false;const remember=rememberProfile;
-  try{await queueProfilePersistence(remember,nextProfile);}catch{saveFailed=true;setRememberProfile(false);}
+  try{
+   if(remember){await queueProfilePersistence(true,nextProfile);rememberedProfileAvailable.current=hasProfile(nextProfile);}
+   else{saveSessionProfile(nextProfile);if(profileReadSettled.current&&rememberedProfileAvailable.current){await deleteRememberedProfile();rememberedProfileAvailable.current=false;}}
+  }catch{saveFailed=true;setRememberProfile(false);}
   try{completeOnboardingSession();}catch{saveFailed=true;}
    onboardingGateChecked.current=true;setPanel(null);setProfileSaving(false);
    setNotice(saveFailed?'Your goal is active for this visit, but NutriScan could not save the session context in this browser.':'');
@@ -186,7 +192,33 @@ export default function NutriScan(){
  const readSignature=(image:PhotoReviewAsset)=>JSON.stringify([image.editVersion??0,image.width,image.height,image.blob.size,image.editState??null,image.side,contrast,invert,cropEnabled&&cropTarget===image.id?crop:null]);
  const pendingPhotoCount=images.filter(image=>processedImages.current.get(image.id)!==readSignature(image)).length;
 
- useEffect(()=>{let active=true;fetch('/api/status').then(x=>x.json()).then(value=>{if(active)setStatus(value);}).catch(()=>{});readHistory().then(value=>{if(active)setHistory(value);}).catch(()=>{});readRememberedProfile().then(value=>{if(!active)return;if(value){setProfile(value);setRememberProfile(true);if(value.goals.trim()){try{completeOnboardingSession();}catch{}}}else{const sessionProfile=readSessionProfile();if(sessionProfile)setProfile(sessionProfile);}setProfileReady(true);}).catch(()=>{if(active){setProfileReady(true);setNotice('Remembered context could not be loaded. You can continue with an empty session profile.');}});return()=>{active=false;abort.current?.abort();if(geminiRequest.current){geminiRequest.current.intentional=true;geminiRequest.current.controller.abort();}};},[]);
+ useEffect(()=>{
+  let active=true;
+  const loadingNotice='Saved context is taking longer than usual. You can continue in this tab; the saved copy will not be changed unless you choose to save or clear it.';
+  const stopProfileRead=observeAsyncRead(readRememberedProfile,2500,{
+   onTimeout:()=>{
+    if(!profileTouched.current){const sessionProfile=readSessionProfile();if(sessionProfile)setProfile(sessionProfile);}
+    setProfileReady(true);setNotice(loadingNotice);
+   },
+   onValue:value=>{
+    profileReadSettled.current=true;rememberedProfileAvailable.current=!!value;
+    if(!profileTouched.current){
+     if(value){setProfile(value);setRememberProfile(true);if(value.goals.trim()){try{completeOnboardingSession();}catch{}onboardingGateChecked.current=true;setPanel(null);}}
+     else{const sessionProfile=readSessionProfile();if(sessionProfile)setProfile(sessionProfile);}
+    }
+    setNotice(current=>current===loadingNotice?'':current);setProfileReady(true);
+   },
+   onError:()=>{
+    profileReadSettled.current=true;
+    if(!profileTouched.current)setNotice('Remembered context could not be loaded. You can continue with an empty session profile.');
+    else setNotice(current=>current===loadingNotice?'':current);
+    setProfileReady(true);
+   },
+  });
+  fetch('/api/status').then(x=>x.json()).then(value=>{if(active)setStatus(value);}).catch(()=>{});
+  readHistory().then(value=>{if(active)setHistory(value);}).catch(()=>{});
+  return()=>{active=false;stopProfileRead();abort.current?.abort();if(geminiRequest.current){geminiRequest.current.intentional=true;geminiRequest.current.controller.abort();}};
+ },[]);
  useEffect(()=>{if(!profileReady||profileSaving)return;if(rememberProfile){const timer=window.setTimeout(()=>{void queueProfilePersistence(true,profile).catch(()=>{});},250);return()=>window.clearTimeout(timer);}if(hasCompletedOnboardingSession()){try{saveSessionProfile(profile);}catch{setNotice('Session context could not be updated in this browser.');}}},[profile,profileReady,profileSaving,rememberProfile]);
  useEffect(()=>{const thread=threadScrollRef.current;if(!thread)return;const latest=thread.querySelector<HTMLElement>('.thread-gemini-answer')??thread.querySelector<HTMLElement>('.thread-turn:last-of-type');if(!latest)return;const targetTop=thread.scrollTop+latest.getBoundingClientRect().top-thread.getBoundingClientRect().top-8;thread.scrollTo({top:Math.max(0,targetTop),behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});},[messages,remoteAnswer,remoteUiComponents,remoteCandidates]);
  useEffect(()=>{if(!profileReady||onboardingGateChecked.current)return;onboardingGateChecked.current=true;if(hasCompletedOnboardingSession()||profile.goals.trim()){if(profile.goals.trim()){try{completeOnboardingSession();}catch{}}return;}setPanel('onboarding');},[profile,profileReady]);
@@ -588,7 +620,7 @@ export default function NutriScan(){
     <footer><span><Leaf size={14}/>A little more informed, one label at a time.</span><button onClick={()=>setPanel('privacy')}>How your data is used<ArrowRight size={13}/></button></footer>
    </main>
   </div>
-  <dialog ref={dialog} className={panel==='scanner'?'scanner-dialog':panel==='onboarding'?'onboarding-dialog':undefined} onCancel={event=>{if(panel==='scanner'){event.preventDefault();cancelScanner();}else if(panel==='camera'){event.preventDefault();setPanel('scanner');}else if(panel==='onboarding')event.preventDefault();}} onClose={()=>{setPanel(null);setOcrRegion(null);}} onClick={e=>{if(e.target===dialog.current){if(panel==='scanner')cancelScanner();else if(panel==='camera')setPanel('scanner');else if(panel!=='onboarding')setPanel(null);}}} onKeyDown={e=>{if(e.key!=='Tab')return;const focusable=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),summary,[href],[tabindex]:not([tabindex="-1"])')).filter(node=>node.offsetParent!==null);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}} aria-labelledby={panel==='scanner'?'scanner-dialog-title':'dialog-title'}><div className="dialog-header"><h2 id="dialog-title">{panel==='onboarding'?'Make NutriScan yours':panel==='profile'?'Your context, on your terms':panel==='privacy'?'Your data, clearly explained':panel==='history'?'Recent scans':panel==='correct'?'Correct a decisive reading':panel==='ocr-region'?'Inspect OCR photo region':panel==='camera'?'Capture a package side':panel==='scanner'?'Scan package sides':'Read a label from text'}</h2>{panel!=='onboarding'&&<button className="icon-button" aria-label={panel==='scanner'?'Cancel scan':panel==='camera'?'Back to scanner':'Close dialog'} onClick={()=>panel==='scanner'?cancelScanner():panel==='camera'?setPanel('scanner'):setPanel(null)}><X size={20}/></button>}</div>
+  <dialog ref={dialog} className={panel==='scanner'?'scanner-dialog':panel==='onboarding'?'onboarding-dialog':undefined} onChangeCapture={()=>{if(panel==='profile'||panel==='onboarding')profileTouched.current=true;}} onCancel={event=>{if(panel==='scanner'){event.preventDefault();cancelScanner();}else if(panel==='camera'){event.preventDefault();setPanel('scanner');}else if(panel==='onboarding')event.preventDefault();}} onClose={()=>{setPanel(null);setOcrRegion(null);}} onClick={e=>{if(e.target===dialog.current){if(panel==='scanner')cancelScanner();else if(panel==='camera')setPanel('scanner');else if(panel!=='onboarding')setPanel(null);}}} onKeyDown={e=>{if(e.key!=='Tab')return;const focusable=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),summary,[href],[tabindex]:not([tabindex="-1"])')).filter(node=>node.offsetParent!==null);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}} aria-labelledby={panel==='scanner'?'scanner-dialog-title':'dialog-title'}><div className="dialog-header"><h2 id="dialog-title">{panel==='onboarding'?'Make NutriScan yours':panel==='profile'?'Your context, on your terms':panel==='privacy'?'Your data, clearly explained':panel==='history'?'Recent scans':panel==='correct'?'Correct a decisive reading':panel==='ocr-region'?'Inspect OCR photo region':panel==='camera'?'Capture a package side':panel==='scanner'?'Scan package sides':'Read a label from text'}</h2>{panel!=='onboarding'&&<button className="icon-button" aria-label={panel==='scanner'?'Cancel scan':panel==='camera'?'Back to scanner':'Close dialog'} onClick={()=>panel==='scanner'?cancelScanner():panel==='camera'?setPanel('scanner'):setPanel(null)}><X size={20}/></button>}</div>
    {panel==='onboarding'&&<div className="dialog-body onboarding-body">
     <p>Choose what you want help with first. Everything else below is optional, including health information. Your context is used for your package analysis in this browser; it is not sent to Gemini unless you separately opt in.</p>
     <fieldset className="onboarding-goals"><legend>What should NutriScan focus on?</legend>{onboardingGoalOptions.map(option=><label className="onboarding-choice" key={option.id}><input type="radio" name="onboarding-goal" value={option.id} checked={onboardingGoalChoice===option.id} onChange={()=>setOnboardingGoalChoice(option.id)}/><span>{option.label}</span></label>)}</fieldset>
