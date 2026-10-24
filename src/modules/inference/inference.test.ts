@@ -97,6 +97,25 @@ describe('provider-independent inference output validation', () => {
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
   });
 
+  it('preserves list numbering and retrieved publication years without accepting invented quantities or dates',()=>{
+    const source={id:'dated-review',title:'Example intervention review',publisher:'Example scientific journal',url:'https://example.org/review',category:'literature' as const,jurisdiction:'Study population',publishedAt:'2022-11-01',effectiveAt:null,retrievedAt:'2026-10-25T00:00:00Z',summary:'An intervention review with population and exposure limitations.',limitations:'No package-specific dose is established.'};
+    const checked=validateNaturalAnswerText([
+      '1. What the review found',
+      '* Source: Example intervention review (2022).',
+      '2. The label does not establish the studied dose.',
+      '3. The product contains 99 g protein.',
+      '* A different review was published in 2021.',
+    ].join('\n'),{package:fixturePackage,question:'Explain the review.',evidence:[source]});
+    expect(checked.answer).toContain('1. What the review found');
+    expect(checked.answer).toContain('Source: Example intervention review (2022).');
+    expect(checked.answer).toContain('2. The label does not establish the studied dose.');
+    expect(checked.answer).not.toContain('99 g');
+    expect(checked.answer).not.toContain('2021');
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(2);
+    const withoutDate=validateNaturalAnswerText('Source: Example intervention review (2022).',{package:fixturePackage,evidence:[{...source,publishedAt:null}]});
+    expect(withoutDate.answer).toBe('');
+  });
+
   it('recognizes a source-linked declared serving as the basis for natural prose',()=>{
     const pkg=packageSchema.parse({...fixturePackage,reconstruction:{
       ...reconstructionFixture(),revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture-model',current:true,

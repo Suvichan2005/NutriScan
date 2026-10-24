@@ -210,8 +210,14 @@ export default function NutriScan(){
    if(target instanceof Node&&(inspectorRef.current?.contains(target)||(target instanceof Element&&target.closest('.thread-evidence-trigger'))))return;
    setEvidenceInspectorOpen(false);
   };
+  const dismissWithEscape=(event:KeyboardEvent)=>{
+   if(event.key!=='Escape'||event.defaultPrevented||document.querySelector('dialog[open]'))return;
+   event.preventDefault();setEvidenceInspectorOpen(false);
+   document.querySelector<HTMLButtonElement>('.thread-evidence-trigger')?.focus();
+  };
   document.addEventListener('pointerdown',dismissOutside);
-  return()=>document.removeEventListener('pointerdown',dismissOutside);
+  document.addEventListener('keydown',dismissWithEscape);
+  return()=>{document.removeEventListener('pointerdown',dismissOutside);document.removeEventListener('keydown',dismissWithEscape);};
  },[inspectorOpen]);
  const attachedImageIds=images.map(image=>image.id);
  const interpretedNutrition=useMemo(()=>pkg?reconcileInterpretedNutrition(pkg,remoteCandidates,attachedImageIds):{readings:[],withheld:[]},[pkg,remoteCandidates,images]);

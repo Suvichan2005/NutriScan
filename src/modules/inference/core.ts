@@ -736,7 +736,12 @@ export function validateNaturalAnswerText(
         .map(item => `${item.label ?? ''} ${item.text}`),
     ] : []),
     ...reconstructedBasisEvidence,
-    ...(context.evidence ?? []).flatMap(source => [source.title, source.publisher, source.summary, source.limitations]),
+    ...(context.evidence ?? []).flatMap(source => [
+      source.title, source.publisher, source.summary, source.limitations,
+      // A publication year is bibliographic evidence, not a package quantity.
+      // Preserve it only when it comes from a retrieved source's dated metadata.
+      ...(source.publishedAt?.match(/^\d{4}(?:-|$)/) ? [source.publishedAt.slice(0, 4)] : []),
+    ]),
     ...(context.calculations ?? []).map(calculation => calculationEvidenceText(calculation)),
   ].filter(Boolean);
   const calculatedResults = (context.calculations ?? []).map(item => ({ value: item.result, unit: item.unit }));
@@ -745,8 +750,11 @@ export function validateNaturalAnswerText(
   let withheldUnsupportedQuantitySentenceCount = 0;
   for (const line of normalized.split('\n')) {
     const acceptedSentences: string[] = [];
-    const sentences = line.trim().split(/(?<=[.!?])\s+(?=[\p{L}\p{N}"“])/u).filter(Boolean);
+    const trimmed=line.trim();
+    const listPrefix=trimmed.match(/^(?:\d+[.)]|[-*+])\s+/)?.[0]??'';
+    const sentences = trimmed.slice(listPrefix.length).split(/(?<=[.!?])\s+(?=[\p{L}\p{N}"“])/u).filter(Boolean);
     for (const sentence of sentences) {
+      // Markdown list numbering is presentation syntax, not a factual amount.
       if (!numericMentionsAreSupported(sentence, evidenceTexts, calculatedResults)
         || !basisMentionsAreSupported(sentence, evidenceTexts)) {
         withheldUnsupportedQuantitySentenceCount += 1;
@@ -755,7 +763,7 @@ export function validateNaturalAnswerText(
       acceptedSentences.push(sentence);
       acceptedSentenceCount += 1;
     }
-    if (acceptedSentences.length) acceptedLines.push(acceptedSentences.join(' '));
+    if (acceptedSentences.length) acceptedLines.push(listPrefix+acceptedSentences.join(' '));
   }
   const acceptedAnswer = acceptedLines.join('\n').trim();
   if (withheldUnsupportedQuantitySentenceCount && acceptedAnswer) {
