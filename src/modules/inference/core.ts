@@ -613,9 +613,24 @@ function numericComparisonOperator(text:string,index:number):'<='|'<'|'>='|'>'|n
 }
 
 function numericOccurrences(text:string){
-  return [...text.matchAll(numericMentionPattern)].flatMap(match=>{
+  const matches=[...text.matchAll(numericMentionPattern)];
+  return matches.flatMap((match,index)=>{
     const mention=numericMentions(match[0])[0];
-    return mention?[{mention,operator:numericComparisonOperator(text,match.index??0),index:match.index??0}]:[];
+    const end=(match.index??0)+match[0].length;
+    // Keep the denominator of a dose/rate attached to its own amount. Stop at
+    // the next number or sentence boundary so another quantity cannot lend its
+    // time basis to this one. Substance wording between a unit and "per day"
+    // is allowed; no ingredient, condition or endpoint keywords are involved.
+    const suffix=text.slice(end,Math.min(matches[index+1]?.index??text.length,end+100)).split(/[.!?;\n]/,1)[0];
+    const previous=matches[index-1];
+    const prefixStart=Math.max(0,previous?(previous.index??0)+previous[0].length:0,(match.index??0)-100);
+    const prefix=text.slice(prefixStart,match.index??0).split(/[.!?;\n]/).at(-1)??'';
+    const rate=suffix.match(/(?:\bper\s+|\/)\s*(?:a\s+|each\s+)?(hours?|days?|weeks?|months?|years?)\b/i)?.[1]
+      ??(/^\s*(?:\*\*)?\s*daily\b/i.test(suffix)||/\bdaily\s*$/i.test(prefix)?'day':null);
+    const timeBasis=rate?.toLowerCase().replace(/s$/,'')??null;
+    const operator=numericComparisonOperator(text,match.index??0)
+      ??(/^\s*(?:\*\*)?\s*or more\b/i.test(suffix)?'>=': /^\s*(?:\*\*)?\s*or less\b/i.test(suffix)?'<=':null);
+    return mention?[{mention,operator,index:match.index??0,timeBasis}]:[];
   });
 }
 
@@ -646,10 +661,10 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[],calcula
   // which incorrectly rejects normal display rounding to 4.7. Keep the
   // unit-derived dimension and trust the structured numeric value.
   const calculated=calculatedResults.flatMap(item=>numericMentions(`${item.value} ${item.unit}`).map(mention=>({...mention,localeAmbiguous:false})));
-  return claimed.every(({mention:value,operator,index})=>{
+  return claimed.every(({mention:value,operator,index,timeBasis})=>{
     const approximate=isApproximateNumericClaim(claim,index);
-    const matchesEvidence=cited.some(({mention:evidence,operator:evidenceOperator})=>{
-      if(value.dimension!==evidence.dimension||operator!==evidenceOperator)return false;
+    const matchesEvidence=cited.some(({mention:evidence,operator:evidenceOperator,timeBasis:evidenceTimeBasis})=>{
+      if(value.dimension!==evidence.dimension||operator!==evidenceOperator||timeBasis!==evidenceTimeBasis)return false;
       if(value.localeAmbiguous||evidence.localeAmbiguous){
         if(value.localeAmbiguous&&evidence.localeAmbiguous)return value.rawValue===evidence.rawValue&&value.factor===evidence.factor;
         // In English output, comma-grouped thousands can be parsed as a
@@ -672,7 +687,7 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[],calcula
       return Math.abs(value.value-evidence.value)<=roundingTolerance+tolerance;
     });
     const matchesCalculation=calculated.some(result=>{
-      if(operator!==null||value.dimension!==result.dimension||value.localeAmbiguous||result.localeAmbiguous)return false;
+      if(timeBasis!==null||operator!==null||value.dimension!==result.dimension||value.localeAmbiguous||result.localeAmbiguous)return false;
       // Do not let rounding turn a small non-zero amount into an asserted zero.
       if(value.value===0||result.value===0)return value.value===result.value;
       const roundingTolerance=0.5*10**(-value.decimalPlaces)*value.factor;
@@ -710,7 +725,6 @@ export function validateNaturalAnswerText(
     })
     : [];
   const evidenceTexts = [
-    context.question ?? '',
     ...pkg.observations.filter(item => item.origin !== 'ocr').map(item => item.text),
     ...pkg.nutrients.filter(item => item.status !== 'conflict' && item.basis).map(item =>
       `${item.key} ${item.value} ${item.unit} per ${item.basis!.amount} ${item.basis!.unit}`),

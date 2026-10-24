@@ -683,6 +683,19 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.agentEvidence).toMatchObject([{ id: source!.id, publisher: 'International Diabetes Federation', jurisdiction: 'Global' }]);
     expect(result.uiComponents).toContainEqual({ type: 'source-reference-cards', observationIds: [], sourceIds: [source!.id], calculationIds: [] });
   });
+  it('keeps unused evidence inspectable without presenting it as a conversational citation',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const source=getNutritionGuidance({query:'diabetes nutrition',jurisdiction:'India',maxResults:3})[0];
+    expect(source).toBeDefined();
+    const answer='The supplied package frame does not show an ingredient list.';
+    const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question:'Does this frame show ingredients?',evidence:[source],package:{id:'uncited-source-ui',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
+    const result=await assist(data);
+    expect(result.answer).toBe(answer);
+    expect(result.agentEvidence.map(item=>item.id)).toContain(source.id);
+    expect(result.uiComponents.some(item=>item.type==='source-reference-cards')).toBe(false);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it('accepts ordinary prose without a structured-answer repair generation',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const observation={id:'ingredient-line',field:'ingredients',text:'INGREDIENTS: REFINED WHEAT FLOUR (MAIDA)',side:'back' as const,confidence:82,origin:'user' as const};

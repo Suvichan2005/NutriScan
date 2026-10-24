@@ -18,6 +18,7 @@ import { conversationContextForAssist } from '@/lib/conversation-context';
 import { buildLocalAuditConversationReply, buildLocalEvidenceFollowUp, buildLocalEvidenceUnavailableFollowUp, buildLocalPackageFallbackReply, isGuidanceEvidenceInScope, parseLocalEvidenceResponse, safeConversationEvidence, shouldSearchLocalEvidence } from '@/lib/followup-evidence';
 import { requestLocalEvidence } from '@/lib/local-evidence-client';
 import { presentConversationAnswer } from '@/lib/conversation-answer';
+import { selectCitedEvidence } from '@/lib/answer-evidence';
 import { geminiFailureMessage, hasVisibleProvisionalPackageAmounts, mergeRecheckedPackageCandidates, packageDisplayIdentity, parseThreadAgentDiagnostics, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, type ThreadMessage } from '@/lib/thread-presentation';
 import { canAddGeminiVisualImage, cropPreparedImage, geminiImageScale, selectBestLabelCropSet } from '@/lib/gemini-visual-crop';
 import { applyBarcodeReadings } from '@/lib/barcode';
@@ -613,7 +614,7 @@ export default function NutriScan(){
     const questionText=targetQuestion.trim()||'Summarize this package from the supplied label and photo evidence. Identify the product only when supported, explain the ingredients and nutrition that matter, distinguish printed claims from established facts, and briefly identify any uncertainty that changes the conclusion.';
     const localSearch=await localSearchPromise;
     const inScope=(source:EvidenceSource)=>isGuidanceEvidenceInScope(source,targetQuestion,sharedCountry);
-    const historyEvidence=safeConversationEvidence(usableHistory.flatMap(turn=>turn.evidence??[]).filter(inScope));
+    const historyEvidence=safeConversationEvidence(usableHistory.flatMap(turn=>selectCitedEvidence(turn.answer,turn.evidence??[])).filter(inScope));
     const evidence=assistEvidenceContext({auditSources:(targetAudit?.sources??[]).filter(inScope),localSearch:localSearch.filter(hit=>inScope(hit.source)).map(({source,score})=>({...source,score})),research:[],...(conversationContext?{conversationEvidence:historyEvidence}:{})});
     if(selectedProductSource&&!targetPackage.identityConflict&&evidence.length<15&&!evidence.some(source=>source.id===selectedProductSource.id))evidence.push(selectedProductSource);
     body={consent:true,question:questionText,package:packageForAssist(packageContext??targetPackage),...(requestCandidates.length?{interpretedCandidates:requestCandidates}:{}),...(includeProfileWithGemini&&hasProfile(profile)?{profile}:{}),evidence,calculations:requestCalculations.map(calculation=>({...calculation,evidenceText:calculationEvidenceText(calculation)})),images:targetImages.slice(0,10).map(x=>({handle:x.id,side:x.side,width:x.width,height:x.height,role:x.role,description:x.description})),...(visualImages.length?{visualImages}:{}),...(conversationContext?{conversationContext}:{})};
@@ -792,6 +793,7 @@ export default function NutriScan(){
             pkg.reconstruction?.current?pkg.reconstruction.serving:null,
            );
            const turnAnswer=m.answer;
+           const turnEvidence=selectCitedEvidence(m.answer,m.evidence??[]);
            return <article className="thread-turn" key={m.at+'-'+i}>
            <p className="thread-user-message">{m.question}</p>
            {m.outdated&&<p className="thread-outdated-note">This answer is from before the latest package update.</p>}
@@ -799,7 +801,7 @@ export default function NutriScan(){
               {m.status==='pending'?<p className="thread-working" role="status"><LoaderCircle size={16} className="spin"/>Gemini is preparing an answer from the available evidence…</p>:<p>{presentConversationAnswer(turnAnswer)}</p>}
              <small>{m.status==='pending'?(m.statusDetail??'Checking available package evidence'):m.answerOrigin==='gemini'?'NutriScan · Gemini-assisted answer':'On-device reading · recorded package observations and calculations'}{turnPresentation&&hasVisibleProvisionalPackageAmounts(turnPresentation.components,turnPresentation.calculations)?' · some package figures are provisional readings':''}</small>{m.answerOrigin==='gemini'&&m.status!=='pending'&&<button className="thread-recheck" type="button" disabled={!!remoteBusy} onClick={()=>rerunGemini(m.at)}>Recheck with current evidence</button>}
            </div></div>}
-           {m.evidence&&m.evidence.length>0&&<ConversationEvidence sources={m.evidence}/>}
+           {turnEvidence.length>0&&<ConversationEvidence sources={turnEvidence}/>}
             {turnPresentation&&turnPresentation.components.length>0&&<ThreadGenerativeUI key={`${m.at}-${pkg.reconstruction?.revision??'package'}`} question={m.question} components={turnPresentation.components} pkg={pkg} audit={{...audit,calculations:turnPresentation.calculations}} portion={turnPortion.value} portionUnit={turnPortion.unit} onPortionChange={value=>{portionTouched.current=true;setPortion(value);}} onPortionUnitChange={value=>{portionTouched.current=true;setUnit(value);}} onSaveCorrection={applyTableCorrection} canInspect={canInspectOcrRegion} isInspecting={observation=>ocrRegionBusy===observation.id} onInspect={observation=>void inspectOcrRegion(observation)} onOpenInspector={()=>{setInspectorTab('package');setEvidenceInspectorOpen(true);}} candidates={i===messages.length-1?remoteCandidates:[]} interpretedReadings={interpretedNutrition.readings} sources={threadSources} selectedProduct={selectedProduct}/>}
            </article>;
           })}

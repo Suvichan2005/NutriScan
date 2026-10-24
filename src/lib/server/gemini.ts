@@ -10,6 +10,7 @@ import { ApiError } from './http';
 import { recordGeminiDiagnostic } from './gemini-diagnostics';
 import { finishGeminiEvaluation, recordGeminiEvaluationEvent, startGeminiEvaluation } from './gemini-evaluation-recorder';
 import { calculationsFromReconstruction, defaultPortion, hasExplicitPortionRequest, resolveQuestionPortion } from '../portion';
+import { selectCitedEvidence } from '../answer-evidence';
 
 export { providerStatus };
 
@@ -2147,9 +2148,11 @@ export async function assist(data: z.infer<typeof assistInput>) {
     const answer=answerCheck.answer||'I could not verify the precise quantities in that response, so I have not used them. The reconstructed package remains available to inspect.';
     const parsedComponents=assistantUiComponentSchema.array().max(6).safeParse(generated.uiComponents);
     let uiComponents=parsedComponents.success?parsedComponents.data:[];
-    if(effectiveEvidence.length){
-      const sourceCard=assistantUiComponentSchema.safeParse({type:'source-reference-cards',observationIds:[],sourceIds:effectiveEvidence.slice(0,5).map(source=>source.id),calculationIds:[]});
-      if(sourceCard.success)uiComponents=[...uiComponents.filter(component=>component.type!=='source-reference-cards'),sourceCard.data].slice(0,6);
+    const citedEvidence=selectCitedEvidence(answer,effectiveEvidence);
+    uiComponents=uiComponents.filter(component=>component.type!=='source-reference-cards');
+    if(citedEvidence.length){
+      const sourceCard=assistantUiComponentSchema.safeParse({type:'source-reference-cards',observationIds:[],sourceIds:citedEvidence.slice(0,5).map(source=>source.id),calculationIds:[]});
+      if(sourceCard.success)uiComponents=[...uiComponents,sourceCard.data].slice(0,6);
     }
     const referencedCalculationIds=new Set(uiComponents.flatMap(component=>component.calculationIds));
     const responseCalculations=effectiveCalculations.filter(calculation=>referencedCalculationIds.has(calculation.id)).slice(0,20);
@@ -2180,6 +2183,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
         policy:'Only unsupported precise quantities or bases are withheld. Natural-language wording is not required to quote OCR or match lexical source spans.',
       },
       summary:diagnostics,
+      citedSourceIds:citedEvidence.map(source=>source.id),
     });
     await recordGeminiDiagnostic({
       event:'natural_answer_validation',analysisId,status:answerStatus,

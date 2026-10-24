@@ -116,6 +116,21 @@ describe('provider-independent inference output validation', () => {
     expect(withoutDate.answer).toBe('');
   });
 
+  it('keeps dose time bases with quantities instead of borrowing package amounts or requested doses',()=>{
+    const source={id:'dose-trial',title:'Example human intervention trial',publisher:'Example scientific journal',url:'https://example.org/trial',category:'literature' as const,jurisdiction:'Trial population',publishedAt:'2022',effectiveAt:null,retrievedAt:'2026-10-25',summary:'The intervention used 6 grams/day of the studied fibre.',limitations:'This trial dose is not a personal target.'};
+    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,{id:'user-fat',field:'fat',text:'Fat 3 g per 100 g',origin:'user',side:'text',confidence:null}]});
+    const context={package:pkg,question:'Does the evidence support 3 g/day?',evidence:[source]};
+    for(const answer of ['The trial used 6 g/day.','The trial used 6000 mg per day.']){
+      expect(validateNaturalAnswerText(answer,context).withheldUnsupportedQuantitySentenceCount).toBe(0);
+    }
+    for(const answer of ['The trial used 3 g per day.','The trial used 6 g per week.','Trials typically used around 3 g or more of fibre per day.']){
+      const checked=validateNaturalAnswerText(answer,context);
+      expect(checked.answer).toBe('');
+      expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
+    }
+    expect(validateNaturalAnswerText('The package lists 3 g fat per 100 g.',context).withheldUnsupportedQuantitySentenceCount).toBe(0);
+  });
+
   it('recognizes a source-linked declared serving as the basis for natural prose',()=>{
     const pkg=packageSchema.parse({...fixturePackage,reconstruction:{
       ...reconstructionFixture(),revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture-model',current:true,
