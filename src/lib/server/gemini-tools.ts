@@ -66,7 +66,7 @@ export const geminiToolDeclarations: FunctionDeclaration[] = [
   { name: 'search_knowledge', description: 'Search NutriScan’s local, attributed food and ingredient evidence index. This does not make a network request.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A focused food, nutrient, ingredient, or guidance query.' } }, required: ['query'] } },
   { name: 'get_nutrition_guidance', description: 'Retrieve a small local set of source-linked nutrition guidance for an explicitly relevant condition or goal. Uses only NutriScan-authored summaries of official sources and sends no query, profile, or image to an external service. Prefer the user’s stated jurisdiction when known. Keep population guidance separate from personal targets and package facts; do not infer diagnoses or prescribe a nutrient allowance.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'The nutrition question and relevant words from the user’s request.' }, condition: { type: Type.STRING, description: 'Only a condition explicitly stated by the user or included in authorized profile context.' }, goal: { type: Type.STRING, description: 'Only a nutrition goal stated by the user or included in authorized profile context.' }, jurisdiction: { type: Type.STRING, description: 'A jurisdiction stated by the user or available in authorized context, such as India.' }, maxResults: { type: Type.NUMBER, description: 'Optional result limit from 1 to 5.' } }, required: ['query'] } },
   { name: 'search_food_composition', description: 'Search local USDA FoodData Central Foundation Foods and FNDDS structured snapshots for generic food-composition reference values. FNDDS includes U.S. survey records for some Indian-style dishes, not authoritative Indian recipes. Use when the user asks how a basic food compares or requests composition context; request relevant nutrient families. Values are source-reported per 100 g edible portion, not facts about a branded Indian product, its package, portion or an individual. Survey portion examples are not package servings. Missing nutrient rows are unavailable, not zero. Includes release, source citation, license and limitations. No external query is sent.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific generic food name or phrase, such as dry chickpeas, idli, chapatti or roti.' }, nutrients: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Up to eight requested nutrient families, such as protein, carbohydrate, fiber, sodium, potassium, energy, or saturated fat. Omit to return common macronutrient and sodium fields.' } }, required: ['query'] } },
-  { name: 'resolve_ingredient', description: 'Resolve an observed additive name or INS/E identifier against NutriScan’s local identity registry. Presence and amount still require package evidence.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'Observed ingredient phrase or additive identifier.' } }, required: ['query'] } },
+  { name: 'resolve_ingredient', description: 'Resolve an observed additive locally, then search the FoodOn ontology for ordinary food-ingredient identity candidates when local identity data is insufficient. For FoodOn, send only a short ingredient phrase already present in the question or package observations; never send photos or profile data. Ontology matches are identity candidates only and do not establish package presence, nutrition, effects, allergen relationships, dose, authorization or safety.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A short observed ingredient phrase or additive identifier from the question or package evidence.' } }, required: ['query'] } },
   { name: 'lookup_chemical_identity', description: 'Read-only PubChem PUG REST lookup of a chemical name already present in the user question/package text or returned by exact local ingredient or assessment lookup. Returns registry identity candidates only, not food-use authorization, dose, hazard assessment or personal safety. Sends only the name; never photos or profile data.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific chemical name from the question, printed package text or an exact local identity result, not a numeric value or general food question.' } }, required: ['query'] } },
   { name: 'get_substance_assessments', description: 'Search the locally imported EFSA OpenFoodTox 3.0 assessment snapshot for a named substance or exact identifier. Returns attributed EFSA assessment records and toxicological reference values when available. The local snapshot may only link a scientific output without its conclusion; if the user asks what the linked assessment found, follow that title with search_research using the exact local identity returned. Use to distinguish hazard assessments from package exposure; this does not establish Indian authorization, package dose, product presence or personal safety. No network request is made.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A substance name, synonym, CAS number or PubChem CID from the question, package text or a locally resolved ingredient identity.' } }, required: ['query'] } },
   { name: 'calculate_nutrition', description: 'Calculate a portion from an unconflicted user-confirmed package nutrient, a currently attached evidence-linked interpretation, or an exact rowId from the saved package reconstruction. Interpretation-based arithmetic is explicitly provisional and never confirms or changes the package record. A matching known mass or volume basis and linked package observations are required.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Portion amount in grams or millilitres.' }, unit: { type: Type.STRING, enum: ['g', 'ml'] }, candidateId:{type:Type.STRING,description:'Optional exact candidateId from supplied interpretations or exact rowId from the saved package reconstruction.'} }, required: ['nutrient', 'amount', 'unit'] } },
@@ -326,14 +326,79 @@ function retrieveNutritionGuidance(args: z.infer<typeof toolArgs.get_nutrition_g
   };
 }
 
-function resolveIngredient(args: z.infer<typeof toolArgs.resolve_ingredient>): GeminiToolResult {
+function foodOnStrings(value: unknown, maxItems: number, maxLength: number): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === 'string')
+    .map(item => item.trim().replace(/\s+/g, ' ').slice(0, maxLength))
+    .filter(Boolean).slice(0, maxItems);
+}
+
+function foodOnEvidence(term: { iri?: string; short_form?: string; obo_id?: string; label?: string; synonym?: unknown; description?: unknown }): EvidenceSource | null {
+  const label = term.label?.trim().slice(0, 180);
+  const identifier = (term.short_form ?? term.obo_id ?? '').replace(/:/g, '_');
+  if (!label || !/^FOODON_[0-9]{7,9}$/.test(identifier)) return null;
+  const synonyms = foodOnStrings(term.synonym, 8, 120);
+  const descriptions = foodOnStrings(term.description, 2, 400);
+  return asEvidenceSource({
+    id: `foodon-${identifier.toLowerCase()}`,
+    title: `${label} (${identifier})`,
+    publisher: 'FoodOn ontology via EMBL-EBI Ontology Lookup Service',
+    url: `https://purl.obolibrary.org/obo/${identifier}`,
+    category: 'registry',
+    jurisdiction: 'Food ontology identity; not jurisdiction-specific food-use authorization',
+    publishedAt: null,
+    effectiveAt: null,
+    retrievedAt: new Date().toISOString(),
+    summary: [
+      `FoodOn term label: ${label}.`,
+      synonyms.length ? `Ontology synonyms: ${synonyms.join('; ')}.` : '',
+      descriptions.length ? `Ontology description: ${descriptions.join(' ')}` : '',
+    ].filter(Boolean).join(' ').slice(0, 1600),
+    limitations: 'Ontology identity candidate only. FoodOn taxonomy does not establish that the ingredient is present in this package, its quantity, nutrient composition, health effects, allergen relationship, legal status or individual safety.',
+    license: 'FoodOn is licensed CC BY 4.0. Retrieved through the EMBL-EBI Ontology Lookup Service; attribution to FoodOn and the term identifier is retained.',
+  });
+}
+
+async function resolveIngredient(args: z.infer<typeof toolArgs.resolve_ingredient>, context: GeminiToolContext): Promise<GeminiToolResult> {
   const exact = lookupAdditive(args.query);
   const tentative = exact ? undefined : resolveTentativeAdditiveIdentity(args.query);
   const sourceIds = exact?.sourceIds ?? tentative?.sourceIds ?? [];
   const evidence = sourceIds.map(id => evidenceSources.find(item => item.id === id)).filter((item): item is EvidenceSource => Boolean(item));
   if (exact) return { status: 'ok', resultCount: evidence.length, evidence, searchTerms: [exact.name, ...exact.aliases, exact.code, `INS ${exact.code}`], output: { status: 'identity_match', identity: exact, caveat: 'Identity and synonyms only. This does not establish package presence, dose, current national authorization or individual safety.' } };
   if (tentative) return { status: 'ok', resultCount: evidence.length, evidence, output: { status: 'tentative_identity_candidate', identity: tentative, caveat: 'Possible fuzzy identity only. It does not establish package presence or amount; compare the original observation.' } };
-  return { status: 'empty', resultCount: 0, output: { status: 'no_identity_match', message: 'No supported identity match was found in the local additive registry.' } };
+  if (!externalQueryIsSupported(args.query, context)) return { status: 'withheld', resultCount: 0, output: { status: 'query_not_in_evidence', message: 'FoodOn lookup was not run because the ingredient phrase was not present in the question or package observations.' } };
+  try {
+    const url = new URL('https://www.ebi.ac.uk/ols4/api/search');
+    url.searchParams.set('q', args.query);
+    url.searchParams.set('ontology', 'foodon');
+    url.searchParams.set('queryFields', 'label,synonym');
+    url.searchParams.set('rows', '5');
+    url.searchParams.set('obsoletes', 'false');
+    const raw = await fixedFetch(url, 'json', 500_000) as { response?: { docs?: unknown } };
+    if (!raw || typeof raw !== 'object' || !raw.response || !Array.isArray(raw.response.docs)) {
+      return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', message: 'FoodOn returned an unrecognized response. No ingredient identity was inferred.' } };
+    }
+    const docs = raw.response.docs.slice(0, 5).filter((doc): doc is { iri?: string; short_form?: string; obo_id?: string; label?: string; synonym?: unknown; description?: unknown } => Boolean(doc) && typeof doc === 'object');
+    const candidates = docs.flatMap(term => {
+      const source = foodOnEvidence(term);
+      if (!source) return [];
+      const normalizedQuery = args.query.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+      const label = (term.label ?? '').normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+      const synonyms = foodOnStrings(term.synonym, 8, 120).map(value => value.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim());
+      return [{ source, exactLabelOrSynonym: normalizedQuery === label || synonyms.includes(normalizedQuery) }];
+    });
+    const candidateEvidence = candidates.map(candidate => candidate.source);
+    return {
+      status: candidateEvidence.length ? 'ok' : 'empty',
+      resultCount: candidateEvidence.length,
+      evidence: candidateEvidence,
+      output: candidateEvidence.length
+        ? { status: 'ontology_identity_candidates', query: args.query, candidates: candidates.map(({ source, exactLabelOrSynonym }) => ({ sourceId: source.id, title: source.title, exactLabelOrSynonym })), caveat: 'These are ontology matches, not confirmed package ingredients. Compare the printed wording before using an identity.' }
+        : { status: 'no_identity_match', query: args.query, message: 'FoodOn returned no usable matching term. No ingredient identity was inferred.' },
+    };
+  } catch {
+    return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', message: 'FoodOn could not be reached within the bounded request. No ingredient identity was inferred; use the linked source or retry later.' } };
+  }
 }
 
 type OpenFoodToxSourceMetadata = Extract<OpenFoodToxSearch, { status: 'ok' }>['source'];
@@ -685,7 +750,7 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
     }
     case 'resolve_ingredient': {
       const parsed = toolArgs.resolve_ingredient.safeParse(args);
-      return parsed.success ? resolveIngredient(parsed.data) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The ingredient query was invalid.' } };
+      return parsed.success ? resolveIngredient(parsed.data, context) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The ingredient query was invalid.' } };
     }
     case 'lookup_chemical_identity': {
       const parsed = toolArgs.lookup_chemical_identity.safeParse(args);

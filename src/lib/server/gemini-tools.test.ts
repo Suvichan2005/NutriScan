@@ -377,6 +377,63 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.evidence?.[0].limitations).toContain('ingredient declaration alone cannot establish dose');
   });
 
+  it('uses FoodOn for an observed ordinary ingredient and returns attributed identity candidates only', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ response: { docs: [{
+      short_form: 'FOODON_03301538', label: 'wheat flour', iri: 'http://purl.obolibrary.org/obo/FOODON_03301538',
+      synonym: ['maida'], description: ['Flour made from wheat.'], score: 8.2,
+    }] } }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetcher);
+    const toolContext = {
+      ...context('What is maida?', 'INGREDIENTS: REFINED WHEAT FLOUR (MAIDA); SALT'),
+      profile: { ...defaultProfile, allergies: 'private profile should never be sent' },
+    };
+
+    const result = await executeGeminiTool('resolve_ingredient', { query: 'refined wheat flour maida' }, toolContext);
+
+    expect(result.status).toBe('ok');
+    expect(result.output).toMatchObject({ status: 'ontology_identity_candidates', candidates: [{ title: 'wheat flour (FOODON_03301538)', exactLabelOrSynonym: false }] });
+    expect(result.evidence?.[0]).toMatchObject({
+      id: 'foodon-foodon_03301538', publisher: expect.stringContaining('FoodOn'),
+      url: 'https://purl.obolibrary.org/obo/FOODON_03301538', category: 'registry',
+      license: expect.stringContaining('CC BY 4.0'),
+    });
+    expect(result.evidence?.[0].limitations).toContain('does not establish that the ingredient is present');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const requestedUrl = new URL(String(fetcher.mock.calls[0][0]));
+    expect(requestedUrl.origin).toBe('https://www.ebi.ac.uk');
+    expect(requestedUrl.pathname).toBe('/ols4/api/search');
+    expect(requestedUrl.searchParams.get('ontology')).toBe('foodon');
+    expect(requestedUrl.searchParams.get('q')).toBe('refined wheat flour maida');
+    expect(String(fetcher.mock.calls[0][0])).not.toContain('private profile');
+    expect(JSON.stringify(fetcher.mock.calls[0][1])).not.toContain('private profile');
+  });
+
+  it('does not send an ingredient identity query that is absent from the question and OCR', async () => {
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    const result = await executeGeminiTool('resolve_ingredient', { query: 'unobserved rare compound' }, context('What is in this product?', 'INGREDIENTS: wheat flour; salt'));
+    expect(result.status).toBe('withheld');
+    expect(result.output).toMatchObject({ status: 'query_not_in_evidence' });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('marks an ontology synonym match as exact while keeping it a candidate', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ response: { docs: [{
+      short_form: 'FOODON_03301538', label: 'wheat flour', synonym: ['maida'], score: 8.2,
+    }] } }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetcher);
+    const result = await executeGeminiTool('resolve_ingredient', { query: 'maida' }, context('What is maida?', 'INGREDIENTS: refined wheat flour (maida)'));
+    expect(result.output).toMatchObject({ status: 'ontology_identity_candidates', candidates: [{ exactLabelOrSynonym: true }] });
+    expect(result.evidence?.[0].limitations).toMatch(/does not establish that the ingredient is present/i);
+  });
+
+  it('reports FoodOn transport failure as unavailable rather than claiming no ingredient match', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    const result = await executeGeminiTool('resolve_ingredient', { query: 'maida' }, context('What is maida?', 'INGREDIENTS: refined wheat flour (maida)'));
+    expect(result.status).toBe('unavailable');
+    expect(result.output).toMatchObject({ status: 'unavailable' });
+  });
+
   it('offers exact EFSA assessment records to Gemini with source and exposure limits', async () => {
     const source = {
       version: '3.0' as const, sourceSha256: 'a'.repeat(64), sourceUrl: 'https://doi.org/10.5281/zenodo.19388272',
