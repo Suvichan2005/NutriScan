@@ -26,6 +26,43 @@ function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019
 }
 
 describe('Gemini tool retrieval boundaries', () => {
+  function countedContext(){
+    const toolContext=context('Compare five pieces with one serving.');
+    toolContext.package.reconstruction={revision:2,updatedAt:new Date().toISOString(),model:'fixture',current:true,
+      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
+      serving:{printedText:'3 crackers (45 g)',quantity:45,unit:'g',pieceCount:3,pieceDescription:'crackers',status:'provisional',evidence:{observationIds:['serving-ocr'],imageRegions:[]}},
+      nutritionRows:[{rowId:'count-carb',nutrient:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'20',value:20,unit:'g',columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Developer fixture.'};
+    return toolContext;
+  }
+  it('converts declared piece counts and fractional servings before deterministic nutrition arithmetic',async()=>{
+    const toolContext=countedContext();
+    const original=structuredClone(toolContext.package);
+    const pieces=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:5,unit:'pieces',candidateId:'count-carb'},toolContext);
+    expect(pieces.status).toBe('ok');
+    expect(pieces.calculations?.[0]).toMatchObject({portion:75,portionUnit:'g',result:15,observationIds:['ocr-1','serving-ocr']});
+    expect(pieces.output).toMatchObject({portionConversion:{requestedAmount:5,requestedUnit:'pieces',normalizedAmount:75,normalizedUnit:'g',revision:2}});
+    expect(pieces.calculations?.[0].assumptions.join(' ')).toContain('remain unverified');
+    const servings=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:1.5,unit:'servings',candidateId:'count-carb'},toolContext);
+    expect(servings.calculations?.[0]).toMatchObject({portion:67.5,result:13.5});
+    expect(toolContext.package).toEqual(original);
+  });
+  it('withholds count conversion for stale, ambiguous, disconnected or conflicting serving definitions',async()=>{
+    for(const mutate of [
+      (c:GeminiToolContext)=>{c.package.reconstruction!.current=false;},
+      (c:GeminiToolContext)=>{c.package.reconstruction!.serving!.status='ambiguous';},
+      (c:GeminiToolContext)=>{c.package.reconstruction!.serving!.evidence.observationIds=[];},
+      (c:GeminiToolContext)=>{c.package.serving={value:60,unit:'g'};},
+      (c:GeminiToolContext)=>{c.package.reconstruction!.serving!.pieceCount=null;},
+      (c:GeminiToolContext)=>{c.package.reconstruction!.serving!.pieceDescription='g';},
+    ]){
+      const toolContext=countedContext();mutate(toolContext);
+      const result=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:5,unit:'pieces',candidateId:'count-carb'},toolContext);
+      expect(result.status).toBe('withheld');expect(result.calculations).toBeUndefined();
+    }
+    const result=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:10000,unit:'servings',candidateId:'count-carb'},countedContext());
+    expect(result.status).toBe('withheld');
+  });
   it('derives revisioned provisional calculations only from complete evidence-linked saved rows and the declared serving', () => {
     const packageData=context('What about the serving?').package;
     packageData.reconstruction={
