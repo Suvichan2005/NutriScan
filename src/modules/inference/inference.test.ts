@@ -989,6 +989,31 @@ describe('provider-independent inference output validation', () => {
     expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'health-effect-needs-relevant-source'});
   });
 
+  it('requires an outcome-relevant source for generic health-support claims attached to an ingredient fact',()=>{
+    const observation={id:'oats-label-line',field:'ingredient-line',text:'Ingredients: rolled oats, salt',side:'back' as const,confidence:90,origin:'ocr' as const,imageId:'synthetic-image'};
+    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
+    const source={id:'oat-beta-glucan-review',title:'Oat beta-glucan intervention review',publisher:'Clinical Nutrition ESPEN',url:'https://example.org/oat-review',category:'literature' as const,jurisdiction:'Included adult trials; not a dietary guideline',publishedAt:'2022-05-13',effectiveAt:null,retrievedAt:'2026-10-24',summary:'A meta-analysis reported lower total and LDL cholesterol after oat beta-glucan interventions.',limitations:'This does not establish an effective dose in an ordinary oats-containing product.'};
+    const sourced='A review reported lower total and LDL cholesterol after oat beta-glucan interventions.';
+    const labelFact='The ingredient list includes rolled oats, but does not state a beta-glucan amount.';
+    const unsupported='Rolled oats provide soluble fiber that generally supports heart health.';
+    const answer=`${sourced} ${labelFact} ${unsupported}`;
+    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
+    const result=validateInferenceOutput({
+      answer,
+      claims:[
+        {mode:'synthesis',text:sourced,observationIds:[],sourceIds:[source.id],supportingSpans:[{kind:'source',id:source.id,quote:source.summary}]},
+        {mode:'synthesis',text:labelFact,observationIds:[observation.id],sourceIds:[],supportingSpans:[{kind:'observation',id:observation.id,quote:observation.text}]},
+        {mode:'synthesis',text:unsupported,observationIds:[observation.id],sourceIds:[],supportingSpans:[{kind:'observation',id:observation.id,quote:observation.text}]},
+      ],
+      answerParts:[{text:sourced,claimIndexes:[0]},{text:labelFact,claimIndexes:[1]},{text:unsupported,claimIndexes:[2]}],limitations:[],inspectImage:null,
+    },{package:pkg,evidence:[source],diagnostic:event=>events.push(event)});
+
+    expect(result.claims.map(claim=>claim.text)).toEqual([sourced,labelFact]);
+    expect(result.answer).toBe(`${sourced} ${labelFact}`);
+    expect(events).toContainEqual({stage:'claim',index:2,decision:'rejected',reason:'health-effect-needs-relevant-source'});
+    expect(events).toContainEqual({stage:'natural-answer',index:3,decision:'rejected',reason:'health-effect-needs-relevant-source'});
+  });
+
   it('does not link a source whose physiological direction contradicts the answer',()=>{
     const observation={id:'refined-flour-line',field:'ocr-line',text:'Ingredients: refined wheat flour (maida)',side:'back' as const,confidence:84,origin:'ocr' as const,imageId:'synthetic-image'};
     const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});

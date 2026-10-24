@@ -1029,3 +1029,7 @@ Apply such deterministic requested-identity coverage before the first answer-rep
 ## 24 October 2026 — link ingredient identity to outcome evidence only when the question is relevant
 
 Maintain source-backed ingredient→outcome relations separately from package observations and ingredient identity. A relation may be returned by the existing ingredient tool only when an observed/query ingredient and the user's outcome topic both match. Keep each endpoint, study population, exposure condition, jurisdiction and limitation attached to its source record. The relation does not prove package presence, ingredient quantity, exposure, effect or personal suitability. Preserve EFSA opinions with different endpoints and conditions as distinct records; do not merge glucose peak with glucose iAUC or treat an EU claim condition as Indian law or clinical advice.
+
+## 24 October 2026 — treat health-support verbs as physiological claims
+
+When validating a food statement that says an ingredient supports or promotes a health outcome, require a linked, outcome-relevant source just as for “improves,” “protects,” or “benefits.” A package ingredient fact can establish the label wording, not the health effect. Reject only the unsupported sentence/claim when adjacent claims have independent evidence; preserve the validated answer and its sources.

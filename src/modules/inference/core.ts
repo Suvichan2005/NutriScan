@@ -405,14 +405,14 @@ const physiologicalOutcomePatterns = [
   /\b(?:allerg\w*|anaphylaxis|celiac|coeliac|gluten)\b/i,
   /\b(?:cardiovascular|heart\s+(?:disease|health)|inflammation)\b/i,
 ];
-const physiologicalRelationshipPattern = /\b(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*\s+with|link\w*\s+to|lead\s+to|control\w*|regulat\w*|protect\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)\b/i;
+const physiologicalRelationshipPattern = /\b(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*\s+with|link\w*\s+to|lead\s+to|control\w*|regulat\w*|protect\w*|support\w*|promot\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)\b/i;
 const physiologicalTopicTerms = new Set([
   'blood', 'glucose', 'glycemia', 'glycaemia', 'glycemic', 'glycaemic', 'insulin', 'diabetes', 'diabetic',
   'pressure', 'hypertension', 'cholesterol', 'lipid', 'ldl', 'hdl', 'triglyceride', 'kidney', 'renal', 'ckd',
   'egfr', 'allergy', 'allergies', 'allergic', 'allergen', 'anaphylaxis', 'celiac', 'coeliac', 'gluten',
   'cardiovascular', 'heart', 'inflammation',
 ]);
-const relationshipTerms = /^(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*|link\w*|lead|control\w*|regulat\w*|protect\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)$/i;
+const relationshipTerms = /^(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*|link\w*|lead|control\w*|regulat\w*|protect\w*|support\w*|promot\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)$/i;
 
 function hasPhysiologicalOutcome(text: string): boolean {
   return physiologicalOutcomePatterns.some(pattern => pattern.test(text));
@@ -423,8 +423,8 @@ function requiresPhysiologicalSource(text: string): boolean {
 }
 
 function negatesPhysiologicalRelationship(text: string): boolean {
-  return /\b(?:no|not|never|cannot|can't|doesn't|don't|didn't|isn't|aren't|wasn't|weren't)\b.{0,48}\b(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*|link\w*|lead|control\w*|regulat\w*|protect\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)\b/i.test(text)
-    || /\b(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*|link\w*|lead|control\w*|regulat\w*|protect\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)\b.{0,32}\b(?:not|no|never)\b/i.test(text);
+  return /\b(?:no|not|never|cannot|can't|doesn't|don't|didn't|isn't|aren't|wasn't|weren't)\b.{0,48}\b(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*|link\w*|lead|control\w*|regulat\w*|protect\w*|support\w*|promot\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)\b/i.test(text)
+    || /\b(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*|link\w*|lead|control\w*|regulat\w*|protect\w*|support\w*|promot\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)\b.{0,32}\b(?:not|no|never)\b/i.test(text);
 }
 
 function healthSupportTerms(text: string): Set<string> {
