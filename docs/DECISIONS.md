@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 25 October 2026 — keep quantities scoped and candidate sources separate from citations
+
+- A matching number is insufficient when its comparator or time denominator differs. Do not use a question's proposed clinical dose as independent numerical evidence. Keep source URL identifiers alongside title/date metadata to avoid rejecting legitimate bibliographic references; this does not establish outcome or population applicability.
+- Select conversational source cards and replayed historical sources from the answer's actual named/linked references. Retain unused candidates in the inspector. Citation identity mapping must not become a semantic answer generator or another model repair pass.
+- Render reconstructed calculator rows using their linked printed labels so distinct fibre components remain distinguishable. Preserve unverified status and deterministic arithmetic.
+- Evidence: saved-output replay removes an unsupported daily dose while retaining adjacent prose; a separate metadata replay restores a correct research sentence. A real isolated-browser follow-up completes in one free generation with one cited review and no repairs. No prompt changes, new model loops or package-specific rules were introduced.
+
 ## 25 October 2026 — distinguish presentation syntax and bibliography from nutritional quantities
 
 - Validate the factual content of a Markdown list item independently of its ordered-list marker. Preserve a publication year only when a retrieved source supplies that dated metadata; an unknown year still fails the numerical evidence check. This does not establish that a matching number supports the correct nutrient, dose, endpoint or population.

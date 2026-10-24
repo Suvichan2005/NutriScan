@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-25 — close research-answer and calculator presentation boundaries
+
+- Preserved quantity time bases/comparators and excluded question amounts as independent scientific evidence. Replayed the earlier actual research response: 12 sentences retained, unsupported 3 g/day sentence withheld. Kept retrieved source URLs in numerical metadata after a real PubMed identifier caused a valid review sentence to disappear; replay now retains that answer without another provider call.
+- Conversational source cards/history now select actual named/linked sources; unused search candidates remain inspectable. A real saved-package Chrome question on `f35eb83` returned the review outcome and package-dose limitation in one free Flash-Lite generation, six accepted sentences/zero withheld, no repair, zero photos/profile. Usage 9,777 input/175 output/6,099 cached; provider 2.395 s, browser workflow 20.063 s; estimated free cost zero, billing not checked. Run `64e512af-6e6b-49b9-87b3-78f7529e6625`; preceding metadata-failure run `8d8379ee-5a28-4c0e-baaf-7afd7204a988`. Tested comparison export `source-identity-and-dose-context-current.md` under ignored `.data/gemini-evaluations/exports/`.
+- Fixed calculator row labels to distinguish total/soluble/insoluble fibre. Actual saved provider state rendered at `52d19c6` on desktop/mobile, with zero new provider calls; screenshots inspected, internal inspector scrolling/close passed, no errors/overflow. No independent accuracy or clinical applicability claim; animal-study retrieval relevance remains unresolved. Original owner browser storage and generated/unrelated files preserved.
+
 ## 2026-10-25 — verify the running natural conversation and preserve its failures
 
 - Used isolated Chrome contexts on the existing server. A real saved Bagrry's package answered a new 52.5 g portion request and displayed a calculator. The research follow-up revealed that list numbering and the retrieved review's publication year were incorrectly removed by the quantity checker; fixed that boundary with negative tests for invented dates/amounts. Fixed Escape dismissal when the inspector trigger retains focus; desktop/mobile internal scroll and close passed with no page errors/overflow.
