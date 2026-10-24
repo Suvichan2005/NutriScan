@@ -90,6 +90,50 @@ describe('provider-independent inference output validation', () => {
     expect(result.claims[0].supportingSpans).toEqual([]);
   });
 
+  it('keeps evidence-linked nutrition rows usable when an unlinked model list contains extra unsupported values',()=>{
+    const imageRegion={imageId:'synthetic-image',region:null};
+    const reconstruction={
+      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},
+      serving:{printedText:'Serving size 35 g',quantity:35,unit:'g' as const,pieceCount:null,pieceDescription:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+      nutritionRows:[
+        {rowId:'energy-per-35g',nutrient:'Energy',printedLabel:'Energy value',printedValue:'139',value:139,unit:'kcal' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+        {rowId:'protein-per-35g',nutrient:'Protein',printedLabel:'Protein',printedValue:'5.0',value:5,unit:'g' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+        {rowId:'carbohydrate-per-35g',nutrient:'Carbohydrate',printedLabel:'Carbohydrate',printedValue:'23.1',value:23.1,unit:'g' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+        {rowId:'sugars-per-35g',nutrient:'Sugars',printedLabel:'Sugars',printedValue:'0',value:0,unit:'g' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+        {rowId:'fibre-per-35g',nutrient:'Fibre',printedLabel:'Dietary fibre',printedValue:'3.6',value:3.6,unit:'g' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+        {rowId:'fat-per-35g',nutrient:'Fat',printedLabel:'Fat',printedValue:'3.0',value:3,unit:'g' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+      ],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional image-linked reconstruction.',
+    };
+    const answer='The label declares a serving size of 35 g. Per serving, it lists Energy 139 kcal, Protein 5 g, Carbohydrate 23.1 g, Sugars 0 g, Fibre 3.6 g, Fat 3 g, and Sodium 999 mg.';
+    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
+    const result=validateInferenceOutput({
+      answer,
+      packageReconstruction:reconstruction,
+      claims:[
+        {mode:'synthesis',text:'The label declares a serving size of 35 g.',observationIds:[],sourceIds:[]},
+        {mode:'synthesis',text:'Per serving, it lists Energy 139 kcal, Protein 5 g, Carbohydrate 23.1 g, Sugars 0 g, Fibre 3.6 g, Fat 3 g, and Sodium 999 mg.',observationIds:[],sourceIds:[]},
+      ],
+      answerParts:[
+        {text:'The label declares a serving size of 35 g.',claimIndexes:[0]},
+        {text:'Per serving, it lists Energy 139 kcal, Protein 5 g, Carbohydrate 23.1 g, Sugars 0 g, Fibre 3.6 g, Fat 3 g, and Sodium 999 mg.',claimIndexes:[1]},
+      ],
+      limitations:[],inspectImage:null,
+    },{package:packageSchema.parse({...fixturePackage,observations:[],rawText:''}),images:[{handle:'synthetic-image'}],question:'What nutrition does this label declare per 35 g serving?',diagnostic:event=>events.push(event)});
+
+    expect(result.answer).toContain('For the 35 g serving');
+    expect(result.answer).toContain('Energy 139 kcal');
+    expect(result.answer).toContain('Protein 5 g');
+    expect(result.answer).toContain('Carbohydrate 23.1 g');
+    expect(result.answer).toContain('Fibre 3.6 g');
+    expect(result.answer).not.toContain('999 mg');
+    expect(result.answer).not.toMatch(/Sodium\s+999/);
+    expect(result.answer).toContain('provisional label readings');
+    expect(result.claims.flatMap(claim=>claim.interpretationRowIds??[])).toEqual(expect.arrayContaining(reconstruction.nutritionRows.map(row=>row.rowId)));
+    expect(events).toContainEqual({stage:'structured-answer',index:0,decision:'accepted',reason:'traceable-nutrition-rows-after-numeric-withholding'});
+    expect(events).toContainEqual(expect.objectContaining({stage:'natural-answer',decision:'rejected',reason:'unsupported-numeric-value'}));
+  });
+
   it('links a rounded nutrient claim to one uniquely matching deterministic calculation',()=>{
     const reconstruction={
       identity:{brand:'Example',name:'Crackers',variant:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},

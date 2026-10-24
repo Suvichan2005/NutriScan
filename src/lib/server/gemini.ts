@@ -290,11 +290,18 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
   const output=objectRecord(value);
   const declaredReconstruction=output?objectRecord(firstDefined(output,'packageReconstruction','package_reconstruction','reconstruction')):null;
   const packageCandidate=output?objectRecord(output.package):null;
+  // Some valid provider responses wrap the reconstructed document as
+  // `package: { reconstruction: ... }`. Treat that as the same package
+  // contract; otherwise the strict parser drops it and spends another model
+  // call asking Gemini to restate an already returned reconstruction.
+  const nestedPackageReconstruction=packageCandidate
+    ?objectRecord(firstDefined(packageCandidate,'packageReconstruction','package_reconstruction','reconstruction'))
+    :null;
   const packageLooksLikeReconstruction=!!packageCandidate&&(
     ['identity','productIdentity','product_identity','serving','servingDefinition','serving_definition','servingSize','serving_size'].some(key=>objectRecord(packageCandidate[key])!==null)
     ||['nutritionRows','nutrition_rows','nutritionTable','nutrition_table'].some(key=>Array.isArray(packageCandidate[key]))
   );
-  const reconstruction=declaredReconstruction??(packageLooksLikeReconstruction?packageCandidate:null);
+  const reconstruction=declaredReconstruction??nestedPackageReconstruction??(packageLooksLikeReconstruction?packageCandidate:null);
   if(!output||!reconstruction)return value;
 
   const identityInput=objectRecord(firstDefined(reconstruction,'identity','productIdentity','product_identity'))??{};
@@ -1837,7 +1844,9 @@ export function normalizeModelImageRegions(output: unknown) {
     };
   }) : items;
   const record = output as Record<string, unknown>;
-  const reconstruction=record.packageReconstruction&&typeof record.packageReconstruction==='object'&&!Array.isArray(record.packageReconstruction)?record.packageReconstruction as Record<string,unknown>:null;
+  const packageRecord=objectRecord(record.package);
+  const nestedReconstruction=packageRecord?objectRecord(firstDefined(packageRecord,'packageReconstruction','package_reconstruction','reconstruction')):null;
+  const reconstruction=objectRecord(record.packageReconstruction)??nestedReconstruction;
   const normalizedReconstruction=reconstruction?{
     ...reconstruction,
     regions:Array.isArray(reconstruction.regions)?reconstruction.regions.filter(item=>{
@@ -2577,9 +2586,11 @@ export async function assist(data: z.infer<typeof assistInput>) {
       }else conversationalAnswerClaims=[];
       const profileIncluded = Object.values(extendedData.profile ?? {}).some(value => value.trim());
       const acceptedNaturalAnswer=events.some(event=>event.stage==='natural-answer'&&event.decision==='accepted');
+      const structuredPackageSummaryAccepted=events.some(event=>event.stage==='structured-answer'&&event.decision==='accepted');
       const rejectedNaturalAnswerSegments=events.filter(event=>event.stage==='natural-answer'&&event.decision==='rejected'&&event.index>0).length;
       const acceptedAnswerParts=events.filter(event => event.stage === 'answer-part' && event.index >= 0 && event.decision === 'accepted').length;
-      const answerStatus = acceptedNaturalAnswer||acceptedAnswerParts>0 ? 'model-answer'
+      const answerStatus = structuredPackageSummaryAccepted ? 'structured-package-summary'
+        : acceptedNaturalAnswer||acceptedAnswerParts>0 ? 'model-answer'
         : validated.claims.length ? 'grounded-claims-answer-unavailable'
           : validated.tentativeCandidates.length ? 'tentative-only'
             : 'insufficient-evidence';
@@ -2594,6 +2605,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
         modelOutputStatus: generated.modelOutputStatus,
         answerStatus,
         acceptedNaturalAnswer,
+        structuredPackageSummaryAccepted,
         rejectedNaturalAnswerSegments,
         acceptedConversationalAnswers:Number(acceptedNaturalAnswer)+acceptedAnswerParts,
         acceptedClaims: events.filter(event => event.stage === 'claim' && event.decision === 'accepted').length,
@@ -2787,7 +2799,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       generated.modelOutputStatus=synthesized.claims.length?'claims-present':'no-grounded-claims';
       let validated=await validateWithDiagnostics(combinedOutput);
       afterSynthesisCoverage=packageAnswerCoverage(data.question,reusableReconstruction,validated.claims,extendedData.evidence??[],validated.answer,data.profile?.country.trim()||'India');
-      let hasConversationalAnswer=(validationSummary?.acceptedNaturalAnswer===true||Number(validationSummary?.acceptedAnswerParts??0)>0)&&validated.answer.trim().length>0;
+      let hasConversationalAnswer=(validationSummary?.acceptedNaturalAnswer===true||validationSummary?.structuredPackageSummaryAccepted===true||Number(validationSummary?.acceptedAnswerParts??0)>0)&&validated.answer.trim().length>0;
       const firstSynthesisSummary=validationSummary;
       const firstSynthesisCanBeShown=canAcceptPackageAnswerSynthesis(preSynthesisCoverage,afterSynthesisCoverage,hasConversationalAnswer,validated.claims);
       if(firstSynthesisCanBeShown){
@@ -2808,7 +2820,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
         generated.modelOutputStatus=repaired.claims.length?'claims-present':'no-grounded-claims';
         validated=await validateWithDiagnostics(repairedOutput);
         afterSynthesisCoverage=packageAnswerCoverage(data.question,reusableReconstruction,validated.claims,extendedData.evidence??[],validated.answer,data.profile?.country.trim()||'India');
-        hasConversationalAnswer=(validationSummary?.acceptedNaturalAnswer===true||Number(validationSummary?.acceptedAnswerParts??0)>0)&&validated.answer.trim().length>0;
+        hasConversationalAnswer=(validationSummary?.acceptedNaturalAnswer===true||validationSummary?.structuredPackageSummaryAccepted===true||Number(validationSummary?.acceptedAnswerParts??0)>0)&&validated.answer.trim().length>0;
         const repairedCanBeShown=canAcceptPackageAnswerSynthesis(preSynthesisCoverage,afterSynthesisCoverage,hasConversationalAnswer,validated.claims);
         if(repairedCanBeShown&&(!acceptedSynthesis||afterSynthesisCoverage.missing.length<acceptedSynthesis.coverage.missing.length)){
           result={...validated,...(packageReconstruction?{packageReconstruction}:{})};

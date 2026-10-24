@@ -831,6 +831,59 @@ describe('provider validation, independent of provider invocation', () => {
     });
     expect(parsed.output.packageReconstruction?.statements.map(item=>item.kind)).toEqual(['claim','warning','contains','regulatory-mark','manufacturer']);
   });
+  it('accepts a nested package.reconstruction envelope without a structure-repair call', () => {
+    const providerOutput={
+      answer:'The photographed panel appears to list 23.1 g of carbohydrate per 35 g.',
+      answerParts:[],
+      uiComponents:[],
+      package:{reconstruction:{
+        current:true,
+        identity:{brand:'Example Foods',name:'Oat Biscuits',variant:null,status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[]}},
+        serving:{printedText:'35 g',quantity:35,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[]}},
+        nutritionRows:[{rowId:'ROW_1',nutrient:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'23.1',value:23.1,unit:'g',columnLabel:'Per 35 g',basisText:'per 35 g',basisAmount:35,basisUnit:'g',status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[{imageId:'IMG_1',region:{x:-0.1,y:0.2,width:0.4,height:0.3}}]}}],
+        ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional label interpretation.',
+      }},
+    };
+
+    const parsed=parseAgentProviderOutput(JSON.stringify(providerOutput),true);
+
+    expect(parsed.schemaMode).toBe('provider-schema');
+    expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
+    expect(parsed.discardedRegionCount).toBe(1);
+    expect(parsed.output.packageReconstruction).toMatchObject({
+      identity:{brand:'Example Foods',name:'Oat Biscuits'},
+      serving:{quantity:35,unit:'g'},
+      nutritionRows:[{rowId:'ROW_1',nutrient:'carbohydrate',value:23.1,unit:'g',basisAmount:35,basisUnit:'g',status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[{imageId:'IMG_1',region:null}]}}],
+    });
+    expect(parsed.output.answer).toBe(providerOutput.answer);
+  });
+  it('uses one provider request when the initial package response uses package.reconstruction', async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const providerOutput={
+      answer:'The photographed panel appears to list 8 g of carbohydrates per 100 g.',
+      answerParts:[],uiComponents:[],
+      package:{reconstruction:{
+        current:true,
+        identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
+        serving:null,
+        nutritionRows:[{rowId:'ROW_1',nutrient:'carbohydrate',printedLabel:'Carbohydrates',printedValue:'8',value:8,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[]}}],
+        ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional label reading.',
+      }},
+    };
+    const payload=JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(providerOutput)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:24,candidatesTokenCount:80,totalTokenCount:104}});
+    const fetcher=vi.fn().mockResolvedValue(new Response(payload,{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const observation={id:'ocr-carbohydrate',field:'ocr-line',text:'CARBOHYDRATES 8 g per 100 g',side:'back' as const,confidence:86,origin:'ocr' as const,imageId:'back-photo',readingOrder:{runId:'ocr-run',blockIndex:0,paragraphIndex:0,lineIndex:0}};
+    const data=assistInput.parse({consent:true,question:'What carbohydrate amount is printed per 100 g?',package:{id:'nested-package-envelope',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[observation],ocrCaptures:[{runId:'ocr-run',imageId:'back-photo',side:'back',sourceImage:{width:100,height:100},preparedImage:{width:100,height:100},bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'fixture-reader',version:'1',language:'en',confidenceScale:'0-100',segmentationMode:'auto'},processing:{rotation:0,contrast:false,invert:false,cropPercent:null}}],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
+
+    const result=await assist(data);
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(result.status).toBe('ok');
+    expect(result.answer).toContain('8 g');
+    expect((result as unknown as {packageReconstruction:{nutritionRows:Array<{value:number|null;evidence:{observationIds:string[]}} >}}).packageReconstruction.nutritionRows).toMatchObject([{value:8,evidence:{observationIds:['ocr-carbohydrate']}}]);
+    expect(result.agentTrace.some(step=>step.name==='package-structure-repair'||step.name==='structured_output_repair')).toBe(false);
+  });
   it('turns claimless but schema-valid package prose into untrusted candidates that exact evidence can link',()=>{
     const observation={id:'flour-observation',field:'label-note',text:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',side:'back' as const,confidence:86,origin:'user' as const};
     const reconstruction={identity:{brand:null,name:'Example biscuits',variant:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional' as const,evidence:{observationIds:['flour-observation'],imageRegions:[]}}],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'A provisional saved package interpretation.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};

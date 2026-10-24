@@ -955,3 +955,7 @@ When a consumer-facing sentence says a nutrient amount is unresolved, allow that
 ## 24 October 2026 — keep Indian staple terminology separate from FoodOn provenance
 
 Add exact FSSAI-attributed aliases for common cereal-label terms missing from FoodOn, rather than editing the pinned third-party index or claiming FoodOn supplied the synonym. Return the normalized term with its FSSAI source and a candidate status. Keep generic wheat flour and multi-ingredient strings unresolved when the crosswalk cannot select one identity. The crosswalk is terminology evidence only; it does not identify package contents, nutrition, effects, or current compliance. Keep it outside the semantic source corpus so this identity change does not invalidate the pinned MiniLM vectors.
+
+## 24 October 2026 — normalize nested package reconstruction before schema repair
+
+Accept `package.reconstruction` as a provider transport envelope and normalize it to the existing shared `packageReconstruction` contract before strict validation. This preserves useful provider output and avoids a paid/free generation solely to restate the same object. A route-level mock verifies the nested response completes in one provider request. Do not synthesize numeric values, evidence IDs, bases, or confidence from the wrapper. Continue claim-level numeric and source validation; if a compound answer contains unsupported quantities, keep the independently linked rows and reject the unsupported numbers. A valid but unlinked natural answer remains a distinct validation state, not a schema error.
