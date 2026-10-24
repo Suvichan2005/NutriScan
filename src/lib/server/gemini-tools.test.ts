@@ -90,6 +90,33 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.output).toMatchObject({ status: 'empty', message: expect.stringMatching(/topical relevance and applicability/i) });
   });
 
+  it('does not pass general fibre guidance off as evidence about a named substance', async () => {
+    const general = {
+      ...evidenceSources.find(source => source.id === 'fssai-labelling-allergen-faq-2023')!,
+      id: 'general-fibre-guidance',
+      title: 'Dietary fibre and digestion',
+      summary: 'General guidance about dietary fibre intake and digestion.',
+    };
+    const query = 'What evidence describes oligofructose in food and dietary fibre?';
+    const candidate = { source: general, score: 0.94, exactIdentity: false };
+    mocks.semanticRetrieve.mockResolvedValue({
+      status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
+      results: [candidate],
+    });
+
+    const result = await executeGeminiTool('search_knowledge', { query }, context(query));
+    expect(result.status).toBe('empty');
+    expect(result.evidence).toEqual([]);
+
+    mocks.semanticRetrieve.mockResolvedValue({
+      status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
+      results: [{ ...candidate, exactIdentity: true }],
+    });
+    const exact = await executeGeminiTool('search_knowledge', { query }, context(query));
+    expect(exact.status).toBe('ok');
+    expect(exact.evidence?.map(item => item.id)).toEqual([general.id]);
+  });
+
   it('inspects the full source image when an OCR-guided crop shares its image handle', async () => {
     const imageContext=context('Read the nutrient row.');
     const original={imageId:'image-1',mimeType:'image/jpeg' as const,base64:'b3JpZ2luYWwgaW1hZ2UgYnl0ZXM=',side:'back' as const,sourceImage:{width:1000,height:500},preprocessing:{rotation:0 as const,contrast:false,invert:false,crop:null}};

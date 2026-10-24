@@ -13,7 +13,7 @@ import {
   type TentativeStructuredCandidate,
 } from '../contracts';
 import { matchesPackageRows, reconcileInterpretedNutrition } from '../interpreted-nutrients';
-import { isGuidanceEvidenceInScope } from '../followup-evidence';
+import { isGuidanceEvidenceInScope, isLocalEvidenceTopicallyRelevant } from '../followup-evidence';
 import { evidenceSources, lookupAdditive, lookupExplicitAdditiveMention, resolveTentativeAdditiveIdentity } from '../../modules/knowledge';
 import { searchOpenFoodTox, semanticRetrieve } from '../semantic';
 import { searchFoodComposition, type FoodCompositionFood } from './food-composition';
@@ -180,17 +180,12 @@ async function searchFoodCompositionTool(args: z.infer<typeof toolArgs.search_fo
 function tokens(value: string) {
   return value.normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
 }
-const genericKnowledgeTerms = new Set(['food', 'foods', 'product', 'products', 'package', 'packaged', 'label', 'labels', 'nutrition', 'nutritional', 'ingredient', 'ingredients', 'information', 'guidance', 'evidence', 'health']);
 const productStopTerms = new Set(['and', 'the', 'with', 'for', 'of', 'free', 'full', 'taste', 'pack', 'size', 'ins']);
 const researchStopTerms = new Set(['ins', 'e', 'no', 'number', 'additive', 'additives', 'food', 'foods', 'ingredient', 'ingredients', 'research', 'study', 'studies']);
 
 function normalizedToken(value: string) {
   const token = value.normalize('NFKC').toLowerCase();
   return token.endsWith('ies') && token.length > 4 ? `${token.slice(0, -3)}y` : token.endsWith('s') && token.length > 4 ? token.slice(0, -1) : token;
-}
-
-function distinctiveKnowledgeTokens(value: string) {
-  return tokens(value).map(normalizedToken).filter(token => token.length >= 3 && !genericKnowledgeTerms.has(token));
 }
 
 function productTextTokens(value: string) {
@@ -277,9 +272,8 @@ async function inspectImage(args: z.infer<typeof toolArgs.inspect_package_image>
 async function searchKnowledge(args: z.infer<typeof toolArgs.search_knowledge>, context: GeminiToolContext): Promise<GeminiToolResult> {
   try {
     const response = await semanticRetrieve(args.query, 3);
-    const queryTerms = new Set(distinctiveKnowledgeTokens(args.query));
     const hits = response.results
-      .filter(item => item.exactIdentity || distinctiveKnowledgeTokens(`${item.source.title} ${item.source.summary}`).some(term => queryTerms.has(term)))
+      .filter(item => isLocalEvidenceTopicallyRelevant(item.source, args.query, item.exactIdentity))
       .filter(item => isGuidanceEvidenceInScope(item.source, context.question, context.profile?.country ?? ''))
       .map(item => ({ source: item.source, score: item.score, exactIdentity: item.exactIdentity }));
     const evidence = hits.map(hit => asEvidenceSource(hit.source)).filter((item): item is EvidenceSource => item !== null);

@@ -3,11 +3,13 @@ import { parseLocalEvidenceResponse, type LocalEvidenceCandidate } from './follo
 const requests = new Map<string, Promise<LocalEvidenceCandidate[]>>();
 
 /** Query the same-origin curated index without attaching photos or profile context. */
-export function requestLocalEvidence(query: string): Promise<LocalEvidenceCandidate[]> {
+export function requestLocalEvidence(query: string, explicitlySharedCountry = ''): Promise<LocalEvidenceCandidate[]> {
   const boundedQuery = query.trim().slice(0, 1200);
   if (!boundedQuery) return Promise.resolve([]);
+  const boundedCountry = explicitlySharedCountry.trim().slice(0, 80);
+  const cacheKey = `${boundedQuery}\u0000${boundedCountry}`;
 
-  const existing = requests.get(boundedQuery);
+  const existing = requests.get(cacheKey);
   if (existing) return existing;
 
   const request = (async () => {
@@ -18,12 +20,12 @@ export function requestLocalEvidence(query: string): Promise<LocalEvidenceCandid
       signal: AbortSignal.timeout(30000)
     });
     if (!response.ok) throw new Error('Local evidence unavailable.');
-    return parseLocalEvidenceResponse(await response.json()).hits;
+    return parseLocalEvidenceResponse(await response.json(), boundedQuery, boundedCountry).hits;
   })();
 
-  requests.set(boundedQuery, request);
+  requests.set(cacheKey, request);
   void request.finally(() => {
-    if (requests.get(boundedQuery) === request) requests.delete(boundedQuery);
+    if (requests.get(cacheKey) === request) requests.delete(cacheKey);
   }).catch(() => undefined);
   return request;
 }

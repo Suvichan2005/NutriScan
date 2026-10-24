@@ -8,6 +8,7 @@ import {
   buildLocalAuditConversationReply,
   buildLocalPackageFallbackReply,
   isGuidanceEvidenceInScope,
+  isLocalEvidenceTopicallyRelevant,
   isSafeEvidenceUrl,
   parseLocalEvidenceResponse,
   safeConversationEvidence,
@@ -91,6 +92,65 @@ describe('local evidence follow-ups', () => {
     expect(isSafeEvidenceUrl('https://127.0.0.1/reference')).toBe(false);
     expect(() => parseLocalEvidenceResponse(retrievalResponse({ latencyMs: -1 }))).toThrow();
     expect(() => parseLocalEvidenceResponse(retrievalResponse({ requestId: 'not-an-id' }))).toThrow();
+  });
+
+  it('keeps exact identity matches but withholds broad semantic near-matches for named substances', () => {
+    const genericFibreSource: EvidenceSource = {
+      ...source,
+      id: 'general-fibre',
+      title: 'Dietary fibre in food',
+      summary: 'General information about dietary fibre and digestive health.',
+    };
+    const oligofructoseSource: EvidenceSource = {
+      ...source,
+      id: 'oligofructose-review',
+      title: 'Oligofructose assessment',
+      summary: 'Evidence on oligofructose intake and digestive effects.',
+    };
+    const query = 'What evidence describes oligofructose in food, dietary fibre, digestion and amount?';
+
+    expect(isLocalEvidenceTopicallyRelevant(genericFibreSource, query)).toBe(false);
+    expect(isLocalEvidenceTopicallyRelevant(oligofructoseSource, query)).toBe(true);
+    expect(isLocalEvidenceTopicallyRelevant(genericFibreSource, 'oligofructose', true)).toBe(true);
+
+    const filtered = parseLocalEvidenceResponse(retrievalResponse({ results: [
+      { source: genericFibreSource, semanticScore: 0.9, lexicalScore: 0.5, score: 0.8, exactIdentity: false },
+    ] }), query);
+    expect(filtered.status).toBe('no_match');
+    expect(filtered.hits).toEqual([]);
+    expect(filtered.message).toMatch(/topical relevance and jurisdiction/i);
+  });
+
+  it('withholds an otherwise matching source that explicitly excludes the asked population', () => {
+    const guidance: EvidenceSource = {
+      ...source,
+      id: 'who-sweeteners',
+      title: 'Use of non-sugar sweeteners: WHO guideline',
+      jurisdiction: 'Global; prevention guidance excludes existing diabetes',
+      summary: 'Conditional recommendation against use for prevention; it excludes people with pre-existing diabetes.',
+    };
+
+    expect(isLocalEvidenceTopicallyRelevant(guidance, 'diabetes daily snack', true)).toBe(false);
+    expect(parseLocalEvidenceResponse(retrievalResponse({ results: [
+      { source: guidance, semanticScore: 0.9, lexicalScore: 0.8, score: 0.86, exactIdentity: true },
+    ] }), 'diabetes daily snack').hits).toEqual([]);
+  });
+
+  it('applies India-first guidance scope to local results while preserving an explicitly requested jurisdiction', () => {
+    const usGuidance: EvidenceSource = {
+      ...source,
+      id: 'niddk-diabetes-meals',
+      title: 'Diabetes meal planning',
+      publisher: 'US National Institute of Diabetes and Digestive and Kidney Diseases',
+      jurisdiction: 'United States',
+      summary: 'General meal planning for diabetes.',
+    };
+    const payload = retrievalResponse({ results: [
+      { source: usGuidance, semanticScore: 0.9, lexicalScore: 0.8, score: 0.86, exactIdentity: false },
+    ] });
+
+    expect(parseLocalEvidenceResponse(payload, 'diabetes meal planning').hits).toEqual([]);
+    expect(parseLocalEvidenceResponse(payload, 'diabetes meal planning', 'United States').hits.map(hit => hit.source.id)).toEqual(['niddk-diabetes-meals']);
   });
 
   it('keeps source candidates tentative in the reply and distinguishes no-match from missing evidence', () => {

@@ -7,7 +7,49 @@ import {
   type PackageData,
 } from './contracts';
 
-export type LocalEvidenceCandidate = { source: ConversationEvidenceSource; score: number };
+export type LocalEvidenceCandidate = { source: ConversationEvidenceSource; score: number; exactIdentity: boolean };
+
+const genericEvidenceTerms = new Set([
+  'a','about','according','after','and','any','are','as','at','be','because','before','between','can','could','describe','describes','does','effect','evidence','food','foods','for','from','good','guidance','health','healthy','how','in','information','into','is','it','label','labels','may','more','nutrition','nutritional','of','on','or','package','packages','product','products','research','should','some','study','studies','that','the','their','there','these','this','those','to','what','when','where','which','with','would'
+]);
+
+function evidenceTokens(value: string): string[] {
+  return (value.normalize('NFKC').toLocaleLowerCase('en-IN').match(/[\p{L}\p{N}]+/gu) ?? [])
+    .flatMap(token => {
+      const forms = [token];
+      if (token.endsWith('ies') && token.length > 4) forms.push(`${token.slice(0, -3)}y`);
+      else if (token.endsWith('ing') && token.length > 6) forms.push(token.slice(0, -3));
+      else if (token.endsWith('ic') && token.length > 5) forms.push(token.slice(0, -2));
+      else if (token.endsWith('s') && token.length > 4) forms.push(token.slice(0, -1));
+      if (token === 'diabetes' || token === 'diabetic') forms.push('diabet');
+      return forms;
+    });
+}
+
+/** Reject obvious semantic near-matches before local sources enter an answer. Exact entity matches remain eligible. */
+export function isLocalEvidenceTopicallyRelevant(
+  source: Pick<EvidenceSource, 'title' | 'publisher' | 'summary'>,
+  query: string,
+  exactIdentity = false,
+): boolean {
+  const queryTokens = [...new Set(evidenceTokens(query).filter(token => token.length >= 3 && token.length <= 48 && !genericEvidenceTerms.has(token)))];
+  const sourceTokenList = evidenceTokens(`${source.title} ${source.publisher} ${source.summary}`);
+  const exclusionMarkers = new Set(['exclude','excludes','excluding','excluded','except']);
+  for (let index = 0; index < sourceTokenList.length; index++) {
+    if (!queryTokens.includes(sourceTokenList[index])) continue;
+    const preceding = sourceTokenList.slice(Math.max(0, index - 6), index);
+    if (preceding.some(token => exclusionMarkers.has(token))) return false;
+  }
+  if (exactIdentity) return true;
+  if (!queryTokens.length) return false;
+
+  const sourceTokens = new Set(sourceTokenList);
+  const namedEntityTokens = queryTokens.filter(token => token.length >= 10);
+  // A specific substance, nutrient, or condition should be present in the source
+  // itself. A broad source about food or health cannot stand in for that evidence.
+  if (namedEntityTokens.length) return namedEntityTokens.some(token => sourceTokens.has(token));
+  return queryTokens.some(token => sourceTokens.has(token));
+}
 
 /** Only unsupported package-only answers use the curated local evidence index. */
 export function shouldSearchLocalEvidence(audit: Audit): boolean {
@@ -52,7 +94,7 @@ export function isGuidanceEvidenceInScope(
 }
 
 /** Validate the shared local retrieval response before it enters chat or saved state. */
-export function parseLocalEvidenceResponse(value: unknown): {
+export function parseLocalEvidenceResponse(value: unknown, query?: string, explicitlySharedCountry = ''): {
   status: 'ok' | 'no_match';
   hits: LocalEvidenceCandidate[];
   message?: string;
@@ -62,10 +104,16 @@ export function parseLocalEvidenceResponse(value: unknown): {
   const hits = parsed.results.flatMap((hit) => {
     const source = hit.source;
     if (!isSafeEvidenceUrl(source.url) || seen.has(source.id)) return [];
+    if (query && (!isLocalEvidenceTopicallyRelevant(source, query, hit.exactIdentity) || !isGuidanceEvidenceInScope(source, query, explicitlySharedCountry))) return [];
     seen.add(source.id);
-    return [{ source, score: hit.score }];
+    return [{ source, score: hit.score, exactIdentity: hit.exactIdentity }];
   }).slice(0, 3);
-  return { status: parsed.status, hits, ...(parsed.message ? { message: parsed.message } : {}) };
+  const filteredToNoMatch = !!query && parsed.results.length > 0 && hits.length === 0;
+  return {
+    status: hits.length ? parsed.status : filteredToNoMatch ? 'no_match' : parsed.status,
+    hits,
+    ...(filteredToNoMatch ? { message: 'No returned source passed the topical relevance and jurisdiction checks. This does not establish that relevant evidence does not exist.' } : parsed.message ? { message: parsed.message } : {}),
+  };
 }
 
 export function buildLocalEvidenceFollowUp(

@@ -389,7 +389,7 @@ export default function NutriScan(){
   const requestId=Symbol();pendingLocalEvidenceRequests.current.add(requestId);setLocalEvidenceBusy(true);
   void (async()=>{
    try{
-    const hits=await requestLocalEvidence(prompt);if(stamp!==epoch.current)return;const sources=hits.map(hit=>hit.source);
+    const hits=await requestLocalEvidence(prompt,profile.country);if(stamp!==epoch.current)return;const sources=hits.map(hit=>hit.source);
     setSemantic(hits.map(({source,score})=>({...source,score})));
     setMessages(previous=>previous.map(turn=>turn.at===at&&turn.answer===baseAnswer?{...turn,answer:buildLocalEvidenceFollowUp(baseAnswer,sources),...(sources.length?{evidence:sources}:{})}:turn));
    }catch{
@@ -532,7 +532,7 @@ export default function NutriScan(){
    }
    if(kind==='research')setResearch(data.items??[]);
    if(kind==='semantic'){
-    const parsed=parseLocalEvidenceResponse(data);
+    const parsed=parseLocalEvidenceResponse(data,text,profile.country);
     setSemantic(parsed.hits.map(({source,score})=>({...source,score})));
     setRemoteNotice(parsed.message??(parsed.hits.length?'Local source candidates retrieved. Review their scope before applying them.':'No local source candidate was returned.'));
    }else if(kind!=='products')setRemoteNotice(data.message??data.error??(response.ok?'Sources retrieved. Read their scope before applying them.':'This source could not be reached.'));
@@ -576,9 +576,10 @@ export default function NutriScan(){
    else {
     const visualImages=[];
     const retrievalQuestion=resolveLocalFollowUpQuestion(targetQuestion,targetMessages);
+    const sharedCountry=includeProfileWithGemini&&hasProfile(profile)?profile.country:'';
     // Run the local hybrid index for every Gemini turn. Retrieval must not
     // depend on the deterministic engine recognizing a condition keyword.
-    const localSearchPromise=requestLocalEvidence(retrievalQuestion).catch(()=>[]);
+    const localSearchPromise=requestLocalEvidence(retrievalQuestion,sharedCountry).catch(()=>[]);
     const preparedAssets:Array<{asset:ImageAsset}>=[];let visualImageBytes=0;
     const shouldAttachPackageImages=!targetPackage.reconstruction?.current||context?.includeImages===true;
     for(const asset of selectGeminiImageAssets(shouldAttachPackageImages?targetImages:[],targetPackage)){const rotation=(asset.rotation??0) as 0|90|180|270;const prepared=await prepareImage(asset,rotation,false,undefined,false);const compact=await compactGeminiImage(prepared);const base64=await imageBase64(compact);visualImages.push({imageId:asset.id,mimeType:'image/jpeg' as const,base64,side:asset.side,sourceImage:{width:asset.width,height:asset.height},preprocessing:{rotation,contrast:false,invert:false,crop:null},regionRole:'full-image' as const});visualImageBytes+=compact.size;preparedAssets.push({asset});}
@@ -605,7 +606,6 @@ export default function NutriScan(){
     }
     const questionText=targetQuestion.trim()||'Summarize this package from the supplied label and photo evidence. Identify the product only when supported, explain the ingredients and nutrition that matter, distinguish printed claims from established facts, and briefly identify any uncertainty that changes the conclusion.';
     const localSearch=await localSearchPromise;
-    const sharedCountry=includeProfileWithGemini&&hasProfile(profile)?profile.country:'';
     const inScope=(source:EvidenceSource)=>isGuidanceEvidenceInScope(source,targetQuestion,sharedCountry);
     const historyEvidence=safeConversationEvidence(usableHistory.flatMap(turn=>turn.evidence??[]).filter(inScope));
     const evidence=assistEvidenceContext({auditSources:(targetAudit?.sources??[]).filter(inScope),localSearch:localSearch.filter(hit=>inScope(hit.source)).map(({source,score})=>({...source,score})),research:[],...(conversationContext?{conversationEvidence:historyEvidence}:{})});

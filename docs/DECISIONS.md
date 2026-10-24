@@ -937,3 +937,11 @@ For a food-choice/frequency question, enrich the local guidance search with boun
 ## 24 October 2026 — cloud failure retains a clearly labeled package summary
 
 When a Gemini turn fails, use the existing saved reconstruction and deterministic audit to show only linked identity/serving/ingredient/claim details and evidence-backed calculations. Mark model-derived readings provisional, do not make a medical suitability judgment, and retain the ordinary Gemini retry action. When a recheck fails after a successful answer, restore that earlier answer and expose the failure separately. This recovery state must remain visibly distinct from Gemini success and must not rely on raw OCR snippets.
+
+## 24 October 2026 — normalize provider aliases without inventing evidence
+
+Treat semantically equivalent provider JSON dialects as an adapter concern. Map only recognized evidence IDs into typed references; never infer citations from package text or the model's answer. A valid package object should not trigger structure repair merely because it arrives under `package`. A zero-claim result is distinct from malformed provider output: if the model supplied no evidence references, allow one grounded synthesis; if a synthesis already passes and improves package coverage, retain it instead of spending on an answer-equivalent repair. Numeric, source-membership and applicability checks remain in force.
+
+## 24 October 2026 — filter local retrieval by topic and explicit applicability
+
+Preserve retrieval identity-match metadata through parsing and apply the same bounded topical test to the consumer evidence view and Gemini knowledge tool. Specific named substances require a source mention; exact-identity results remain eligible unless the source explicitly excludes the asked population. Keep India/global guidance by default and honor an explicitly configured/requested jurisdiction. An empty post-filter result is an honest coverage gap, not evidence that no source exists; the dedicated clinical-guidance path remains available.

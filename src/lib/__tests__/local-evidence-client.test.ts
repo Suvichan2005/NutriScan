@@ -24,7 +24,8 @@ describe('local evidence client', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => response() });
     vi.stubGlobal('fetch', fetchMock);
 
-    const hits = await requestLocalEvidence('  ' + 'q'.repeat(1300) + '  ');
+    const query = 'Indian sodium ' + 'q'.repeat(1300);
+    const hits = await requestLocalEvidence(query);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const payload = JSON.parse(String(init.body)) as Record<string, unknown>;
     const evidence = assistEvidenceContext({
@@ -34,8 +35,8 @@ describe('local evidence client', () => {
     expect(url).toBe('/api/evidence');
     expect(init.method).toBe('POST');
     expect(Object.keys(payload).sort()).toEqual(['limit', 'query']);
-    expect(payload).toEqual({ query: 'q'.repeat(1200), limit: 3 });
-    expect(hits[0]).toMatchObject({ source: { id: 'indian-guidance' }, score: 0.77 });
+    expect(payload).toEqual({ query: query.slice(0, 1200), limit: 3 });
+    expect(hits[0]).toMatchObject({ source: { id: 'indian-guidance' }, score: 0.77, exactIdentity: false });
     expect(evidence).toMatchObject([{ id: 'indian-guidance', publisher: 'ICMR-NIN', jurisdiction: 'India' }]);
   });
 
@@ -45,8 +46,8 @@ describe('local evidence client', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => response() });
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(requestLocalEvidence('sodium guidance')).rejects.toThrow('Local evidence unavailable');
-    await expect(requestLocalEvidence('sodium guidance')).resolves.toHaveLength(1);
+    await expect(requestLocalEvidence('Indian guidance')).rejects.toThrow('Local evidence unavailable');
+    await expect(requestLocalEvidence('Indian guidance')).resolves.toHaveLength(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
@@ -56,8 +57,8 @@ describe('local evidence client', () => {
     const fetchMock = vi.fn(() => pending);
     vi.stubGlobal('fetch', fetchMock);
 
-    const panelRequest = requestLocalEvidence('same question');
-    const assistRequest = requestLocalEvidence('same question');
+    const panelRequest = requestLocalEvidence('Indian guidance');
+    const assistRequest = requestLocalEvidence('Indian guidance');
     expect(fetchMock).toHaveBeenCalledTimes(1);
     resolveResponse!({ ok: true, json: async () => response() } as Response);
     const [panelHits, assistHits] = await Promise.all([panelRequest, assistRequest]);
