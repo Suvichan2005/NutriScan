@@ -101,7 +101,8 @@ export function ThreadGenerativeUI(props: Props) {
         <div className="thread-ui-portion"><label>Amount<input type="number" inputMode="decimal" min="1" max="2000" value={calculatorPortion} onChange={event => { const value = Number(event.target.value); if (Number.isFinite(value) && value > 0 && value <= 2000) { setCalculatorPortion(value); props.onPortionChange(value); } }}/></label><label>Unit<select value={calculatorUnit} onChange={event => { const value = event.target.value as 'g' | 'ml'; setCalculatorUnit(value); props.onPortionUnitChange(value); }}><option value="g">g</option><option value="ml">ml</option></select></label></div>
         <ul className="thread-ui-calculations">{rows.map(row => {
           const scaled = scaleCalculationToPortion(row, calculatorPortion, calculatorUnit);
-          const nutrient = nutrientLabels[row.nutrient];
+          const sourceRow=reconstructedRows.find(candidate=>row.interpretationIds?.includes(candidate.rowId));
+          const nutrient = sourceRow?readableReconstructedNutrient(sourceRow.printedLabel||sourceRow.nutrient):nutrientLabels[row.nutrient];
           return <li key={row.id}><span>{nutrient}<small>{scaled === null ? `Recorded for ${formatNumber(row.portion)} ${row.portionUnit}; mass and volume are not converted.` : `For ${formatNumber(calculatorPortion)} ${calculatorUnit}`}</small>{row.interpretationIds?.length ? <small>Based on an unverified interpretation</small> : null}</span><strong>{formatNumber(scaled ?? row.result)} {row.unit}</strong></li>;
         })}</ul>
         <p className="thread-ui-caveat">{rows.some(row => row.interpretationIds?.length) ? 'Some amounts use OCR-linked Gemini interpretations that remain unverified against the original pixels.' : 'Calculated from the recorded label reading and printed basis.'} This is not a portion recommendation.</p>

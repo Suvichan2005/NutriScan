@@ -9,9 +9,26 @@ import { productEvidenceSource } from '../product-evidence';
 import { ThreadGenerativeUI } from '../../components/thread-generative-ui';
 import { ThreadPublicProductRecord } from '../../components/thread-public-product-record';
 import { PackageReconstructionView } from '../../components/package-reconstruction';
+import { calculationsFromReconstruction } from '../portion';
 
 const imageId = 'package-photo-1';
 const runId = 'ocr-run-1';
+
+it('keeps total, soluble and insoluble fibre identities distinct in a portion calculator',()=>{
+  const base=parseLabel('Package label',{origin:'user'});
+  const evidence={observationIds:[base.observations[0].id],imageRegions:[]};
+  const pkg=packageSchema.parse({...base,reconstruction:{
+    identity:{brand:null,name:'Example oats',variant:null,status:'provisional',evidence},serving:null,
+    nutritionRows:[['Total Dietary Fibre',10.2],['Soluble Dietary Fibre',4.4],['Insoluble Dietary Fibre',5.8]].map(([name,value],index)=>({rowId:`fiber-${index}`,nutrient:index===0?'fiber':name,printedLabel:name,printedValue:`${value} g`,value,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence})),
+    ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Developer fixture.',revision:1,updatedAt:'2026-10-25T00:00:00Z',model:'fixture',current:true,
+  }});
+  const calculations=calculationsFromReconstruction(pkg,52.5,'g');
+  const markup=renderToStaticMarkup(<ThreadGenerativeUI question="Show the portion" components={[{type:'portion-calculator',observationIds:evidence.observationIds,sourceIds:[],calculationIds:calculations.map(item=>item.id)}]}
+    pkg={pkg} audit={{...buildAudit(pkg,52.5,'g',defaultProfile,''),calculations}} portion={52.5} portionUnit="g" onPortionChange={()=>{}} onPortionUnitChange={()=>{}} onSaveCorrection={()=>true}
+    canInspect={()=>false} isInspecting={()=>false} onInspect={()=>{}} candidates={[]} interpretedReadings={[]} sources={[]} selectedProduct={null}/>);
+  for(const label of ['Total Dietary Fibre','Soluble Dietary Fibre','Insoluble Dietary Fibre'])expect(markup).toContain(label);
+  for(const value of ['5.36 g','2.31 g','3.04 g'])expect(markup).toContain(value);
+});
 
 function makeObservation(id: string, text: string, tokens: string[], bounds: Array<[number, number]>, y: number): Observation {
   const ocrWords = tokens.map((word, wordIndex) => ({ wordIndex, text: word, confidence: 92, bbox: { x0: bounds[wordIndex][0], x1: bounds[wordIndex][1], y0: y, y1: y + 22 } }));
