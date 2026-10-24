@@ -933,3 +933,7 @@ Treat physiological food-effect statements as a separate evidence class from pri
 ## 24 October 2026 — contextual guidance retrieval uses declared profile and structured package terms
 
 For a food-choice/frequency question, enrich the local guidance search with bounded, explicitly provided profile fields and the current structured package reconstruction. Keep ordinary nutrient-fact questions out of the advice path. Exclude raw OCR, image bytes and unstructured conversation from this local query. If retrieved candidates fail topical or jurisdiction/applicability filtering, return an explicit empty result; do not leak irrelevant semantic candidates as successful evidence. This is local retrieval selection, not a diagnosis, personalized clinical target or proof that a retrieved source improves a live model answer.
+
+## 24 October 2026 — cloud failure retains a clearly labeled package summary
+
+When a Gemini turn fails, use the existing saved reconstruction and deterministic audit to show only linked identity/serving/ingredient/claim details and evidence-backed calculations. Mark model-derived readings provisional, do not make a medical suitability judgment, and retain the ordinary Gemini retry action. When a recheck fails after a successful answer, restore that earlier answer and expose the failure separately. This recovery state must remain visibly distinct from Gemini success and must not rely on raw OCR snippets.

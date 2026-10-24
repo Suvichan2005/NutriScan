@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { defaultProfile, savedConversationTurnSchema } from '../contracts';
+import { defaultProfile, packageSchema, savedConversationTurnSchema } from '../contracts';
 import { buildAudit } from '../engine';
 import { parseLabel } from '../parser';
 import {
   buildLocalEvidenceFollowUp,
   buildLocalEvidenceUnavailableFollowUp,
   buildLocalAuditConversationReply,
+  buildLocalPackageFallbackReply,
   isGuidanceEvidenceInScope,
   isSafeEvidenceUrl,
   parseLocalEvidenceResponse,
@@ -132,6 +133,37 @@ describe('local evidence follow-ups', () => {
 
     expect(reply.answer).not.toMatch(/NIDDK|United States|not everyone with diabetes/i);
     expect(reply.evidence?.some(item => item.jurisdiction.startsWith('United States'))).not.toBe(true);
+  });
+
+  it('summarizes only linked reconstructed package details and keeps provisional readings distinct on a cloud failure', () => {
+    const base = parseLabel('Example crackers\nNutrition information per 100 g\nCarbohydrates 69.29 g', { origin: 'user' });
+    const observationId = base.observations[0].id;
+    const linked = { observationIds: [observationId], imageRegions: [] };
+    const pkg = packageSchema.parse({
+      ...base,
+      reconstruction: {
+        revision: 1, updatedAt: '2026-10-24T00:00:00.000Z', model: 'test-model', current: true,
+        identity: { brand: 'Example', name: 'Crackers', variant: null, status: 'provisional', evidence: linked },
+        serving: { printedText: '2 crackers (about 13.4 g)', quantity: 13.4, unit: 'g', pieceCount: 2, pieceDescription: 'crackers', status: 'provisional', evidence: linked },
+        nutritionRows: [{ rowId: 'carbohydrate', nutrient: 'carbohydrate', printedLabel: 'Carbohydrates', printedValue: '69.29', value: 69.29, unit: 'g', columnLabel: 'per 100 g', basisText: 'per 100 g', basisAmount: 100, basisUnit: 'g', qualifier: null, status: 'provisional', evidence: linked }],
+        ingredients: [{ position: 0, name: 'Refined wheat flour (maida)', printedText: 'Refined wheat flour (maida) (89.98%)', printedPercentage: 89.98, normalizedName: 'refined wheat flour', status: 'provisional', evidence: linked }],
+        additives: [],
+        statements: [{ kind: 'claim', label: null, text: 'Sugar free', status: 'provisional', evidence: linked }],
+        regions: [], unresolved: [], interpretationNote: 'Provisional test interpretation.'
+      }
+    });
+    const question = 'Is this good to have daily for snacking?';
+    const audit = buildAudit(pkg, 13.4, 'g', defaultProfile, question);
+    const provisionalAudit = { ...audit, calculations: audit.calculations.map(calculation => ({ ...calculation, interpretationIds: ['candidate-carbohydrate'], imageIds: ['package-back'] })) };
+    const reply = buildLocalPackageFallbackReply(provisionalAudit, question, pkg);
+
+    expect(reply.answer).toContain('Refined wheat flour (maida) (printed 89.98%)');
+    expect(reply.answer).toContain('Sugar free');
+    expect(reply.answer).toContain('2 crackers (about 13.4 g)');
+    expect(reply.answer).toMatch(/9\.28 g carbohydrate.*provisional image reading/);
+    expect(reply.answer).toContain('does not determine individual suitability');
+    expect(reply.answer).not.toMatch(/causes? a glucose spike|medically safe|daily carbohydrate limit/i);
+    expect(reply.answer).not.toContain('Nutrition information per 100 g');
   });
 
   it('bounds restored conversation citations and removes unsafe links', () => {
