@@ -66,7 +66,7 @@ export const geminiToolDeclarations: FunctionDeclaration[] = [
   { name: 'search_knowledge', description: 'Search NutriScan’s local, attributed food and ingredient evidence index. This does not make a network request.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A focused food, nutrient, ingredient, or guidance query.' } }, required: ['query'] } },
   { name: 'get_nutrition_guidance', description: 'Retrieve a small local set of source-linked nutrition guidance for an explicitly relevant condition or goal. Uses only NutriScan-authored summaries of official sources and sends no query, profile, or image to an external service. Prefer the user’s stated jurisdiction when known. Keep population guidance separate from personal targets and package facts; do not infer diagnoses or prescribe a nutrient allowance.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'The nutrition question and relevant words from the user’s request.' }, condition: { type: Type.STRING, description: 'Only a condition explicitly stated by the user or included in authorized profile context.' }, goal: { type: Type.STRING, description: 'Only a nutrition goal stated by the user or included in authorized profile context.' }, jurisdiction: { type: Type.STRING, description: 'A jurisdiction stated by the user or available in authorized context, such as India.' }, maxResults: { type: Type.NUMBER, description: 'Optional result limit from 1 to 5.' } }, required: ['query'] } },
   { name: 'search_food_composition', description: 'Search local USDA FoodData Central Foundation Foods and FNDDS structured snapshots for generic food-composition reference values. FNDDS includes U.S. survey records for some Indian-style dishes, not authoritative Indian recipes. Use when the user asks how a basic food compares or requests composition context; request relevant nutrient families. Values are source-reported per 100 g edible portion, not facts about a branded Indian product, its package, portion or an individual. Survey portion examples are not package servings. Missing nutrient rows are unavailable, not zero. Includes release, source citation, license and limitations. No external query is sent.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific generic food name or phrase, such as dry chickpeas, idli, chapatti or roti.' }, nutrients: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Up to eight requested nutrient families, such as protein, carbohydrate, fiber, sodium, potassium, energy, or saturated fat. Omit to return common macronutrient and sodium fields.' } }, required: ['query'] } },
-  { name: 'resolve_ingredient', description: 'Resolve an observed additive locally, apply exact source-attributed Indian staple label aliases (including Atta/Maida/Suji/Rawa), then search NutriScan’s bundled FoodOn food ontology for ordinary food-ingredient identity candidates. This lookup is fully local and sends no query, profile or image to an external service. Identity matches are candidates only and do not establish package presence, nutrition, effects, allergen relationships, dose, authorization or safety.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A short observed ingredient phrase or additive identifier.' } }, required: ['query'] } },
+  { name: 'resolve_ingredient', description: 'Resolve an observed additive locally, apply exact source-attributed Indian staple label aliases (including Atta/Maida/Suji/Rawa), and search the bundled FoodOn ontology for ordinary ingredients. For an explicitly observed INS code not in the local registry, NutriScan sends only that code to the official Codex GSFA identity search and may link an exact EFSA substance record. No image, question, profile or conversation is sent to Codex. Identity matches are candidates only; Codex is international and does not establish Indian authorization, package presence, dose, effects, allergen relationships or personal safety.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A short observed ingredient phrase or additive identifier.' } }, required: ['query'] } },
   { name: 'lookup_chemical_identity', description: 'Read-only PubChem PUG REST lookup of a chemical name already present in the user question/package text or returned by exact local ingredient or assessment lookup. Returns registry identity candidates only, not food-use authorization, dose, hazard assessment or personal safety. Sends only the name; never photos or profile data.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific chemical name from the question, printed package text or an exact local identity result, not a numeric value or general food question.' } }, required: ['query'] } },
   { name: 'get_substance_assessments', description: 'Search the locally imported EFSA OpenFoodTox 3.0 assessment snapshot for a named substance or exact identifier. Returns attributed EFSA assessment records and toxicological reference values when available. The local snapshot may only link a scientific output without its conclusion; if the user asks what the linked assessment found, follow that title with search_research using the exact local identity returned. Use to distinguish hazard assessments from package exposure; this does not establish Indian authorization, package dose, product presence or personal safety. No network request is made.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A substance name, synonym, CAS number or PubChem CID from the question, package text or a locally resolved ingredient identity.' } }, required: ['query'] } },
   { name: 'calculate_nutrition', description: 'Calculate a portion from an unconflicted user-confirmed package nutrient, a currently attached evidence-linked interpretation, or an exact rowId from the saved package reconstruction. Interpretation-based arithmetic is explicitly provisional and never confirms or changes the package record. A matching known mass or volume basis and linked package observations are required.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Portion amount in grams or millilitres.' }, unit: { type: Type.STRING, enum: ['g', 'ml'] }, candidateId:{type:Type.STRING,description:'Optional exact candidateId from supplied interpretations or exact rowId from the saved package reconstruction.'} }, required: ['nutrient', 'amount', 'unit'] } },
@@ -208,6 +208,97 @@ function externalQueryIsSupported(query: string, context: GeminiToolContext) {
     ...context.searchTerms,
   ].join(' ')));
   return tokens(query).filter(token => token.length > 2).every(token => allowed.has(token));
+}
+
+const codexInsSearchUrl = 'https://codex.fao.org/codex-texts/codex-online-databases/gsfa/gsfa-database-search/SearchAdditivesByInsNumber/';
+const codexInsSearchPage = 'https://codex.fao.org/codex-texts/codex-online-databases/gsfa/gsfa-database-search';
+const codexInsResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.array(z.object({
+    Id: z.string().max(80), Label: z.string().trim().min(1).max(180), InsNumber: z.string().trim().min(2).max(24),
+    Language: z.string().max(12), MatchType: z.string().max(40), MatchedSynonym: z.string().max(180).nullable(),
+  }).passthrough()).max(40),
+  count: z.number().int().min(0).max(500),
+}).passthrough();
+
+function parseInsCode(value: string): { base: string; variant: string | null } | null {
+  const match = /^\s*(\d{2,4})(?:\s*\(([ivxlcdm]+)\))?\s*$/i.exec(value);
+  return match ? { base: match[1], variant: match[2]?.toLocaleLowerCase('en') ?? null } : null;
+}
+
+/** Only resolve a numeric code when the exact code is present in user/package evidence. */
+function observedCodexInsCode(query: string, context: GeminiToolContext): string | null {
+  const match = /^\s*(?:INS\s*)?(\d{2,4})(?:\s*\(([ivxlcdm]+)\))?\s*$/i.exec(query);
+  if (!match) return null;
+  const base = match[1];
+  const variant = match[2]?.toLocaleLowerCase('en') ?? null;
+  const contextText = [
+    context.question,
+    context.package.rawText,
+    ...context.package.observations.filter(item => item.origin === 'ocr').map(item => item.text),
+    ...context.searchTerms,
+  ].join('\n');
+  const exactBasePattern = new RegExp(`(?:\\bINS\\s*)?\\b${base}(?:\\s*\\([ivxlcdm]+\\))?(?=\\s*[\\])},;.:]|\\s|$)`, 'i');
+  if (!exactBasePattern.test(contextText)) return null;
+  if (variant && !new RegExp(`(?:\\bINS\\s*)?\\b${base}\\s*\\(${variant}\\)(?=\\s*[\\])},;.:]|\\s|$)`, 'i').test(contextText)) return null;
+  if (!/^\s*INS\s*/i.test(query) && !variant) {
+    const rolePattern = /\b(?:additives?|food\s+additive|ins|raising\s+agents?|acidity\s+regulators?|preservatives?|emulsifiers?|stabilizers?|thickeners?|anti[- ]caking\s+agents?)\b/i;
+    const codeInLabel = context.package.observations.some(item => item.origin === 'ocr'
+      && rolePattern.test(item.text)
+      && new RegExp(`\\[\\s*[^\\]]*\\b${base}(?:\\s*\\([ivxlcdm]+\\))?\\s*\\]`, 'i').test(item.text));
+    const explicitQuestion = /\bINS\b/i.test(context.question) && exactBasePattern.test(context.question);
+    if (!codeInLabel && !explicitQuestion) return null;
+  }
+  return `${base}${variant ? `(${variant})` : ''}`;
+}
+
+function codexInsMatches(requestedCode: string, returnedCode: string): boolean {
+  const requested = parseInsCode(requestedCode);
+  const returned = parseInsCode(returnedCode);
+  return Boolean(requested && returned && requested.base === returned.base
+    && (!requested.variant || requested.variant === returned.variant));
+}
+
+function codexInsEvidence(hit: z.infer<typeof codexInsResponseSchema>['data'][number]): EvidenceSource | null {
+  const retrievedAt = new Date().toISOString();
+  const normalizedCode = parseInsCode(hit.InsNumber);
+  const identity = `${hit.Label} (INS ${hit.InsNumber})`;
+  return asEvidenceSource({
+    id: `codex-gsfa-ins-${(normalizedCode ? `${normalizedCode.base}-${normalizedCode.variant ?? 'base'}` : hit.InsNumber).toLocaleLowerCase('en')}`,
+    title: `${identity} — Codex GSFA`,
+    publisher: 'Codex Alimentarius Commission (FAO/WHO)',
+    url: codexInsSearchPage,
+    category: 'registry',
+    jurisdiction: 'International Codex identity reference; not an Indian authorization or product-category ruling.',
+    publishedAt: null,
+    effectiveAt: null,
+    retrievedAt,
+    summary: `The Codex General Standard for Food Additives search returned ${identity} as an INS identity. Match type: ${hit.MatchType}.${hit.MatchedSynonym ? ` Matched synonym: ${hit.MatchedSynonym}.` : ''}`,
+    limitations: 'Identity lookup only. Codex provisions depend on food category, notes, conditions and version, and do not establish Indian authorization, product presence, amount, exposure, health effects or personal safety.',
+    license: 'FAO website Terms and Conditions: reuse of content for non-commercial products requires attribution; commercial reuse and redistribution require separate rights review. This is a live lookup and NutriScan does not retain the Codex response.',
+  });
+}
+
+async function searchCodexInsIdentity(code: string): Promise<{ status: 'ok'; hits: z.infer<typeof codexInsResponseSchema>['data']; source: EvidenceSource } | { status: 'empty' | 'unavailable'; hits: []; source?: EvidenceSource }> {
+  try {
+    const raw = await fixedFetch(new URL(codexInsSearchUrl), 'json', 24_000, { insNumber: code });
+    const parsed = codexInsResponseSchema.safeParse(raw);
+    if (!parsed.success || !parsed.data.success) return { status: 'unavailable', hits: [] };
+    const hits = parsed.data.data.filter(hit => hit.Language.toLocaleLowerCase('en') === 'en' && codexInsMatches(code, hit.InsNumber)).slice(0, 8);
+    const source = asEvidenceSource({
+      id: 'codex-gsfa-ins-search', title: 'General Standard for Food Additives (GSFA) — INS search',
+      publisher: 'Codex Alimentarius Commission (FAO/WHO)', url: codexInsSearchPage, category: 'registry',
+      jurisdiction: 'International Codex identity and provisions; not an Indian authorization.', publishedAt: null, effectiveAt: null,
+      retrievedAt: new Date().toISOString(),
+      summary: `Live Codex GSFA search for INS ${code} returned ${hits.length} exact-number identity candidate${hits.length === 1 ? '' : 's'}.`,
+      limitations: 'A search result establishes an identity candidate only. Codex provisions are food-category-specific and do not establish Indian authorization, package presence, amount, exposure or personal safety.',
+      license: 'FAO website Terms and Conditions: reuse of content for non-commercial products requires attribution; commercial reuse and redistribution require separate rights review. NutriScan does not retain the live response.',
+    });
+    if (!source) return { status: 'unavailable', hits: [] };
+    return hits.length ? { status: 'ok', hits, source } : { status: 'empty', hits: [], source };
+  } catch {
+    return { status: 'unavailable', hits: [] };
+  }
 }
 
 function asEvidenceSource(value: unknown): EvidenceSource | null {
@@ -356,6 +447,54 @@ async function resolveIngredient(args: z.infer<typeof toolArgs.resolve_ingredien
   if (exact) return { status: 'ok', resultCount: evidence.length, evidence, searchTerms: [exact.name, ...exact.aliases, exact.code, `INS ${exact.code}`], output: { status: 'identity_match', identity: exact, caveat: 'Identity and synonyms only. This does not establish package presence, dose, current national authorization or individual safety.' } };
   if (tentative) return { status: 'ok', resultCount: evidence.length, evidence, output: { status: 'tentative_identity_candidate', identity: tentative, caveat: 'Possible fuzzy identity only. It does not establish package presence or amount; compare the original observation.' } };
   if (!externalQueryIsSupported(args.query, context)) return { status: 'withheld', resultCount: 0, output: { status: 'query_not_in_evidence', message: 'FoodOn lookup was not run because the ingredient phrase was not present in the question or package observations.' } };
+  const codexCode = observedCodexInsCode(args.query, context);
+  if (codexCode) {
+    const codex = await searchCodexInsIdentity(codexCode);
+    if (codex.status === 'unavailable') return { status: 'unavailable', resultCount: 0, output: { status: 'codex_unavailable', message: 'The official Codex GSFA identity search is temporarily unavailable. No additive identity was inferred.' } };
+    if (codex.status === 'empty') return { status: 'empty', resultCount: 0, output: { status: 'no_codex_identity_match', query: codexCode, message: 'The official Codex GSFA search returned no exact INS identity for this code. No additive identity was inferred.' } };
+    const codexEvidence = codex.hits.map(codexInsEvidence).filter((item): item is EvidenceSource => Boolean(item));
+    const exactIdentity = codex.hits.length === 1
+      && parseInsCode(codex.hits[0].InsNumber)?.variant === parseInsCode(codexCode)?.variant
+      && codex.hits[0].MatchType.toLocaleLowerCase('en').includes('exact');
+    let assessmentHits: OpenFoodToxHit[] = [];
+    let assessmentSource: Extract<OpenFoodToxSearch, { status: 'ok' }>['source'] | undefined;
+    if (exactIdentity) {
+      const assessmentSearch = await searchOpenFoodTox(codex.hits[0].Label, 3);
+      if (assessmentSearch.status === 'ok') {
+        assessmentSource = assessmentSearch.source;
+        assessmentHits = assessmentSearch.results.filter(hit => hit.matchedBy === 'exact-name');
+      }
+    }
+    const assessmentEvidence = assessmentSource
+      ? assessmentHits.map(hit => openFoodToxEvidence(hit, assessmentSource!)).filter((item): item is EvidenceSource => Boolean(item))
+      : [];
+    const candidateSources = codexEvidence;
+    const linkedAssessments = assessmentHits.map(hit => ({
+      substanceId: hit.substance.substanceId,
+      name: hit.substance.name,
+      sourceId: `openfoodtox-v3-${hit.substance.substanceId}`,
+      match: 'exact source-record name',
+      assessmentCount: hit.substance.assessments.length,
+    }));
+    return {
+      status: candidateSources.length ? 'ok' : 'empty',
+      resultCount: candidateSources.length + assessmentEvidence.length,
+      evidence: [...candidateSources, ...assessmentEvidence],
+      searchTerms: [...new Set(codex.hits.flatMap(hit => [hit.Label, `INS ${hit.InsNumber}`]))],
+      output: {
+        status: exactIdentity ? 'codex_identity_match' : 'codex_identity_candidates',
+        requestedCode: codexCode,
+        candidates: codex.hits.map((hit, index) => ({
+          name: hit.Label,
+          insNumber: hit.InsNumber,
+          matchType: hit.MatchType,
+          sourceId: candidateSources[index]?.id ?? null,
+        })),
+        linkedExactEfsaRecords: linkedAssessments,
+        caveat: 'The code identifies a Codex additive name only. A base code with multiple subtypes remains ambiguous. Codex is international, not Indian authorization; package presence, amount, exposure, effects and individual safety require separate evidence.',
+      },
+    };
+  }
   const regionalIdentity = lookupIndianStapleIngredientIdentity(args.query);
   if (regionalIdentity) {
     const source = indianStapleIdentitySources.find(item => item.id === regionalIdentity.sourceId);

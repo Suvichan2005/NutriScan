@@ -502,6 +502,90 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it('resolves an observed INS base code through Codex and excludes numeric prefix collisions', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      success: true,
+      data: [
+        { Id: 'wrong-prefix', Label: 'Starch sodium octenyl succinate', InsNumber: '1450', Language: 'en', MatchType: 'INS Partial', MatchedSynonym: null },
+        { Id: 'subtype-i', Label: 'Ammonium carbonate', InsNumber: '503(i)', Language: 'en', MatchType: 'INS Partial', MatchedSynonym: null },
+        { Id: 'subtype-ii', Label: 'Ammonium hydrogen carbonate', InsNumber: '503(ii)', Language: 'en', MatchType: 'INS Partial', MatchedSynonym: null },
+      ],
+      count: 3,
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetcher);
+    const result = await executeGeminiTool('resolve_ingredient', { query: '503' }, context('What do the raising agents mean?', 'INGREDIENTS: RAISING AGENTS [500(i), 503(ii)]'));
+
+    expect(result.status).toBe('ok');
+    expect(result.output).toMatchObject({
+      status: 'codex_identity_candidates',
+      requestedCode: '503',
+      candidates: [
+        { name: 'Ammonium carbonate', insNumber: '503(i)' },
+        { name: 'Ammonium hydrogen carbonate', insNumber: '503(ii)' },
+      ],
+    });
+    expect(result.evidence?.map(source => source.title)).toEqual([
+      'Ammonium carbonate (INS 503(i)) — Codex GSFA',
+      'Ammonium hydrogen carbonate (INS 503(ii)) — Codex GSFA',
+    ]);
+    expect(result.evidence?.[0]).toMatchObject({
+      publisher: 'Codex Alimentarius Commission (FAO/WHO)',
+      category: 'registry',
+      jurisdiction: expect.stringContaining('not an Indian authorization'),
+      license: expect.stringContaining('non-commercial'),
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const [url, init] = fetcher.mock.calls[0] as [URL, RequestInit];
+    expect(String(url)).toBe('https://codex.fao.org/codex-texts/codex-online-databases/gsfa/gsfa-database-search/SearchAdditivesByInsNumber/');
+    expect(init.method).toBe('POST');
+    expect(init.body).toBe('insNumber=503');
+    expect(init.headers).toMatchObject({ 'Content-Type': 'application/x-www-form-urlencoded' });
+  });
+
+  it('links a subtype-specific Codex identity to only an exact-name EFSA record', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      success: true,
+      data: [{ Id: 'exact', Label: 'Disodium diphosphate', InsNumber: '450(i)', Language: 'en', MatchType: 'INS Exact', MatchedSynonym: null }],
+      count: 1,
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetcher);
+    mocks.searchOpenFoodTox.mockResolvedValue({
+      status: 'ok',
+      source: { version: '3.0', sourceSha256: 'a'.repeat(64), sourceUrl: 'https://doi.org/10.5281/zenodo.19388272', releaseDate: '2026-04-30', license: 'CC BY-ND 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-nd/4.0/', attribution: 'European Food Safety Authority (EFSA), OpenFoodTox 3.0.' },
+      statistics: { substances: 7880, assessmentRowsWithAdi: 1228 },
+      results: [{
+        score: 95, matchedBy: 'exact-name',
+        substance: { substanceId: 'sub-disodium-diphosphate', name: 'Disodium diphosphate', referenceSubstanceId: 'ref-disodium-diphosphate', aliases: [], identifiers: { casNumber: '7758-16-9' }, type: ['substance'], references: [{ dossierId: 'dossier-450', title: 'EFSA phosphate group assessment', date: '2024-01-01', persistentId: 'doi:10.2903/j.efsa.2024.1', foodDomain: 'food additives' }], assessments: [] },
+      }],
+    });
+    const result = await executeGeminiTool('resolve_ingredient', { query: 'INS 450(i)' }, context('What is INS 450(i)?', 'INGREDIENTS: RAISING AGENT (INS 450(i))'));
+
+    expect(result.status).toBe('ok');
+    expect(result.output).toMatchObject({ status: 'codex_identity_match', requestedCode: '450(i)', linkedExactEfsaRecords: [{ name: 'Disodium diphosphate', assessmentCount: 0 }] });
+    expect(result.evidence?.map(source => source.id)).toEqual(['codex-gsfa-ins-450-i', 'openfoodtox-v3-sub-disodium-diphosphate']);
+    expect(mocks.searchOpenFoodTox).toHaveBeenCalledWith('Disodium diphosphate', 3);
+  });
+
+  it('does not query Codex for an unobserved additive code or an ordinary number', async () => {
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    const missing = await executeGeminiTool('resolve_ingredient', { query: 'INS 503' }, context('What is in the product?', 'INGREDIENTS: wheat flour; salt'));
+    const ordinaryNumber = await executeGeminiTool('resolve_ingredient', { query: '500' }, context('What is the package amount?', 'PACKAGE SIZE 500 g'));
+
+    expect(missing.status).toBe('withheld');
+    expect(ordinaryNumber.status).toBe('empty');
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('does not resolve an unobserved INS subtype from a neighboring family code', async () => {
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    const result = await executeGeminiTool('resolve_ingredient', { query: 'INS 450(i)' }, context('What does the label\'s raising agent mean?', 'INGREDIENTS: RAISING AGENT (INS 450(ii))'));
+
+    expect(result.status).not.toBe('ok');
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it('offers exact EFSA assessment records to Gemini with source and exposure limits', async () => {
     const source = {
       version: '3.0' as const, sourceSha256: 'a'.repeat(64), sourceUrl: 'https://doi.org/10.5281/zenodo.19388272',

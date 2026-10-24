@@ -69,13 +69,24 @@ export async function input<T extends z.ZodType>(request: Request, schema: T, ma
 }
 
 export async function fixedFetch(url: URL, type: 'json' | 'html' | 'pdf' = 'json', max = 900_000, searchBody?: object) {
-  const allowed = ['world.openfoodfacts.org', 'search.openfoodfacts.org', 'www.ebi.ac.uk', 'www.who.int', 'pubchem.ncbi.nlm.nih.gov', 'fssai.gov.in', 'www.fssai.gov.in', 'delhihighcourt.nic.in', 'api.fda.gov'];
-  if (url.protocol !== 'https:' || !allowed.includes(url.hostname) || url.username || url.password || url.port) throw new ApiError(400, 'url_rejected', 'Remote destination is not allowed.');
+  const allowed = ['world.openfoodfacts.org', 'search.openfoodfacts.org', 'www.ebi.ac.uk', 'www.who.int', 'pubchem.ncbi.nlm.nih.gov', 'fssai.gov.in', 'www.fssai.gov.in', 'delhihighcourt.nic.in', 'api.fda.gov', 'codex.fao.org'];
+  const fixedCodexInsPath = '/codex-texts/codex-online-databases/gsfa/gsfa-database-search/SearchAdditivesByInsNumber/';
+  const codexDestinationAllowed = url.hostname !== 'codex.fao.org' || (url.pathname === fixedCodexInsPath && !url.search && Boolean(searchBody));
+  if (url.protocol !== 'https:' || !allowed.includes(url.hostname) || url.username || url.password || url.port || !codexDestinationAllowed) throw new ApiError(400, 'url_rejected', 'Remote destination is not allowed.');
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 12_000);
   try {
-    if (searchBody && (url.hostname !== 'search.openfoodfacts.org' || url.pathname !== '/search')) throw new ApiError(400, 'url_rejected', 'POST is limited to the fixed public search endpoint.');
+    const openFoodFactsSearch = url.hostname === 'search.openfoodfacts.org' && url.pathname === '/search';
+    const codexInsSearch = url.hostname === 'codex.fao.org' && url.pathname === fixedCodexInsPath;
+    if (searchBody && !openFoodFactsSearch && !codexInsSearch) throw new ApiError(400, 'url_rejected', 'POST is limited to fixed public search endpoints.');
+    if (codexInsSearch && searchBody) {
+      const fields = searchBody as Record<string, unknown>;
+      if (Object.keys(fields).length !== 1 || typeof fields.insNumber !== 'string' || !/^\d{2,4}(?:\([ivxlcdm]+\))?$/i.test(fields.insNumber)) {
+        throw new ApiError(400, 'invalid_search', 'Codex lookup accepts one explicit INS number only.');
+      }
+    }
     const accept = type === 'json' ? 'application/json' : type === 'pdf' ? 'application/pdf' : 'text/html';
-    const response = await fetch(url, { method: searchBody ? 'POST' : 'GET', ...(searchBody ? { body: JSON.stringify(searchBody) } : {}), redirect: 'error', signal: controller.signal, headers: { Accept: accept, ...(searchBody ? { 'Content-Type': 'application/json' } : {}), 'User-Agent': 'NutriScan-LocalResearch/0.1 (evidence-based food label research)' }, cache: 'no-store' });
+    const formBody = codexInsSearch && searchBody ? new URLSearchParams({ insNumber: (searchBody as { insNumber: string }).insNumber }).toString() : null;
+    const response = await fetch(url, { method: searchBody ? 'POST' : 'GET', ...(searchBody ? { body: formBody ?? JSON.stringify(searchBody) } : {}), redirect: 'error', signal: controller.signal, headers: { Accept: accept, ...(searchBody ? { 'Content-Type': formBody ? 'application/x-www-form-urlencoded' : 'application/json' } : {}), 'User-Agent': 'NutriScan-LocalResearch/0.1 (evidence-based food label research)' }, cache: 'no-store' });
     if (!response.ok) {
       // openFDA documents a NOT_FOUND 404 for a valid search with zero matches.
       // Accept only that exact bounded error shape from this fixed endpoint.
