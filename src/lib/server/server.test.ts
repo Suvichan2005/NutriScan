@@ -713,8 +713,9 @@ describe('provider validation, independent of provider invocation', () => {
     };
     const noAnswer={answer:'',claims:[],packageReconstruction:reconstruction,limitations:[],inspectImage:null};
     const ungroundedSynthesis={answer:'I could not establish enough evidence for this question.',claims:[],limitations:[],inspectImage:null};
-    const answer='The label appears to list refined wheat flour first. It defines two biscuits (about 13.4 g) as a serving, but the available reconstruction does not establish the carbohydrate amount, so I cannot make a confident daily-snacking judgment from this reading.';
+    const answer='There is not enough evidence to recommend this as a daily snack from the current label reading. The label appears to list refined wheat flour first and defines two biscuits (about 13.4 g) as a serving, but the reconstruction does not establish the carbohydrate amount.';
     const repaired={answer,claims:[
+      {mode:'synthesis',text:'There is not enough package evidence to recommend this as a daily snack.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0','package-fact:serving']},
       {mode:'synthesis',text:'The reconstructed ingredient list places refined wheat flour first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
       {mode:'synthesis',text:'The serving declaration appears to define two biscuits, approximately 13.4 g.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:serving']},
     ],limitations:[],inspectImage:null};
@@ -733,7 +734,7 @@ describe('provider validation, independent of provider invocation', () => {
     expect(repairPrompt.validationRepair.rejectionCategoriesByStage).toHaveProperty('natural-answer.no-validated-claims',1);
     expect(repairRequest.contents[0].parts.some((part:{inlineData?:unknown})=>part.inlineData)).toBe(false);
     expect(result.answer).toBe(answer);
-    expect(result.claims).toHaveLength(2);
+    expect(result.claims).toHaveLength(3);
     expect((result as unknown as {packageReconstruction?:unknown}).packageReconstruction).toMatchObject({identity:{brand:'Bisk Farm',name:'Cream Cracker'},serving:{quantity:13.4,unit:'g'}});
     const coverage=packageAnswerCoverage(data.question,reconstruction,result.claims,[],result.answer);
     expect(coverage.covered).toBe(2);
@@ -1038,6 +1039,20 @@ describe('provider validation, independent of provider invocation', () => {
     expect(accepted.claims[0]).toMatchObject({interpretationRowIds:['carbohydrates-per-serving'],calculationIds:['carbohydrate-serving'],packageFactIds:['package-fact:serving']});
     expect(accepted.answer).toContain('9.28 g');
 
+    // Gemini may satisfy the typed response shape with empty arrays and also
+    // include the compact evidenceIds representation. The adapter must merge
+    // both instead of allowing [] to erase the valid aliases.
+    const compactWithEmptyTypedArrays=parseAgentProviderOutput(JSON.stringify({
+      answer,
+      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[],calculationIds:[],interpretationRowIds:[],packageFactIds:[],profileFieldIds:[],evidenceIds}],
+      limitations:[],inspectImage:null,
+    })).output;
+    const mergedReferences=replaceReferenceIds(compactWithEmptyTypedArrays,aliases);
+    expect(mergedReferences.claims[0]).toMatchObject({
+      interpretationRowIds:['carbohydrates-per-serving'],calculationIds:['carbohydrate-serving'],packageFactIds:['package-fact:serving'],
+    });
+    expect(validateClaims(mergedReferences,data).answer).toContain('9.28 g');
+
     const wrongOutput=replaceReferenceIds(parse(answer.replace('9.28 g','19.28 g')),aliases);
     const decisions:Array<{stage:string;decision:string;reason?:string}>=[];
     const rejected=validateClaims(wrongOutput,data,event=>decisions.push(event));
@@ -1114,6 +1129,39 @@ describe('provider validation, independent of provider invocation', () => {
     const coverage=packageAnswerCoverage(data.question,reconstruction,result.claims,[],result.answer);
     expect(coverage.covered).toBe(4);
     expect(coverage.missing).toEqual([]);
+  });
+  it('keeps a valid synthesis when it improves the judgment but coverage is unchanged, without a repair generation',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const observations=[
+      {id:'serving-line',field:'label-note',text:'SERVING SIZE 2 biscuits approximately 13.4 g',side:'back' as const,confidence:80,origin:'ocr' as const},
+      {id:'carbs-line',field:'label-note',text:'CARBOHYDRATES 9.28 g per serving',side:'back' as const,confidence:82,origin:'ocr' as const},
+      {id:'ingredient-line',field:'label-note',text:'INGREDIENTS: REFINED WHEAT FLOUR (MAIDA)',side:'back' as const,confidence:84,origin:'ocr' as const},
+    ];
+    const reconstruction:PackageReconstructionContent={
+      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
+      serving:{printedText:'2 biscuits approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['serving-line'],imageRegions:[]}},
+      nutritionRows:[{rowId:'carbohydrates-per-serving',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g',columnLabel:'Per serving',basisText:'per serving (13.4 g)',basisAmount:13.4,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carbs-line'],imageRegions:[]}}],
+      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:null,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['ingredient-line'],imageRegions:[]}}],
+      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional package interpretation.',
+    };
+    const initialAnswer='The label lists 9.28 g of carbohydrates for one serving of two biscuits (about 13.4 g).';
+    const synthesisAnswer='This is not enough to call it a good daily snack from the package alone: the label lists 9.28 g of carbohydrates for the declared two-biscuit serving (about 13.4 g).';
+    const rowAndServingClaims=[
+      {mode:'synthesis' as const,text:'The label lists 9.28 g of carbohydrates for one serving of two biscuits (about 13.4 g).',observationIds:[],sourceIds:[],interpretationRowIds:['carbohydrates-per-serving'],packageFactIds:['package-fact:serving']},
+    ];
+    const initial={answer:initialAnswer,claims:rowAndServingClaims,limitations:[],inspectImage:null};
+    const synthesis={answer:synthesisAnswer,claims:rowAndServingClaims,limitations:[],inspectImage:null};
+    const payload=(value:unknown)=>JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(value)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.5-flash-lite-test',usageMetadata:{promptTokenCount:420,candidatesTokenCount:120,totalTokenCount:540}});
+    const fetcher=vi.fn()
+      .mockResolvedValueOnce(new Response(payload(initial),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(payload(synthesis),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question:'Is this a good daily snack?',package:{id:'valid-partial-synthesis',name:'Biscuits',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction:{...reconstruction,revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true},observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
+
+    const result=await assist(data);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result.answer).toBe(synthesisAnswer);
+    expect(result.agentTrace).toContainEqual(expect.objectContaining({name:'package_answer_synthesis',status:'ok'}));
   });
   it('recognizes a concise paraphrase of a linked package claim without requiring an OCR quotation',()=>{
     const reconstruction:PackageReconstructionContent={

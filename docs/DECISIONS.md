@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 24 October 2026 — do not spend another generation solely to improve coverage
+
+- Accept the first package-answer synthesis only when the provider response has a displayable natural answer, at least one validated evidence-linked claim, and does not drop a facet already covered by the prior answer. For food-choice questions, retain the existing requirement for a direct qualified judgment; a bare factual fragment still gets one bounded synthesis repair.
+- A remaining coverage gap is quality metadata, not by itself a reason to repeat a valid answer. Preserve the missing facets and uncertainty in the result. Do not relax numeric, basis, source, jurisdiction or safety validation.
+- Union compact evidence references with typed arrays during provider adaptation. Empty schema defaults must not erase valid recognized aliases, and the ordinary validator remains responsible for rejecting unknown IDs.
+- Evidence: one saved free-tier task spent 3,364 tokens on an answer-equivalent repair after a valid synthesis; a mocked regression now uses two rather than three calls for that branch. No post-change live provider comparison was made.
+
 ## 24 October 2026 — make profile/label vocabulary links source-backed and non-diagnostic
 
 - Extend literal-only dietary-restriction matching with a small, explicit crosswalk for common Indian packaged-food terms. Return the matched label phrase, source-backed-alias status and source IDs alongside the exact OCR observation; show the result as a possible relation and keep it uncertain.

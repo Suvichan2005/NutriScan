@@ -1,5 +1,13 @@
 # Sanitized engineering journal
 
+## 2026-10-24 — keep validated synthesis and evidence aliases
+
+- Reviewed local provider receipts through raw JSON, adapter normalization, claim validation, answer selection and call usage. One response parsed as valid JSON but omitted claims; a compound numeric sentence was appropriately withheld when one number did not match the reconstructed package. This is different from a provider/schema parse failure.
+- Fixed provider-reference normalization so empty typed arrays no longer overwrite recognized compact `evidenceIds`. Preserved independent evidence and numeric checks.
+- Removed the second synthesis trigger based only on unchanged coverage. A direct, displayable, evidence-linked food-choice answer is kept even when some package facets remain missing; a factual fragment without a direct judgment still receives one bounded repair.
+- Historical run `a222683e-9a21-401f-9b4a-af91422c3fbc` used 3 free Flash-Lite calls and 11,974 provider-reported tokens, including a 3,364-token answer-equivalent repair. The new route regression executes the equivalent accepted-answer branch with 2 mocked calls. Estimated avoided tokens/call are a replay comparison, not a live post-change saving.
+- Verification: 139 focused server/inference tests passed; full suite 661 passed and 1 skipped; TypeScript and whitespace checks passed. No live model request, browser acceptance, billing read or OCR-accuracy result in this checkpoint.
+
 ## 2026-10-24 — retain supported row claims when a provider bundles an unsupported value
 
 - Inspected a readable saved Gemini transcript. The provider response was valid JSON; one compound claim included supported reconstructed rows and an unsupported number, so numeric validation rejected that whole claim. After image-region recovery, the accepted row summary was not treated as a conversational answer by the wrapper, which triggered an avoidable generation.

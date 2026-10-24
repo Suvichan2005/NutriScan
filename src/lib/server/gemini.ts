@@ -497,6 +497,10 @@ function normalizeProviderAnswerShape(value:unknown,allowUnlinkedAnswerCandidate
     }
     return refs;
   };
+  const mergeReferenceLists=(...values:unknown[]):string[]=>[...new Set(values.flatMap(value=>
+    Array.isArray(value)?value.filter((item):item is string=>typeof item==='string')
+      :typeof value==='string'?[value]:[],
+  ))];
   const splitAnswerSentences=(answer:string)=>{
     const protectedText=answer.replace(/\b(approx|e\.g|i\.e|vs)\.(?=\s+[\p{L}\p{N}])/giu,'$1\uE000');
     return protectedText.split(/(?<=[.!?])\s+(?=[\p{L}\p{N}])/u).map(part=>part.replace(/\uE000/g,'.').trim()).filter(Boolean);
@@ -551,12 +555,16 @@ function normalizeProviderAnswerShape(value:unknown,allowUnlinkedAnswerCandidate
     return {
       mode:claim.mode==='direct-quote'?'direct-quote':'synthesis',
       text:typeof claim.text==='string'?claim.text:typeof claim.statement==='string'?claim.statement:typeof claim.claim==='string'?claim.claim:claim.fact,
-      observationIds:claim.observationIds??claim.observation_ids??fallbackRefs.observationIds,
-      sourceIds:claim.sourceIds??claim.source_ids??fallbackRefs.sourceIds,
-      calculationIds:claim.calculationIds??claim.calculation_ids??fallbackRefs.calculationIds,
-      interpretationRowIds:claim.interpretationRowIds??claim.interpretation_row_ids??fallbackRefs.interpretationRowIds,
-      packageFactIds:claim.packageFactIds??claim.package_fact_ids??fallbackRefs.packageFactIds,
-      profileFieldIds:claim.profileFieldIds??claim.profile_field_ids??fallbackRefs.profileFieldIds,
+      // The provider schema may require typed arrays and emit them as [] while
+      // also returning compact evidenceIds. Empty defaults must not erase the
+      // compact references; preserve both forms and let the evidence boundary
+      // reject unknown identifiers after aliases are resolved.
+      observationIds:mergeReferenceLists(claim.observationIds,claim.observation_ids,fallbackRefs.observationIds),
+      sourceIds:mergeReferenceLists(claim.sourceIds,claim.source_ids,fallbackRefs.sourceIds),
+      calculationIds:mergeReferenceLists(claim.calculationIds,claim.calculation_ids,fallbackRefs.calculationIds),
+      interpretationRowIds:mergeReferenceLists(claim.interpretationRowIds,claim.interpretation_row_ids,fallbackRefs.interpretationRowIds),
+      packageFactIds:mergeReferenceLists(claim.packageFactIds,claim.package_fact_ids,fallbackRefs.packageFactIds),
+      profileFieldIds:mergeReferenceLists(claim.profileFieldIds,claim.profile_field_ids,fallbackRefs.profileFieldIds),
       supportingSpans:claim.supportingSpans??claim.supporting_spans,
       visualEvidence:claim.visualEvidence??claim.visual_evidence,
     };
@@ -609,12 +617,12 @@ function normalizeProviderAnswerShape(value:unknown,allowUnlinkedAnswerCandidate
       if(exactClaimMatches.length===1)indexes=exactClaimMatches;
     }
     const refs={
-      observationIds:part.observationIds??part.observation_ids??providerRefs(part).observationIds,
-      sourceIds:part.sourceIds??part.source_ids??providerRefs(part).sourceIds,
-      calculationIds:part.calculationIds??part.calculation_ids??providerRefs(part).calculationIds,
-      interpretationRowIds:part.interpretationRowIds??part.interpretation_row_ids??providerRefs(part).interpretationRowIds,
-      packageFactIds:part.packageFactIds??part.package_fact_ids??providerRefs(part).packageFactIds,
-      profileFieldIds:part.profileFieldIds??part.profile_field_ids??providerRefs(part).profileFieldIds,
+      observationIds:mergeReferenceLists(part.observationIds,part.observation_ids,providerRefs(part).observationIds),
+      sourceIds:mergeReferenceLists(part.sourceIds,part.source_ids,providerRefs(part).sourceIds),
+      calculationIds:mergeReferenceLists(part.calculationIds,part.calculation_ids,providerRefs(part).calculationIds),
+      interpretationRowIds:mergeReferenceLists(part.interpretationRowIds,part.interpretation_row_ids,providerRefs(part).interpretationRowIds),
+      packageFactIds:mergeReferenceLists(part.packageFactIds,part.package_fact_ids,providerRefs(part).packageFactIds),
+      profileFieldIds:mergeReferenceLists(part.profileFieldIds,part.profile_field_ids,providerRefs(part).profileFieldIds),
     };
     const hasExplicitRefs=Object.values(refs).some(items=>Array.isArray(items)&&items.length>0);
     if(!indexes&&text&&(hasExplicitRefs||(allowUnlinkedAnswerCandidates&&(claims.length===0||part._unlinkedAnswerCandidate===true)))){
@@ -1728,14 +1736,27 @@ export function packageAnswerSynthesisImprovesCoverage(before:ReturnType<typeof 
   return before.available===after.available&&(before.missing.length===0||after.covered>before.covered);
 }
 
+function hasDirectFoodChoiceJudgment(question:string,answer:string){
+  if(!isFoodChoiceQuestion(question))return true;
+  const firstSentence=answer.trim().split(/(?<=[.!?])\s+/u,1)[0]??'';
+  return /\b(?:good|bad|healthy|unhealthy|suitable|unsuitable|appropriate|reasonable|recommend|choice|option|default|occasional|portion-aware|fit|prefer|better|worse|unclear|cannot\s+(?:judge|recommend)|can't\s+(?:judge|recommend)|not\s+enough\s+(?:evidence|information)|not\s+(?:a\s+)?(?:strong|ideal|good|great|suitable|everyday))\b/i.test(firstSentence);
+}
+
 /** Keep a validated, package-linked answer when it preserves covered facets, even if some details remain unresolved. */
 export function canAcceptPackageAnswerSynthesis(
   before:ReturnType<typeof packageAnswerCoverage>,
   after:ReturnType<typeof packageAnswerCoverage>,
   hasConversationalAnswer:boolean,
   claims:z.infer<typeof assistOutput>['claims'],
+  question='',
+  answer='',
 ) {
   if(!hasConversationalAnswer||!claims.length||before.available!==after.available)return false;
+  // A factual fragment can be grounded and readable without answering the
+  // user's actual suitability question. Preserve one bounded repair for that
+  // intent failure; don't repair a direct answer only because optional facets
+  // remain uncovered.
+  if(question&&answer&&!hasDirectFoodChoiceJudgment(question,answer))return false;
   const previouslyCovered=before.availableFacets.filter(facet=>!before.missing.includes(facet));
   if(previouslyCovered.some(facet=>after.missing.includes(facet)))return false;
   if(before.available>0&&!claims.some(claim=>claim.observationIds.length>0||(claim.calculationIds?.length??0)>0||(claim.interpretationRowIds?.length??0)>0||(claim.packageFactIds?.length??0)>0))return false;
@@ -1756,7 +1777,7 @@ export function needsPackageAnswerSynthesis(question:string,reconstruction:Packa
   const coverage=packageAnswerCoverage(question,reconstruction,claims,evidence,answer);
   const asksForFoodJudgment=isFoodChoiceQuestion(question);
   const firstSentence=(answer??'').trim().split(/(?<=[.!?])\s+/u,1)[0]??'';
-  const hasDirectJudgment=asksForFoodJudgment&&/\b(?:good|bad|healthy|unhealthy|suitable|unsuitable|appropriate|reasonable|recommend|choice|option|default|occasional|portion-aware|fit|prefer|better|worse|unclear|cannot\s+(?:judge|recommend)|can't\s+(?:judge|recommend)|not\s+enough\s+(?:evidence|information)|not\s+(?:a\s+)?(?:strong|ideal|good|great|suitable|everyday))\b/i.test(firstSentence);
+  const hasDirectJudgment=asksForFoodJudgment&&hasDirectFoodChoiceJudgment(question,firstSentence);
   // A complete list of facts is not itself an answer to a suitability or
   // frequency question. Give the saved, photo-free synthesis one chance to
   // state a qualified practical position from those facts.
@@ -3006,11 +3027,15 @@ export async function assist(data: z.infer<typeof assistInput>) {
       afterSynthesisCoverage=packageAnswerCoverage(data.question,reusableReconstruction,validated.claims,extendedData.evidence??[],validated.answer,data.profile?.country.trim()||'India');
       let hasConversationalAnswer=(validationSummary?.acceptedNaturalAnswer===true||validationSummary?.structuredPackageSummaryAccepted===true||Number(validationSummary?.acceptedAnswerParts??0)>0)&&validated.answer.trim().length>0;
       const firstSynthesisSummary=validationSummary;
-      const firstSynthesisCanBeShown=canAcceptPackageAnswerSynthesis(preSynthesisCoverage,afterSynthesisCoverage,hasConversationalAnswer,validated.claims);
+      const firstSynthesisCanBeShown=canAcceptPackageAnswerSynthesis(preSynthesisCoverage,afterSynthesisCoverage,hasConversationalAnswer,validated.claims,data.question,validated.answer);
       if(firstSynthesisCanBeShown){
         acceptedSynthesis={result:validated,output:combinedOutput,claims:validated.claims,summary:firstSynthesisSummary,coverage:afterSynthesisCoverage,schemaMode:generated.schemaMode,modelOutputStatus:generated.modelOutputStatus};
       }
-      if(!firstSynthesisCanBeShown||!packageAnswerSynthesisImprovesCoverage(preSynthesisCoverage,afterSynthesisCoverage)){
+      const firstSynthesisImprovedCoverage=packageAnswerSynthesisImprovesCoverage(preSynthesisCoverage,afterSynthesisCoverage);
+      // Coverage is a quality signal, not a reason to repeat an otherwise
+      // valid answer. A second bounded generation is reserved for a synthesis
+      // that failed claim/evidence validation or could not answer at all.
+      if(!firstSynthesisCanBeShown){
         const candidateClaims=synthesized.claims.slice(0,8).map(claim=>({
           text:claim.text.slice(0,900),observationIds:claim.observationIds,sourceIds:claim.sourceIds,
           calculationIds:claim.calculationIds??[],interpretationRowIds:claim.interpretationRowIds??[],packageFactIds:claim.packageFactIds??[],
@@ -3026,7 +3051,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
         validated=await validateWithDiagnostics(repairedOutput);
         afterSynthesisCoverage=packageAnswerCoverage(data.question,reusableReconstruction,validated.claims,extendedData.evidence??[],validated.answer,data.profile?.country.trim()||'India');
         hasConversationalAnswer=(validationSummary?.acceptedNaturalAnswer===true||validationSummary?.structuredPackageSummaryAccepted===true||Number(validationSummary?.acceptedAnswerParts??0)>0)&&validated.answer.trim().length>0;
-        const repairedCanBeShown=canAcceptPackageAnswerSynthesis(preSynthesisCoverage,afterSynthesisCoverage,hasConversationalAnswer,validated.claims);
+        const repairedCanBeShown=canAcceptPackageAnswerSynthesis(preSynthesisCoverage,afterSynthesisCoverage,hasConversationalAnswer,validated.claims,data.question,validated.answer);
         if(repairedCanBeShown&&(!acceptedSynthesis||afterSynthesisCoverage.missing.length<acceptedSynthesis.coverage.missing.length)){
           result={...validated,...(packageReconstruction?{packageReconstruction}:{})};
           output=repairedOutput;
@@ -3062,6 +3087,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
         availableFacets:preSynthesisCoverage.available,missingFacets:preSynthesisCoverage.missing,
         afterMissingFacets:afterSynthesisCoverage.missing,
         repairUsed,coverageComplete:afterSynthesisCoverage.missing.length===0,
+        firstSynthesisImprovedCoverage,
         acceptedClaimCount:conversationalAnswerClaims.length,validatedClaimCount:validated.claims.length,acceptedAnswerPartCount:Number(validationSummary?.acceptedAnswerParts??0),
         acceptedNaturalAnswer:validationSummary?.acceptedNaturalAnswer===true,
         elapsedMs:Date.now()-synthesisStarted,
