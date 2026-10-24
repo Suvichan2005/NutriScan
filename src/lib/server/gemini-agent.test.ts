@@ -497,6 +497,33 @@ describe('provider package-reconstruction normalization',()=>{
     expect(JSON.stringify(output)).not.toContain('ignored structural metadata');
   });
 
+  it('normalizes the model package dialect without fabricating answer claims or requiring a structure-repair call',()=>{
+    const parsed=parseAgentProviderOutput(JSON.stringify({
+      answer:'The package reading is provisional.',
+      answerParts:[],
+      uiComponents:[],
+      package:{
+        current:true,
+        identity:{brand:'Bisk Farm',productName:'Cream Cracker Sugar Free',variant:'Sugar Free'},
+        serving:{statement:'2 biscuits (approx. 13.4 g)',size:'13.4',unit:'g',observationIds:['OBS_SERVING']},
+        nutritionRows:[{rowId:'row_carbs_serving',nutrient:'carbohydrate',printedValue:'9.28',value:9.28,unit:'g',columnLabel:'Per serving',basisText:'Per serving',basisAmount:13.4,basisUnit:'g',status:'provisional',observationIds:['OBS_CARBS']}],
+        ingredients:[{ingredientId:'ingredient-1',printedLabel:'Refined wheat flour (maida) (89.98%)',normalizedName:'refined wheat flour',percentage:89.98,observationIds:['OBS_INGREDIENT']}],
+        claims:[{claimId:'claim-1',type:'claim',printedText:'No added sugars',observationIds:['OBS_CLAIM']}],
+        warnings:[],certifications:[],packageFacts:[],
+      },
+    }),true);
+
+    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
+    expect(parsed.output.claims).toEqual([]);
+    expect(parsed.output.packageReconstruction).toMatchObject({
+      identity:{brand:'Bisk Farm',name:'Cream Cracker Sugar Free'},
+      serving:{printedText:'2 biscuits (approx. 13.4 g)',quantity:13.4,unit:'g'},
+      nutritionRows:[{rowId:'row_carbs_serving',value:9.28,unit:'g',basisAmount:13.4,basisUnit:'g',evidence:{observationIds:['OBS_CARBS']}}],
+      ingredients:[{name:'refined wheat flour',printedPercentage:89.98,evidence:{observationIds:['OBS_INGREDIENT']}}],
+      statements:[{kind:'claim',text:'No added sugars',evidence:{observationIds:['OBS_CLAIM']}}],
+    });
+  });
+
   it('does not manufacture evidence links or confidence for a numeric row with no provenance',()=>{
     const output=normalizeProviderAssistOutput({
       answer:'The nutrition amount is unresolved.',answerParts:[{text:'The nutrition amount is unresolved.',claimIndexes:[0]}],
