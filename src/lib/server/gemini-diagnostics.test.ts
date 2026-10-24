@@ -32,6 +32,42 @@ describe('Gemini local diagnostic redaction', () => {
     expect(serialized).not.toContain(imageBytes);
   });
 
+  it('retains safe call timestamps and structural output metrics without retaining model text', () => {
+    const value = sanitizeGeminiDiagnosticValue({
+      recordedAt: '2026-10-23T11:31:13.978Z',
+      event: 'structured_output_parse',
+      outputShape: { claimCount: 5, answerPartCount: 2, uiComponentTypes: ['ingredient-explorer'] },
+      answer: 'Private model response containing package and health details.',
+    });
+    expect(value).toMatchObject({
+      recordedAt: '2026-10-23T11:31:13.978Z',
+      event: 'structured_output_parse',
+      outputShape: { claimCount: 5, answerPartCount: 2, uiComponentTypes: ['ingredient-explorer'] },
+      answer: '[omitted content]',
+    });
+    expect(JSON.stringify(value)).not.toContain('Private model response');
+  });
+
+  it('retains only known package coverage facet names in synthesis diagnostics',()=>{
+    const value=sanitizeGeminiDiagnosticValue({
+      event:'package_answer_synthesis',
+      missingFacets:['nutrition','serving','local-guidance','private question text'],
+      afterMissingFacets:['ingredients'],
+    });
+    expect(value).toMatchObject({missingFacets:['nutrition','serving','local-guidance','[omitted content]'],afterMissingFacets:['ingredients']});
+    expect(JSON.stringify(value)).not.toContain('private question text');
+  });
+
+  it('keeps only the bounded recovery-region selector as operational metadata',()=>{
+    const value=sanitizeGeminiDiagnosticValue({
+      event:'nutrition_region_recovery',
+      regionSelection:'attached-ocr-crop',
+      prompt:'private label text must be omitted',
+    });
+    expect(value).toMatchObject({event:'nutrition_region_recovery',regionSelection:'attached-ocr-crop',prompt:'[omitted content]'});
+    expect(JSON.stringify(value)).not.toContain('private label text');
+  });
+
   it('requires both local-only and trace opt-ins and never enables tracing in tests or hosted builds', () => {
     vi.stubEnv('NUTRISCAN_GEMINI_TRACE', '1');
     vi.stubEnv('NUTRISCAN_LOCAL_DEV_ONLY', '0');

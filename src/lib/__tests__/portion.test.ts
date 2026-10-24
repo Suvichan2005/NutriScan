@@ -1,9 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { defaultPortion, resolveQuestionPortion } from '../portion';
+import { packageSchema } from '../contracts';
+import { parseLabel } from '../parser';
+import { calculationsFromReconstruction, defaultPortion, normalizeReconstructedServing, resolveQuestionPortion } from '../portion';
+
+function reconstructedPackage(rows: Array<{
+  rowId: string; nutrient: string; value: number | null; unit: string | null; basisAmount: number | null; basisUnit: 'g' | 'ml' | null; qualifier?: string | null;
+}>) {
+  const imageEvidence = { observationIds: [], imageRegions: [{ imageId: 'package-back', region: null }] };
+  const base = parseLabel('Package label', { origin: 'user' });
+  return packageSchema.parse({
+    ...base,
+    observations: [],
+    visionCaptures: [{ runId: 'vision-1', imageId: 'package-back', side: 'back', sourceImage: { width: 900, height: 363 }, processing: { rotation: 0, contrast: false, invert: false, crop: null }, model: 'fixture' }],
+    reconstruction: {
+      identity: { brand: null, name: null, variant: null, status: 'provisional', evidence: imageEvidence },
+      serving: { printedText: '2 biscuits, approximately 13.4 g', quantity: 13.4, unit: 'g', pieceCount: 2, pieceDescription: 'biscuits', status: 'provisional', evidence: imageEvidence },
+      nutritionRows: rows.map(row => ({ ...row, printedLabel: row.nutrient, printedValue: row.value === null ? null : `${row.value} ${row.unit ?? ''}`.trim(), columnLabel: row.basisAmount ? `per ${row.basisAmount} ${row.basisUnit}` : null, basisText: row.basisAmount ? `per ${row.basisAmount} ${row.basisUnit}` : null, qualifier: row.qualifier ?? null, status: 'provisional', evidence: imageEvidence })),
+      ingredients: [], additives: [], statements: [], regions: [], unresolved: [], interpretationNote: 'Image-linked fixture reading.',
+      revision: 1, updatedAt: '2026-10-24T00:00:00.000Z', model: 'fixture-model', current: true,
+    },
+  });
+}
 
 describe('neutral reference amount',()=>{
   it('uses an explicitly declared package serving first',()=>{
     expect(defaultPortion({serving:{value:45,unit:'g'},nutrients:[{status:'observed',basis:{amount:100,unit:'g'}}]})).toEqual({value:45,unit:'g'});
+  });
+  it('uses a current provisional Gemini serving when no OCR-derived serving exists',()=>{
+    expect(defaultPortion({reconstruction:{current:true,serving:{quantity:13.4,unit:'g',status:'provisional'}},nutrients:[{status:'observed',basis:{amount:100,unit:'g'}}]})).toEqual({value:13.4,unit:'g'});
+    expect(defaultPortion({reconstruction:{current:false,serving:{quantity:13.4,unit:'g',status:'provisional'}},nutrients:[]})).toEqual({value:100,unit:'g'});
+    expect(defaultPortion({serving:{value:45,unit:'g'},reconstruction:{current:true,serving:{quantity:13.4,unit:'g',status:'provisional'}},nutrients:[]})).toEqual({value:45,unit:'g'});
   });
   it('uses a clear label basis when the package gives no serving',()=>{
     expect(defaultPortion({nutrients:[{status:'observed',basis:{amount:100,unit:'ml'}}]})).toEqual({value:100,unit:'ml'});
@@ -29,8 +55,52 @@ describe('question-directed portions',()=>{
   it('uses half the declared pack when requested',()=>{
     expect(resolveQuestionPortion('How about half a pack?',{value:30,unit:'g'},{value:200,unit:'g'})).toEqual({value:100,unit:'g'});
   });
+  it('maps an exact named piece count to the printed serving without estimating other counts',()=>{
+    const serving={quantity:13.4,unit:'g' as const,status:'provisional',pieceCount:2,pieceDescription:'biscuits'};
+    expect(resolveQuestionPortion('What about just two biscuits?',{value:100,unit:'g'},undefined,serving)).toEqual({value:13.4,unit:'g'});
+    expect(resolveQuestionPortion('What about 2 BISCUITS?',{value:100,unit:'g'},undefined,serving)).toEqual({value:13.4,unit:'g'});
+    expect(resolveQuestionPortion('What about one biscuit?',{value:100,unit:'g'},undefined,serving)).toEqual({value:100,unit:'g'});
+    expect(resolveQuestionPortion('What about two biscuits?',{value:100,unit:'g'},undefined,{...serving,status:'conflict'})).toEqual({value:100,unit:'g'});
+  });
+  it('normalizes only explicit mass, unit, and piece details from the saved printed serving text',()=>{
+    const raw={printedText:'SERVING SIZE: 2 biscuits (approx. 13.4 g)',quantity:null,unit:null,pieceCount:null,pieceDescription:null,status:'provisional'};
+    const normalized=normalizeReconstructedServing(raw);
+    expect(normalized).toMatchObject({quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',printedText:raw.printedText});
+    expect(resolveQuestionPortion('What about just two biscuits?',{value:100,unit:'g'},undefined,raw)).toEqual({value:13.4,unit:'g'});
+    expect(defaultPortion({reconstruction:{current:true,serving:raw},nutrients:[{status:'observed',basis:{amount:100,unit:'g'}}]})).toEqual({value:13.4,unit:'g'});
+  });
+  it('retains the piece count but withholds serving mass when the printed unit is absent',()=>{
+    const raw={printedText:'Serving size: 2 biscuits (approx. 13.4)',quantity:null,unit:null,pieceCount:null,pieceDescription:null,status:'provisional'};
+    expect(normalizeReconstructedServing(raw)).toMatchObject({quantity:null,unit:null,pieceCount:2,pieceDescription:'biscuits'});
+    expect(resolveQuestionPortion('What about two biscuits?',{value:100,unit:'g'},undefined,raw)).toEqual({value:100,unit:'g'});
+  });
   it('keeps the current portion when the question has no supported amount',()=>{
     expect(resolveQuestionPortion('What is this ingredient?',{value:45,unit:'ml'})).toEqual({value:45,unit:'ml'});
     expect(resolveQuestionPortion('Is 3000 g still supported?',{value:45,unit:'ml'})).toEqual({value:45,unit:'ml'});
+  });
+});
+
+describe('calculations from saved package reconstruction',()=>{
+  it('calculates the selected serving from a traceable provisional photo reading',()=>{
+    const pkg=reconstructedPackage([{rowId:'carbs-r1',nutrient:'Carbohydrates',value:68.29,unit:'g',basisAmount:100,basisUnit:'g'}]);
+    const calculation=calculationsFromReconstruction(pkg,13.4,'g')[0];
+    expect(calculation).toMatchObject({nutrient:'carbohydrate',input:68.29,basisAmount:100,portion:13.4,result:68.29*13.4/100,unit:'g',imageIds:['package-back'],observationIds:[],interpretationIds:['carbs-r1']});
+    expect(calculation.assumptions.join(' ')).toMatch(/not been independently verified/i);
+    expect(calculation.evidenceText).toMatch(/unverified provisional package interpretation/i);
+  });
+
+  it('withholds conflicting rows, qualified amounts, missing values and dimension mismatches',()=>{
+    const conflict=reconstructedPackage([
+      {rowId:'carbs-a',nutrient:'Carbohydrates',value:68.29,unit:'g',basisAmount:100,basisUnit:'g'},
+      {rowId:'carbs-b',nutrient:'Carbohydrates',value:69.29,unit:'g',basisAmount:100,basisUnit:'g'},
+    ]);
+    expect(calculationsFromReconstruction(conflict,13.4,'g')).toEqual([]);
+
+    const unsuitable=reconstructedPackage([
+      {rowId:'sugar-bound',nutrient:'Total sugars',value:0.5,unit:'g',basisAmount:100,basisUnit:'g',qualifier:'<'},
+      {rowId:'unknown',nutrient:'Protein',value:null,unit:'g',basisAmount:100,basisUnit:'g'},
+      {rowId:'volume',nutrient:'Sodium',value:100,unit:'mg',basisAmount:100,basisUnit:'ml'},
+    ]);
+    expect(calculationsFromReconstruction(unsuitable,13.4,'g')).toEqual([]);
   });
 });

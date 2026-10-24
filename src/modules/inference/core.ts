@@ -3,6 +3,7 @@ import {
   type Calculation,
   type EvidenceSource,
   type PackageData,
+  type PackageReconstructionContent,
   type Profile,
 } from '../../lib/contracts';
 import { InferenceModuleError } from './errors';
@@ -10,15 +11,235 @@ import { assistOutput } from './schema';
 
 export type AssistValidationContext = {
   package: PackageData;
+  question?: string;
   evidence?: EvidenceSource[];
   calculations?: Calculation[];
   profile?: Profile;
   images?: { handle: string }[];
-  diagnostic?: (event: { stage: 'claim' | 'answer-part' | 'candidate' | 'ui' | 'image-action'; index: number; decision: 'accepted' | 'rejected'; reason?: string }) => void;
+  diagnostic?: (event: { stage: 'claim' | 'answer-part' | 'natural-answer' | 'candidate' | 'ui' | 'image-action'; index: number; decision: 'accepted' | 'rejected'; reason?: string }) => void;
 };
+
+type PackageReconstructionFact = { id: string; text: string };
+
+/**
+ * Expose non-nutrient reconstructed package details as stable, validated
+ * evidence references. These facts remain provisional when derived from a
+ * photo, and never replace the original observations or saved source lineage.
+ */
+export function packageReconstructionFactReferences(
+  reconstruction: PackageData['reconstruction'] | PackageReconstructionContent | undefined,
+  pkg: PackageData,
+  requestImageIds: readonly string[] = [],
+): PackageReconstructionFact[] {
+  if (!reconstruction) return [];
+  const observations = new Set(pkg.observations.map(item => item.id));
+  const images = new Set([
+    ...pkg.observations.flatMap(item => item.imageId ? [item.imageId] : []),
+    ...(pkg.ocrCaptures ?? []).map(item => item.imageId),
+    ...(pkg.visionCaptures ?? []).map(item => item.imageId),
+    ...requestImageIds,
+  ]);
+  const statusUsable = (status: string) => status === 'clear' || status === 'provisional';
+  const traceable = (evidence: { observationIds: string[]; imageRegions: { imageId: string }[] }) =>
+    evidence.observationIds.some(id => observations.has(id))
+    || evidence.imageRegions.some(region => images.has(region.imageId));
+  const facts: PackageReconstructionFact[] = [];
+  const add = (id: string, text: string, status: string, evidence: { observationIds: string[]; imageRegions: { imageId: string }[] }) => {
+    if (statusUsable(status) && traceable(evidence) && text.trim()) facts.push({ id: `package-fact:${id}`, text: text.trim().slice(0, 1600) });
+  };
+
+  const identity = reconstruction.identity;
+  const identityParts = [identity.brand, identity.name, identity.variant].filter((part): part is string => !!part?.trim());
+  if (identityParts.length) add('identity', `Reconstructed package identity: ${identityParts.join(' ')}.`, identity.status, identity.evidence);
+
+  const serving = reconstruction.serving;
+  if (serving) {
+    const details = [serving.printedText, serving.quantity !== null && serving.unit ? `${serving.quantity} ${serving.unit}` : null,
+      serving.pieceCount !== null ? `${serving.pieceCount} ${serving.pieceDescription ?? 'pieces'}` : null].filter((part): part is string => !!part?.trim());
+    if (details.length) add('serving', `Reconstructed serving declaration: ${[...new Set(details)].join('; ')}.`, serving.status, serving.evidence);
+  }
+
+  reconstruction.ingredients.forEach((item, index) => {
+    const text = [`Ingredient ${index + 1}: ${item.name}.`, item.printedText ? `Printed wording: ${item.printedText}.` : null,
+      item.printedPercentage !== null ? `Printed percentage: ${item.printedPercentage}%.` : null].filter(Boolean).join(' ');
+    add(`ingredient:${index}`, text, item.status, item.evidence);
+  });
+  reconstruction.additives.forEach((item, index) => {
+    add(`additive:${index}`, `Package additive: ${item.printedName}${item.code ? ` (${item.code})` : ''}${item.normalizedName && item.normalizedName !== item.printedName ? `; normalized as ${item.normalizedName}` : ''}.`, item.status, item.evidence);
+  });
+  reconstruction.statements.forEach((item, index) => {
+    add(`statement:${index}`, `Package ${item.kind}${item.label ? ` (${item.label})` : ''}: ${item.text}`, item.status, item.evidence);
+  });
+  return facts;
+}
+
+function normalizedPhraseAppears(text: string, phrase: string | null | undefined): boolean {
+  if (!phrase?.trim()) return false;
+  const normalizedText = ` ${normalizeLabelText(text)} `;
+  const normalizedPhrase = normalizeLabelText(phrase);
+  return !!normalizedPhrase && normalizedText.includes(` ${normalizedPhrase} `);
+}
+
+/** Restore an omitted citation only when the claim repeats a precise, traceable reconstructed fact. */
+function linkExactReconstructedPackageFacts<T extends { text: string; packageFactIds?: string[] }>(
+  claim: T,
+  reconstruction: PackageReconstructionContent | undefined,
+  availableFacts: Map<string, string>,
+): T {
+  if (!reconstruction) return claim;
+  const linked = new Set(claim.packageFactIds ?? []);
+  const add = (id: string, matches: boolean) => {
+    const factId = `package-fact:${id}`;
+    if (matches && availableFacts.has(factId)) linked.add(factId);
+  };
+
+  const identityParts = [reconstruction.identity.brand, reconstruction.identity.name, reconstruction.identity.variant]
+    .filter((part): part is string => !!part?.trim());
+  add('identity', identityParts.some(part => normalizedPhraseAppears(claim.text, part)));
+
+  const serving = reconstruction.serving;
+  if (serving) {
+    const mentionsMass = serving.quantity !== null && !!serving.unit
+      && quantityWithUnitAppears(claim.text, serving.quantity, serving.unit);
+    const count = serving.pieceCount;
+    const description = serving.pieceDescription;
+    const countAsWords: Record<number, string> = { 0: 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten' };
+    const mentionsCount = count !== null && !!description
+      && normalizedPhraseAppears(claim.text, description)
+      && new RegExp(`(?:^|\\D)(?:${count}|${countAsWords[count] ?? '(?!)'})(?:\\D|$)`, 'i').test(claim.text);
+    const servingContext = /\b(?:servings?|portions?|biscuits?|pieces?|packs?)\b/i.test(claim.text);
+    add('serving', servingContext && (mentionsMass || mentionsCount));
+  }
+
+  reconstruction.ingredients.forEach((item, index) => {
+    add(`ingredient:${index}`, [item.name, item.normalizedName]
+      .some(phrase => normalizedPhraseAppears(claim.text, phrase)));
+  });
+  reconstruction.additives.forEach((item, index) => {
+    add(`additive:${index}`, [item.printedName, item.normalizedName, item.code]
+      .some(phrase => normalizedPhraseAppears(claim.text, phrase)));
+  });
+  reconstruction.statements.forEach((item, index) => {
+    add(`statement:${index}`, [item.label, item.text]
+      .some(phrase => normalizedPhraseAppears(claim.text, phrase)));
+  });
+
+  const packageFactIds = [...linked];
+  return packageFactIds.length ? { ...claim, packageFactIds } : claim;
+}
 
 function fail(code: ConstructorParameters<typeof InferenceModuleError>[0], message: string): never {
   throw new InferenceModuleError(code, message);
+}
+
+function normalizeLabelText(value: string): string {
+  return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function claimNamesReconstructedNutrient(claim: string, row: { nutrient: string; printedLabel: string }): boolean {
+  const label = normalizeLabelText(`${row.nutrient} ${row.printedLabel}`);
+  const text = normalizeLabelText(claim);
+  const families: Array<[RegExp, RegExp]> = [
+    [/added sugars?/, /\badded sugars?\b/],
+    [/saturated fat/, /\bsaturated fat\b/],
+    [/carbohydrates?|carbs?/, /\b(?:carbohydrates?|carbs?)\b/],
+    [/total sugars?|sugars?/, /\b(?:total sugars?|sugars?)\b/],
+    [/protein/, /\bprotein\b/],
+    [/total fat|fat/, /\b(?:total fat|fat)\b/],
+    [/fibre|fiber/, /\b(?:fibre|fiber)\b/],
+    [/sodium/, /\bsodium\b/],
+    [/salt/, /\bsalt\b/],
+    [/energy|calories?/, /\b(?:energy|calories?)\b/],
+  ];
+  const family = families.find(([rowPattern]) => rowPattern.test(label));
+  if (family) return family[1].test(text);
+  const meaningfulWords = label.split(' ').filter(word => word.length > 2 && !['total', 'amount', 'label'].includes(word));
+  return meaningfulWords.length > 0 && meaningfulWords.every(word => text.split(' ').includes(word));
+}
+
+function claimNamesAnyNutrient(claim: string): boolean {
+  return /\b(?:carbohydrat\w*|carbs?|protein|proten|fat|saturat\w*\s+fat|sugars?|sodium|salt|fibre|fiber|energy|kcal|kilojoules?)\b/i.test(claim);
+}
+
+function numericToken(value: number): string {
+  return String(value).replace('.', '[.,]');
+}
+
+function quantityWithUnitAppears(text: string, value: number, unit: string, basis = false): boolean {
+  const unitPattern = ({
+    g: '(?:g|grams?)', mg: '(?:mg|milligrams?)', kcal: '(?:kcal|kilocalories?)',
+    kj: '(?:kj|kilojoules?)', ml: '(?:ml|millilit(?:er|re)s?)',
+  } as Record<string, string>)[unit.toLocaleLowerCase()];
+  if (!unitPattern) return false;
+  const quantity = `${numericToken(value)}\\s*${unitPattern}\\b`;
+  return new RegExp(basis ? `\\bper\\s+${quantity}` : `(?:^|[^\\d.,])${quantity}`, 'i').test(text);
+}
+
+function linkExactReconstructedRows<T extends {
+  observationIds: string[];
+  interpretationRowIds?: string[];
+}>(claim: T & { text: string }, rows: Array<{
+  rowId: string; nutrient: string; printedLabel: string; value: number | null; unit: string | null;
+  columnLabel?: string | null; basisText?: string | null; basisAmount: number | null; basisUnit: string | null; status: string; evidence: { observationIds: string[] };
+}>): T {
+  const linked = new Set(claim.interpretationRowIds ?? []);
+  const matches = rows.filter(row => {
+    const printedBasis=[row.columnLabel??'',row.basisText??''].filter(value=>value.trim()).join('; ');
+    const hasNumericBasis=row.basisAmount!==null&&!!row.basisUnit;
+    if (!['clear', 'provisional'].includes(row.status) || row.value === null || !row.unit || (!hasNumericBasis&&!printedBasis)) return false;
+    if (!claimNamesReconstructedNutrient(claim.text, row)) return false;
+    const hasRowBasis = (hasNumericBasis&&quantityWithUnitAppears(claim.text, row.basisAmount!, row.basisUnit!, true))
+      || (/\bper\s+(?:servings?|portions?|packs?|packages?|biscuits?|pieces?)\b/i.test(claim.text)
+        && basisMentionsAreSupported(claim.text, [printedBasis, ...(hasNumericBasis?[`per ${row.basisAmount} ${row.basisUnit}`]:[])]));
+    return quantityWithUnitAppears(claim.text, row.value, row.unit) && hasRowBasis;
+  });
+  // Exact nutrient, value, unit and basis matches can restore an omitted row
+  // link even when Gemini forgot its citation. The caller supplies only rows
+  // whose original OCR or image lineage is retained. These stay provisional.
+  for (const row of matches) linked.add(row.rowId);
+  return linked.size ? { ...claim, interpretationRowIds: [...linked] } : claim;
+}
+
+const calculationNutrientLabels: Record<Calculation['nutrient'], string> = {
+  energy: 'energy', carbohydrate: 'carbohydrates', sugars: 'total sugars', addedSugars: 'added sugars',
+  protein: 'protein', fat: 'total fat', saturatedFat: 'saturated fat', fiber: 'fibre', sodium: 'sodium', salt: 'salt',
+};
+
+/** Restore a missing calculation citation only for a uniquely matching nutrient and rounded result. */
+function linkExactCalculatedResult<T extends { text: string; calculationIds?: string[] }>(
+  claim: T,
+  calculations: Calculation[],
+): T {
+  if (claim.calculationIds?.length) return claim;
+  const matching = calculations.filter(calculation => {
+    const nutrient = calculationNutrientLabels[calculation.nutrient];
+    if (!claimNamesReconstructedNutrient(claim.text, { nutrient, printedLabel: nutrient })) return false;
+    const expected = numericMentions(`${calculation.result} ${calculation.unit}`).find(item => item.dimension !== 'unitless');
+    if (!expected) return false;
+    return numericMentions(claim.text).some(actual => {
+      if (actual.dimension !== expected.dimension || actual.dimension === 'unitless' || actual.localeAmbiguous || expected.localeAmbiguous) return false;
+      if (actual.value === 0 || expected.value === 0) return actual.value === expected.value;
+      const roundingTolerance = 0.5 * 10 ** (-actual.decimalPlaces) * actual.factor;
+      const floatingTolerance = Number.EPSILON * Math.max(1, Math.abs(actual.value), Math.abs(expected.value)) * 8;
+      return Math.abs(actual.value - expected.value) <= roundingTolerance + floatingTolerance;
+    });
+  });
+  // If identical rounded values could refer to different portions, keep the
+  // model's citation unresolved rather than selecting a calculation by guess.
+  return matching.length === 1 ? { ...claim, calculationIds: [matching[0].id] } : claim;
+}
+
+function conflictsWithReconstructedNutrientAssociation(claim: { text: string; observationIds: string[] }, rows: Array<{
+  nutrient: string; printedLabel: string; value: number | null; unit: string | null; basisAmount: number | null;
+  basisUnit: string | null; status: string; evidence: { observationIds: string[] };
+}>): boolean {
+  if (!claim.observationIds.length || !claimNamesAnyNutrient(claim.text)) return false;
+  const sameEvidenceRows = rows.filter(row => ['clear', 'provisional'].includes(row.status)
+    && row.value !== null && row.unit && row.basisAmount !== null && row.basisUnit
+    && claim.observationIds.some(id => row.evidence.observationIds.includes(id))
+    && quantityWithUnitAppears(claim.text, row.value, row.unit)
+    && quantityWithUnitAppears(claim.text, row.basisAmount, row.basisUnit, true));
+  return sameEvidenceRows.length > 0 && !sameEvidenceRows.some(row => claimNamesReconstructedNutrient(claim.text, row));
 }
 
 function isUnsafeMedicalConclusion(text: string) {
@@ -27,6 +248,64 @@ function isUnsafeMedicalConclusion(text: string) {
   return (safetyVerdict && !explicitSafetyCaveat)
     || /\b(?:you should|you must|you need to)\b.{0,80}\b(?:eat|consume|avoid|limit|take|stop|start|adjust|increase|decrease|treat|dose|medication|insulin)\b/i.test(text)
     || /\b(?:diagnose|treat|cure)\s+(?:you|your|diabetes|hypertension|kidney disease|an allergy)\b/i.test(text);
+}
+
+// Package text can establish what was printed, but not that a quantity is
+// "low", "high", "healthy", or otherwise favorable. Those judgments need an
+// applicable cited source so interpretation is not mistaken for a label fact.
+function needsComparativeReference(text:string){
+  return /\b(?:low|high|rich|poor|good|great|excellent|bad|healthy|unhealthy|balanced|unbalanced|better|worse|moderate|excessive|too much|too little|ideal|preferable|favorable|unfavourable|unfavorable|reasonable|appropriate|recommend(?:ed|ation)?|riskier|safer)\b/i.test(text);
+}
+
+/** A requested food-choice judgment may synthesize cited package facts without claiming clinical safety. */
+function isQuestionBoundPackageAssessment(text:string,question:string|undefined,claims:Array<{
+  text:string;observationIds?:string[];calculationIds?:string[];interpretationRowIds?:string[];packageFactIds?:string[];
+}|undefined>):boolean{
+  if(!question||! /\b(?:good|bad|healthy|unhealthy|suitable|unsuitable|appropriate|daily|every\s+day|regular(?:ly)?|snack(?:ing)?|recommend(?:ed|ation)?|should\s+i|can\s+i\s+(?:eat|have|include))\b/i.test(question))return false;
+  if(! /\b(?:daily|every\s+day|regular(?:ly)?|snack(?:ing)?|everyday|occasional|routine|choice)\b/i.test(text))return false;
+  // Keep objective nutrient rankings and physiological effects source-backed.
+  // The exemption is only for a qualified, question-requested choice grounded
+  // in the cited package; it cannot establish safe portions or clinical targets.
+  if(/\b(?:low|high|rich|poor|more|less|better|worse|excessive|too\s+much)\b.{0,48}\b(?:carbohydrat\w*|carbs?|sugars?|fibr?e|fat|sodium|salt|blood\s+glucose|glycemi\w*|insulin)\b/i.test(text)
+    && !/\b(?:does\s+not|doesn't|cannot|can't|not)\s+(?:establish|prove|show|mean|necessarily\s+indicate)\b.{0,48}\b(?:low|high|safe|healthy)\b/i.test(text))return false;
+  if(/\b(?:blood\s+glucose|glycemi\w*|insulin|diabetic\s+complication|medical\s+risk)\b/i.test(text))return false;
+  return claims.some(claim=>!!claim&&((claim.observationIds?.length??0)>0||(claim.calculationIds?.length??0)>0||(claim.interpretationRowIds?.length??0)>0||(claim.packageFactIds?.length??0)>0)
+    &&hasEvidenceSpecificAnswerAnchor(text,[claim]));
+}
+
+function answerSentences(text:string):string[]{
+  // Abbreviations such as "approx." are common in package serving declarations.
+  // A split there can leave a dangling clause ("... serving (approx.") while
+  // the numeric continuation is independently rejected, silently losing the
+  // useful answer. Protect the period during sentence segmentation.
+  const protectedText=text.replace(/\b(approx|e\.g|i\.e|vs)\.(?=\s+[\p{L}\p{N}])/giu,'$1\uE000');
+  return protectedText.split(/(?<=[.!?])\s+(?=[\p{L}\p{N}])/u).map(part=>part.replace(/\uE000/g,'.').trim()).filter(Boolean);
+}
+
+const genericAnswerTerms=new Set('about according also appears available based because being cannot clear could details does doesnt evidence exactly expected food foods from generally guidance have information interpret interpretation label labels may might model much need package packages perhaps portions product products read reading reference references reported result safe says see show shows source sources states support supported text that the their there these they this those unclear unresolved user usually was were what when which will with without'.split(' '));
+function hasEvidenceSpecificAnswerAnchor(answer:string,claims:{text:string}[]):boolean{
+  const terms=(text:string)=>new Set((text.toLocaleLowerCase().match(/[\p{L}]{4,}/gu)??[])
+    .map(term=>term.endsWith('ies')&&term.length>5?`${term.slice(0,-3)}y`:term.endsWith('s')&&term.length>5?term.slice(0,-1):term)
+    .filter(term=>!genericAnswerTerms.has(term)));
+  const evidenceTerms=new Set(claims.flatMap(claim=>[...terms(claim.text)]));
+  return [...terms(answer)].some(term=>evidenceTerms.has(term));
+}
+
+/** A natural-language comparison may synthesize package facts with relevant source evidence. */
+function hasRelevantSourceForComparativeAnswer(answer:string,claims:Array<{
+  text:string;
+  sourceIds:string[];
+  observationIds?:string[];
+  calculationIds?:string[];
+  interpretationRowIds?:string[];
+  packageFactIds?:string[];
+}|undefined>):boolean{
+  const terms=(text:string)=>new Set((text.toLocaleLowerCase().match(/[\p{L}]{4,}/gu)??[])
+    .map(term=>term.endsWith('ies')&&term.length>5?`${term.slice(0,-3)}y`:term.endsWith('s')&&term.length>5?term.slice(0,-1):term)
+    .filter(term=>!genericAnswerTerms.has(term)));
+  const answerTerms=terms(answer);
+  const hasPackageEvidence=claims.some(claim=>!!claim&&((claim.observationIds?.length??0)>0||(claim.calculationIds?.length??0)>0||(claim.interpretationRowIds?.length??0)>0||(claim.packageFactIds?.length??0)>0));
+  return hasPackageEvidence&&claims.some(claim=>!!claim&&claim.sourceIds.length>0&&[...terms(claim.text)].some(term=>answerTerms.has(term)));
 }
 
 /** Validate and safely render model output without invoking a provider. */
@@ -56,20 +335,62 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     calculation.id,
     calculation.evidenceText ?? calculationEvidenceText(calculation),
   ]));
+  const calculationsById = new Map((data.calculations ?? []).map(calculation=>[calculation.id,calculation]));
   const profileFields = new Map(Object.entries(data.profile ?? {}).filter(([, value]) => value.trim().length > 0));
   const imageIds = new Set((data.images ?? []).map(image => image.handle));
+  // A saved interpretation keeps its original photo lineage. That lineage can
+  // support a follow-up without transmitting the same photo again. New direct
+  // visual claims still require bytes attached to this request (imageIds).
+  const retainedPackageImageIds = new Set([
+    ...imageIds,
+    ...data.package.observations.flatMap(observation => observation.imageId ? [observation.imageId] : []),
+    ...(data.package.ocrCaptures ?? []).map(capture => capture.imageId),
+    ...(data.package.visionCaptures ?? []).map(capture => capture.imageId),
+  ]);
 
-  const supportedByIndex = new Map<number, (typeof result.data.claims)[number]>();
-  const supported = result.data.claims.flatMap((claim, claimIndex) => {
+  const reconstructionRows=result.data.packageReconstruction?.nutritionRows
+    ??(data.package.reconstruction?.current?data.package.reconstruction.nutritionRows:[]);
+  const packageFacts = new Map(packageReconstructionFactReferences(
+    result.data.packageReconstruction ?? (data.package.reconstruction?.current ? data.package.reconstruction : undefined),
+    data.package,
+    data.images?.map(image => image.handle),
+  ).map(fact => [fact.id, fact.text]));
+  const interpretationRows=new Map(reconstructionRows.flatMap(row=>{
+    const hasEvidence=row.evidence.observationIds.some(id=>observations.has(id))||row.evidence.imageRegions.some(region=>retainedPackageImageIds.has(region.imageId));
+    const printedBasis=[row.columnLabel,row.basisText].filter((value):value is string=>!!value?.trim()).join('; ');
+    const hasNumericBasis=row.basisAmount!==null&&!!row.basisUnit;
+    if(!hasEvidence||!['clear','provisional'].includes(row.status)||row.value===null||!row.unit||(!hasNumericBasis&&!printedBasis))return [];
+    const normalizedBasis=hasNumericBasis?`; per ${row.basisAmount} ${row.basisUnit}`:'';
+    return [[row.rowId,`${row.nutrient} ${row.value} ${row.unit}${row.qualifier?` (${row.qualifier})`:''}; ${printedBasis}${normalizedBasis}`] as const];
+  }));
+  const traceableRows=reconstructionRows.filter(row=>interpretationRows.has(row.rowId));
+  const reconstructionForUi=result.data.packageReconstruction??(data.package.reconstruction?.current?data.package.reconstruction:undefined);
+  const hasReconstructedIngredients=(reconstructionForUi?.ingredients??[]).some((item,index)=>packageFacts.has(`package-fact:ingredient:${index}`))
+    ||(reconstructionForUi?.additives??[]).some((item,index)=>packageFacts.has(`package-fact:additive:${index}`));
+  const hasReconstructedStatements=(reconstructionForUi?.statements??[]).some((item,index)=>packageFacts.has(`package-fact:statement:${index}`));
+  const linkPackageFactsToClaim=(claim:typeof result.data.claims[number])=>linkExactReconstructedPackageFacts(
+    claim,
+    result.data.packageReconstruction??(data.package.reconstruction?.current?data.package.reconstruction:undefined),
+    packageFacts,
+  );
+  const linkRowToClaim=(claim: typeof result.data.claims[number])=>linkExactCalculatedResult(
+    linkExactReconstructedRows(linkPackageFactsToClaim(claim),traceableRows),
+    data.calculations??[],
+  );
+  const supportedByIndex = new Map<number, (typeof result.data.claims)[number] & {supportingSpans:NonNullable<(typeof result.data.claims)[number]['supportingSpans']>}>();
+  const supported = result.data.claims.flatMap((originalClaim, claimIndex) => {
+    const claim = linkRowToClaim(originalClaim);
     const reject = (reason: string) => {
       data.diagnostic?.({ stage: 'claim', index: claimIndex, decision: 'rejected', reason });
       return [];
     };
     const visualEvidence = claim.visualEvidence ?? [];
-    if (!claim.observationIds.length && !claim.sourceIds.length && !(claim.calculationIds?.length) && !(claim.profileFieldIds?.length) && !visualEvidence.length) return reject('no-evidence-reference');
+    if (!claim.observationIds.length && !claim.sourceIds.length && !(claim.calculationIds?.length) && !(claim.interpretationRowIds?.length) && !(claim.packageFactIds?.length) && !(claim.profileFieldIds?.length) && !visualEvidence.length) return reject('no-evidence-reference');
     if (claim.observationIds.some(id => !observations.has(id))
       || claim.sourceIds.some(id => !sources.has(id))
       || (claim.calculationIds ?? []).some(id => !calculations.has(id))
+      || (claim.interpretationRowIds??[]).some(id=>!interpretationRows.has(id))
+      || (claim.packageFactIds??[]).some(id=>!packageFacts.has(id))
       || (claim.profileFieldIds ?? []).some(id => !profileFields.has(id))) return reject('unknown-evidence-id');
     if (visualEvidence.some(reference => !imageIds.has(reference.imageId))) {
       return reject('unknown-image-id');
@@ -79,29 +400,46 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
       ...claim.observationIds.map(id => ({ kind: 'observation' as const, id, text: observations.get(id)! })),
       ...claim.sourceIds.map(id => ({ kind: 'source' as const, id, text: sources.get(id)! })),
       ...(claim.calculationIds ?? []).map(id => ({ kind: 'calculation' as const, id, text: calculations.get(id)! })),
+      ...(claim.interpretationRowIds??[]).map(id=>({kind:'interpretation' as const,id,text:interpretationRows.get(id)!})),
+      ...(claim.packageFactIds??[]).map(id=>({kind:'package-fact' as const,id,text:packageFacts.get(id)!})),
       ...(claim.profileFieldIds ?? []).map(id => ({ kind: 'profile' as const, id, text: profileFields.get(id)! })),
     ];
-    const spans = claim.supportingSpans;
-    const allRefsHaveExactQuotes = refs.every(ref => spans.some(span => span.kind === ref.kind && span.id === ref.id && ref.text.includes(span.quote)));
-    const noUncitedSpan = spans.every(span => refs.some(ref => ref.kind === span.kind && ref.id === span.id));
-    // Exact spans establish traceability, not entailment; synthesis remains labeled.
+    const spans = claim.supportingSpans??[];
+    const validSpans=spans.filter(span=>refs.some(ref=>ref.kind===span.kind&&ref.id===span.id&&ref.text.includes(span.quote)));
     const mode = claim.mode;
-    const literalClaim = spans.find(span => span.quote === claim.text);
-    // A model-generated visualEvidence.visibleText is an interpretation, not an
-    // independent witness. Allowing it to corroborate the same model's numeric
-    // claim made wrong visual readings self-validating (for example, 69.98% vs
-    // the OCR line's 89.98%). Image-only numeric readings remain candidates in
-    // the inspector until OCR or another independent source supports them.
-    if (mode === 'synthesis' && !numericMentionsAreSupported(claim.text, spans.map(span => span.quote))) return reject('unsupported-numeric-value');
-    // Keep evidence-linked limitations, while withholding individual safety
-    // verdicts and treatment directives.
-    if (!allRefsHaveExactQuotes) return reject('supporting-span-not-found');
-    if (!noUncitedSpan) return reject('uncited-supporting-span');
-    if (mode === 'direct-quote' && !literalClaim) return reject('direct-quote-mismatch');
+    // Keep source/observation quotations scoped to the exact validated span.
+    // Structured, evidence-linked package facts and reconstructed rows carry
+    // their own stable references, so include their full normalized records
+    // even when the model also supplied a shorter OCR quotation. This lets a
+    // linked row supply its unit/basis without broadening an external source
+    // citation beyond the span the model actually cited.
+    const citedPackageFacts=[
+      ...(claim.interpretationRowIds??[]).map(id=>interpretationRows.get(id)),
+      ...(claim.packageFactIds??[]).map(id=>packageFacts.get(id)),
+    ].filter((text):text is string=>typeof text==='string');
+    const evidenceTexts=validSpans.length
+      ?[...validSpans.map(span=>span.quote),...citedPackageFacts]
+      :refs.map(ref=>ref.text);
+    // Structured label interpretations are usable, traceable candidates, not
+    // independently verified package facts. Numeric wording must match the
+    // exact interpreted row, including its printed unit and basis.
+    const citedCalculationResults=(claim.calculationIds??[]).flatMap(id=>{
+      const calculation=calculationsById.get(id);
+      return calculation?[
+        {value:calculation.result,unit:calculation.unit},
+        {value:calculation.portion,unit:calculation.portionUnit},
+      ]:[];
+    });
+    if (conflictsWithReconstructedNutrientAssociation(claim, reconstructionRows)) return reject('unsupported-nutrient-association');
+    if (!numericMentionsAreSupported(claim.text, evidenceTexts,citedCalculationResults)) return reject('unsupported-numeric-value');
+    if (!basisMentionsAreSupported(claim.text, evidenceTexts)) return reject('unsupported-basis');
+    if(mode==='direct-quote'&&!validSpans.some(span=>span.quote===claim.text))return reject('direct-quote-needs-exact-evidence');
     if (mode === 'synthesis' && isUnsafeMedicalConclusion(claim.text)) return reject('unsafe-medical-conclusion');
-    const accepted = { ...claim, mode, text: mode === 'direct-quote' ? literalClaim!.quote : claim.text };
+    if(mode==='synthesis'&&needsComparativeReference(claim.text)&&!claim.sourceIds.length
+      &&!isQuestionBoundPackageAssessment(claim.text,data.question,[claim]))return reject('comparative-judgment-needs-reference');
+    const accepted = { ...claim, supportingSpans:validSpans, mode, text:claim.text };
     supportedByIndex.set(claimIndex, accepted);
-    data.diagnostic?.({ stage: 'claim', index: claimIndex, decision: 'accepted' });
+    data.diagnostic?.({ stage: 'claim', index: claimIndex, decision: 'accepted', ...(claim.interpretationRowIds?.length && !originalClaim.interpretationRowIds?.length ? { reason: 'linked-exact-provisional-reconstruction-row' } : {}) });
     return [accepted];
   });
 
@@ -119,12 +457,16 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     const hasCalculations = component.calculationIds.length > 0;
     const hasProductEvidence = component.sourceIds.some(id => data.evidence?.some(source => source.id === id && source.category === 'product'));
     const supportedByData = (() => { switch (component.type) {
-      case 'nutrition-table': return hasObservations && data.package.observations.length > 0;
+      // A component may be backed by the saved multimodal reconstruction even
+      // when the model's row/ingredient interpretation came from image regions
+      // rather than OCR observation IDs.
+      case 'nutrition-table': return (hasObservations && data.package.observations.length > 0) || traceableRows.length > 0;
       case 'portion-calculator': return hasCalculations;
       case 'ingredient-explorer':
-      case 'allergen-explanation':
-      case 'package-evidence':
-      case 'package-details': return hasObservations;
+        return hasObservations || hasReconstructedIngredients;
+      case 'allergen-explanation': return hasObservations || hasReconstructedStatements;
+      case 'package-evidence': return hasObservations || packageFacts.size > 0;
+      case 'package-details': return hasObservations || packageFacts.size > 0;
       case 'source-reference-cards': return hasSources;
       case 'product-comparison': return hasObservations && hasProductEvidence;
       case 'personalized-finding': return supported.some(claim => (claim.profileFieldIds?.length ?? 0) > 0);
@@ -233,6 +575,14 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     displayedClaimLength += claim.text.length;
   }
   const displayedClaims = [...displayedClaimsByIndex.values()];
+  const referencedEvidenceTexts=(claim:typeof result.data.claims[number])=>[
+    ...claim.observationIds.map(id=>observations.get(id)),
+    ...claim.sourceIds.map(id=>sources.get(id)),
+    ...(claim.calculationIds??[]).map(id=>calculations.get(id)),
+    ...(claim.interpretationRowIds??[]).map(id=>interpretationRows.get(id)),
+    ...(claim.packageFactIds??[]).map(id=>packageFacts.get(id)),
+    ...(claim.profileFieldIds??[]).map(id=>profileFields.get(id)),
+  ].filter((text):text is string=>typeof text==='string');
 
   const answerPartRejections: string[] = [];
   const validatedAnswerParts = (result.data.answerParts ?? []).flatMap((part, answerPartIndex) => {
@@ -245,19 +595,62 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     if (!linkedClaims.length || linkedClaims.some(claim => !claim)) return reject('unsupported-claim-link');
     const answerText = part.text.replace(/\s+/g, ' ').trim();
     if (!answerText) return reject('empty-answer-part');
-    const linkedEvidence = linkedClaims.flatMap(claim => claim!.supportingSpans.map(span => span.quote));
-    // A conversational synthesis may paraphrase its linked, accepted claims.
-    // Keep numeric and absolute medical-safety checks strict; claimIndexes keep
-    // the prose attached to the evidence that the UI can disclose on demand.
-    if (!numericMentionsAreSupported(answerText, linkedEvidence)) return reject('unsupported-numeric-value');
+    const linkedEvidence = linkedClaims.flatMap(claim=>referencedEvidenceTexts(claim!));
+    const linkedCalculationResults=[...new Set(linkedClaims.flatMap(claim=>claim!.calculationIds??[]))].flatMap(id=>{
+      const calculation=calculationsById.get(id);
+      return calculation?[
+        {value:calculation.result,unit:calculation.unit},
+        {value:calculation.portion,unit:calculation.portionUnit},
+      ]:[];
+    });
+    // The answer refers to accepted, independently checked claim records; it
+    // does not need to repeat corrupted OCR as a literal quotation.
+    if (!numericMentionsAreSupported(answerText, linkedEvidence,linkedCalculationResults)) return reject('unsupported-numeric-value');
+    if (!basisMentionsAreSupported(answerText, linkedEvidence)) return reject('unsupported-basis');
+    if (needsComparativeReference(answerText) && !hasRelevantSourceForComparativeAnswer(answerText, linkedClaims)
+      &&!isQuestionBoundPackageAssessment(answerText,data.question,linkedClaims)) return reject('comparative-judgment-needs-reference');
     if (isUnsafeMedicalConclusion(answerText)) return reject('unsafe-medical-conclusion');
     data.diagnostic?.({ stage: 'answer-part', index: answerPartIndex, decision: 'accepted' });
     return [answerText];
   });
-  // Keep every independently grounded part. One malformed claim reference in
-  // a supplemental sentence must not erase the answer that passed validation.
-  const hasValidatedModelAnswer = validatedAnswerParts.length > 0;
-  const answer = hasValidatedModelAnswer
+  // The model's natural answer is the conversational response. It is checked
+  // against the union of independently validated claims and calculations; it
+  // does not need a brittle sentence-to-claim index map. Numeric and basis
+  // mentions still must be present in that evidence, and comparative or
+  // medical language remains subject to the same source/safety checks.
+  const naturalAnswer = result.data.answer.replace(/\s+/g, ' ').trim();
+  let validatedNaturalAnswer: string | null = null;
+  if (naturalAnswer) {
+    const answerEvidence = displayedClaims.flatMap(referencedEvidenceTexts);
+    const answerCalculations = [...new Set(displayedClaims.flatMap(claim => claim.calculationIds ?? []))].flatMap(id => {
+      const calculation = calculationsById.get(id);
+      return calculation ? [
+        { value: calculation.result, unit: calculation.unit },
+        { value: calculation.portion, unit: calculation.portionUnit },
+      ] : [];
+    });
+    const segments=answerSentences(naturalAnswer);
+    const supportedSegments:string[]=[];
+    if (!displayedClaims.length) data.diagnostic?.({ stage: 'natural-answer', index: 0, decision: 'rejected', reason:'no-validated-claims' });
+    else for(const [index,segment] of segments.entries()){
+      const reject=(reason:string)=>data.diagnostic?.({stage:'natural-answer',index:index+1,decision:'rejected',reason});
+      if(!hasEvidenceSpecificAnswerAnchor(segment,displayedClaims)){reject('no-validated-claim-anchor');continue;}
+      if(!numericMentionsAreSupported(segment,answerEvidence,answerCalculations)){reject('unsupported-numeric-value');continue;}
+      if(!basisMentionsAreSupported(segment,answerEvidence)){reject('unsupported-basis');continue;}
+      if(isUnsafeMedicalConclusion(segment)){reject('unsafe-medical-conclusion');continue;}
+      if(needsComparativeReference(segment)&&!hasRelevantSourceForComparativeAnswer(segment,displayedClaims)
+        &&!isQuestionBoundPackageAssessment(segment,data.question,displayedClaims)){reject('comparative-judgment-needs-reference');continue;}
+      supportedSegments.push(segment);
+    }
+    if(supportedSegments.length){
+      validatedNaturalAnswer=supportedSegments.join(' ');
+      data.diagnostic?.({ stage: 'natural-answer', index: 0, decision: 'accepted' });
+    }else if(displayedClaims.length)data.diagnostic?.({stage:'natural-answer',index:0,decision:'rejected',reason:'no-supported-answer-sentence'});
+  }
+  // Keep every independently grounded part. A malformed optional answer-part
+  // link must not erase a natural answer that passed evidence validation.
+  const hasValidatedModelAnswer = validatedAnswerParts.length > 0 || !!validatedNaturalAnswer;
+  const answer = validatedNaturalAnswer ?? (validatedAnswerParts.length
     ? validatedAnswerParts.join('\n\n')
     : displayedClaims.length
       ? 'I found relevant package evidence, but could not safely assemble it into a clear answer. You can inspect the supporting details or ask a narrower follow-up.'
@@ -265,7 +658,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
       ? 'I need a closer look at one part of the package before I can answer. Review the requested photo area and decide whether to send it.'
       : tentativeCandidates.length
         ? 'I found a few possible readings, but the current evidence does not establish enough to answer reliably. I can take a closer look at the relevant package area.'
-        : 'I can’t establish a reliable answer from the package evidence available yet. The photos are still here, so you can try a closer view or ask about a detail that is legible.';
+          : 'I can’t establish a reliable answer from the package evidence available yet. The photos are still here, so you can try a closer view or ask about a detail that is legible.');
 
   const answerStatus = hasValidatedModelAnswer ? 'model-answer' as const
     : displayedClaims.length ? 'grounded-claims-answer-unavailable' as const
@@ -299,7 +692,7 @@ function containsOrderedEvidenceTokens(quote: string, words: string[]): boolean 
 }
 
 type NumericDimension = 'mass' | 'energy' | 'volume' | 'percent' | 'unitless';
-type NumericMention = { value: number; dimension: NumericDimension; rawValue: string; factor: number; localeAmbiguous: boolean };
+type NumericMention = { value: number; dimension: NumericDimension; rawValue: string; factor: number; decimalPlaces:number; localeAmbiguous: boolean };
 const numericMentionPattern = /(?<![\p{L}\p{N}])(-?(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?|\.\d+))(?!\d)\s*(kcal|kilocalories?|kj|kilojoules?|mg|milligrams?|µg|μg|mcg|ug|micrograms?|kg|g|grams?|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|%|percent)?(?![\p{L}])/giu;
 
 function parseNumericLiteral(value: string): { value: number; localeAmbiguous: boolean } {
@@ -338,16 +731,32 @@ function numericMentions(text: string): NumericMention[] {
     else if (/^(?:l|lit(?:er|re)s?)$/.test(unit)) { dimension = 'volume'; factor = 1000; }
     else if (/^(?:ml|millilit(?:er|re)s?)$/.test(unit)) dimension = 'volume';
     else if (/^(?:%|percent)$/.test(unit)) dimension = 'percent';
-    result.push({ value: parsed.value * factor, dimension, rawValue: match[1], factor, localeAmbiguous: parsed.localeAmbiguous });
+    const separator=Math.max(match[1].lastIndexOf('.'),match[1].lastIndexOf(','));
+    const decimalPlaces=separator<0?0:match[1].length-separator-1;
+    result.push({ value: parsed.value * factor, dimension, rawValue: match[1], factor, decimalPlaces, localeAmbiguous: parsed.localeAmbiguous });
   }
   return result;
 }
 
+function basisMentionsAreSupported(text: string, evidenceTexts: string[]): boolean {
+  const mentions = [
+    ...[...text.matchAll(/\bper\s*\d+(?:[.,]\d+)?\s*(?:g|grams?|mg|milligrams?|kg|ml|millilit(?:er|re)s?)\b/gi)].map(match => match[0]),
+    ...[...text.matchAll(/\bper\s*(?:(?:each|a|one)\s+)?(?:servings?|portions?|packs?|packages?|biscuits?|pieces?)\b/gi)].map(match => match[0]),
+  ];
+  if (!mentions.length) return true;
+  const evidence = evidenceTexts.map(normalizeLabelText);
+  return mentions.every(mention => {
+    const normalized = normalizeLabelText(mention);
+    return evidence.some(text => text.includes(normalized));
+  });
+}
+
 /** Arabic-numeric synthesis must match a quantity in its cited spans, allowing basic unit equivalence. */
-function numericMentionsAreSupported(claim: string, citedSpans: string[]): boolean {
+function numericMentionsAreSupported(claim: string, citedSpans: string[],calculatedResults:{value:number;unit:string}[]=[]): boolean {
   const claimed = numericMentions(claim);
   if (!claimed.length) return true;
   const cited = citedSpans.flatMap(numericMentions);
+  const calculated=calculatedResults.flatMap(item=>numericMentions(`${item.value} ${item.unit}`));
   return claimed.every(value => cited.some(evidence => {
     if (value.dimension !== evidence.dimension) return false;
     if (value.localeAmbiguous || evidence.localeAmbiguous) {
@@ -355,6 +764,13 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[]): boole
     }
     const tolerance = Number.EPSILON * Math.max(1, Math.abs(value.value), Math.abs(evidence.value)) * 8;
     return Math.abs(value.value - evidence.value) <= tolerance;
+  })||calculated.some(result=>{
+    if(value.dimension!==result.dimension||value.localeAmbiguous||result.localeAmbiguous)return false;
+    // Do not let rounding turn a small non-zero amount into an asserted zero.
+    if(value.value===0||result.value===0)return value.value===result.value;
+    const roundingTolerance=0.5*10**(-value.decimalPlaces)*value.factor;
+    const floatingTolerance=Number.EPSILON*Math.max(1,Math.abs(value.value),Math.abs(result.value))*8;
+    return Math.abs(value.value-result.value)<=roundingTolerance+floatingTolerance;
   }));
 }
 

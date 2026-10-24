@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { evidenceSources } from '../../modules/knowledge';
 import { defaultProfile, sourceSchema, type PackageData, type Profile, type TentativeStructuredCandidate } from '../contracts';
-import { executeGeminiTool, type GeminiToolContext } from './gemini-tools';
+import { calculateSavedServing, executeGeminiTool, type GeminiToolContext } from './gemini-tools';
 
 const mocks = vi.hoisted(() => ({ semanticRetrieve: vi.fn(), searchOpenFoodTox: vi.fn(), research: vi.fn() }));
 vi.mock('../semantic', () => ({ semanticRetrieve: mocks.semanticRetrieve, searchOpenFoodTox: mocks.searchOpenFoodTox }));
@@ -26,6 +26,42 @@ function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019
 }
 
 describe('Gemini tool retrieval boundaries', () => {
+  it('derives revisioned provisional calculations only from complete evidence-linked saved rows and the declared serving', () => {
+    const packageData=context('What about the serving?').package;
+    packageData.reconstruction={
+      revision:4,updatedAt:new Date().toISOString(),model:'gemini-3.6-flash',current:true,
+      identity:{brand:'BISK FARM',name:'Cream Cracker',variant:null,status:'clear',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
+      serving:{printedText:'2 biscuits approx. 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'clear',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
+      nutritionRows:[
+        {rowId:'carb-r4',nutrient:'carbohydrates',printedLabel:'CARBOHYDRATES',printedValue:'69.29',value:69.29,unit:'g',columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
+        {rowId:'sugar-r4',nutrient:'total sugars',printedLabel:'TOTAL SUGARS',printedValue:'<0.5',value:0.5,unit:'g',columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:'<',status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
+        {rowId:'missing-unit',nutrient:'protein',printedLabel:'PROTEIN',printedValue:'11.4',value:11.4,unit:null,columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
+      ],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional interpretation.',
+    };
+
+    const calculations=calculateSavedServing(packageData);
+
+    expect(calculations).toHaveLength(1);
+    expect(calculations[0]).toMatchObject({id:'reconcalc-r4-carb-r4-13.4-g',label:'carbohydrate per serving (2 biscuits approx. 13.4 g)',nutrient:'carbohydrate',input:69.29,basisAmount:100,portion:13.4,result:69.29*13.4/100,unit:'g',observationIds:['ocr-1'],interpretationIds:['carb-r4']});
+    expect(calculations[0].assumptions.join(' ')).toMatch(/remain provisional/i);
+  });
+  it('calculates from a saved image-linked interpretation when OCR has no matching text line', () => {
+    const packageData=context('What about this serving?').package;
+    const imageRegion={imageId:'image-1',region:{x:0.08,y:0.06,width:0.42,height:0.35}};
+    packageData.reconstruction={
+      revision:5,updatedAt:new Date().toISOString(),model:'Gemini',current:true,
+      identity:{brand:'BISK FARM',name:'Cream Cracker',variant:'Sugar Free',status:'provisional',evidence:{observationIds:[],imageRegions:[imageRegion]}},
+      serving:{printedText:'2 biscuits approx. 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:[],imageRegions:[imageRegion]}},
+      nutritionRows:[{rowId:'carb-image-r5',nutrient:'carbohydrates',printedLabel:'CARBOHYDRATES',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[imageRegion]}}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Image-linked provisional interpretation.',
+    };
+
+    const calculations=calculateSavedServing(packageData);
+
+    expect(calculations).toHaveLength(1);
+    expect(calculations[0]).toMatchObject({nutrient:'carbohydrate',input:69.29,basisAmount:100,portion:13.4,result:69.29*13.4/100,imageIds:['image-1'],observationIds:[],interpretationIds:['carb-image-r5']});
+    expect(calculations[0].assumptions.join(' ')).toMatch(/remain provisional/i);
+  });
   it('filters out-of-scope country guidance from semantic retrieval before returning it to Gemini', async () => {
     const usGuidance = evidenceSources.find(source => source.id === 'niddk-meals')!;
     mocks.semanticRetrieve.mockResolvedValue({
@@ -73,7 +109,7 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it('does not present U.S. diabetes guidance as India-specific when the local corpus lacks a condition-specific source', async () => {
+  it('uses global diabetes guidance for India without presenting U.S. guidance as locally applicable', async () => {
     const fetcher = vi.fn();
     vi.stubGlobal('fetch', fetcher);
 
@@ -83,9 +119,11 @@ describe('Gemini tool retrieval boundaries', () => {
       jurisdiction: 'India',
     }, context('What carbohydrate target applies to diabetes in India?'));
 
-    expect(result.status).toBe('empty');
-    expect(result.evidence).toEqual([]);
-    expect(result.output).toMatchObject({ status: 'empty', externalRequestMade: false });
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.map(source => source.id)).toEqual(['idf-healthy-nutrition-diabetes-2024']);
+    expect(result.evidence?.[0].jurisdiction).toBe('Global');
+    expect(result.evidence?.some(source => source.jurisdiction === 'United States')).toBe(false);
+    expect(result.output).toMatchObject({ status: 'ok', externalRequestMade: false });
     expect(fetcher).not.toHaveBeenCalled();
   });
 

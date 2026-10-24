@@ -6,7 +6,9 @@ export function presentConversationAnswer(answer: string) {
   return answer
     .replace(evidenceLinkExcerpt, '')
     .replace(evidenceMarker, '')
+    .replace(/\s*\[\s*(?:,\s*)+\]\s*/g, ' ')
     .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\s+([,.;:!?])/g, '$1')
     .replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, '\n\n')
     .trim();
 }

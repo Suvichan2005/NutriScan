@@ -1,13 +1,14 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it } from 'vitest';
-import { defaultProfile, packageSchema, type Observation, type ProductRecord, type TentativeStructuredCandidate } from '../contracts';
+import { defaultProfile, packageReconstructionSchema, packageSchema, type Calculation, type Observation, type ProductRecord, type TentativeStructuredCandidate } from '../contracts';
 import { buildAudit } from '../engine';
 import { reconcileInterpretedNutrition } from '../interpreted-nutrients';
 import { parseLabel } from '../parser';
 import { productEvidenceSource } from '../product-evidence';
 import { ThreadGenerativeUI } from '../../components/thread-generative-ui';
 import { ThreadPublicProductRecord } from '../../components/thread-public-product-record';
+import { PackageReconstructionView } from '../../components/package-reconstruction';
 
 const imageId = 'package-photo-1';
 const runId = 'ocr-run-1';
@@ -62,6 +63,143 @@ it('renders a reconciled missing nutrient in the selected-record comparison with
   expect(markup).toContain('Inspect photo region');
 });
 
+it('renders returned deterministic calculations in the contextual portion calculator', () => {
+  const observation: Observation = { id: 'carbohydrate-row', field: 'ocr-line', text: 'Carbohydrate 60 g per 100 g', side: 'back', confidence: 90, origin: 'ocr', imageId };
+  const pkg = packageSchema.parse({ ...parseLabel('Package label', { origin: 'user' }), name: 'Unidentified package', observations: [observation], rawText: observation.text });
+  const calculation: Calculation = {
+    id: 'calc-carbohydrate-20g', label: 'Carbohydrate in 20 g', nutrient: 'carbohydrate', input: 60, inputUnit: 'g', basisAmount: 100,
+    portion: 20, portionUnit: 'g', result: 12, unit: 'g', formula: '60 g × 20 g ÷ 100 g', observationIds: [observation.id],
+    interpretationIds: ['row-carbohydrate'], assumptions: ['Image-linked provisional package interpretation.'],
+  };
+  const audit = { ...buildAudit(pkg, 30, 'g', defaultProfile, 'How much carbohydrate?'), calculations: [calculation] };
+  const markup = renderToStaticMarkup(<ThreadGenerativeUI
+    question="How much carbohydrate in 30 g?" components={[{ type: 'portion-calculator', observationIds: [], sourceIds: [], calculationIds: [calculation.id] }]}
+    pkg={pkg} audit={audit} portion={30} portionUnit="g" onPortionChange={() => {}} onPortionUnitChange={() => {}}
+    onSaveCorrection={() => true} canInspect={() => true} isInspecting={() => false} onInspect={() => {}}
+    candidates={[]} interpretedReadings={[]} sources={[]} selectedProduct={null}
+  />);
+
+  expect(markup).toContain('Nutrition for this amount');
+  expect(markup).toContain('For 30 g');
+  expect(markup).toContain('18 g');
+  expect(markup).toContain('unverified interpretation');
+});
+
+it('opens a declared-piece follow-up calculator at the amount used by its answer', () => {
+  const observation: Observation = { id: 'bisk-carbohydrate', field: 'ocr-line', text: 'Carbohydrates 69.29 g per 100 g', side: 'back', confidence: 90, origin: 'ocr', imageId };
+  const pkg = packageSchema.parse({
+    ...parseLabel('Package label', { origin: 'user' }), name: 'Unidentified package', observations: [observation], rawText: observation.text,
+    reconstruction: {
+      identity: { brand: null, name: null, variant: null, status: 'unreadable', evidence: { observationIds: [], imageRegions: [] } },
+      serving: { printedText: 'SERVING SIZE: 2 biscuits (approx. 13.4 g)', quantity: null, unit: null, pieceCount: null, pieceDescription: null, status: 'provisional', evidence: { observationIds: [observation.id], imageRegions: [] } },
+      nutritionRows: [{ rowId: 'bisk-carbohydrate-per-100g', nutrient: 'Carbohydrates', printedLabel: 'Carbohydrates', printedValue: '69.29 g', value: 69.29, unit: 'g', columnLabel: 'Per 100 g', basisText: 'per 100 g', basisAmount: 100, basisUnit: 'g', qualifier: null, status: 'provisional', evidence: { observationIds: [observation.id], imageRegions: [] } }],
+      ingredients: [], additives: [], statements: [], regions: [], unresolved: [], interpretationNote: 'Provisional package interpretation.',
+      revision: 1, updatedAt: '2026-10-24T00:00:00.000Z', model: 'fixture-model', current: true,
+    },
+  });
+  const calculation: Calculation = {
+    id: 'calc-bisk-serving-carb', label: 'Carbohydrate in 13.4 g', nutrient: 'carbohydrate', input: 69.29, inputUnit: 'g', basisAmount: 100,
+    portion: 13.4, portionUnit: 'g', result: 9.28486, unit: 'g', formula: '69.29 g × 13.4 g ÷ 100 g',
+    observationIds: [observation.id], interpretationIds: ['bisk-carbohydrate-per-100g'], assumptions: ['Provisional, unverified label interpretation.'],
+  };
+  const question = 'What about just two biscuits?';
+  const markup = renderToStaticMarkup(<ThreadGenerativeUI
+    question={question} components={[{ type: 'portion-calculator', observationIds: [observation.id], sourceIds: [], calculationIds: [calculation.id] }]}
+    pkg={pkg} audit={{ ...buildAudit(pkg, 100, 'g', defaultProfile, question), calculations: [calculation] }} portion={13.4} portionUnit="g"
+    onPortionChange={() => {}} onPortionUnitChange={() => {}} onSaveCorrection={() => true}
+    canInspect={() => true} isInspecting={() => false} onInspect={() => {}} candidates={[]}
+    interpretedReadings={[]} sources={[]} selectedProduct={null}
+  />);
+
+  expect(markup).toContain('value="13.4"');
+  expect(markup).toContain('For 13.4 g');
+  expect(markup).toContain('9.28 g');
+  expect(markup).toContain('Based on an unverified interpretation');
+});
+
+it('shows linked reconstructed rows in a compact contextual nutrition view instead of an empty parser table', () => {
+  const observation: Observation = { id: 'nutrition-observation', field: 'ocr-line', text: 'Carbohydrates 69.29g; sugars 0.5g; per 100g', side: 'back', confidence: 74, origin: 'ocr', imageId };
+  const pkg = packageSchema.parse({
+    ...parseLabel('Package label', { origin: 'user' }),
+    name: 'Unidentified package', nutrients: [], observations: [observation], rawText: observation.text,
+    reconstruction: {
+      identity: { brand: null, name: 'Example crackers', variant: null, status: 'provisional', evidence: { observationIds: ['nutrition-observation'], imageRegions: [] } },
+      serving: null,
+      nutritionRows: [
+        { rowId: 'carbohydrate-per-100g', nutrient: 'Carbohydrates', printedLabel: 'Carbohydrates', printedValue: '69.29g', value: 69.29, unit: 'g', columnLabel: 'Per 100g', basisText: 'per 100g', basisAmount: 100, basisUnit: 'g', qualifier: null, status: 'provisional', evidence: { observationIds: ['nutrition-observation'], imageRegions: [] } },
+        { rowId: 'sugars-per-100g', nutrient: 'Total sugars', printedLabel: 'Total sugars', printedValue: '0.5g', value: 0.5, unit: 'g', columnLabel: 'Per 100g', basisText: 'per 100g', basisAmount: 100, basisUnit: 'g', qualifier: null, status: 'provisional', evidence: { observationIds: ['nutrition-observation'], imageRegions: [] } },
+      ],
+      ingredients: [], additives: [], statements: [], regions: [], unresolved: [], interpretationNote: 'Provisional image interpretation.',
+      revision: 1, updatedAt: '2026-10-23T00:00:00.000Z', model: 'fixture-model', current: true,
+    },
+  });
+  let opened = false;
+  const question = 'Can you show the nutrition table?';
+  const markup = renderToStaticMarkup(<ThreadGenerativeUI
+    question={question} components={[{ type: 'nutrition-table', observationIds: [observation.id], sourceIds: [], calculationIds: [] }]}
+    pkg={pkg} audit={buildAudit(pkg, 30, 'g', defaultProfile, question)} portion={30} portionUnit="g"
+    onPortionChange={() => {}} onPortionUnitChange={() => {}} onSaveCorrection={() => true}
+    canInspect={() => true} isInspecting={() => false} onInspect={() => {}} onOpenInspector={() => { opened = true; }}
+    candidates={[]} interpretedReadings={[]} sources={[]} selectedProduct={null}
+  />);
+
+  expect(markup).toContain('Nutrition on the label');
+  expect(markup).toContain('69.29 g');
+  expect(markup).toContain('0.5 g');
+  expect(markup).toContain('per 100 g');
+  expect(markup).toContain('provisional · unverified');
+  expect(markup).toContain('Review or edit package readings');
+  expect(markup).not.toContain('Not established');
+  expect(opened).toBe(false); // Rendering offers the action; it does not change inspector state.
+});
+
+it('shows a compact review action instead of an empty table when every reconstructed value is conflicted', () => {
+  const observation: Observation = { id: 'contested-nutrition-line', field: 'ocr-line', text: 'Carbohydrates 69.29 g per 100 g', side: 'back', confidence: 74, origin: 'ocr', imageId };
+  const pkg = packageSchema.parse({
+    ...parseLabel('Package label', { origin: 'user' }),
+    name: 'Unidentified package', nutrients: [], observations: [observation], rawText: observation.text,
+    reconstruction: {
+      identity: { brand: null, name: 'Example crackers', variant: null, status: 'provisional', evidence: { observationIds: [observation.id], imageRegions: [] } },
+      serving: null,
+      nutritionRows: [{ rowId: 'carbohydrate-contested', nutrient: 'Carbohydrates', printedLabel: 'Carbohydrates', printedValue: null, value: null, unit: null, columnLabel: 'Per 100 g', basisText: 'Per 100 g', basisAmount: 100, basisUnit: 'g', qualifier: null, status: 'conflict', evidence: { observationIds: [observation.id], imageRegions: [] } }],
+      ingredients: [], additives: [], statements: [], regions: [],
+      unresolved: [{ field: 'nutrition.carbohydrate', reason: 'Saved reading: 69.29 g; recheck: 69.98 g. Both remain in history.', evidence: { observationIds: [observation.id], imageRegions: [] } }],
+      interpretationNote: 'The disputed value is withheld.', revision: 2, updatedAt: '2026-10-24T00:00:00.000Z', model: 'local evidence merge r1+r2', current: true,
+    },
+  });
+  let opened = false;
+  const question = 'Show the nutrition table';
+  const markup = renderToStaticMarkup(<ThreadGenerativeUI
+    question={question} components={[{ type: 'nutrition-table', observationIds: [observation.id], sourceIds: [], calculationIds: [] }]}
+    pkg={pkg} audit={buildAudit(pkg, 30, 'g', defaultProfile, question)} portion={30} portionUnit="g"
+    onPortionChange={() => {}} onPortionUnitChange={() => {}} onSaveCorrection={() => true}
+    canInspect={() => true} isInspecting={() => false} onInspect={() => {}} onOpenInspector={() => { opened = true; }}
+    candidates={[]} interpretedReadings={[]} sources={[]} selectedProduct={null}
+  />);
+
+  expect(markup).toContain('Nutrition readings need review');
+  expect(markup).toContain('Carbohydrates');
+  expect(markup).toContain('Withheld');
+  expect(markup).toContain('Review both readings');
+  expect(markup).not.toContain('69.29');
+  expect(markup).not.toContain('69.98');
+  expect(opened).toBe(false);
+});
+
+it('keeps a rejected recheck reviewable and exposes a deliberate way to select the active interpretation', () => {
+  const reconstruction=packageReconstructionSchema.parse({
+    identity:{brand:'Bisk Farm',name:'Sugar Free Cream Cracker',variant:null,status:'provisional',evidence:{observationIds:[],imageRegions:[]}},
+    serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Saved package reading.',
+    revision:4,updatedAt:'2026-10-23T00:00:00.000Z',model:'gemini-test',current:true,
+  });
+  const alternative=packageReconstructionSchema.parse({...reconstruction,revision:5,current:false,interpretationNote:'Conflicting recheck.'});
+  const markup=renderToStaticMarkup(<PackageReconstructionView reconstruction={reconstruction} history={[alternative]} savedNutrients={[]} onCorrect={()=>true} onInspectEvidence={()=>true} onActivateRevision={()=>true}/>);
+  expect(markup).toContain('1 earlier or alternative interpretation');
+  expect(markup).toContain('Revision 5');
+  expect(markup).toContain('Review');
+  expect(markup).toContain('alternative');
+});
+
 it('keeps raw package-evidence OCR out of the assistant conversation cards', () => {
   const observation: Observation = { id: 'raw-label-line', field: 'ocr-line', text: 'INGREDIENTS: wheat flour, edible oil, antioxidant (319)', side: 'back', confidence: 88, origin: 'ocr', imageId };
   const pkg = packageSchema.parse({ ...parseLabel('Package label', { origin: 'user' }), name: 'Unidentified package', observations: [observation], rawText: observation.text });
@@ -108,4 +246,63 @@ it('keeps ingredient review out of a general answer and collapses OCR detail whe
   expect(markup).toContain('Possible · unverified');
   expect(markup).toContain('View supporting label text');
   expect(markup).toContain('<details class="thread-ui-evidence-disclosure">');
+});
+
+it('renders recovered package ingredients from the saved reconstruction instead of requiring a parser candidate',()=>{
+  const observation=makeObservation('reconstructed-ingredient-line','INGREDIENTS: REFINED WHEAT FLOUR (MAIDA) (89.98%)',['INGREDIENTS:','REFINED','WHEAT','FLOUR','(MAIDA)','(89.98%)'],[[20,120],[130,210],[220,290],[300,380],[390,470],[480,560]],100);
+  const pkg=packageSchema.parse({
+    ...parseLabel('Package label',{origin:'user'}),name:'Unidentified food package',observations:[observation],rawText:observation.text,
+    ocrCaptures:[{runId,imageId,side:'back',sourceImage:{width:1000,height:1000},preparedImage:{width:1000,height:1000},bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'fixture-reader',version:'1',language:'eng',confidenceScale:'0-100',segmentationMode:'single-block'},processing:{rotation:0,contrast:false,invert:false,cropPercent:null}}],
+    reconstruction:{
+      identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional',evidence:{observationIds:[observation.id],imageRegions:[]}},
+      serving:null,nutritionRows:[],
+      ingredients:[{position:0,name:'REFINED WHEAT FLOUR (MAIDA)',printedText:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:[observation.id],imageRegions:[]}}],
+      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional image reconstruction.',revision:1,updatedAt:'2026-10-24T00:00:00.000Z',model:'fixture-model',current:true,
+    },
+  });
+  const question='Can you show the nutrition table and ingredient list?';
+  const markup=renderToStaticMarkup(<ThreadGenerativeUI question={question} components={[{type:'ingredient-explorer',observationIds:[observation.id],sourceIds:[],calculationIds:[]}]}
+    pkg={pkg} audit={buildAudit(pkg,30,'g',defaultProfile,question)} portion={30} portionUnit="g" onPortionChange={()=>{}} onPortionUnitChange={()=>{}}
+    onSaveCorrection={()=>true} canInspect={()=>true} isInspecting={()=>false} onInspect={()=>{}} onOpenInspector={()=>{}} candidates={[]} interpretedReadings={[]} sources={[]} selectedProduct={null}/>);
+  expect(markup).toContain('Ingredient and additive readings');
+  expect(markup).toContain('refined wheat flour');
+  expect(markup).toContain('89.98%');
+  expect(markup).toContain('Gemini reading · unverified');
+  expect(markup).toContain('View package details');
+  expect(markup).not.toContain('Possible · unverified');
+});
+
+it('renders photo-linked reconstructed facts in the thread when OCR lines are absent',()=>{
+  const photoId='photo-only-reconstruction';
+  const region={imageId:photoId,region:{x:0.08,y:0.12,width:0.84,height:0.4}};
+  const pkg=packageSchema.parse({
+    ...parseLabel('Package label',{origin:'user'}),name:'Unidentified food package',observations:[],rawText:'',
+    visionCaptures:[{runId:'vision-only-run',imageId:photoId,side:'back',sourceImage:{width:900,height:363},processing:{rotation:0,contrast:false,invert:false,crop:null},model:'fixture-model'}],
+    reconstruction:{
+      identity:{brand:'Example',name:'Crackers',variant:'Sugar Free',status:'provisional',evidence:{observationIds:[],imageRegions:[region]}},
+      serving:{printedText:'2 biscuits (13.4 g)',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:[],imageRegions:[region]}},
+      nutritionRows:[
+        {rowId:'carbohydrate-100g',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[region]}},
+        {rowId:'protein-100g',nutrient:'Protein',printedLabel:'Protein',printedValue:'11.42 g',value:11.42,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[region]}},
+      ],
+      ingredients:[{position:0,name:'Refined wheat flour',printedText:'Refined wheat flour (maida)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:[],imageRegions:[region]}}],
+      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional image interpretation.',
+      revision:1,updatedAt:'2026-10-24T00:00:00.000Z',model:'fixture-model',current:true,
+    },
+  });
+  const question='Can you show the nutrition table and ingredient list?';
+  const markup=renderToStaticMarkup(<ThreadGenerativeUI question={question} components={[
+    {type:'nutrition-table',observationIds:[],sourceIds:[],calculationIds:[]},
+    {type:'ingredient-explorer',observationIds:[],sourceIds:[],calculationIds:[]},
+  ]} pkg={pkg} audit={buildAudit(pkg,30,'g',defaultProfile,question)} portion={30} portionUnit="g"
+    onPortionChange={()=>{}} onPortionUnitChange={()=>{}} onSaveCorrection={()=>true}
+    canInspect={()=>false} isInspecting={()=>false} onInspect={()=>{}} candidates={[]}
+    interpretedReadings={[]} sources={[]} selectedProduct={null}/>);
+
+  expect(markup).toContain('Nutrition on the label');
+  expect(markup).toContain('69.29 g');
+  expect(markup).toContain('11.42 g');
+  expect(markup).toContain('refined wheat flour');
+  expect(markup).toContain('89.98%');
+  expect(markup).toContain('Gemini reading · unverified');
 });

@@ -62,14 +62,14 @@ const cropParameters = {
 };
 
 export const geminiToolDeclarations: FunctionDeclaration[] = [
-  { name: 'inspect_package_image', description: 'Inspect an attached original package photo or a focused crop using your visual understanding. Use only when OCR is unclear or visual confirmation adds evidence. The photo must already be attached to this request.', parameters: { type: Type.OBJECT, properties: { imageId: { type: Type.STRING, description: 'Exact imageId from the attached package images.' }, crop: cropParameters }, required: ['imageId'] } },
+  { name: 'inspect_package_image', description: 'Inspect an attached original package photo or a focused crop using your visual understanding. Use when OCR merges adjacent label regions or a small/dense nutrition table is not fully readable at full-photo scale; for a table, inspect one crop that keeps the complete panel, row labels and column headings together. Select bounds from the attached image geometry, not remembered product coordinates. Do not crop isolated digits, and treat a crop as the same image evidence rather than independent corroboration. The photo must already be attached to this request.', parameters: { type: Type.OBJECT, properties: { imageId: { type: Type.STRING, description: 'Exact imageId from the attached package images.' }, crop: cropParameters }, required: ['imageId'] } },
   { name: 'search_knowledge', description: 'Search NutriScan’s local, attributed food and ingredient evidence index. This does not make a network request.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A focused food, nutrient, ingredient, or guidance query.' } }, required: ['query'] } },
   { name: 'get_nutrition_guidance', description: 'Retrieve a small local set of source-linked nutrition guidance for an explicitly relevant condition or goal. Uses only NutriScan-authored summaries of official sources and sends no query, profile, or image to an external service. Prefer the user’s stated jurisdiction when known. Keep population guidance separate from personal targets and package facts; do not infer diagnoses or prescribe a nutrient allowance.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'The nutrition question and relevant words from the user’s request.' }, condition: { type: Type.STRING, description: 'Only a condition explicitly stated by the user or included in authorized profile context.' }, goal: { type: Type.STRING, description: 'Only a nutrition goal stated by the user or included in authorized profile context.' }, jurisdiction: { type: Type.STRING, description: 'A jurisdiction stated by the user or available in authorized context, such as India.' }, maxResults: { type: Type.NUMBER, description: 'Optional result limit from 1 to 5.' } }, required: ['query'] } },
   { name: 'search_food_composition', description: 'Search local USDA FoodData Central Foundation Foods and FNDDS structured snapshots for generic food-composition reference values. FNDDS includes U.S. survey records for some Indian-style dishes, not authoritative Indian recipes. Use when the user asks how a basic food compares or requests composition context; request relevant nutrient families. Values are source-reported per 100 g edible portion, not facts about a branded Indian product, its package, portion or an individual. Survey portion examples are not package servings. Missing nutrient rows are unavailable, not zero. Includes release, source citation, license and limitations. No external query is sent.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific generic food name or phrase, such as dry chickpeas, idli, chapatti or roti.' }, nutrients: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Up to eight requested nutrient families, such as protein, carbohydrate, fiber, sodium, potassium, energy, or saturated fat. Omit to return common macronutrient and sodium fields.' } }, required: ['query'] } },
   { name: 'resolve_ingredient', description: 'Resolve an observed additive name or INS/E identifier against NutriScan’s local identity registry. Presence and amount still require package evidence.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'Observed ingredient phrase or additive identifier.' } }, required: ['query'] } },
   { name: 'lookup_chemical_identity', description: 'Read-only PubChem PUG REST lookup of a chemical name already present in the user question/package text or returned by exact local ingredient or assessment lookup. Returns registry identity candidates only, not food-use authorization, dose, hazard assessment or personal safety. Sends only the name; never photos or profile data.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific chemical name from the question, printed package text or an exact local identity result, not a numeric value or general food question.' } }, required: ['query'] } },
   { name: 'get_substance_assessments', description: 'Search the locally imported EFSA OpenFoodTox 3.0 assessment snapshot for a named substance or exact identifier. Returns attributed EFSA assessment records and toxicological reference values when available. The local snapshot may only link a scientific output without its conclusion; if the user asks what the linked assessment found, follow that title with search_research using the exact local identity returned. Use to distinguish hazard assessments from package exposure; this does not establish Indian authorization, package dose, product presence or personal safety. No network request is made.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A substance name, synonym, CAS number or PubChem CID from the question, package text or a locally resolved ingredient identity.' } }, required: ['query'] } },
-  { name: 'calculate_nutrition', description: 'Calculate a portion from an unconflicted package nutrient or a complete, currently attached photo/OCR-linked Gemini candidate. Candidate-based arithmetic remains explicitly unverified and never changes the package record. A matching known mass or volume basis is required.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Portion amount in grams or millilitres.' }, unit: { type: Type.STRING, enum: ['g', 'ml'] }, candidateId:{type:Type.STRING,description:'Optional exact candidateId from the supplied tentative interpretations; only use when that candidate has been reconciled to its evidence.'} }, required: ['nutrient', 'amount', 'unit'] } },
+  { name: 'calculate_nutrition', description: 'Calculate a portion from an unconflicted user-confirmed package nutrient, a currently attached evidence-linked interpretation, or an exact rowId from the saved package reconstruction. Interpretation-based arithmetic is explicitly provisional and never confirms or changes the package record. A matching known mass or volume basis and linked package observations are required.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Portion amount in grams or millilitres.' }, unit: { type: Type.STRING, enum: ['g', 'ml'] }, candidateId:{type:Type.STRING,description:'Optional exact candidateId from supplied interpretations or exact rowId from the saved package reconstruction.'} }, required: ['nutrient', 'amount', 'unit'] } },
   { name: 'lookup_product', description: 'Read-only Open Food Facts search by an exact barcode or product text explicitly present in the user question or package observations. Sends only that query to the public catalog; never sends images or profile data. Results are community candidates, not confirmed package facts.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A product name or brand present in the question or visible package OCR.' }, barcode: { type: Type.STRING, description: 'An exact 8–14 digit barcode present in the question or package OCR.' } } } },
   { name: 'search_research', description: 'Read-only search of Europe PMC or NutriScan’s fixed official India regulation sources. External query terms must be present in the user question/package OCR or a successful exact local identity lookup. If a local registry supplies only publication links and the user asks for the assessment finding, search the linked entity/topic rather than inferring the finding from metadata. Search results are candidates, not an evidence synthesis.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'Focused terms drawn from the explicit question, package OCR or successful exact local identity results.' }, topic: { type: Type.STRING, enum: ['science', 'regulation', 'claims'] } }, required: ['query', 'topic'] } },
 ];
@@ -79,6 +79,7 @@ export type GeminiToolImage = {
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
   base64: string;
   side: 'front' | 'back' | 'extra';
+  regionRole?: 'full-image'|'nutrition-table'|'ingredients'|'label-detail'|'other';
   sourceImage: { width: number; height: number };
   preprocessing: { rotation: 0 | 90 | 180 | 270; contrast: boolean; invert: boolean; crop: { x: number; y: number; width: number; height: number } | null };
 };
@@ -466,7 +467,26 @@ async function lookupChemicalIdentity(args: z.infer<typeof toolArgs.lookup_chemi
 function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, context: GeminiToolContext): GeminiToolResult {
   if (args.candidateId) {
     const candidate = context.interpretedCandidates?.find(item => item.candidateId === args.candidateId && item.kind === 'nutrient' && item.field === args.nutrient);
-    if (!candidate) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'The requested interpretation is not among the supplied current candidates.' } };
+    if (!candidate) {
+      const reconstructed=context.package.reconstruction?.nutritionRows.find(row=>row.rowId===args.candidateId&&reconstructionRowMatches(row.nutrient,args.nutrient));
+      if(!reconstructed)return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'The requested interpretation is not among the supplied candidates or saved package rows.' } };
+      if(context.package.nutrients.some(row=>row.key===args.nutrient&&row.status==='corrected'))return { status:'withheld',resultCount:0,output:{status:'withheld',message:'A user-confirmed correction takes precedence over the saved model interpretation.'} };
+      const imageIds=[...new Set(reconstructed.evidence.imageRegions.map(item=>item.imageId))];
+      if(!['clear','provisional'].includes(reconstructed.status)||reconstructed.value===null||!reconstructed.unit||!reconstructed.basisAmount||!reconstructed.basisUnit||reconstructed.basisUnit!==args.unit||(!reconstructed.evidence.observationIds.length&&!imageIds.length))return {status:'withheld',resultCount:0,output:{status:'withheld',message:'The saved package interpretation does not contain one complete, evidence-linked value and matching mass or volume basis.'}};
+      if(!['g','mg','kcal','kJ'].includes(reconstructed.unit))return {status:'withheld',resultCount:0,output:{status:'withheld',message:'The saved package row uses a unit this calculator cannot safely normalize.'}};
+      const resultValue=reconstructed.value*args.amount/reconstructed.basisAmount;
+      if(!Number.isFinite(resultValue)||resultValue>100000)return {status:'withheld',resultCount:0,output:{status:'withheld',message:'The requested calculation exceeds validated numeric limits.'}};
+      const calculation=calculationSchema.parse({
+        id:`reconcalc-r${context.package.reconstruction?.revision??0}-${args.candidateId.replace(/[^a-z0-9_-]/gi,'').slice(0,42)}-${args.amount}-${args.unit}`,
+        label:`${args.nutrient} in ${args.amount} ${args.unit} (provisional package reading)`,nutrient:args.nutrient,
+        input:reconstructed.value,inputUnit:reconstructed.unit,basisAmount:reconstructed.basisAmount,portion:args.amount,portionUnit:args.unit,
+        result:resultValue,unit:reconstructed.unit,formula:`${reconstructed.value} ${reconstructed.unit} × ${args.amount} ${args.unit} ÷ ${reconstructed.basisAmount} ${reconstructed.basisUnit}`,
+        observationIds:reconstructed.evidence.observationIds,...(imageIds.length?{imageIds}:{}),interpretationIds:[reconstructed.rowId],
+        assumptions:['Deterministic arithmetic from the saved Gemini package interpretation. The printed value and basis remain provisional and are not independently verified.'],
+      });
+      const provisionalCalculation={...calculation,evidenceText:calculationEvidenceText(calculation)};
+      return {status:'ok',resultCount:1,calculations:[provisionalCalculation],output:{status:'ok',calculation:provisionalCalculation,note:'Deterministic arithmetic from the saved Gemini package interpretation. This estimate remains provisional; it does not confirm or overwrite the package reading.'}};
+    }
     const rows = context.package.nutrients.filter(item => item.key === args.nutrient);
     if (rows.some(row => row.status === 'corrected')) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'A user correction takes precedence over the model candidate.' } };
     const reconciliation = reconcileInterpretedNutrition(context.package, [candidate], context.visualImages.map(image => image.imageId));
@@ -519,6 +539,40 @@ function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, 
   });
   const verifiedCalculation = { ...calculation, evidenceText: calculationEvidenceText(calculation) };
   return { status: 'ok', resultCount: 1, calculations: [verifiedCalculation], output: { status: 'ok', calculation: verifiedCalculation, note: 'Deterministic calculation from a recorded package reading; no value was inferred.' } };
+}
+
+function reconstructionRowMatches(nutrient:string,key:(typeof nutrientKeys)[number]):boolean{
+  const label=nutrient.normalize('NFKC').toLocaleLowerCase('en').replace(/[^a-z]+/g,' ');
+  const patterns:Record<(typeof nutrientKeys)[number],RegExp>={energy:/\b(?:energy|calorific value|calories)\b/,carbohydrate:/\b(?:carbohydrate|carbohydrates|carbs?)\b/,sugars:/\b(?:total sugars?|sugars?)\b/,addedSugars:/\badded sugars?\b/,protein:/\bprotein\b/,fat:/\b(?:total fat|fat)\b/,saturatedFat:/\b(?:saturated fat|saturates?)\b/,fiber:/\b(?:dietary fibre|dietary fiber|fibre|fiber)\b/,sodium:/\bsodium\b/,salt:/\bsalt\b/};
+  if(key==='sugars'&&/added sugars?/.test(label))return false;
+  if(key==='fat'&&/saturated fat/.test(label))return false;
+  return patterns[key].test(label);
+}
+
+/** Deterministic, provisional calculations for a current package's declared serving. */
+export function calculateSavedServing(packageData:PackageData):Calculation[]{
+  const reconstruction=packageData.reconstruction;
+  const serving=reconstruction?.serving;
+  if(!reconstruction?.current||!serving||!['clear','provisional'].includes(serving.status)||!serving.quantity||!serving.unit||(!serving.evidence.observationIds.length&&!serving.evidence.imageRegions.length))return [];
+  const context:GeminiToolContext={question:'',package:packageData,visualImages:[],searchTerms:new Set(),prepareImage:async image=>image.base64};
+  const calculations:Calculation[]=[];
+  for(const row of reconstruction.nutritionRows){
+    // A qualifier such as "<" or "trace" changes the arithmetic semantics;
+    // keep it available for interpretation instead of treating its boundary as an exact value.
+    if(row.qualifier||row.value===null||!row.unit||!row.basisAmount||!row.basisUnit||row.basisUnit!==serving.unit||row.basisAmount===serving.quantity)continue;
+    const nutrient=nutrientKeys.find(key=>reconstructionRowMatches(row.nutrient,key));
+    if(!nutrient)continue;
+    const result=calculateNutrition({nutrient,amount:serving.quantity,unit:serving.unit,candidateId:row.rowId},context);
+    if(result.status==='ok')calculations.push(...(result.calculations??[]).map(calculation=>{
+      // Preserve that this amount is a derived declared-serving calculation.
+      // The label is both user-facing and the validator's typed evidence for
+      // the natural phrase "per serving" when the source table only has a
+      // per-100-g row.
+      const withServingLabel={...calculation,label:`${calculation.nutrient} per serving (${serving.printedText})`};
+      return{...withServingLabel,evidenceText:calculationEvidenceText(withServingLabel)};
+    }));
+  }
+  return calculations;
 }
 
 async function lookupProduct(args: z.infer<typeof toolArgs.lookup_product>, context: GeminiToolContext): Promise<GeminiToolResult> {

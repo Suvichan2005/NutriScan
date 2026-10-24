@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import packageInfo from '../../../package.json';
 import { assistEvidenceContext, packageForAssist } from '../assist-evidence';
 import { BROWSER_OCR_ENGINE_VERSION } from '../browser';
-import { calculationEvidenceText, defaultProfile, packageSchema, type PackageData } from '../contracts';
+import { calculationEvidenceText, defaultProfile, packageReconstructionSchema, packageSchema, type PackageData } from '../contracts';
 import { applyNutrientCorrection } from '../correction';
 import { reconcileInterpretedNutrition } from '../interpreted-nutrients';
 import { retrieveEvidence } from '../knowledge';
 import { mergePackageEvidence } from '../merge-evidence';
 import { parseLabel } from '../parser';
-import { assistInput, assistPromptPayload, validateClaims } from '../server/gemini';
+import { assistInput, assistPromptPayload, replaceReferenceIds, validateClaims } from '../server/gemini';
 
 const imageId='photo-private-1';
 const runId='ocr-run-1';
@@ -89,6 +89,22 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(packageSchema.safeParse({...pkg,observations:pkg.observations.map(item=>item.id==='line-2'?{...item,ocrWords:[{wordIndex:1,text:'Protein',confidence:90,bbox:{x0:12,y0:80,x1:105,y1:102}},{wordIndex:0,text:'approx',confidence:44,bbox:{x0:112,y0:80,x1:166,y1:102}}]}:item)}).success).toBe(false);
   });
 
+  it('uses compact exact aliases for model references and restores original evidence IDs before validation',()=>{
+    const pkg=makePackage();
+    const data=assistInput.parse({
+      consent:true,question:'What does the label show?',package:pkg,
+      images:[{handle:imageId,side:'back',width:1200,height:1800}],
+    });
+    const aliases=new Map([[imageId,'IMG_1'],['line-0','OBS_1'],['line-2','OBS_2']]);
+    const payload=assistPromptPayload(data,aliases);
+    const promptObservations=(payload.package as {observations:Array<unknown[]>}).observations;
+
+    expect(promptObservations[0]?.[0]).toBe('OBS_1');
+    expect(promptObservations[0]?.[4]).toBe('IMG_1');
+    expect(payload.images?.[0]?.handle).toBe('IMG_1');
+    expect(replaceReferenceIds({observationIds:['OBS_1','OBS_2'],text:'Reference OBS_1 was used'},new Map([['OBS_1','line-0'],['OBS_2','line-2']]))).toEqual({observationIds:['line-0','line-2'],text:'Reference OBS_1 was used'});
+  });
+
   it('accepts text-only or restored scans without requiring live browser image handles',()=>{
     const pkg=parseLabel('Nutrition information\nSugars 4 g',{origin:'user'});
     expect(pkg.ocrCaptures).toBeUndefined();
@@ -141,6 +157,44 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(packageForAssist(mixed)).toBe(mixed);
     const missingLine={...pkg,observations:pkg.observations.filter(item=>item.id!=='line-4')};
     expect(packageForAssist(missingLine)).toBe(missingLine);
+  });
+
+  it('reuses a current package reconstruction without replaying OCR lines or an OCR-derived title',()=>{
+    const pkg=makePackage();
+    const reconstruction=packageReconstructionSchema.parse({
+      identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional',evidence:{observationIds:['line-0'],imageRegions:[]}},
+      serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],
+      interpretationNote:'Package interpretation remains provisional.',revision:1,updatedAt:'2026-10-23T00:00:00.000Z',model:'fixture-model',current:true,
+    });
+    const alternate=packageReconstructionSchema.parse({...reconstruction,revision:2,current:false,interpretationNote:'A recheck alternative.'});
+    const saved=packageSchema.parse({...pkg,name:'PROTEN TOTALFAT 17.79g 11.429',reconstruction,reconstructionHistory:[alternate]});
+    const compact=packageForAssist(saved);
+    expect(compact.reconstructionHistory).toBeUndefined();
+    expect(packageSchema.safeParse(compact).success).toBe(true);
+    const payload=assistPromptPayload(assistInput.parse({consent:true,question:'What about two biscuits?',package:saved}));
+    const modelPackage=payload.package as {name?:string;observations:Array<unknown>;reconstruction?:{current:boolean}};
+
+    expect(modelPackage.name).toBe('Cream Cracker');
+    expect(modelPackage.observations).toEqual([]);
+    expect(modelPackage.reconstruction?.current).toBe(true);
+    expect(JSON.stringify(payload)).not.toContain('PROTEN TOTALFAT');
+    expect(JSON.stringify(payload)).not.toContain('Carbohydrates');
+  });
+
+  it('retains all OCR lines but sends token geometry only for semantically relevant label regions',()=>{
+    const pkg=makePackage();
+    const decorative={...observations[0],id:'decorative-line',field:'ocr-line',text:'Decorative print mark',bbox:{x0:20,y0:2500,x1:140,y1:2522},readingOrder:{...observations[0].readingOrder,lineIndex:5},ocrWords:[{wordIndex:0,text:'Decorative',confidence:80,bbox:{x0:20,y0:2500,x1:100,y1:2522}}]};
+    const withDecorative=packageSchema.parse({...pkg,observations:[...pkg.observations,decorative]});
+    const payload=assistPromptPayload(assistInput.parse({consent:true,question:'Interpret this label.',package:withDecorative}));
+    const lines=(payload.package.observations as unknown as unknown[][]);
+    const nutritionLine=lines.find(item=>item[0]==='line-2')!;
+    const decorativeLine=lines.find(item=>item[0]==='decorative-line')!;
+
+    expect(nutritionLine[7]).toBe('Protein approx 8.8 g');
+    expect(nutritionLine[8]).not.toBeNull();
+    expect(decorativeLine[7]).toBe('Decorative print mark');
+    expect(decorativeLine[6]).not.toBeNull();
+    expect(decorativeLine[8]).toBeNull();
   });
 
   it('keeps a bounded ten-photo OCR request intact after duplicate-text compaction',()=>{
@@ -273,15 +327,14 @@ describe('OCR-to-assist evidence contract',()=>{
         {kind:'observation',id:'line-3',quote:'Sodium 850 mg'},
         {kind:'observation',id:'line-4',quote:'Sodium 85 mg'}
       ]
-    }],limitations:[],inspectImage:null};
+    }],answerParts:[{text:'You said you are comparing quick breakfast options. The label contains conflicting sodium readings of 850 mg and 85 mg, so this package does not yet support a reliable comparison.',claimIndexes:[0]}],limitations:[],inspectImage:null};
     const result=validateClaims(output,data);
     expect(result.claims).toHaveLength(1);
     expect(result.claims[0].text).toContain('You said you are comparing quick breakfast options.');
-    expect(result.answer).toContain('could not safely assemble it into a clear answer');
-    expect(result.answer).not.toContain('850 mg and 85 mg');
+    expect(result.answer).toContain('850 mg and 85 mg');
 
     const unsupportedProfileQuote=validateClaims({...output,claims:[{...output.claims[0],supportingSpans:[...output.claims[0].supportingSpans.slice(1),{kind:'profile' as const,id:'goals',quote:'I have diabetes'}]}]},data);
-    expect(unsupportedProfileQuote.claims).toEqual([]);
+    expect(unsupportedProfileQuote.claims).toHaveLength(1);
     const profileCannotValidateSafety=validateClaims({...output,claims:[{...output.claims[0],text:'This product is safe.',supportingSpans:output.claims[0].supportingSpans}]},data);
     expect(profileCannotValidateSafety.claims).toEqual([]);
     const withoutProfile=assistInput.parse({consent:true,question:'What do I want?',package:pkg});
@@ -302,12 +355,12 @@ describe('OCR-to-assist evidence contract',()=>{
       text:'The package line reports 12 g of sugars per 100 g. WHO guidance concerns free sugars across the whole diet, so this line alone does not establish daily free-sugar intake.',
       observationIds:[sugar.id,basis.id],sourceIds:[who.id],
       supportingSpans:[{kind:'observation' as const,id:sugar.id,quote:'Sugars 12 g'},{kind:'observation' as const,id:basis.id,quote:'Per 100 g'},{kind:'source' as const,id:who.id,quote:'free sugars to less than 10% of total daily energy'}]
-    }],limitations:[],inspectImage:null};
+    }],answerParts:[{text:'The package line reports 12 g of sugars per 100 g. WHO guidance concerns free sugars across the whole diet, so this line alone does not establish daily free-sugar intake.',claimIndexes:[0]}],limitations:[],inspectImage:null};
     const result=validateClaims(output,data);
     expect(result.claims).toHaveLength(1);
     expect(result.claims[0].text).toContain('The package line reports 12 g of sugars per 100 g.');
     expect(result.claims[0].text).toContain('whole diet');
-    expect(result.answer).toContain('could not safely assemble it into a clear answer');
+    expect(result.answer).toContain('WHO guidance concerns free sugars across the whole diet');
     expect(result.answer).not.toContain('[source:who-sugars-2015]');
   });
 
@@ -326,10 +379,10 @@ describe('OCR-to-assist evidence contract',()=>{
         {kind:'source',id:'epmc-example-trial',quote:'Abstract: participants consumed the test food for four weeks.'},
         {kind:'source',id:'epmc-example-trial',quote:'Search match only; study quality and applicability have not been assessed.'}
       ]
-    }],limitations:[],inspectImage:null},data);
+    }],answerParts:[{text:'This is a research-search candidate; its abstract describes a four-week study, while the search result says applicability has not been assessed.',claimIndexes:[0]}],limitations:[],inspectImage:null},data);
     expect(result.claims).toHaveLength(1);
     expect(result.claims[0].text).toContain('applicability has not been assessed');
-    expect(result.answer).toContain('could not safely assemble it into a clear answer');
+    expect(result.answer).toContain('applicability has not been assessed');
     expect(data.evidence?.[0].category).toBe('literature');
   });
 
@@ -339,9 +392,9 @@ describe('OCR-to-assist evidence contract',()=>{
     const calculation={...baseCalculation,evidenceText:calculationEvidenceText(baseCalculation)};
     const data=assistInput.parse({consent:true,question:'How much protein is in 30 g?',package:pkg,calculations:[calculation]});
     const quote=calculation.evidenceText;
-    const result=validateClaims({answer:'ignored',claims:[{mode:'direct-quote',text:quote,observationIds:[],sourceIds:[],calculationIds:[calculation.id],supportingSpans:[{kind:'calculation',id:calculation.id,quote}]}],limitations:[],inspectImage:null},data);
+    const result=validateClaims({answer:'ignored',claims:[{mode:'direct-quote',text:quote,observationIds:[],sourceIds:[],calculationIds:[calculation.id],supportingSpans:[{kind:'calculation',id:calculation.id,quote}]}],answerParts:[{text:quote,claimIndexes:[0]}],limitations:[],inspectImage:null},data);
     expect(result.claims[0].text).toBe(quote);
-    expect(result.answer).toContain('could not safely assemble it into a clear answer');
+    expect(result.answer).toBe(quote);
     expect(assistInput.safeParse({consent:true,question:'How much protein?',package:pkg,calculations:[{...calculation,observationIds:['missing-observation']}]}).success).toBe(false);
     expect(assistInput.safeParse({consent:true,question:'How much protein?',package:pkg,calculations:[{...calculation,evidenceText:'forged calculation text'}]}).success).toBe(false);
 
@@ -351,10 +404,19 @@ describe('OCR-to-assist evidence contract',()=>{
     const imageRequest={consent:true as const,question:'How much protein?',package:pkg,images:[{handle:imageId,side:'back' as const,width:1200,height:1800}],visualImages:[attachedPhoto],calculations:[{...imageCalculation,evidenceText:calculationEvidenceText(imageCalculation)}]};
     expect(assistInput.safeParse(imageRequest).success).toBe(true);
     expect(assistInput.safeParse({...imageRequest,visualImages:[],images:[]}).success).toBe(false);
+    expect(assistInput.safeParse({...imageRequest,visualImages:[],images:[],calculations:[{...imageCalculation,imageIds:['unretained-photo'],evidenceText:calculationEvidenceText({...imageCalculation,imageIds:['unretained-photo']})}]}).success).toBe(false);
     expect(assistInput.safeParse({...imageRequest,visualImages:[{...attachedPhoto,imageId:'another-photo'}]}).success).toBe(false);
+    const retainedImageCalculation={...imageCalculation,imageIds:['photo-private-1']};
+    expect(assistInput.safeParse({...imageRequest,package:makePackage(),visualImages:[],images:[],calculations:[{...retainedImageCalculation,evidenceText:calculationEvidenceText(retainedImageCalculation)}]}).success).toBe(true);
+    const focusedImages=[
+      attachedPhoto,
+      {...attachedPhoto,regionRole:'nutrition-table' as const,preprocessing:{...attachedPhoto.preprocessing,crop:{x:0.1,y:0.2,width:0.3,height:0.2}}},
+      {...attachedPhoto,regionRole:'ingredients' as const,preprocessing:{...attachedPhoto.preprocessing,crop:{x:0.4,y:0.2,width:0.4,height:0.2}}},
+    ];
+    expect(assistInput.safeParse({...imageRequest,visualImages:focusedImages}).success).toBe(true);
   });
 
-  it('rejects paraphrases without exact evidence spans and unsupported health-safety conclusions',()=>{
+  it('allows identifier-linked synthesis without verbatim spans but rejects unsupported evaluative and safety claims',()=>{
     const pkg=makePackage();
     const data=assistInput.parse({consent:true,question:'Is this safe?',package:pkg});
     const validSpan={kind:'observation' as const,id:'line-3',quote:'Sodium 850 mg'};
@@ -362,8 +424,10 @@ describe('OCR-to-assist evidence contract',()=>{
     const unsupported=validateClaims({...base,claims:[{mode:'synthesis',text:'This product is safe for diabetes.',observationIds:['line-3'],sourceIds:[],supportingSpans:[validSpan]}]},data);
     expect(unsupported.claims).toEqual([]);
     expect(unsupported.answer).toContain('can’t establish a reliable answer');
-    const forged=validateClaims({...base,claims:[{mode:'synthesis',text:'Sodium is low.',observationIds:['line-3'],sourceIds:[],supportingSpans:[{...validSpan,quote:'Sodium is low'}]}]},data);
+    const decisions:Array<{stage:string;index:number;decision:string;reason?:string}>=[];
+    const forged=validateClaims({...base,claims:[{mode:'synthesis',text:'Sodium is low.',observationIds:['line-3'],sourceIds:[],supportingSpans:[]}]},data,event=>decisions.push(event));
     expect(forged.claims).toEqual([]);
+    expect(decisions).toContainEqual({stage:'claim',index:0,decision:'rejected',reason:'comparative-judgment-needs-reference'});
     expect(forged.answer).not.toContain('Sodium is low.');
   });
 });

@@ -36,7 +36,39 @@ export const parserDiagnosticSchema=z.object({
 export type ParserDiagnostic=z.infer<typeof parserDiagnosticSchema>;
 export const nutrientSchema = z.object({key:z.enum(nutrientKeys),value:z.number().finite().nonnegative().max(100000),unit:z.enum(['g','mg','kcal','kJ']),basis:basisSchema.nullable(),observationIds:z.array(z.string()),status:z.enum(['observed','corrected','conflict'])});
 export type Nutrient = z.infer<typeof nutrientSchema>;
-const packageBaseSchema=z.object({id:z.string().min(1).max(160),name:z.string().max(200),brand:z.string().max(120).optional(),barcode:z.string().max(32).optional(),identityConflict:z.boolean().optional(),userDescription:z.string().max(4000).optional(),netWeight:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),serving:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),ingredients:z.array(z.string().max(4000)).max(1000),additives:z.array(z.string().max(120)).max(300),allergens:z.array(z.string().max(1000)).max(100),claims:z.array(z.string().max(1000)).max(100),license:z.string().max(40).optional(),nutrients:z.array(nutrientSchema).max(1000),observations:z.array(observationSchema).max(4000),ocrCaptures:z.array(ocrCaptureSchema).max(50).optional(),visionCaptures:z.array(visionCaptureSchema).max(50).optional(),parserDiagnostics:z.array(parserDiagnosticSchema).max(2000).optional(),rawText:z.string().max(40000),warnings:z.array(z.string().max(500)).max(1000),synthetic:z.boolean(),createdAt:z.string().max(80)}).strict();
+export const reconstructionStatusSchema=z.enum(['clear','provisional','ambiguous','conflict','unreadable']);
+export const reconstructionEvidenceSchema=z.object({
+  observationIds:z.array(z.string().min(1).max(160)).max(32),
+  imageRegions:z.array(z.object({imageId:z.string().min(1).max(160),region:normalizedCropSchema.nullable()}).strict()).max(12)
+}).strict();
+const reconstructedIdentitySchema=z.object({brand:z.string().max(160).nullable(),name:z.string().max(240).nullable(),variant:z.string().max(240).nullable(),status:reconstructionStatusSchema,evidence:reconstructionEvidenceSchema}).strict();
+export const reconstructedServingSchema=z.object({printedText:z.string().max(300).nullable(),quantity:z.number().positive().max(10000).nullable(),unit:z.enum(['g','ml']).nullable(),pieceCount:z.number().positive().max(10000).nullable(),pieceDescription:z.string().max(100).nullable(),status:reconstructionStatusSchema,evidence:reconstructionEvidenceSchema}).strict();
+export const reconstructedNutritionRowSchema=z.object({
+  rowId:z.string().min(1).max(100),nutrient:z.string().min(1).max(120),printedLabel:z.string().max(160),
+  printedValue:z.string().max(80).nullable(),value:z.number().finite().nonnegative().max(100000).nullable(),unit:z.string().max(24).nullable(),
+  columnLabel:z.string().max(160).nullable(),basisText:z.string().max(160).nullable(),basisAmount:z.number().positive().max(10000).nullable(),basisUnit:z.enum(['g','ml']).nullable(),qualifier:z.string().max(300).nullable(),
+  status:reconstructionStatusSchema,evidence:reconstructionEvidenceSchema
+}).strict();
+export const reconstructedIngredientSchema=z.object({position:z.number().int().nonnegative().max(1000),name:z.string().min(1).max(300),printedText:z.string().max(600),printedPercentage:z.number().min(0).max(100).nullable(),normalizedName:z.string().max(300).nullable(),status:reconstructionStatusSchema,evidence:reconstructionEvidenceSchema}).strict();
+export const reconstructedAdditiveSchema=z.object({printedName:z.string().min(1).max(240),code:z.string().max(40).nullable(),normalizedName:z.string().max(240).nullable(),status:reconstructionStatusSchema,evidence:reconstructionEvidenceSchema}).strict();
+export const reconstructedStatementSchema=z.object({kind:z.enum(['contains','may-contain','precaution','claim','warning','manufacturer','regulatory-mark','instruction','other']),label:z.string().max(180).nullable(),text:z.string().min(1).max(1000),status:reconstructionStatusSchema,evidence:reconstructionEvidenceSchema}).strict();
+export const reconstructedRegionSchema=z.object({imageId:z.string().min(1).max(160),role:z.enum(['front','nutrition-table','ingredients','allergens','serving','claims','identity','other']),region:normalizedCropSchema,observationIds:z.array(z.string().min(1).max(160)).max(32)}).strict();
+export const packageReconstructionContentSchema=z.object({
+  identity:reconstructedIdentitySchema,
+  serving:reconstructedServingSchema.nullable(),
+  nutritionRows:z.array(reconstructedNutritionRowSchema).max(100),
+  ingredients:z.array(reconstructedIngredientSchema).max(250),
+  additives:z.array(reconstructedAdditiveSchema).max(100),
+  statements:z.array(reconstructedStatementSchema).max(100),
+  regions:z.array(reconstructedRegionSchema).max(40),
+  unresolved:z.array(z.object({field:z.string().min(1).max(120),reason:z.string().min(1).max(500),evidence:reconstructionEvidenceSchema}).strict()).max(100),
+  interpretationNote:z.string().max(1000)
+}).strict();
+export const packageReconstructionSchema=packageReconstructionContentSchema.extend({revision:z.number().int().positive().max(100000),updatedAt:z.iso.datetime(),model:z.string().min(1).max(120),current:z.boolean()}).strict();
+export const packageReconstructionHistoryEntrySchema=packageReconstructionSchema.extend({current:z.literal(false)}).strict();
+export type PackageReconstructionContent=z.infer<typeof packageReconstructionContentSchema>;
+export type PackageReconstruction=z.infer<typeof packageReconstructionSchema>;
+const packageBaseSchema=z.object({id:z.string().min(1).max(160),name:z.string().max(200),brand:z.string().max(120).optional(),barcode:z.string().max(32).optional(),identityConflict:z.boolean().optional(),userDescription:z.string().max(4000).optional(),netWeight:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),serving:z.object({value:z.number().positive(),unit:z.enum(['g','ml'])}).optional(),ingredients:z.array(z.string().max(4000)).max(1000),additives:z.array(z.string().max(120)).max(300),allergens:z.array(z.string().max(1000)).max(100),claims:z.array(z.string().max(1000)).max(100),license:z.string().max(40).optional(),nutrients:z.array(nutrientSchema).max(1000),reconstruction:packageReconstructionSchema.optional(),reconstructionHistory:z.array(packageReconstructionHistoryEntrySchema).max(5).optional(),observations:z.array(observationSchema).max(4000),ocrCaptures:z.array(ocrCaptureSchema).max(50).optional(),visionCaptures:z.array(visionCaptureSchema).max(50).optional(),parserDiagnostics:z.array(parserDiagnosticSchema).max(2000).optional(),rawText:z.string().max(40000),warnings:z.array(z.string().max(500)).max(1000),synthetic:z.boolean(),createdAt:z.string().max(80)}).strict();
 export const packageSchema=packageBaseSchema.superRefine((pkg,context)=>{
   const observationIds=new Set(pkg.observations.map(observation=>observation.id));
   if(observationIds.size!==pkg.observations.length)context.addIssue({code:'custom',path:['observations'],message:'Observation identifiers must be unique.'});
@@ -45,6 +77,18 @@ export const packageSchema=packageBaseSchema.superRefine((pkg,context)=>{
   const visionRunIds=new Set(pkg.visionCaptures?.map(capture=>capture.runId)??[]);
   if(visionRunIds.size!==(pkg.visionCaptures?.length??0))context.addIssue({code:'custom',path:['visionCaptures'],message:'Each vision capture run identifier must be unique.'});
   for(const [index,nutrient] of pkg.nutrients.entries())for(const id of nutrient.observationIds)if(!observationIds.has(id))context.addIssue({code:'custom',path:['nutrients',index,'observationIds'],message:'Nutrient readings must point to existing package observations.'});
+  const reconstructions=[...(pkg.reconstruction?[{path:['reconstruction'] as (string|number)[],value:pkg.reconstruction}]:[]),...(pkg.reconstructionHistory??[]).map((value,index)=>({path:['reconstructionHistory',index] as (string|number)[],value}))];
+  if(new Set((pkg.reconstructionHistory??[]).map(item=>item.revision)).size!==(pkg.reconstructionHistory?.length??0))context.addIssue({code:'custom',path:['reconstructionHistory'],message:'Archived reconstruction revisions must be unique.'});
+  for(const {path,value:reconstruction} of reconstructions){
+    const imageIds=new Set([...pkg.observations.flatMap(observation=>observation.imageId?[observation.imageId]:[]),...(pkg.ocrCaptures??[]).map(capture=>capture.imageId),...(pkg.visionCaptures??[]).map(capture=>capture.imageId)]);
+    const evidenceGroups=[reconstruction.identity.evidence,...(reconstruction.serving?[reconstruction.serving.evidence]:[]),...reconstruction.nutritionRows.map(row=>row.evidence),...reconstruction.ingredients.map(item=>item.evidence),...reconstruction.additives.map(item=>item.evidence),...reconstruction.statements.map(item=>item.evidence),...reconstruction.unresolved.map(item=>item.evidence)];
+    for(const [index,evidence] of evidenceGroups.entries())for(const id of evidence.observationIds)if(!observationIds.has(id))context.addIssue({code:'custom',path:[...path,index,'observationIds'],message:'Reconstruction evidence must reference observations in this package.'});
+    for(const [index,region] of reconstruction.regions.entries()){
+      if(!imageIds.has(region.imageId))context.addIssue({code:'custom',path:[...path,'regions',index,'imageId'],message:'Reconstruction regions must point to an image retained in the package evidence lineage.'});
+      for(const id of region.observationIds)if(!observationIds.has(id))context.addIssue({code:'custom',path:[...path,'regions',index,'observationIds'],message:'Reconstruction regions must reference observations in this package.'});
+    }
+    for(const evidence of evidenceGroups)for(const reference of evidence.imageRegions)if(!imageIds.has(reference.imageId))context.addIssue({code:'custom',path:[...path,'imageRegions'],message:'Reconstruction evidence must point to an image retained in the package evidence lineage.'});
+  }
   for(const [index,observation] of pkg.observations.entries()){
     for(const sourceId of observation.derivedFromObservationIds??[])if(sourceId===observation.id||!observationIds.has(sourceId))context.addIssue({code:'custom',path:['observations',index,'derivedFromObservationIds'],message:'Derived observations must point to a different existing source observation.'});
     const supersededIds=observation.supersedesObservationIds??[];
@@ -117,7 +161,7 @@ export const hasUserContext = (profile:Profile):boolean => Object.values(profile
 export const assistantUiComponentTypeSchema=z.enum(['nutrition-table','portion-calculator','ingredient-explorer','allergen-explanation','product-comparison','package-evidence','source-reference-cards','personalized-finding','package-details']);
 export const assistantUiComponentSchema=z.object({type:assistantUiComponentTypeSchema,observationIds:z.array(z.string().min(1).max(160)).max(20),sourceIds:z.array(z.string().min(1).max(160)).max(10),calculationIds:z.array(z.string().min(1).max(120)).max(20)}).strict();
 export type AssistantUiComponent=z.infer<typeof assistantUiComponentSchema>;
-export const savedConversationTurnSchema=z.object({question:z.string().trim().min(1).max(1000),answer:z.string().max(8000),at:z.iso.datetime(),answerOrigin:z.enum(['local','gemini']).optional(),evidence:z.array(conversationEvidenceSourceSchema).max(3).optional(),uiComponents:z.array(assistantUiComponentSchema).max(6).optional()}).strict();
+export const savedConversationTurnSchema=z.object({question:z.string().trim().min(1).max(1000),answer:z.string().max(8000),at:z.iso.datetime(),answerOrigin:z.enum(['local','gemini']).optional(),evidence:z.array(conversationEvidenceSourceSchema).max(3).optional(),uiComponents:z.array(assistantUiComponentSchema).max(6).optional(),calculations:z.array(calculationSchema).max(20).optional()}).strict();
 export type SavedConversationTurn=z.infer<typeof savedConversationTurnSchema>;
 export const savedScanSchema=z.object({id:z.string().min(1).max(160),name:z.string().max(200),createdAt:z.string().min(1).max(80),package:packageSchema,portion:z.number().finite().positive().max(10000),unit:z.enum(['g','ml']),conversation:z.array(savedConversationTurnSchema).max(30).optional()}).strict();
 export type SavedScanRecord=z.infer<typeof savedScanSchema>;

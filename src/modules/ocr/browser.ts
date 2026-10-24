@@ -19,6 +19,20 @@ export type BrowserOcrResult = {
   captures: OcrCapture[];
 };
 
+type TextRecognition = { data: { text: string } };
+
+/** Retry empty AUTO output once with table-friendly single-block segmentation. */
+export async function retryShortAutoRecognition<T extends TextRecognition>(
+  primary: T,
+  retrySingleBlock: () => Promise<T>
+): Promise<{ result: T; segmentationMode: 'auto' | 'single-block' }> {
+  if (primary.data.text.trim().length >= 8) return { result: primary, segmentationMode: 'auto' };
+  const fallback = await retrySingleBlock();
+  return fallback.data.text.trim().length > primary.data.text.trim().length
+    ? { result: fallback, segmentationMode: 'single-block' }
+    : { result: primary, segmentationMode: 'auto' };
+}
+
 export const BROWSER_OCR_ENGINE_VERSION = '7.0.0';
 
 export async function prepareImage(asset: ImageAsset, rotation = 0, contrast = false, crop?: Crop, invert = false): Promise<Blob> {
@@ -84,7 +98,9 @@ export async function readOcrImages(
       return created;
     }), abortPromise]);
     if (cancelled) throw new Error('Reading stopped. Your photos are still here.');
-    await worker.setParameters({ preserve_interword_spaces: '1' });
+    if (!worker) throw new Error('The on-device reader could not start.');
+    const reader = worker;
+    await reader.setParameters({ preserve_interword_spaces: '1' });
     const texts: string[] = [];
     const observations: Observation[] = [];
     const captures: OcrCapture[] = [];
@@ -95,15 +111,26 @@ export async function readOcrImages(
       onProgress(`Reading photo ${index + 1} of ${assets.length}`, index / assets.length);
       const runId = crypto.randomUUID();
       if (options.beforeImage) await Promise.race([options.beforeImage(asset), abortPromise]);
-      const segmentationMode = asset.role === 'nutrition' || asset.role === 'ingredients' || asset.side === 'back' ? 'single-block' : 'auto';
-      await worker.setParameters({ tessedit_pageseg_mode: segmentationMode === 'single-block' ? PSM.SINGLE_BLOCK : PSM.AUTO });
+      let segmentationMode: 'single-block' | 'auto' = asset.role === 'nutrition' || asset.role === 'ingredients' || asset.side === 'back' ? 'single-block' : 'auto';
+      await reader.setParameters({ tessedit_pageseg_mode: segmentationMode === 'single-block' ? PSM.SINGLE_BLOCK : PSM.AUTO });
       const rotation = (asset.rotation ?? options.rotation) as 0 | 90 | 180 | 270;
       const crop = options.cropTarget === asset.id ? options.crop : undefined;
       const image = await prepareImage(asset, rotation, options.contrast, crop, options.invert);
       const preparedBitmap = await createImageBitmap(image);
       const preparedImage = { width: preparedBitmap.width, height: preparedBitmap.height };
       preparedBitmap.close();
-      const result = await Promise.race([worker.recognize(image, {}, { text: true, blocks: true, tsv: true }), abortPromise]);
+      let result = await Promise.race([reader.recognize(image, {}, { text: true, blocks: true, tsv: true }), abortPromise]);
+      // Unknown-side photos are common in the consumer flow. AUTO can return
+      // almost nothing for a tightly framed nutrition table; retry that image
+      // once as a single block before treating its package evidence as empty.
+      if (segmentationMode === 'auto') {
+        const recovered = await retryShortAutoRecognition(result, async () => {
+          await reader.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK });
+          return Promise.race([reader.recognize(image, {}, { text: true, blocks: true, tsv: true }), abortPromise]);
+        });
+        result = recovered.result;
+        segmentationMode = recovered.segmentationMode;
+      }
       texts.push(result.data.text);
       confidence += result.data.confidence;
       captures.push({

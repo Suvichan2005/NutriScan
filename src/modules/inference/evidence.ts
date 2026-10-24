@@ -24,6 +24,71 @@ const additionalPhotoMarker = /^--- Additional photo evidence ---$/;
  * by those observations in the same order. Mixed or ambiguous text is kept.
  */
 export function packageForAssist(pkg: PackageData): PackageData {
+  if (pkg.reconstruction?.current) {
+    // Follow-up turns use the saved interpretation as their package context.
+    // Retain user corrections and their observation links, but leave the full
+    // OCR transcript, image geometry and parser diagnostics in the browser's
+    // package record for the inspector and targeted recovery path.
+    const reconstruction=pkg.reconstruction;
+    const requiredIds=new Set([
+      ...reconstruction.identity.evidence.observationIds,
+      ...(reconstruction.serving?.evidence.observationIds??[]),
+      ...reconstruction.nutritionRows.flatMap(row=>row.evidence.observationIds),
+      ...reconstruction.ingredients.flatMap(item=>item.evidence.observationIds),
+      ...reconstruction.additives.flatMap(item=>item.evidence.observationIds),
+      ...reconstruction.statements.flatMap(item=>item.evidence.observationIds),
+      ...reconstruction.unresolved.flatMap(item=>item.evidence.observationIds),
+      ...reconstruction.regions.flatMap(region=>region.observationIds),
+      ...pkg.observations.filter(observation=>observation.origin==='user').map(observation=>observation.id),
+      ...pkg.nutrients.filter(nutrient=>nutrient.status==='corrected').flatMap(nutrient=>nutrient.observationIds),
+    ]);
+    // Retain the referenced evidence graph so packageSchema can validate every
+    // stored reconstruction link, while omitting unrelated OCR lines and bulky
+    // word geometry from normal follow-up requests.
+    let changed=true;
+    while(changed){
+      changed=false;
+      for(const observation of pkg.observations){
+        if(!requiredIds.has(observation.id))continue;
+        for(const id of [...(observation.derivedFromObservationIds??[]),...(observation.supersedesObservationIds??[])]){
+          if(!requiredIds.has(id)){requiredIds.add(id);changed=true;}
+        }
+      }
+    }
+    const compactObservations=pkg.observations.filter(observation=>requiredIds.has(observation.id)).map(observation=>{
+      // Keep the run and line order for retained OCR observations. The
+      // follow-up no longer needs their boxes or token-level geometry, but
+      // the assist boundary still needs the original image/capture lineage.
+      const {bbox:_bbox,ocrWords:_ocrWords,visionRunId:_visionRunId,...compact}=observation;
+      return compact;
+    });
+    const retainedImageIds=new Set([
+      ...compactObservations.flatMap(observation=>observation.imageId?[observation.imageId]:[]),
+      ...reconstruction.regions.map(region=>region.imageId),
+      ...[
+        reconstruction.identity.evidence,
+        ...(reconstruction.serving?[reconstruction.serving.evidence]:[]),
+        ...reconstruction.nutritionRows.map(row=>row.evidence),
+        ...reconstruction.ingredients.map(item=>item.evidence),
+        ...reconstruction.additives.map(item=>item.evidence),
+        ...reconstruction.statements.map(item=>item.evidence),
+        ...reconstruction.unresolved.map(item=>item.evidence),
+      ].flatMap(evidence=>evidence.imageRegions.map(region=>region.imageId)),
+    ]);
+    const correctedNutrients=pkg.nutrients.filter(nutrient=>nutrient.status==='corrected');
+    const {reconstructionHistory:_reconstructionHistory,...currentPackage}=pkg;
+    return {
+      ...currentPackage,
+      name:reconstruction.identity.name??'Unidentified food package',
+      ...(reconstruction.identity.brand?{brand:reconstruction.identity.brand}:{}),
+      ingredients:[],additives:[],allergens:[],claims:[],
+      nutrients:correctedNutrients,
+      observations:compactObservations,
+      ocrCaptures:(pkg.ocrCaptures??[]).filter(capture=>retainedImageIds.has(capture.imageId)),
+      visionCaptures:(pkg.visionCaptures??[]).filter(capture=>retainedImageIds.has(capture.imageId)),
+      parserDiagnostics:[],rawText:'',warnings:[]
+    };
+  }
   const rawOcrLines = pkg.observations.filter(observation => observation.origin === 'ocr' && observation.field === 'ocr-line');
   if (!rawOcrLines.length) return pkg;
 

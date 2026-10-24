@@ -24,6 +24,7 @@ export function appendVisionEvidence(
 
   return packageSchema.parse({
     ...original,
+    ...(original.reconstruction?{reconstruction:{...original.reconstruction,current:false}}:{}),
     observations: [...original.observations, ...validatedObservations],
     visionCaptures: [...(original.visionCaptures ?? []), validatedCapture],
     warnings: original.warnings.includes(visionWarning)

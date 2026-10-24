@@ -1,9 +1,11 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { GoogleGenAI, type GenerateContentParameters, type GenerateContentResponse } from '@google/genai';
+import { GoogleGenAI, type Content, type CountTokensParameters, type GenerateContentParameters, type GenerateContentResponse, type Part, type Tool, type ToolListUnion } from '@google/genai';
 import { ApiError, readBounded } from './http';
 import { recordGeminiDiagnostic } from './gemini-diagnostics';
+import { recordGeminiEvaluationEvent } from './gemini-evaluation-recorder';
 
 export type GeminiTier = 'free' | 'paid';
 export type GeminiPurpose = 'application' | 'synthetic-smoke';
@@ -14,6 +16,129 @@ export type GeminiContext = {
   purpose: GeminiPurpose;
   client: GoogleGenAI;
 };
+
+export const FREE_GEMINI_MODEL_PREFERENCE = [
+  'gemini-3.8-flash',
+  'gemini-3.7-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash-lite',
+] as const;
+
+type ModelCooldown = { until: number; kind: 'short-quota' | 'daily-quota' | 'model-unavailable' | 'unsupported-feature' | 'service-unavailable'; retryAfterMs: number | null };
+type ModelRouteAttempt = { model: string; outcome: 'used' | 'failed' | 'skipped'; reason?: string; retryAfterMs?: number | null; cooldownUntil?: number | null };
+type GenerateDiagnosticContext = { analysisId?: string; stage?: string; round?: number; profileIncluded?: boolean; deadlineAt?: number };
+const cooldownPath = path.join(process.cwd(), '.data', 'gemini-routing-cooldowns.json');
+const modelCooldowns = new Map<string, ModelCooldown>();
+let cooldownsLoaded = false;
+
+function loadCooldowns() {
+  if (cooldownsLoaded || isTestRuntime()) return;
+  cooldownsLoaded = true;
+  try {
+    const raw = readFileSync(cooldownPath, 'utf8');
+    if (Buffer.byteLength(raw) > 32_000) return;
+    const parsed = JSON.parse(raw) as Record<string, ModelCooldown>;
+    for (const [model, state] of Object.entries(parsed)) {
+      if (validModel(model) && state && Number.isFinite(state.until) && state.until > Date.now()
+        && ['short-quota', 'daily-quota', 'model-unavailable', 'unsupported-feature', 'service-unavailable'].includes(state.kind)) modelCooldowns.set(model, state);
+    }
+  } catch { /* A missing or unreadable local cooldown file does not prevent free use. */ }
+}
+
+function saveCooldowns() {
+  if (isTestRuntime()) return;
+  try {
+    mkdirSync(path.dirname(cooldownPath), { recursive: true });
+    const temporaryPath = `${cooldownPath}.${process.pid}.tmp`;
+    writeFileSync(temporaryPath, JSON.stringify(Object.fromEntries(modelCooldowns)), { encoding: 'utf8', mode: 0o600 });
+    renameSync(temporaryPath, cooldownPath);
+  } catch { /* Routing remains bounded in memory if local persistence is unavailable. */ }
+}
+
+export function resetGeminiRoutingForTests() {
+  modelCooldowns.clear();
+  cooldownsLoaded = true;
+}
+
+export function parseGeminiRetryAfter(value: string | null, now = Date.now()): number | null {
+  if (!value?.trim()) return null;
+  const seconds = Number(value.trim());
+  const ms = Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : Date.parse(value) - now;
+  return Number.isFinite(ms) && ms >= 0 ? Math.min(24 * 60 * 60 * 1000, ms) : null;
+}
+
+function configuredFreeModels() {
+  const configured = process.env.GEMINI_FREE_MODEL_ORDER?.split(',').map(value => value.trim()).filter(Boolean);
+  if (!configured?.length) return [...FREE_GEMINI_MODEL_PREFERENCE];
+  const allow = new Set(configured);
+  return FREE_GEMINI_MODEL_PREFERENCE.filter(model => allow.has(model));
+}
+
+function quotaDetails(body: string) {
+  try {
+    const parsed = JSON.parse(body) as { error?: { status?: unknown; message?: unknown; details?: unknown } };
+    const text = JSON.stringify(parsed.error ?? {}).toLowerCase();
+    const daily = /per[_ ]?day|perday|daily.{0,30}quota|quota.{0,30}daily|requests[_ ]per[_ ]day/.test(text);
+    return daily ? 'daily-quota' as const : 'short-quota' as const;
+  } catch { return 'short-quota' as const; }
+}
+
+function recordModelCooldown(model: string, kind: ModelCooldown['kind'], retryAfterMs: number | null) {
+  loadCooldowns();
+  const defaultDuration = kind === 'daily-quota' ? 24 * 60 * 60 * 1000
+    : kind === 'model-unavailable' || kind === 'unsupported-feature' ? 24 * 60 * 60 * 1000
+      : kind === 'service-unavailable' ? 5 * 60 * 1000
+        : 60_000;
+  const duration = retryAfterMs === null ? defaultDuration : Math.max(retryAfterMs, kind === 'service-unavailable' ? 15_000 : 0);
+  const cooldown = { until: Date.now() + duration, kind, retryAfterMs } satisfies ModelCooldown;
+  modelCooldowns.set(model, cooldown);
+  saveCooldowns();
+  return cooldown;
+}
+
+function cooldownFor(model: string) {
+  loadCooldowns();
+  const state = modelCooldowns.get(model);
+  if (state && state.until <= Date.now()) { modelCooldowns.delete(model); saveCooldowns(); return null; }
+  return state ?? null;
+}
+
+/**
+ * The Gemini Developer API's countTokens endpoint rejects systemInstruction
+ * and tools in config, although generation accepts them. Include their exact
+ * serialized declarations as an added text part so preflight counts them too.
+ */
+export async function buildCountTokensRequest(params: GenerateContentParameters): Promise<CountTokensParameters> {
+  const { systemInstruction, tools } = params.config ?? {};
+  const countableTools: Tool[] | undefined = tools
+    ? await Promise.all((tools as ToolListUnion).map(async (tool) => {
+        if ('tool' in tool && typeof tool.tool === 'function') return tool.tool();
+        return tool as Tool;
+      }))
+    : undefined;
+  const sourceContents = params.contents;
+  const isContent = (value: unknown): value is Content => !!value && typeof value === 'object' && 'parts' in value;
+  const contents: Content[] = Array.isArray(sourceContents)
+    ? sourceContents.length > 0 && sourceContents.every(isContent)
+      ? [...sourceContents]
+      : sourceContents.length > 0
+        ? [{ role: 'user', parts: sourceContents as Part[] }]
+        : []
+    : isContent(sourceContents)
+      ? [sourceContents]
+      : [{ role: 'user', parts: [sourceContents as Part] }];
+  const hasConfigOverhead = systemInstruction !== undefined || countableTools !== undefined;
+  if (hasConfigOverhead) {
+    contents.push({
+      role: 'user',
+      parts: [{ text: `Serialized system instruction and tool declarations for token preflight: ${JSON.stringify({ systemInstruction, tools: countableTools })}` }],
+    });
+  }
+  return {
+    model: params.model,
+    contents,
+  };
+}
 
 type UsageRecord = {
   id: string;
@@ -97,11 +222,15 @@ function validModel(value: string | undefined): string | null {
 
 function tierFromEnvironment(): GeminiTier | null {
   const tier = process.env.GEMINI_PROVIDER?.trim();
+  if (!tier) return 'free';
   return tier === 'free' || tier === 'paid' ? tier : null;
 }
 
 function paidAuthorizationReady() {
+  const freeProject = process.env.GEMINI_FREE_PROJECT_ID?.trim();
+  const paidProject = process.env.GEMINI_PAID_PROJECT_ID?.trim();
   return process.env.ENABLE_PAID_GEMINI === 'true'
+    && Boolean(freeProject && paidProject && freeProject !== paidProject)
     && positiveNumber('GEMINI_PAID_BUDGET_USD') !== null
     && positiveNumber('GEMINI_PAID_MAX_CALLS') !== null
     && positiveNumber('GEMINI_PAID_MAX_INPUT_TOKENS') !== null
@@ -118,30 +247,54 @@ function selectedKey(tier: GeminiTier | null) {
       : undefined;
 }
 
-export function providerStatus() {
-  const tier = tierFromEnvironment();
-  const model = validModel(process.env.GEMINI_MODEL);
-  const configured = Boolean(tier && selectedKey(tier) && model);
-  const paidAuthorized = tier !== 'paid' || paidAuthorizationReady();
-  const enabled = process.env.ENABLE_GEMINI === 'true' && configured && paidAuthorized;
-  const message = enabled
-    ? `${tier === 'free' ? 'Free-tier' : 'Paid-tier'} Gemini is explicitly selected. Each remote request still requires consent.`
-    : tier === 'paid' && configured && !paidAuthorized
-      ? 'Paid Gemini is blocked: explicit enablement, a positive spend cap, a request cap, input/output limits and current price rates are all required.'
-      : 'Gemini is disabled. Select a server-side provider and stable model, then explicitly enable the chosen tier. No provider calls are made while disabled.';
-  const searchEnabled = process.env.ENABLE_GEMINI_SEARCH === 'true';
-  return { provider: 'Gemini', tier, configured, enabled, paidAuthorized, model, searchEnabled, searchRequested: searchEnabled, message };
+function selectedModel(tier: GeminiTier | null) {
+  if (tier === 'free') {
+    loadCooldowns();
+    return configuredFreeModels().find(model => !cooldownFor(model)) ?? configuredFreeModels()[0] ?? null;
+  }
+  return validModel(process.env.GEMINI_MODEL);
 }
 
-function buildClient(apiKey: string, tier: GeminiTier, purpose: GeminiPurpose) {
+function paidFallbackReady() {
+  return process.env.ENABLE_PAID_GEMINI_FALLBACK === 'true'
+    && paidAuthorizationReady()
+    && Boolean(selectedKey('paid'));
+}
+
+export function providerStatus() {
+  const tier = tierFromEnvironment();
+  const model = selectedModel(tier);
+  const configured = Boolean(tier && selectedKey(tier) && model);
+  // Report the paid configuration independently of the selected provider. A
+  // free selection must not make an unverified paid route appear authorized.
+  const paidAuthorized = paidAuthorizationReady() && Boolean(selectedKey('paid'));
+  const enabled = process.env.ENABLE_GEMINI === 'true' && configured && (tier !== 'paid' || paidAuthorized);
+  const message = enabled
+    ? `${tier === 'free' ? 'Free-tier' : 'Paid-tier'} Gemini is selected. Each remote request still requires consent.`
+    : tier === 'paid' && configured && !paidAuthorized
+      ? 'Paid Gemini is blocked: its explicit enablement, separate project identity, positive spend cap, request cap, input/output limits and current price rates are required.'
+      : 'Gemini is disabled. Configure a server-side free-tier key and explicitly enable Gemini. No provider calls are made while disabled.';
+  const searchEnabled = process.env.ENABLE_GEMINI_SEARCH === 'true';
+  const freeProjectId = process.env.GEMINI_FREE_PROJECT_ID?.trim() || null;
+  const paidProjectId = process.env.GEMINI_PAID_PROJECT_ID?.trim() || null;
+  return {
+    provider: 'Gemini', tier, requestedTier: tier, configured, enabled, paidAuthorized, model,
+    preferredFreeModels: configuredFreeModels(),
+    projectIdentity: tier === 'paid' ? (paidProjectId ? 'declared' : 'unknown') : (freeProjectId ? 'declared' : 'unknown'),
+    paidProjectIdentity: paidProjectId ? 'declared' : 'unknown',
+    paidFallbackEnabled: paidFallbackReady(),
+    paidFallbackReason: paidFallbackReady() ? null : 'Paid fallback requires ENABLE_PAID_GEMINI_FALLBACK=true, distinct declared project IDs and the complete paid cap configuration.',
+    searchEnabled, searchRequested: searchEnabled, message,
+  };
+}
+
+function buildClient(apiKey: string, tier: GeminiTier, purpose: GeminiPurpose, model: string) {
   return new GoogleGenAI({ apiKey, httpOptions: {
     timeout: 62_000,
-    // A free-tier application request may survive one temporary service-capacity
-    // failure. Keep paid calls single-attempt because a retry could consume the
-    // reserved spend twice, and keep smoke measurements reproducible.
-    retryOptions: tier === 'free' && purpose === 'application'
-      ? { attempts: 2, initialDelay: 1, maxDelay: 2, expBase: 2, jitter: 1, httpStatusCodes: [503] }
-      : { attempts: 1 },
+    // Keep SDK retries disabled so each provider HTTP attempt is observable.
+    // Free routing can try another eligible model; paid mode must never make
+    // an untracked retry that might spend twice.
+    retryOptions: { attempts: 1 },
     fetch: async (target, init) => {
       const address = new URL(target instanceof Request ? target.url : String(target));
       if (address.protocol !== 'https:' || address.hostname !== 'generativelanguage.googleapis.com' || address.port || address.username || address.password) {
@@ -149,6 +302,14 @@ function buildClient(apiKey: string, tier: GeminiTier, purpose: GeminiPurpose) {
       }
       const response = await fetch(target, { ...init, redirect: 'error' });
       const body = await readBounded(response.body, 160_000, init?.signal ?? undefined);
+      if (response.status === 429) {
+        const retryAfterMs = parseGeminiRetryAfter(response.headers.get('retry-after'));
+        recordModelCooldown(model, quotaDetails(body), retryAfterMs);
+      } else if (response.status === 404) {
+        recordModelCooldown(model, 'model-unavailable', null);
+      } else if (response.status === 503 || response.status === 504) {
+        recordModelCooldown(model, 'service-unavailable', null);
+      }
       return new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers });
     },
   } });
@@ -162,7 +323,7 @@ export function applicationGeminiContext(): GeminiContext {
   }
   const apiKey = selectedKey(status.tier);
   if (!apiKey) throw new ApiError(503, 'provider_not_configured', 'The explicitly selected Gemini project has no server-side key.');
-  return { tier: status.tier, model: status.model, purpose: 'application', client: buildClient(apiKey, status.tier, 'application') };
+  return { tier: status.tier, model: status.model, purpose: 'application', client: buildClient(apiKey, status.tier, 'application', status.model) };
 }
 
 /** The only smoke-test context is explicitly bound to the free project. */
@@ -170,7 +331,7 @@ export function freeTierSyntheticSmokeContext(model: string): GeminiContext {
   if (!validModel(model)) throw new ApiError(400, 'invalid_model', 'Choose a stable Gemini model identifier.');
   const apiKey = process.env.FREE_GEMINI_API_KEY?.trim();
   if (!apiKey) throw new ApiError(503, 'free_provider_not_configured', 'The free-tier Gemini project has no server-side key.');
-  return { tier: 'free', model, purpose: 'synthetic-smoke', client: buildClient(apiKey, 'free', 'synthetic-smoke') };
+  return { tier: 'free', model, purpose: 'synthetic-smoke', client: buildClient(apiKey, 'free', 'synthetic-smoke', model) };
 }
 
 async function readLedger(): Promise<UsageLedger> {
@@ -250,19 +411,58 @@ async function reserveCall(context: GeminiContext, record: UsageRecord) {
   });
 }
 
-function safeProviderFailure(error: unknown) {
-  const status = error && typeof error === 'object' && 'status' in error && typeof error.status === 'number'
-    ? Math.min(599, Math.max(100, Math.floor(error.status)))
+export function safeProviderFailure(error: unknown, attemptSignal?: AbortSignal) {
+  const chain: Array<{ name: string; code: string }> = [];
+  let current: unknown = error;
+  for (let depth = 0; depth < 5 && current && typeof current === 'object'; depth += 1) {
+    const value = current as { name?: unknown; code?: unknown; cause?: unknown };
+    chain.push({
+      name: typeof value.name === 'string' ? value.name : '',
+      code: typeof value.code === 'string' ? value.code : '',
+    });
+    current = value.cause;
+  }
+  const rawStatus = error && typeof error === 'object'
+    ? ('status' in error && typeof error.status === 'number' ? error.status
+      : 'statusCode' in error && typeof error.statusCode === 'number' ? error.statusCode : null)
     : null;
+  const status = rawStatus === null ? null : Math.min(599, Math.max(100, Math.floor(rawStatus)));
+  const transportTimedOut = chain.some(item => item.name === 'TimeoutError' || item.code === 'ETIMEDOUT' || item.code === 'UND_ERR_CONNECT_TIMEOUT');
   const failureClass = status === 401 ? 'authentication'
     : status === 403 ? 'access-denied'
       : status === 404 ? 'model-or-endpoint'
         : status === 429 ? 'rate-or-quota'
           : status === 400 || status === 422 ? 'request-rejected'
-            : status === 408 || status === 504 ? 'timeout'
+              : status === 408 || status === 504 || (status === null && (transportTimedOut || attemptSignal?.aborted === true)) ? 'timeout'
               : status !== null && status >= 500 ? 'provider-unavailable'
                 : 'transport-or-unknown';
-  return { status, failureClass };
+  // The SDK error message contains Google's response body, so classify it
+  // locally and retain only safe API status/path metadata. Never persist the
+  // raw provider text, which can include request details.
+  const message = error instanceof Error ? error.message.slice(0, 16_000) : '';
+  const jsonStart = message.indexOf('{');
+  let providerStatus: string | null = null;
+  if (jsonStart >= 0) {
+    try {
+      const parsed = JSON.parse(message.slice(jsonStart)) as { error?: { status?: unknown } };
+      const candidate = parsed.error?.status;
+      if (typeof candidate === 'string' && /^[A-Z_]{3,80}$/.test(candidate)) providerStatus = candidate;
+    } catch { /* SDK error text is not guaranteed to contain a JSON body. */ }
+  }
+  const fieldPath = message.match(/\bat ['"]([A-Za-z0-9_.\[\]-]{1,120})['"]/i)?.[1] ?? null;
+  const providerFieldPath = fieldPath && /^(?:contents|generationConfig|tools|toolConfig)(?:\.[A-Za-z0-9_-]+|\[\d+\])*$/.test(fieldPath)
+    ? fieldPath
+    : null;
+  const providerReasonClass = /maximum allowed nesting depth|nesting depth/i.test(message) ? 'schema-nesting-depth'
+    : /too many states|too much branching|constraint.*states/i.test(message) ? 'schema-complexity'
+      : /response.?json.?schema|response.?schema/i.test(message) ? 'response-schema'
+        : /function.?declaration|function.?schema|parameters.?schema|tool.?schema/i.test(message) ? 'function-schema'
+          : /inline.?data|mime.?type|image part/i.test(message) ? 'image-parts'
+            : /unknown name|unknown field|invalid json payload|invalid value at/i.test(message) ? 'request-field'
+              : /thinking.?config|thinking.?level/i.test(message) ? 'thinking-config'
+                : status === 400 || status === 422 ? 'unclassified-request-rejection'
+                  : null;
+  return { status, failureClass, providerStatus, providerReasonClass, providerFieldPath };
 }
 
 function requestContentMetadata(contents: unknown) {
@@ -300,7 +500,7 @@ function requestToolNames(params: GenerateContentParameters) {
   });
 }
 
-async function settleCall(id: string, state: 'completed' | 'failed', response: GenerateContentResponse | undefined, elapsedMs: number, context: GeminiContext, failure?: unknown) {
+async function settleCall(id: string, state: 'completed' | 'failed', response: GenerateContentResponse | undefined, elapsedMs: number, context: GeminiContext, failure?: unknown, attemptSignal?: AbortSignal) {
   const price = modelPrice(context.tier);
   const usage = response?.usageMetadata;
   const promptTokens = usage?.promptTokenCount ?? null;
@@ -342,7 +542,7 @@ async function settleCall(id: string, state: 'completed' | 'failed', response: G
     record.estimatedGroundingCostUpperUsd = groundedSearchQueryCount * 0.014;
     record.elapsedMs = elapsedMs;
     if (state === 'failed') {
-      const safeFailure = safeProviderFailure(failure);
+      const safeFailure = safeProviderFailure(failure, attemptSignal);
       record.providerHttpStatus = safeFailure.status;
       record.providerFailureClass = safeFailure.failureClass;
     } else {
@@ -352,7 +552,7 @@ async function settleCall(id: string, state: 'completed' | 'failed', response: G
   });
 }
 
-export async function generateTracked(context: GeminiContext, params: GenerateContentParameters, diagnosticContext: { analysisId?: string; stage?: string; round?: number; profileIncluded?: boolean } = {}): Promise<GenerateContentResponse> {
+async function generateTrackedOnce(context: GeminiContext, params: GenerateContentParameters, diagnosticContext: GenerateDiagnosticContext = {}): Promise<GenerateContentResponse> {
   if (params.model !== context.model) throw new ApiError(400, 'provider_model_mismatch', 'Request model does not match the selected provider configuration.');
   const maxOutputTokens = params.config?.maxOutputTokens ?? 0;
   if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 1 || maxOutputTokens > 12000) throw new ApiError(400, 'output_limit', 'Gemini output must be explicitly bounded to at most 12000 tokens.');
@@ -374,11 +574,16 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
     const countStarted = Date.now();
     let tokenCount;
     try {
-      tokenCount = await context.client.models.countTokens({ model: context.model, contents: params.contents });
+      tokenCount = await context.client.models.countTokens(await buildCountTokensRequest(params));
+      const rawCountTokens = tokenCount.totalTokens ?? -1;
+      const estimatedPromptTokens = Math.ceil(rawCountTokens * 1.1);
       await recordGeminiDiagnostic({
         event: 'count_tokens', analysisId: diagnosticContext.analysisId ?? id, callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null,
-        model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false, elapsedMs: Date.now() - countStarted, promptTokens: tokenCount.totalTokens,
+        model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false, elapsedMs: Date.now() - countStarted,
+        promptTokens: estimatedPromptTokens, rawCountTokens,
+        estimateMethod: 'counted-content-plus-serialized-system-and-tools-with-10-percent-margin',
       });
+      tokenCount = { ...tokenCount, totalTokens: estimatedPromptTokens };
     } catch (error) {
       const safeFailure = safeProviderFailure(error);
       await recordGeminiDiagnostic({ event: 'count_tokens_failed', analysisId: diagnosticContext.analysisId ?? id, callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null, model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false, elapsedMs: Date.now() - countStarted, failure: safeFailure });
@@ -418,9 +623,15 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
     tier: context.tier, purpose: context.purpose, model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false,
     requestMetadata: {
       ...requestContentMetadata(params.contents), maxOutputTokens, responseMimeType: params.config?.responseMimeType ?? null,
-      responseSchemaPresent: Boolean(params.config?.responseJsonSchema), toolNames: requestToolNames(params),
+      responseSchemaPresent: Boolean(params.config?.responseJsonSchema),
+      responseSchemaMode: params.config?.responseJsonSchema ? 'structured-schema' : params.config?.responseMimeType === 'application/json' ? 'json-mode-client-validated' : 'unconstrained',
+      toolNames: requestToolNames(params),
       googleSearchOffered: params.config?.tools?.some(tool => 'googleSearch' in tool) ?? false,
     },
+  });
+  await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? id, {
+    event: 'provider_request', callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null,
+    model: context.model, request: { model: params.model, contents: params.contents, config: params.config },
   });
   try {
     const response = await context.client.models.generateContent(params);
@@ -453,13 +664,202 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
         http: { status: response.sdkHttpResponse?.responseInternal?.status, requestId: safeHeader('x-goog-request-id') ?? safeHeader('x-request-id'), date: safeHeader('date'), contentType: safeHeader('content-type') },
       },
     });
+    await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? id, {
+      event: 'provider_response', callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null,
+      model: context.model, response: {
+        responseId: response.responseId, createTime: response.createTime, modelVersion: response.modelVersion,
+        modelStatus: response.modelStatus, promptFeedback: response.promptFeedback,
+        candidates: (response.candidates ?? []).map(candidate => ({
+          finishReason: candidate.finishReason, index: candidate.index,
+          content: candidate.content ? { role: candidate.content.role, parts: candidate.content.parts } : null,
+        })),
+        usageMetadata: response.usageMetadata,
+        costEstimate: {
+          estimatedTokenUsd, groundingQueryCount, estimatedGroundingUpperUsd, estimatedTotalUsd,
+          fxRateInrPerUsd, estimatedTotalInr: estimatedTotalUsd !== null && fxRateInrPerUsd !== null ? estimatedTotalUsd * fxRateInrPerUsd : null,
+          pricesUsdPerMillion: responsePrices,
+          basis: 'Configured token list rates and conservative search estimate; not a Google billing receipt.',
+        },
+      },
+    });
     return response;
   } catch (error) {
     // Keep the full reservation on failure; ambiguous network failures may have reached the provider.
-    await settleCall(id, 'failed', undefined, Date.now() - started, context, error);
-    await recordGeminiDiagnostic({ event: 'provider_error', analysisId: diagnosticContext.analysisId ?? id, callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null, tier: context.tier, purpose: context.purpose, model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false, elapsedMs: Date.now() - started, failure: safeProviderFailure(error) });
+    const attemptSignal = params.config?.abortSignal;
+    await settleCall(id, 'failed', undefined, Date.now() - started, context, error, attemptSignal);
+    const failure = safeProviderFailure(error, attemptSignal);
+    await recordGeminiDiagnostic({ event: 'provider_error', analysisId: diagnosticContext.analysisId ?? id, callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null, tier: context.tier, purpose: context.purpose, model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false, elapsedMs: Date.now() - started, failure });
+    await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? id, { event: 'provider_error', callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null, model: context.model, failure });
     throw error;
   }
+}
+
+function unsupportedModelFeature(error: unknown) {
+  const safe = safeProviderFailure(error);
+  if (safe.status !== 400 && safe.status !== 422) return false;
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+  return /(?:model|this endpoint|function calling|tool use|response schema|json schema).{0,100}(?:does not support|is not supported|unsupported)/.test(message)
+    || /(?:not supported|unsupported).{0,100}(?:model|function calling|tool use|response schema|json schema)/.test(message);
+}
+
+function fallbackCategory(error: unknown, signal?: AbortSignal, deadlineAt?: number, signalIsRouterTimeout = false): ModelCooldown['kind'] | null {
+  const safe = safeProviderFailure(error);
+  if (safe.status === 429) {
+    const message = error instanceof Error ? error.message : '';
+    return quotaDetails(message).startsWith('daily') ? 'daily-quota' : 'short-quota';
+  }
+  if (safe.status === 404) return 'model-unavailable';
+  const agentDeadlineRemaining = deadlineAt === undefined ? null : deadlineAt - Date.now();
+  const hasAgentTime = agentDeadlineRemaining === null ? !signal?.aborted : agentDeadlineRemaining > 0;
+  if ((safe.status === 503 || safe.status === 504 || safe.failureClass === 'timeout' || (signalIsRouterTimeout && signal?.aborted)) && hasAgentTime) return 'service-unavailable';
+  const errorMessage = error instanceof Error ? error.message : '';
+  if (safe.status === null && /(?:request|operation|provider) (?:timed? ?out|timeout)|deadline exceeded/i.test(errorMessage) && hasAgentTime) return 'service-unavailable';
+  if (unsupportedModelFeature(error)) return 'unsupported-feature';
+  return null;
+}
+
+function errorRetryAfterMs(error: unknown) {
+  if (!error || typeof error !== 'object') return null;
+  const headers = 'headers' in error ? (error as { headers?: Headers }).headers : undefined;
+  return headers instanceof Headers ? parseGeminiRetryAfter(headers.get('retry-after')) : null;
+}
+
+function wait(milliseconds: number) {
+  return new Promise(resolve => setTimeout(resolve, Math.max(0, Math.min(1_500, milliseconds))));
+}
+
+/**
+ * The production path tries free models in the configured preference order.
+ * It retries one sub-1.5s transient Retry-After once, then moves on; daily
+ * quotas and unsupported/unavailable models are persisted as cooldowns.
+ */
+export async function generateTracked(context: GeminiContext, params: GenerateContentParameters, diagnosticContext: GenerateDiagnosticContext = {}): Promise<GenerateContentResponse> {
+  const requestedTier = context.tier;
+  const attempts: ModelRouteAttempt[] = [];
+  const requestedModel = context.model;
+  const models = requestedTier === 'free' && context.purpose === 'application'
+    ? configuredFreeModels()
+    : [context.model];
+  let lastRetryableError: unknown = null;
+
+  for (const model of models) {
+    const cooldown = requestedTier === 'free' ? cooldownFor(model) : null;
+    if (cooldown) {
+      attempts.push({ model, outcome: 'skipped', reason: cooldown.kind, retryAfterMs: cooldown.retryAfterMs, cooldownUntil: cooldown.until });
+      continue;
+    }
+    const apiKey = requestedTier === 'free' ? selectedKey('free') : selectedKey('paid');
+    if (!apiKey) throw new ApiError(503, requestedTier === 'free' ? 'free_provider_not_configured' : 'paid_provider_unauthorized', 'The selected Gemini project has no configured server-side key.');
+    const modelContext: GeminiContext = model === context.model && requestedTier === context.tier
+      ? context
+      : { tier: requestedTier, model, purpose: context.purpose, client: buildClient(apiKey, requestedTier, context.purpose, model) };
+    let routeAttemptSignal: AbortSignal | undefined;
+    let routeUsesOwnTimeout = false;
+    const invoke = () => {
+      const remaining = diagnosticContext.deadlineAt === undefined ? null : diagnosticContext.deadlineAt - Date.now();
+      if (remaining !== null && remaining <= 0) throw new ApiError(504, 'agent_timeout', 'Gemini analysis reached its bounded time limit. Your scan and local analysis remain available.');
+      // Leave time for another eligible free model after one slow attempt.
+      // The enclosing agent deadline still bounds the complete investigation.
+      const timeout = remaining === null ? null : Math.max(1, Math.min(45_000, remaining));
+      const attemptSignal = timeout === null ? params.config?.abortSignal : AbortSignal.timeout(timeout);
+      routeAttemptSignal = attemptSignal;
+      routeUsesOwnTimeout = timeout !== null;
+      const routeParams = {
+        ...params,
+        model,
+        ...(params.config ? { config: { ...params.config, ...(attemptSignal ? { abortSignal: attemptSignal } : {}) } } : {}),
+      };
+      return generateTrackedOnce(modelContext, routeParams, diagnosticContext);
+    };
+    try {
+      const response = await invoke();
+      attempts.push({ model, outcome: 'used' });
+      context.tier = modelContext.tier;
+      context.model = modelContext.model;
+      context.client = modelContext.client;
+      const route = { requestedTier, actualTier: modelContext.tier, requestedModel, actualModel: model, fallback: model !== requestedModel || modelContext.tier !== requestedTier, completedWithRequiredCapabilities: true, attempts };
+      await recordGeminiDiagnostic({ event: 'provider_route', analysisId: diagnosticContext.analysisId, requestedTier, actualTier: modelContext.tier, requestedModel, actualModel: model, fallback: route.fallback, completedWithRequiredCapabilities: true, attempts });
+      await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', ...route });
+      return response;
+    } catch (error) {
+      const category = fallbackCategory(error, routeAttemptSignal, diagnosticContext.deadlineAt, routeUsesOwnTimeout);
+      if (requestedTier !== 'free' || context.purpose !== 'application' || !category) {
+        const failure = safeProviderFailure(error, routeAttemptSignal);
+        attempts.push({ model, outcome: 'failed', reason: category ?? failure.failureClass });
+        const route = { requestedTier, actualTier: null, requestedModel, actualModel: null, fallback: attempts.length > 1, completedWithRequiredCapabilities: false, attempts };
+        await recordGeminiDiagnostic({ event: 'provider_route', analysisId: diagnosticContext.analysisId, ...route });
+        await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', ...route });
+        throw error;
+      }
+      const retryAfterMs = errorRetryAfterMs(error) ?? cooldownFor(model)?.retryAfterMs ?? null;
+      const cooldownState = recordModelCooldown(model, category, retryAfterMs);
+      attempts.push({ model, outcome: 'failed', reason: category, retryAfterMs, cooldownUntil: cooldownState.until });
+      lastRetryableError = error;
+
+      // Respect a very short provider Retry-After once without sleeping through
+      // longer windows; longer limits route directly to the next free model.
+      if (category === 'short-quota' && retryAfterMs !== null && retryAfterMs <= 1_500) {
+        await wait(retryAfterMs);
+        try {
+          const response = await invoke();
+          attempts[attempts.length - 1] = { model, outcome: 'used' };
+          modelCooldowns.delete(model);
+          context.tier = modelContext.tier;
+          context.model = modelContext.model;
+          context.client = modelContext.client;
+          const route = { requestedTier, actualTier: modelContext.tier, requestedModel, actualModel: model, fallback: model !== requestedModel, completedWithRequiredCapabilities: true, attempts };
+          await recordGeminiDiagnostic({ event: 'provider_route', analysisId: diagnosticContext.analysisId, ...route });
+          await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', ...route });
+          return response;
+        } catch (retryError) {
+          const retryCategory = fallbackCategory(retryError, routeAttemptSignal, diagnosticContext.deadlineAt, routeUsesOwnTimeout);
+          if (!retryCategory) throw retryError;
+          const retryWait = errorRetryAfterMs(retryError) ?? null;
+          const retryCooldown = recordModelCooldown(model, retryCategory, retryWait);
+          attempts[attempts.length - 1] = { model, outcome: 'failed', reason: retryCategory, retryAfterMs: retryWait, cooldownUntil: retryCooldown.until };
+          lastRetryableError = retryError;
+        }
+      }
+    }
+  }
+
+  if (requestedTier === 'free' && context.purpose === 'application' && paidFallbackReady()) {
+    const paidModel = validModel(process.env.GEMINI_PAID_MODEL) ?? validModel(process.env.GEMINI_MODEL);
+    const paidKey = selectedKey('paid');
+    if (paidModel && paidKey) {
+      const paidContext: GeminiContext = { tier: 'paid', model: paidModel, purpose: 'application', client: buildClient(paidKey, 'paid', 'application', paidModel) };
+      const remaining = diagnosticContext.deadlineAt === undefined ? null : diagnosticContext.deadlineAt - Date.now();
+      if (remaining !== null && remaining <= 0) {
+        attempts.push({ model: paidModel, outcome: 'skipped', reason: 'agent-deadline' });
+      } else {
+        const timeout = remaining === null ? null : Math.max(1, Math.min(45_000, remaining));
+        const paidParams = {
+          ...params,
+          model: paidModel,
+          ...(params.config ? { config: { ...params.config, ...(timeout === null ? {} : { abortSignal: AbortSignal.timeout(timeout) }) } } : {}),
+        };
+      try {
+        const response = await generateTrackedOnce(paidContext, paidParams, diagnosticContext);
+        attempts.push({ model: paidModel, outcome: 'used', reason: 'explicitly-enabled-paid-last-resort' });
+        context.tier = 'paid'; context.model = paidModel; context.client = paidContext.client;
+        const route = { requestedTier, actualTier: 'paid' as const, requestedModel, actualModel: paidModel, fallback: true, completedWithRequiredCapabilities: true, attempts };
+        await recordGeminiDiagnostic({ event: 'provider_route', analysisId: diagnosticContext.analysisId, ...route });
+        await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', ...route });
+        return response;
+      } catch (error) {
+        attempts.push({ model: paidModel, outcome: 'failed', reason: 'paid-last-resort-failed' });
+        await recordGeminiDiagnostic({ event: 'provider_route', analysisId: diagnosticContext.analysisId, requestedTier, actualTier: 'paid', requestedModel, actualModel: null, fallback: true, completedWithRequiredCapabilities: false, attempts });
+        await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', requestedTier, actualTier: 'paid', requestedModel, actualModel: null, fallback: true, completedWithRequiredCapabilities: false, attempts });
+        throw error;
+      }
+      }
+    }
+  }
+
+  await recordGeminiDiagnostic({ event: 'provider_route', analysisId: diagnosticContext.analysisId, requestedTier, actualTier: null, requestedModel, actualModel: null, fallback: attempts.length > 1, completedWithRequiredCapabilities: false, attempts });
+  await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', requestedTier, actualTier: null, requestedModel, actualModel: null, fallback: attempts.length > 1, completedWithRequiredCapabilities: false, attempts });
+  if (requestedTier === 'free' && attempts.length > 0) throw new ApiError(503, 'free_models_exhausted', 'Free Gemini is temporarily unavailable across the configured models. Your scan and conversation are saved; try again later.');
+  throw lastRetryableError ?? new ApiError(503, 'provider_disabled', 'Gemini could not complete this request.');
 }
 
 export async function recordModelAvailabilityCheck(context: GeminiContext, available: boolean) {

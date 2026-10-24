@@ -89,6 +89,7 @@ export function mergePackageEvidence(current: PackageData, incoming: PackageData
   const unique = (values: string[]) => [...new Set(values.map(v => v.trim()).filter(Boolean))];
   return packageSchema.parse({
     ...current,
+    ...(current.reconstruction?{reconstruction:{...current.reconstruction,current:false}}:{}),
     name: current.name === 'Unidentified package' && incoming.name !== 'Unidentified package' ? incoming.name : current.name,
     brand: current.brand || incoming.brand,
     barcode: identityConflict ? undefined : current.barcode || incoming.barcode,

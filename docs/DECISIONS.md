@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 23 October 2026 — preserve evidence-linked answers across Gemini schema dialects and free-first routing
+
+- Normalize documented provider variants (`fact`/`id` claims, `body` answer parts, and evidence aliases used where claim IDs were expected) into the shared inference contract without adding prose or evidence. Keep follow-up package reconstruction out of the response, and leave unknown or invalid evidence references to the normal validator/repair path.
+- Accept ordinary rounding of a cited deterministic calculation result within half of the last displayed decimal place. Do not round a small nonzero amount down to zero, and do not relax exact package-value, unit, basis or source checks.
+- Free Gemini remains the default and all eligible free models are attempted before paid. The owner permits paid routing only as an absolute fallback when free access blocks necessary development. Do not activate it until distinct free/paid Google project IDs and the already required paid caps are validated; separate keys alone do not establish independent quotas.
+- Evidence: a real photo-free Bisk Farm follow-up completed on free `gemini-3.6-flash` after a 3.7 timeout, and correctly presented provisional two-biscuit calculations. The original provider response required a schema repair, but replay through the updated normalizer parses as `provider-schema`. TypeScript and focused suites passed; no paid call was made.
+
 ## 23 October 2026 — answer repair must answer the decision question before listing evidence
 
 - Decision: keep the provider's grounded claims and the user-facing answer as distinct stages. When an initial answer omits a direct response or drops supported package context, allow one bounded Gemini repair over exact OCR/source/calculation spans, then run each repaired claim through the same evidence validator. Do not turn validation failure into a generic OCR-warning paragraph or concatenate claim records.
@@ -803,3 +810,95 @@ Do not force a condition-keyword-specific local guidance call ahead of every pro
 ## 23 October 2026 — prioritize declared serving evidence in answer repair
 
 When the bounded conversational repair runs, move exact OCR lines explicitly labeled as a serving size ahead of other noisy OCR lines and identify those observation IDs to Gemini. This makes an existing package declaration easier to use in regular-use and portion answers without parsing or confirming the amount or unit. On the Bisk Farm run, the answer advanced from saying only that a serving was printed to including the two-biscuit / approximate 13.4 declaration. The OCR line omitted `g`; the attached original photo showed it on visual inspection, but Gemini did not verify that unit in this run. Preserve that gap and leave carbohydrate values unresolved. This change improves answer evidence coverage only; it does not improve OCR or establish package truth.
+
+## 23 October 2026 — keep free Gemini primary and paid Gemini last-resort only
+
+Free Gemini remains the default. Paid Gemini may run only after eligible free models are exhausted and only through the separately identified paid Google project with explicit enablement and spend/request/token caps. Distinct keys do not prove distinct project quotas. The initial local setup lacked project IDs; the owner supplied distinct IDs on 2026-10-23, and the current `/api/status` reports paid fallback authorized. No paid call was made for that configuration change. Do not use paid mode as a routine model preference or silently switch projects.
+
+## 23 October 2026 — carry accepted calculations with the assistant turn
+
+An interactive component that references deterministic calculation IDs must receive the matching calculation records in the API response and retain them with that conversation turn. Return only calculations referenced by validated claims or UI components. Recalculate another portion by linear scaling only when its mass/volume unit matches the recorded calculation basis; never infer a mass-to-volume conversion without density. Package interpretations remain provisional and do not become confirmed package facts through calculation display.
+
+## 24 October 2026 — do not retry the unchanged Bisk Farm reconstruction path
+
+On the current source build, a real two-photo request reached Gemini but the initial output failed the structured schema; the fallback schema repair parsed yet left no usable nutrition rows or ingredients after evidence-link sanitization. The single bounded answer repair still yielded an overconfident consumer response and no supported interactive component. Avoid another provider call or wording patch on unchanged code. First address the observed reconstruction boundary: preserve valid package fields through provider normalization only when their original observation/image provenance can be linked, and report field-level rejection reasons without logging prompt or model conversation content. Re-run the provider acceptance only after focused offline contract tests pass.
+
+## 24 October 2026 — use the linked provisional serving as the calculator default
+
+If the current evidence-linked Gemini reconstruction provides a clear or provisional serving and no package serving was parsed locally, use that amount as the calculator's starting portion. Preserve any existing package serving and any amount the user edits. This changes the default interaction only; it does not verify the interpretation or alter calculation provenance.
+
+## 24 October 2026 — synthesis must close every declared evidence facet
+
+Do not accept package-answer synthesis as successful when it replaces one covered facet with another at the same total coverage. Accept it only when every relevant facet available to the request is represented; record post-pass gaps so an incomplete result is visible in sanitized diagnostics. This is an answer-completeness check, not a numerical validator or source of new facts.
+
+## 24 October 2026 — validate conversational basis paraphrases only against cited reconstruction
+
+For an accepted claim, allow its natural answer and linked answer parts to use an equivalent serving-mass phrase when the cited reconstructed nutrition row and serving fact establish that relationship (for example, “per serving” ↔ “per 13.4 g”). Do not broaden support to unrelated package rows, and continue checking every numeric quantity, unit, nutrient identity and basis against cited evidence/calculations. If a new package recheck is rejected for missing saved details, keep a prior successful Gemini answer visible and disclose the failed recheck separately.
+
+## 24 October 2026 — comparative answers need linked package and source evidence
+For a natural package-suitability judgment, validate that the answer links to at least one package observation/calculation/reconstruction fact and a relevant source claim with meaningful term overlap. Do not require an external source to repeat the answer's evaluative adjective. Keep numerical value, unit, basis and source-authenticity checks unchanged. Strip empty generated citation placeholders at both provider normalization and consumer presentation boundaries. A photo-free follow-up should describe saved-context reuse accurately.
+## 24 October 2026 — treat answer quality and reconstruction coverage as separate gates
+
+A live two-photo Bisk Farm run produced a useful, source-backed conversational judgment and a compact follow-up on the free route, while the persistent reconstruction still contained only one nutrition row and one ingredient. Therefore a successful natural answer does not close the package-understanding milestone: continue measuring stored nutrition/ingredient coverage and schema-retry sparsity separately from claim validation and answer usefulness. Preserve provisional labels on visual readings, and report when prose omits that uncertainty even if the inspector retains it. Do not treat an accepted response or a successful bounded retry as evidence of complete label recovery.
+
+## 24 October 2026 — schema repair must not resend package photos
+
+A live schema-invalid first response followed by a package retry transferred the same two images twice (2,194 image tokens per call) and still stored only one nutrient row. Structural repair now receives only the prior model draft and sanitized schema issue paths/codes, with a strict output schema; it cannot inspect images or add evidence, and the application revalidates all claims afterward. This reduces duplicate transfer when schema repair is needed, but does not establish better extraction coverage; measure it on a subsequent live retry before claiming an operational gain.
+
+## 24 October 2026 — photo-linked reconstruction can back contextual UI without OCR lines
+
+When the saved package reconstruction has a current image lineage and clear/provisional fields, allow contextual nutrition and ingredient components to render from those fields even if raw OCR yielded no usable line IDs. Keep the reconstruction marked provisional and retain the image lineage; do not weaken numeric claim validation or treat the model as independent confirmation.
+## 24 October 2026 — keep general dietary answers conversational
+
+For ordinary suitability questions, do not automatically render a full nutrition table merely because reconstructed readings exist; show it when the user asks to inspect nutrition. Follow-ups may calculate from saved image-linked reconstruction rows only when basis, unit and evidence are traceable and no conflict or user correction supersedes the row. Keep model-derived values visibly unverified and require relevant printed nutrition claims to be addressed when they materially affect the question. Validate exact provider wording on a subsequent controlled run before treating the answer-quality change as accepted.
+## 24 October 2026 — expose a traceable serving calculation beside food-choice answers
+
+When a current reconstruction has a clear/provisional serving and a compatible evidence-linked carbohydrate row, add the existing portion calculator to food-choice answers even if Gemini selected only the full nutrition table. Keep the full table on demand, respect user-corrected nutrients, use deterministic arithmetic, and label the result unverified. Do not show the calculator when the serving conflicts, the calculation lacks an evidence link, or no compatible carbohydrate row exists.
+
+## 24 October 2026 — separate UI wiring evidence from provider acceptance
+
+A real-photo browser flow with an intercepted Assist endpoint can verify that local OCR, saved reconstruction, contextual components and photo-free follow-ups are connected. It cannot establish Gemini answer quality or extraction accuracy. Report those outcomes separately and keep any provisional calculation visibly unverified.
+## 24 October 2026 — preserve cloud consent while reducing mobile footer clutter
+
+On narrow screens, allow the reconstructed package identity to wrap and use one compact disclosure that still identifies the Google Gemini transfer, local profile boundary, and possible paid fallback charge. Keep the full privacy details available in the existing privacy surface.
+## 24 October 2026 — corrections replace provisional values for later calculations
+
+A user-confirmed nutrient correction is the calculation input for that nutrient on later questions; keep the Gemini interpretation and OCR evidence as separate lineage, mark prior answers outdated, and do not resend package photos for an ordinary follow-up. A mocked real-photo browser journey verified 65 g/100 g × 13.4 g = 8.71 g using the saved correction. This is integration evidence, not an extraction accuracy result; the test value was intentionally changed and is not a Bisk Farm label claim.
+
+## 24 October 2026 — provider failure must remain a failure state
+
+On the current source, a Gemini error should render a concise failure reason and Retry action, with package state retained; do not replace it with a local answer presented as equivalent. An isolated mocked-502 browser run confirms this visible behavior and makes no claim about provider reliability. The owner's earlier 3413 screenshot differs, and its cause remains unverified.
+
+For final package-answer synthesis, send only the compact saved package, relevant facts, sources and calculations as text; do not repeat reconstruction, visual references, OCR candidates or answer-span linkage. Bound this pass to six claims, three components and 1,800 output tokens. This addresses live truncation/repair overhead without weakening numerical or evidence validation. A successful provider response remains insufficient for consumer acceptance until its answer and follow-up are captured in-browser.
+
+## 24 October 2026 — free-first routing with explicit paid last resort
+
+Keep `GEMINI_PROVIDER=free` as the default. Try the supported free-model preference list, respecting quota/model cooldowns, before the separately keyed and separately declared paid project. Paid fallback is eligible only after a categorized free capacity, availability, timeout, or capability failure and only while its explicit spend/token/request guards allow it. Authentication, malformed-request, and application errors must not trigger a paid retry. A model inventory check is not evidence of image, tool, or schema compatibility; verify those through the actual bounded application path. Project identifiers supplied by the owner are configuration declarations, not independently authenticated billing metadata.
+
+## 24 October 2026 — use spatial fallback crops and canonical package bases
+When recognized OCR lines have geometry but their text is too noisy to cue a crop, allow a bounded dense-text-band crop fallback. This is region selection only; it does not infer label contents or inject product-specific coordinates. During revision merge, canonicalize explicitly stated gram/millilitre bases so `100 g` and `per 100 grams` rows for the same nutrient coalesce, but retain a separately stated serving column and leave differing readings unresolved. This prevents duplicate presentation without relaxing evidence or numeric safeguards.
+
+## 24 October 2026 — require use of guidance only when retrieved and applicable
+For a food-choice/frequency question, treat applicable local guidance as an answer-coverage facet only when the existing intent and jurisdiction-aware retrieval actually selected a source and that source is in the request evidence. Require a source-linked claim whose subject overlaps the answer; if it is missing, the existing one-shot package synthesis repair may add it. Do not force a condition lookup on a mere condition mention, apply an out-of-jurisdiction record, or send a user profile to public search.
+
+## 24 October 2026 — minimize saved-package follow-up context
+For photo-free follow-ups, use the saved reconstruction and compact reasoning instructions; omit image-inspection instructions/tools when no image bytes are present. Keep the initial multimodal reconstruction path unchanged. Character reduction is an implementation proxy only; require SDK usage metadata and answer review before claiming token savings or quality improvement.
+
+## 24 October 2026 — judge the visible answer and its interactive evidence together
+For food-choice acceptance, assess the assistant's prose and any contextual calculation component as separate but complementary surfaces. Do not mark a judgment as absent because a narrow test regex misses language such as not a strong everyday default; inspect the rendered answer. Keep provisional values visibly qualified, and do not count a component as confirmed package truth. Report product-level omissions separately: a clear ingredient crop with only one stored ingredient is still incomplete reconstruction even when the answer is useful.
+
+## 24 October 2026 — compact follow-up prompts at the request boundary
+
+For a saved reconstruction, compact only the copy sent to Gemini: retain question-relevant nutrition rows, the serving, a short ingredient/claim context and sources already relevant to the current or immediately preceding user intent. Keep stable package-fact and row IDs. Send the full ingredient/additive list when explicitly requested, and retain the full reconstruction, OCR, image lineage and validation source object in application state. This limits ordinary follow-up context without making compaction destructive or changing the evidence validator. Structural request-size assertions on a Bisk-shaped fixture establish the payload reduction only; do not claim a provider token or quality gain until a live run reports both.
+
+## 24 October 2026 — preserve named and allergen-relevant package facts
+
+Question-focused prompt compaction must preserve package entities directly named by the user (for example, a named oil or additive), even when the request does not use a generic word such as “ingredient.” Allergen questions should retain ingredient evidence and contains/may-contain/precaution statements. This changes only the model-facing request selection; it must not alter the stored reconstruction or citation validator.
+
+## 24 October 2026 — do not count rendered provisional numbers as resolved
+
+The current Bisk run demonstrates package reconstruction and saved-context reuse, but is not successful consumer acceptance while provisional label values are phrased as established facts in the answer or follow-up. Keep model-derived values in candidate status until independently confirmed. The presentation contract needs to carry the relevant row's uncertainty into any natural-language numerical claim; a caveat buried only inside the calculator is insufficient. Avoid another wording-specific answer patch or weakening claim validation. First fix this general uncertainty propagation and reduce repeated synthesis/repair calls, then re-run one controlled package journey.
+
+## 24 October 2026 — propagate provisional status beside visible calculation
+
+A visible serving calculation that references a model interpretation must carry a concise status cue alongside the assistant turn. Keep this generic and linked to the exact calculation, not to a food, condition, or phrase. This improves trust presentation but does not make the underlying package reading verified. The latest live Bisk run still leaves identity unresolved and omits the sugar-free claim from the first answer; both remain higher-priority completeness gaps.

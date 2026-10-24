@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export class ApiError extends Error {
-  constructor(public status: number, public code: string, message: string) { super(message); }
+  constructor(public status: number, public code: string, message: string, public details?: unknown) { super(message); }
 }
 
 export const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
@@ -59,7 +59,12 @@ export async function input<T extends z.ZodType>(request: Request, schema: T, ma
   let parsed: unknown;
   try { parsed = JSON.parse(body); } catch { throw new ApiError(400, 'invalid_json', 'Send a valid JSON object.'); }
   const result = schema.safeParse(parsed);
-  if (!result.success) throw new ApiError(400, 'invalid_input', 'Input did not match the documented request contract.');
+  if (!result.success) throw new ApiError(400, 'invalid_input', 'Input did not match the documented request contract.', {
+    issues: result.error.issues.slice(0, 20).map(issue => ({
+      code: issue.code,
+      path: issue.path.filter((part): part is string | number => typeof part === 'string' || typeof part === 'number').slice(0, 12),
+    })),
+  });
   return result.data;
 }
 
@@ -101,7 +106,7 @@ export async function route(request: Request, group: string, work: () => Promise
   const requestId = crypto.randomUUID();
   try { release = localGate(request, group, limit); return reply({ ...await work() as object, requestId }); }
   catch (error) {
-    if (error instanceof ApiError) return reply({ status: error.code === 'provider_disabled' ? 'disabled' : 'unavailable', code: error.code, message: error.message, requestId }, error.status);
+    if (error instanceof ApiError) return reply({ status: error.code === 'provider_disabled' ? 'disabled' : 'unavailable', code: error.code, message: error.message, ...(error.details!==undefined?{details:error.details}:{}), requestId }, error.status);
     const providerStatus = error && typeof error === 'object' && 'status' in error ? error.status : undefined;
     if (group === 'gemini' && providerStatus === 429) {
       return reply({ status: 'unavailable', code: 'provider_rate_limited', message: 'Google Gemini is rate- or quota-limited. Check the configured Google project before retrying. Local analysis remains available.', requestId }, 429);

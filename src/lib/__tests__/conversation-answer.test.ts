@@ -6,4 +6,9 @@ describe('presentConversationAnswer', () => {
     const answer = 'Label reading: Protein 3 g [observation:protein-1] Evidence links: “Protein 3 g” [observation:protein-1]\n\nSource finding: JECFA record [source:jecfa-1] [source:jecfa-1]';
     expect(presentConversationAnswer(answer)).toBe('Label reading: Protein 3 g\n\nSource finding: JECFA record');
   });
+
+  it('removes empty comma-only citation placeholders without changing bracketed label identifiers',()=>{
+    expect(presentConversationAnswer('Two biscuits provide 9.28 g carbohydrate [,,, ]. This additive is INS [INS 319].'))
+      .toBe('Two biscuits provide 9.28 g carbohydrate. This additive is INS [INS 319].');
+  });
 });

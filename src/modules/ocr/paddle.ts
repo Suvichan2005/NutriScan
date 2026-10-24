@@ -60,6 +60,8 @@ async function loadPaddleEngine(language: PaddleLanguage, shouldStop: () => bool
   const promise = import('@paddleocr/paddleocr-js').then(({ PaddleOCR }) => PaddleOCR.create({
     lang: language,
     ocrVersion: 'PP-OCRv6',
+    textDetectionModelName: 'PP-OCRv6_tiny_det',
+    textRecognitionModelName: 'PP-OCRv6_tiny_rec',
     worker: true,
     ortOptions: { backend: 'auto', wasmPaths: '/ocr/ort/', numThreads: 1, simd: true },
   })).then(async created => {
@@ -182,7 +184,7 @@ function rowObservations(boxes: PaddleBox[], runId: string, asset: ImageAsset, w
   });
 }
 
-/** Runs the browser-local PP-OCRv6-small candidate and retains its detected geometry as OCR evidence. */
+/** Runs the lighter browser-local PP-OCRv6-tiny candidate and retains its detected geometry as OCR evidence. */
 export async function readPaddleOcrImages(
   assets: ImageAsset[],
   onProgress: (label: string, progress: number) => void,
@@ -195,9 +197,10 @@ export async function readPaddleOcrImages(
   if (paddleReadActive) throw new Error('The on-device recovery reader is already in use.');
   paddleReadActive = true;
   clearEngineIdleTimer();
-  onProgress('Loading the local recovery reader; language is selected from this photo’s first-pass text. Model assets may download; photos stay local.', 0.02);
+  onProgress('Loading the local recovery reader. Its model may download on first use; photos stay on this device.', 0.02);
   let engine: PaddleEngine | undefined;
   let succeeded = false;
+  let phase = 'model setup';
   let rejectAbort: ((reason: Error) => void) | undefined;
   let stopped = false;
   const abortPromise = new Promise<never>((_, reject) => { rejectAbort = reject; });
@@ -208,7 +211,7 @@ export async function readPaddleOcrImages(
   };
   const abort = () => stop('Reading stopped. Your photos are still here.');
   signal.addEventListener('abort', abort, { once: true });
-  const timeout = setTimeout(() => stop('The on-device recovery reader took too long to load. The first-pass reading is still available.'), 60000);
+  const timeout = setTimeout(() => stop(`The on-device recovery reader exceeded its time limit during ${phase}. The first-pass reading is still available.`), 60000);
   const texts: string[] = [];
   const observations: Observation[] = [];
   const captures: OcrCapture[] = [];
@@ -218,8 +221,11 @@ export async function readPaddleOcrImages(
     for (const [index, asset] of assets.entries()) {
       if (signal.aborted) throw new Error('Reading stopped. Your photos are still here.');
       const language = selectPaddleLanguage(firstPassObservations, asset.id);
-      onProgress(`Checking photo ${index + 1} of ${assets.length} with the ${language.toUpperCase()} recovery model`, 0.1 + index / assets.length * 0.85);
+      phase = 'model setup';
+      onProgress(`Preparing the local recovery model for photo ${index + 1} of ${assets.length}`, 0.1 + index / assets.length * 0.1);
       engine = await Promise.race([loadPaddleEngine(language, () => stopped || signal.aborted), abortPromise]);
+      phase = `recognition of photo ${index + 1} of ${assets.length}`;
+      onProgress(`Checking photo ${index + 1} of ${assets.length} with the ${language.toUpperCase()} recovery model`, 0.2 + index / assets.length * 0.75);
       const rotation = (asset.rotation ?? options.rotation) as 0 | 90 | 180 | 270;
       const crop = options.cropTarget === asset.id ? options.crop : undefined;
       const image = await prepareImage(asset, rotation, options.contrast, crop, options.invert ?? false);
@@ -237,7 +243,7 @@ export async function readPaddleOcrImages(
         sourceImage: { width: asset.width, height: asset.height },
         preparedImage: { width, height },
         bboxCoordinateSpace: 'prepared-image-pixels',
-        engine: { name: '@paddleocr/paddleocr-js/PP-OCRv6-small', version: '0.4.2', language, confidenceScale: '0-100', segmentationMode: 'auto' },
+        engine: { name: '@paddleocr/paddleocr-js/PP-OCRv6-tiny', version: '0.4.2', language, confidenceScale: '0-100', segmentationMode: 'auto' },
         processing: { rotation, contrast: options.contrast, invert: options.invert ?? false, cropPercent: crop ?? null },
       });
       for (const item of result.items) {

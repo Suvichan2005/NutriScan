@@ -1,4 +1,5 @@
-import type { SavedConversationTurn, TentativeStructuredCandidate } from './contracts';
+import type { AssistantUiComponent, Calculation, PackageData, SavedConversationTurn, TentativeStructuredCandidate } from './contracts';
+import { asksForDeclaredPieceCount, calculationsFromReconstruction, normalizeReconstructedServing, type ReconstructedServingPortion } from './portion';
 
 export type ThreadMessage = SavedConversationTurn & {
   status?: 'pending' | 'fallback';
@@ -20,6 +21,27 @@ export type ThreadAgentDiagnostics = {
   rejectedAnswerParts: number;
   rejectedReasons: Record<string, number>;
 };
+
+/** A failed package recheck must not erase a previously successful answer. */
+export function preservePreviousAnswerAfterRejectedRecheck(
+  pending: ThreadMessage,
+  previous: ThreadMessage | undefined,
+  fallbackDetail: string,
+  diagnostics: Pick<ThreadMessage, 'agentTrace' | 'agentDiagnostics' | 'diagnosticId'> = {},
+): ThreadMessage {
+  if (previous?.answerOrigin === 'gemini' && previous.answer.trim()) return { ...previous, ...diagnostics };
+  return {
+    ...pending,
+    answer: '',
+    answerOrigin: 'local',
+    status: 'fallback',
+    statusDetail: fallbackDetail,
+    uiComponents: undefined,
+    calculations: undefined,
+    evidence: undefined,
+    ...diagnostics,
+  };
+}
 
 /** Keep only bounded, non-content metadata from the server's tool trace. */
 export function parseThreadAgentTrace(value: unknown): ThreadAgentTrace[] {
@@ -66,10 +88,111 @@ export function savedConversationTurns(messages: ThreadMessage[]): SavedConversa
     .slice(-30);
 }
 
-/** Don't mount an empty nutrition table for an unrelated conversational question. */
-export function shouldShowNutritionTable(question: string, usableReadingCount: number): boolean {
-  return /\b(?:nutrition|nutrients?|macros?|full label table|show (?:me )?(?:the )?table|per\s*100\b|list (?:the )?(?:values|amounts))\b/i.test(question)
-    || usableReadingCount >= 3;
+/** Scale a validated package calculation only within its printed mass/volume basis. */
+export function scaleCalculationToPortion(calculation: Calculation, portion: number, unit: 'g' | 'ml'): number | null {
+  if (!Number.isFinite(portion) || portion <= 0 || portion > 10_000 || unit !== calculation.portionUnit) return null;
+  const scaled = calculation.result * portion / calculation.portion;
+  return Number.isFinite(scaled) ? scaled : null;
+}
+
+/** Keep provisional provenance beside an answer when its visible calculator uses interpreted label data. */
+export function hasVisibleProvisionalPackageAmounts(components: AssistantUiComponent[], calculations: Calculation[]): boolean {
+  const visibleCalculationIds = new Set(components
+    .filter(component => component.type === 'portion-calculator')
+    .flatMap(component => component.calculationIds));
+  return calculations.some(calculation => visibleCalculationIds.has(calculation.id) && Boolean(calculation.interpretationIds?.length));
+}
+
+/** Keep the full nutrition table on demand; a long table should not displace a short conversational answer. */
+export function shouldShowNutritionTable(question: string, usableReadingCount: number, conflictingReadingCount = 0): boolean {
+  const asksForTable = /\b(?:nutrition|nutrients?|macros?|full label table|show (?:me )?(?:the )?table|per\s*100\b|list (?:the )?(?:values|amounts))\b/i.test(question);
+  return asksForTable && (usableReadingCount > 0 || conflictingReadingCount > 0);
+}
+
+/** Add a serving calculator when the answer discusses a food choice or a named amount. */
+export function addContextualServingCalculator(
+  question: string,
+  components: AssistantUiComponent[],
+  calculations: Calculation[],
+  serving: ReconstructedServingPortion | null | undefined,
+): AssistantUiComponent[] {
+  // These types intentionally render in the inspector, never inline in the
+  // conversation. Remove them before the component limit is applied so an
+  // evidence-only model proposal cannot crowd out a useful serving tool.
+  const conversationComponents = components.filter(component =>
+    !['package-evidence', 'package-details', 'source-reference-cards'].includes(component.type),
+  );
+  const asksForAmount = /\b\d+(?:\.\d+)?\s*(?:g|grams?|ml)\b/i.test(question) || asksForDeclaredPieceCount(question, serving);
+  const asksForFoodChoice = /\b(?:good|bad|healthy|unhealthy|suitable|unsuitable|appropriate|daily|every\s+day|regular(?:ly)?|snack(?:ing)?|recommend(?:ed|ation)?|should\s+i|can\s+i\s+(?:eat|have|include))\b/i.test(question);
+  const normalizedServing = normalizeReconstructedServing(serving);
+  if (!normalizedServing?.quantity || !normalizedServing.unit || !['clear', 'provisional'].includes(normalizedServing.status)
+    || (!asksForFoodChoice && !asksForAmount)
+    || conversationComponents.some(component => component.type === 'portion-calculator') || conversationComponents.length >= 6) return conversationComponents;
+  const calculation = calculations.find(item => item.nutrient === 'carbohydrate'
+    && Math.abs(item.portion - normalizedServing.quantity!) <= 1e-6 && item.portionUnit === normalizedServing.unit
+    && Boolean(item.interpretationIds?.length) && Boolean(item.observationIds.length || item.imageIds?.length));
+  if (!calculation) return conversationComponents;
+  return [...conversationComponents, {
+    type: 'portion-calculator',
+    observationIds: calculation.observationIds.slice(0, 20),
+    sourceIds: [],
+    calculationIds: [calculation.id],
+  }];
+}
+
+/** Add a concise, deterministic serving calculation when Gemini answered the follow-up without it. */
+export function includeTraceableServingCalculation(
+  answer: string,
+  question: string,
+  calculations: Calculation[],
+  serving: ReconstructedServingPortion | null | undefined,
+): string {
+  const normalizedServing = normalizeReconstructedServing(serving);
+  if (!normalizedServing?.quantity || !normalizedServing.unit || !['clear', 'provisional'].includes(normalizedServing.status)
+    || !asksForDeclaredPieceCount(question, normalizedServing)) return answer;
+  const calculation = calculations.find(item => item.nutrient === 'carbohydrate'
+    && Math.abs(item.portion - normalizedServing.quantity!) <= 1e-6 && item.portionUnit === normalizedServing.unit
+    && Boolean(item.interpretationIds?.length) && Boolean(item.observationIds.length || item.imageIds?.length));
+  if (!calculation) return answer;
+  const alreadyIncludesQuantity = /\b(?:carbohydrat\w*|carbs?)\b.{0,48}\b\d+(?:\.\d+)?\s*g\b/i.test(answer)
+    || /\b\d+(?:\.\d+)?\s*g\b.{0,48}\b(?:carbohydrat\w*|carbs?)\b/i.test(answer);
+  if (alreadyIncludesQuantity) return answer;
+  const servingName = normalizedServing.pieceCount && normalizedServing.pieceDescription
+    ? `${normalizedServing.pieceCount} ${normalizedServing.pieceDescription}`
+    : 'the printed serving';
+  const amount = `about ${normalizedServing.quantity} ${normalizedServing.unit}`;
+  const qualifier = calculation.interpretationIds?.length ? 'current unverified label reading' : 'saved label reading';
+  const calculatedAmount = `about ${Number(calculation.result.toFixed(2)).toLocaleString('en-IN')} g of carbohydrate`;
+  const alreadyNamesServing = asksForDeclaredPieceCount(answer, normalizedServing);
+  const sentence = alreadyNamesServing
+    ? `With the ${qualifier}, that serving works out to ${calculatedAmount}.`
+    : `Using the ${qualifier}, ${servingName} (${amount}) works out to ${calculatedAmount}.`;
+  return `${answer.trim()}${answer.trim() ? ' ' : ''}${sentence}`;
+}
+
+/** Combine validated provider calculations with deterministic saved-serving calculations for one rendered assistant turn. */
+export function prepareAssistantTurnPresentation(
+  question: string,
+  components: AssistantUiComponent[],
+  providerCalculations: Calculation[],
+  pkg: PackageData,
+): { components: AssistantUiComponent[]; calculations: Calculation[] } {
+  const serving = pkg.reconstruction?.current ? normalizeReconstructedServing(pkg.reconstruction.serving) : null;
+  const correctedNutrients = new Set(pkg.nutrients.filter(nutrient => nutrient.status === 'corrected').map(nutrient => nutrient.key));
+  const savedServingCalculations = serving?.quantity && serving.unit
+    ? calculationsFromReconstruction(pkg, serving.quantity, serving.unit)
+      .filter(calculation => !correctedNutrients.has(calculation.nutrient))
+    : [];
+  const byBasis = new Map<string, Calculation>();
+  for (const calculation of [...providerCalculations.filter(calculation => !correctedNutrients.has(calculation.nutrient)), ...savedServingCalculations]) {
+    const key = [calculation.nutrient, calculation.portion, calculation.portionUnit, [...(calculation.interpretationIds ?? [])].sort().join(',')].join('|');
+    if (!byBasis.has(key)) byBasis.set(key, calculation);
+  }
+  const calculations = [...byBasis.values()].slice(0, 20);
+  return {
+    calculations,
+    components: addContextualServingCalculator(question, components, calculations, serving),
+  };
 }
 
 /** Keep label explorers out of general answers; raw OCR review belongs in the inspector. */
@@ -95,7 +218,7 @@ export function geminiFailureMessage(code: string, timedOut = false): string {
     case 'provider_model_unavailable': return 'The selected Gemini model is unavailable to this project right now.';
     case 'provider_request_rejected': return 'Google rejected the Gemini request format. Your scans are still here; retry after updating the app.';
     case 'provider_invalid_json': return 'Gemini returned text that NutriScan could not read as structured data. Your scan is still here; retry when ready.';
-    case 'provider_schema_invalid': return 'Gemini returned structured data that did not fit NutriScan’s response format. Your scan is still here; retry when ready.';
+    case 'provider_schema_invalid': return 'Gemini could not finish an answer NutriScan can use. Your package and earlier messages are still here; try again.';
     case 'provider_invalid': return 'Gemini’s response could not be read. Your scan is still here; retry when ready.';
     case 'provider_incomplete': return 'Gemini could not finish this response. Your scan is still here; retry when ready.';
     case 'provider_unavailable': return 'Google Gemini is temporarily unavailable. Your scans are still here; try again later.';
@@ -133,14 +256,33 @@ function cleanIdentity(value: string | undefined): string | null {
 export type DisplayIdentity = { title: string; source: 'package' | 'gemini' | 'generic' };
 
 export function packageDisplayIdentity(
-  pkg: { name: string; brand?: string },
+  pkg: { name: string; brand?: string; reconstruction?: { identity: { name: string | null; brand: string | null; variant: string | null; status: string } } | null },
   candidates: TentativeStructuredCandidate[],
 ): DisplayIdentity {
   const supported = cleanIdentity(pkg.name) ?? cleanIdentity(pkg.brand);
   if (supported) return { title: supported, source: 'package' };
 
+  const interpretation = pkg.reconstruction?.identity;
+  if (interpretation && interpretation.status !== 'unreadable') {
+    const reconstructed = [interpretation.brand, interpretation.name, interpretation.variant]
+      .map(value => value ? cleanIdentity(value) : null)
+      .filter((value): value is string => Boolean(value));
+    if (reconstructed.length) return { title: [...new Set(reconstructed)].join(' '), source: 'gemini' };
+  }
+
   const suggestion = candidates.find(candidate => candidate.kind === 'product-identity' && cleanIdentity(candidate.proposedValue));
   if (suggestion) return { title: cleanIdentity(suggestion.proposedValue)!, source: 'gemini' };
 
   return { title: 'Unidentified food package', source: 'generic' };
+}
+
+/** Keep a prior tentative package identity across a recheck that returns no replacement identity. */
+export function mergeRecheckedPackageCandidates(
+  previous: TentativeStructuredCandidate[],
+  incoming: TentativeStructuredCandidate[],
+): TentativeStructuredCandidate[] {
+  if (incoming.some(candidate => candidate.kind === 'product-identity')) return incoming.slice(0, 20);
+  const incomingIds = new Set(incoming.map(candidate => candidate.candidateId));
+  const priorIdentity = previous.filter(candidate => candidate.kind === 'product-identity' && !incomingIds.has(candidate.candidateId));
+  return [...priorIdentity, ...incoming].slice(0, 20);
 }

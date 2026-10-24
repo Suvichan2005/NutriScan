@@ -25,13 +25,16 @@ function sensitiveKey(key: string) {
 }
 
 const safeMetadataStringKeys = new Set([
-  'event', 'analysisId', 'callId', 'stage', 'model', 'modelVersion', 'tier', 'purpose', 'status',
-  'failureCode', 'failureClass', 'schemaMode', 'modelOutputStatus', 'answerStatus',
+  'recordedAt', 'event', 'analysisId', 'callId', 'stage', 'model', 'modelVersion', 'tier', 'purpose', 'status',
+  'code', 'category', 'failureCode', 'failureClass', 'schemaMode', 'modelOutputStatus', 'answerStatus', 'taskKind',
+  'providerStatus', 'providerReasonClass', 'providerFieldPath', 'responseSchemaMode',
   'responseMimeType', 'promptBlockReason', 'modality', 'trafficType', 'mimeType', 'requestId', 'date',
   'contentType', 'name', 'toolCallId', 'providerFailureClass', 'responseId', 'createTime',
+  'requestedTier', 'actualTier', 'requestedModel', 'actualModel', 'reason', 'outcome', 'retryAfterMs', 'cooldownUntil', 'fallback', 'completedWithRequiredCapabilities', 'regionSelection',
 ]);
 
-const safeMetadataStringArrays = new Set(['toolNames', 'finishReasons', 'functionCallNames', 'uiComponentTypes', 'argumentFieldNames', 'reasonCodes']);
+const safeMetadataStringArrays = new Set(['toolNames', 'finishReasons', 'functionCallNames', 'uiComponentTypes', 'argumentFieldNames', 'reasonCodes', 'resultFieldNames', 'schemaIssuePaths', 'schemaIssueCodes']);
+const safeCoverageFacets = new Set(['nutrition', 'ingredients', 'serving', 'nutrition-claim', 'local-guidance']);
 
 function redactImage(value: Record<string, unknown>) {
   const data = typeof value.data === 'string' ? value.data : '';
@@ -59,6 +62,7 @@ export function sanitizeGeminiDiagnosticValue(value: unknown, key = '', parent: 
     return { byteLength: bytes.byteLength, sha256: hashBytes(bytes), imageBytesOmitted: true };
   }
   if (typeof value === 'string') return safeMetadataStringKeys.has(key) ? value.slice(0, 160) : '[omitted content]';
+  if (Array.isArray(value) && ['missingFacets', 'afterMissingFacets'].includes(key)) return value.slice(0, 12).map(item => typeof item === 'string' && safeCoverageFacets.has(item) ? item : '[omitted content]');
   if (Array.isArray(value)) return value.slice(0, 600).map(item => typeof item === 'string' && safeMetadataStringArrays.has(key)
     ? item.slice(0, 160)
     : sanitizeGeminiDiagnosticValue(item, '', null, hasProfileContext));

@@ -79,6 +79,24 @@ const entries: readonly GuidanceEntry[] = [
     terms: ['healthy diet', 'free sugar', 'sugar', 'sodium', 'salt', 'saturated fat', 'trans fat', 'dietary pattern', 'population guidance'],
     conditions: [],
   },
+  {
+    source: guidanceSource({
+      id: 'idf-healthy-nutrition-diabetes-2024',
+      title: 'Understanding nutrition for diabetes including gestational diabetes and glucose control',
+      publisher: 'International Diabetes Federation',
+      url: 'https://idf.org/managing-diabetes/healthy-nutrition/',
+      category: 'guideline',
+      jurisdiction: 'Global',
+      publishedAt: '2024-08-20',
+      effectiveAt: null,
+      retrievedAt: snapshotRetrievedAt,
+      summary: 'IDF patient education explains that carbohydrate portions affect blood glucose, refined carbohydrates can raise it more quickly than high-fibre choices, and snack and meal choices should be culturally appropriate and individualized. It suggests options such as nuts, fresh fruit, or unsweetened yoghurt as snacks.',
+      limitations: 'Global patient education, last modified 2025-08-20; not a clinical practice guideline, individualized prescription, fixed carbohydrate allowance, or evidence that a particular product is safe or will cause a specific glucose response.',
+      license: 'Source-linked, NutriScan-authored paraphrase only; no IDF page text is bundled.',
+    }),
+    terms: ['diabetes', 'diabetic', 'prediabetes', 'snack', 'snacking', 'carbohydrate', 'refined', 'whole grain', 'wholegrain', 'fibre', 'fiber', 'blood glucose', 'portion'],
+    conditions: ['diabetes', 'diabetic', 'prediabetes'],
+  },
   // ICMR-NIN Dietary Guidelines 2024 is intentionally not searchable until
   // written permission covers electronic use in a product (see docs/DECISIONS.md).
   {
