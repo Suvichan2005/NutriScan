@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fixedFetch, input, localGate, readBounded, route } from './http';
 import { lookupProducts, normalizeProduct, productInput } from './products';
-import { assist, assistInput, assistOutput, assistPromptPayload, focusedLabelRecoverySchema, geminiResponseJsonSchema, linkVisionResponseToCapture, mergeFocusedLabelRecovery, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, sanitizePackageReconstruction, selectNutritionRecoveryRegion, validateClaims, validateImage, vision, visionInput } from './gemini';
+import { assist, assistInput, assistOutput, assistPromptPayload, focusedLabelRecoverySchema, geminiResponseJsonSchema, getAgentSystemInstruction, getPackageReconstructionSystemInstruction, linkVisionResponseToCapture, mergeFocusedLabelRecovery, normalizeGeminiPackageRegionCoordinates, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, sanitizePackageReconstruction, selectNutritionRecoveryRegion, validateClaims, validateImage, vision, visionInput } from './gemini';
 import { applicationGeminiContext, committedPaidSpendUsd, countGoogleSearchQueries, freeTierSyntheticSmokeContext, resetGeminiUsageLedgerForTests, safeProviderFailure } from './gemini-provider';
 import { research, researchInput, researchRecalls } from './research';
 import { getNutritionGuidance } from './nutrition-guidance';
-import { packageSchema, type Observation, type PackageReconstructionContent } from '../contracts';
+import { packageReconstructionContentSchema, packageSchema, type Observation, type PackageReconstructionContent } from '../contracts';
 import type { GeminiToolImage } from './gemini-tools';
 import { packageForAssist } from '../../modules/inference';
 import sharp from 'sharp';
@@ -428,17 +428,29 @@ describe('provider validation, independent of provider invocation', () => {
     expect(schema.properties.nested.required).toEqual(['requiredNested']);
     expect(schema.properties.nested.properties).toHaveProperty('optionalNested');
   });
-  it('keeps complete OCR text and compact normalized geometry without replaying parser diagnostics',()=>{
+  it('keeps complete OCR text, geometry and the OCR-run-to-reader link without replaying parser diagnostics',()=>{
     const data=assistInput.parse({consent:true,question:'Reconstruct this label',package:{id:'compact-label',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[{id:'line-1',field:'ocr-line',text:'CARBOHYDRATES 6329g 928g',side:'back',confidence:91,origin:'ocr',imageId:'back-1',readingOrder:{runId:'ocr-run',blockIndex:0,paragraphIndex:0,lineIndex:1},bbox:{x0:10,y0:20,x1:300,y1:60},ocrWords:[{wordIndex:0,text:'CARBOHYDRATES',confidence:94,bbox:{x0:10,y0:22,x1:120,y1:58}},{wordIndex:1,text:'6329g',confidence:68,bbox:{x0:180,y0:20,x1:220,y1:60}}]}],ocrCaptures:[{runId:'ocr-run',imageId:'back-1',side:'back',sourceImage:{width:900,height:363},preparedImage:{width:900,height:363},bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'Tesseract',version:'7.0',language:'eng',confidenceScale:'0-100',segmentationMode:'auto'},processing:{rotation:0,contrast:false,invert:false,cropPercent:null}}],parserDiagnostics:[{field:'carbohydrate',decision:'conflict',reasonCodes:['cross-reading-conflict'],sourceObservationIds:['line-1'],numericCandidates:[],basisCandidates:[]}],rawText:'CARBOHYDRATES 6329g 928g',warnings:['A parser warning that belongs in local diagnostics.'],synthetic:false,createdAt:new Date().toISOString()}});
-    const prompt=assistPromptPayload(data) as {package:Record<string,unknown>;visualImages?:unknown};
+    const prompt=assistPromptPayload(data) as {package:Record<string,unknown>&{observations:unknown[][];ocrCaptures:{runId:string;engine:string;version:string;language:string}[]};visualImages?:unknown};
     const encoded=JSON.stringify(prompt);
     expect(prompt.package).not.toHaveProperty('parserDiagnostics');
     expect(prompt.package).not.toHaveProperty('rawText');
     expect(encoded).toContain('CARBOHYDRATES 6329g 928g');
     expect(encoded).toContain('[0.011,0.055,0.333,0.165]');
     expect(encoded).toContain('[1,"6329g",68,[0.2,0.055,0.244,0.165]]');
-    expect(JSON.stringify(data).length).toBeGreaterThan(encoded.length*2);
+    expect(prompt.package.observations[0][5]).toEqual(['ocr-run',0,0,1]);
+    expect(prompt.package.ocrCaptures).toEqual([expect.objectContaining({runId:'ocr-run',engine:'Tesseract',version:'7.0',language:'eng'})]);
+    expect(JSON.stringify(data).length).toBeGreaterThan(encoded.length);
     expect(prompt.visualImages).toBeUndefined();
+  });
+  it('uses a focused package-only instruction for reconstruction and a compact conversation instruction afterward',()=>{
+    const reconstruction=getPackageReconstructionSystemInstruction();
+    const conversation=getAgentSystemInstruction();
+    expect(reconstruction).toContain('readingOrder.runId links to the ocrCaptures entry');
+    expect(reconstruction).toContain('image geometry');
+    expect(reconstruction).toContain('Do not answer the user’s food or health question');
+    expect(reconstruction).not.toContain('Before making a health-specific suitability recommendation');
+    expect(conversation).toContain('final response is ordinary conversation');
+    expect(conversation).not.toContain('readingOrder.runId');
   });
   it('reuses the complete saved package while omitting raw OCR from ordinary follow-ups',()=>{
     const imageEvidence={observationIds:[],imageRegions:[{imageId:'back-1',region:null}]};
@@ -483,6 +495,39 @@ describe('provider validation, independent of provider invocation', () => {
     expect((ingredientPrompt.package.reconstruction as {ingredients:unknown[]}).ingredients).toHaveLength(13);
     expect(ingredientPrompt.packageFacts.map(fact=>fact.id)).toContain('package-fact:ingredient:12');
     expect(ingredientPrompt.packageFacts.map(fact=>fact.id)).toContain('package-fact:additive:8');
+  });
+  it('normalizes Gemini 0-1000 image regions into the saved 0-1 evidence contract',()=>{
+    const candidate={
+      identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'clear',evidence:{observationIds:['ocr-front'],imageRegions:[{imageId:'front-image',region:{x:215,y:55,width:125,height:44}}]}},
+      serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],
+      regions:[
+        {imageId:'back-image',role:'nutrition-table',region:{x:80,y:100,width:890,height:210},observationIds:[]},
+        {imageId:'back-image',role:'ingredients',region:{x:0,y:0,width:500,height:381},observationIds:[]},
+      ],
+      unresolved:[],interpretationNote:'',
+    };
+    const normalized=normalizeGeminiPackageRegionCoordinates(candidate) as typeof candidate;
+    expect(normalized.identity.evidence.imageRegions[0].region).toEqual({x:0.215,y:0.055,width:0.125,height:0.044});
+    expect(normalized.regions).toHaveLength(2);
+    expect(normalized.regions[0].region).toEqual({x:0.08,y:0.1,width:0.89,height:0.21});
+    expect(packageReconstructionContentSchema.safeParse(normalized).success).toBe(true);
+    const invalid={...candidate,regions:[{imageId:'back-image',role:'nutrition-table',region:{x:990,y:0,width:20,height:1001},observationIds:[]}]};
+    expect((normalizeGeminiPackageRegionCoordinates(invalid) as typeof candidate).regions).toEqual([]);
+    const malformedNormalized={...candidate,regions:[{imageId:'back-image',role:'nutrition-table',region:{x:0.9,y:0.1,width:0.3,height:0.1},observationIds:[]}]};
+    expect((normalizeGeminiPackageRegionCoordinates(malformedNormalized) as typeof candidate).regions).toEqual([]);
+  });
+  it('preserves dense-region links to more than 32 OCR observations',()=>{
+    const observationIds=Array.from({length:48},(_,index)=>`dense-label-line-${index+1}`);
+    const reconstruction={
+      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
+      serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],
+      regions:[{imageId:'dense-back-photo',role:'nutrition-table',region:{x:0,y:0,width:1,height:1},observationIds}],
+      unresolved:[],interpretationNote:'A dense label region with full OCR lineage.',
+    };
+
+    const parsed=packageReconstructionContentSchema.parse(reconstruction);
+
+    expect(parsed.regions[0].observationIds).toEqual(observationIds);
   });
   it('does not guess a provider project from key presence', () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('ENABLE_GEMINI_SEARCH', 'false'); vi.stubEnv('GEMINI_PROVIDER', ''); vi.stubEnv('GEMINI_API_KEY', 'paid-placeholder'); vi.stubEnv('FREE_GEMINI_API_KEY', ''); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash');
@@ -531,11 +576,17 @@ describe('provider validation, independent of provider invocation', () => {
     expect(reconstructionRequest.generationConfig).not.toHaveProperty('responseJsonSchema');
     expect(JSON.stringify(reconstructionRequest.contents)).toContain('BISK FARM CREAM CRACKER');
     expect(JSON.stringify(reconstructionRequest.contents)).toContain('inlineData');
+    expect(JSON.stringify(reconstructionRequest.systemInstruction)).toContain('readingOrder.runId links to the ocrCaptures entry');
+    expect(JSON.stringify(reconstructionRequest.systemInstruction)).not.toContain('thoughtful, knowledgeable food companion');
+    const reconstructionPayload=JSON.parse(reconstructionRequest.contents[0].parts[0].text) as {package:{observations:unknown[][];ocrCaptures:{runId:string;engine:string}[]}};
+    expect(reconstructionPayload.package.observations[0][5]).toEqual(['ocr-run',0,0,0]);
+    expect(reconstructionPayload.package.ocrCaptures).toEqual([expect.objectContaining({runId:'ocr-run',engine:'fixture-reader'})]);
     expect(answerRequest.tools).toBeDefined();
     expect(answerRequest.generationConfig).not.toHaveProperty('responseMimeType');
     expect(answerRequest.generationConfig).not.toHaveProperty('responseJsonSchema');
     expect(JSON.stringify(answerRequest.contents)).not.toContain('inlineData');
-    expect(JSON.stringify(answerRequest.systemInstruction)).toContain('Answer naturally and directly in plain text');
+    expect(JSON.stringify(answerRequest.systemInstruction)).toContain('Answer directly in plain text');
+    expect(JSON.stringify(answerRequest.systemInstruction)).not.toContain('readingOrder.runId');
     expect(JSON.stringify(answerRequest.systemInstruction)).not.toContain('questionCoverageInstruction');
   });
   it('carries an exact Codex identity tool result through the agent loop into a validated answer claim', async()=>{
@@ -672,6 +723,43 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.calculations[0]).toMatchObject({nutrient:'carbohydrate',portion:30,result:18,unit:'g'});
     expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculationIds:[result.calculations[0].id]}));
   });
+  it('renders a requested-portion calculator from saved reconstruction without a redundant model tool call',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const observation={id:'nutrition-line',field:'label-note',text:'Carbohydrate 66 g per 100 g; dietary fibre 10.2 g per 100 g',side:'back' as const,confidence:null,origin:'user' as const};
+    const reconstruction={
+      identity:{brand:null,name:'Example oats',variant:null,status:'provisional' as const,evidence:{observationIds:['nutrition-line'],imageRegions:[]}},
+      serving:null,
+      nutritionRows:[
+        {rowId:'carbohydrate-r1',nutrient:'Carbohydrate',printedLabel:'Carbohydrate',printedValue:'66 g',value:66,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['nutrition-line'],imageRegions:[]}},
+        {rowId:'fibre-r1',nutrient:'Dietary fibre',printedLabel:'Dietary fibre',printedValue:'10.2 g',value:10.2,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['nutrition-line'],imageRegions:[]}},
+      ],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'A saved, evidence-linked interpretation.',
+      revision:2,updatedAt:new Date().toISOString(),model:'gemini-3.6-flash',current:true,
+    };
+    const answer='For 70 g, that works out to 46.2 g of carbohydrate and 7.14 g of dietary fibre.';
+    const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question:'How much carbohydrate and fibre in 70 g?',package:{id:'portion-state-calculator',name:'Example oats',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[observation],rawText:observation.text,warnings:[],synthetic:false,createdAt:new Date().toISOString(),reconstruction}});
+
+    const result=await assist(data);
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(result.answer).toBe(answer);
+    expect(result.agentDiagnostics).toMatchObject({contract:'native-tools-and-natural-text',answerStatus:'answer-ready',generationCount:1,calculationCount:2});
+    expect(result.calculations.map(calculation=>calculation.nutrient).sort()).toEqual(['carbohydrate','fiber']);
+    expect(result.calculations).toEqual(expect.arrayContaining([
+      expect.objectContaining({nutrient:'carbohydrate',portion:70,result:46.2,unit:'g'}),
+      expect.objectContaining({nutrient:'fiber',portion:70,result:7.14,unit:'g'}),
+    ]));
+    expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculationIds:result.calculations.map(calculation=>calculation.id)}));
+    const requestBody=JSON.parse(String(fetcher.mock.calls[0][1]?.body));
+    expect(requestBody.generationConfig).not.toHaveProperty('responseJsonSchema');
+    const supplied=JSON.parse(requestBody.contents[0].parts[0].text) as {calculations:Array<{portion:number;nutrient:string;result:number}>};
+    expect(supplied.calculations).toEqual(expect.arrayContaining([
+      expect.objectContaining({nutrient:'carbohydrate',portion:70,result:46.2}),
+      expect.objectContaining({nutrient:'fiber',portion:70,result:7.14}),
+    ]));
+  });
   it('rejects malformed package reconstruction once and does not run schema repair', async () => {
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([toolCallPart('bad-reconstruct','submit_package_reconstruction',{identity:{brand:'BISK FARM'}})]),{status:200,headers:{'content-type':'application/json'}}));
@@ -693,7 +781,7 @@ describe('provider validation, independent of provider invocation', () => {
       {id:'input-3',field:'label-note',text:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',side:'text' as const,confidence:null,origin:'user' as const},
     ];
     const reconstruction={identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:null,status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[]}},serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['OBS_2'],imageRegions:[]}},nutritionRows:[{rowId:'carbs-100',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['OBS_2'],imageRegions:[]}}],ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['OBS_3'],imageRegions:[]}}],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction from supplied text.'};
-    const answer='The text describes Bisk Farm Cream Cracker, with a two-biscuit serving and a provisional carbohydrate reading.';
+    const answer='The package reads Bisk Farm Cream Cracker. A two-biscuit serving provides about 9.28 g of carbohydrate.';
     const fetcher=vi.fn()
       .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('reconstruct-text','submit_package_reconstruction',reconstruction)]),{status:200,headers:{'content-type':'application/json'}}))
       .mockResolvedValueOnce(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
@@ -703,6 +791,11 @@ describe('provider validation, independent of provider invocation', () => {
     const result=await assist(data);
     expect(fetcher).toHaveBeenCalledTimes(2);
     expect(result.answer).toBe(answer);
+    const answerRequest=JSON.parse(String(fetcher.mock.calls[1][1]?.body));
+    const answerPayload=JSON.parse(answerRequest.contents[0].parts[0].text) as {calculations:Array<{nutrient:string;portion:number;result:number}>};
+    const servingCalculation=answerPayload.calculations.find(item=>item.nutrient==='carbohydrate');
+    expect(servingCalculation).toMatchObject({nutrient:'carbohydrate',portion:13.4});
+    expect(servingCalculation?.result).toBeCloseTo(69.29*13.4/100,10);
     expect(result.agentTrace.some(step=>/repair|final_structure/.test(step.name))).toBe(false);
     expect(result.packageReconstruction).toMatchObject({
       identity:{brand:'Bisk Farm',name:'Cream Cracker'},
@@ -733,8 +826,8 @@ describe('provider validation, independent of provider invocation', () => {
     expect(initialRequest.contents[0].parts.some((part:{inlineData?:unknown})=>part.inlineData)).toBe(false);
     expect(initialRequest.contents[0].parts[0].text).toContain('Cream Cracker Sugar Free');
     expect(initialRequest.contents[0].parts[0].text).not.toContain('BISK FARM CREAM CRACKER');
-    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Understand the user’s intent across the current question, saved package and recent conversation.');
-    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Answer naturally and directly in plain text.');
+    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Track intent across the current question, saved package and recent turns.');
+    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Answer directly in plain text');
   });
   it('normalizes package-native reconstruction fields while preserving explicit claim links', () => {
     const answer='The package appears to list a two-biscuit serving and a nutrition table.';

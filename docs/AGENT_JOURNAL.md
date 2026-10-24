@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-25 — preserve saved-package calculations in natural follow-ups
+
+- A saved Bagrry's 70 g follow-up request failed because the request gate compared client-formatted `evidenceText` byte-for-byte with the current server formatter. The typed calculation still carried valid arithmetic and observation lineage. Removed prose equality as an evidence test; calculation rows are now checked against current reconstruction evidence, and canonical evidence text is regenerated server-side. Added regressions for stale/forged prose, arithmetic validity and package-source linkage.
+- Reconstructed total, soluble and insoluble fibre were being treated as same-nutrient duplicates. Grouped components separately and kept conflicts within each component withheld. The live follow-up now returns 46.2 g carbohydrate, 7.14 g total fibre, 3.08 g soluble fibre and 4.06 g insoluble fibre for 70 g, using ten deterministic row-linked calculations. It completed in one free `gemini-3.6-flash` generation with 10,277 input, 116 output and 8,202 cached tokens; no photos or tools were sent. This is one route-level provider result, not browser-rendered acceptance, independent ground truth or Google billing.
+- Refined the core prompt to reuse a matching supplied calculation and invoke the calculator only when needed; refreshed the local source-derived prompt audit. The natural-agent regression now verifies both paths. Transcript IDs: initial Bagrry's image analysis `a02396b3-5589-443c-9d4d-50e4f189e2ee`; photo-free follow-up `e10f0f38-738e-4b81-a1f8-8f0cc29916a7`. Their package state has 30 matching nutrition-row IDs and the same source-image ID, but the records are separate captures.
+- Verification: 250 focused tests passed, 1 skipped; TypeScript passed; the full suite passed (623 passed, 1 skipped across 48 files) using a 20 s test timeout. Both regulation-PDF cases also passed individually at the same bound after they exceeded the default timeout in the earlier full run. No UI screenshot, billing read or new first-pass photo test was made.
+
 ## 2026-10-24 — keep validated synthesis and evidence aliases
 
 - Reviewed local provider receipts through raw JSON, adapter normalization, claim validation, answer selection and call usage. One response parsed as valid JSON but omitted claims; a compound numeric sentence was appropriately withheld when one number did not match the reconstructed package. This is different from a provider/schema parse failure.

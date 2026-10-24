@@ -42,7 +42,7 @@ describe('Gemini tool retrieval boundaries', () => {
     const calculations=calculateSavedServing(packageData);
 
     expect(calculations).toHaveLength(1);
-    expect(calculations[0]).toMatchObject({id:'reconcalc-r4-carb-r4-13.4-g',label:'carbohydrate per serving (2 biscuits approx. 13.4 g)',nutrient:'carbohydrate',input:69.29,basisAmount:100,portion:13.4,result:69.29*13.4/100,unit:'g',observationIds:['ocr-1'],interpretationIds:['carb-r4']});
+    expect(calculations[0]).toMatchObject({id:'reconcalc-r4-carb-r4-13.4-g',label:'Carbohydrates per serving (2 biscuits approx. 13.4 g)',nutrient:'carbohydrate',input:69.29,basisAmount:100,portion:13.4,result:69.29*13.4/100,unit:'g',observationIds:['ocr-1'],interpretationIds:['carb-r4']});
     expect(calculations[0].assumptions.join(' ')).toMatch(/remain provisional/i);
   });
   it('calculates from a saved image-linked interpretation when OCR has no matching text line', () => {

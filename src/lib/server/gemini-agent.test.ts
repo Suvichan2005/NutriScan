@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { packageReconstructionContentSchema, packageSchema } from '../contracts';
 import { validateInferenceOutput } from '../../modules/inference/core';
 import { evidenceSources } from '../../modules/knowledge';
-import { attachGoogleGrounding, buildStructureRepairContents, compactSavedPackageFacts, compactSavedReconstruction, focusedIngredientRecoverySchema, focusedLabelRecoverySchema, getAgentSystemInstruction, getAgentToolDeclarations, googleGroundingEvidence, mergeFocusedLabelRecovery, normalizeModelImageRegions, normalizeProviderAssistOutput, parseAgentProviderOutput, sanitizeAssistantEvidenceLabels, selectIngredientRecoveryRegion, selectNutritionRecoveryRegion, toolResultForModel } from './gemini';
+import { attachGoogleGrounding, compactSavedPackageFacts, compactSavedReconstruction, focusedIngredientRecoverySchema, focusedLabelRecoverySchema, getAgentSystemInstruction, getAgentToolDeclarations, googleGroundingEvidence, mergeFocusedLabelRecovery, normalizeModelImageRegions, normalizeProviderAssistOutput, parseAgentProviderOutput, sanitizeAssistantEvidenceLabels, selectIngredientRecoveryRegion, selectNutritionRecoveryRegion, toolResultForModel } from './gemini';
 import { executeGeminiTool } from './gemini-tools';
 import { getNutritionGuidance } from './nutrition-guidance';
 
@@ -417,16 +417,7 @@ describe('provider package-reconstruction normalization',()=>{
   });
 });
 
-describe('Gemini final-response failure classification', () => {
-  it('repairs a schema mismatch from the prior text draft without replaying attached image parts',()=>{
-    const draft=JSON.stringify({answer:'The label interpretation remains provisional.',claims:[],limitations:[],inspectImage:null});
-    const contents=buildStructureRepairContents(draft,{issuePaths:['packageReconstruction.nutritionRows'],issueCodes:['invalid_type']});
-    expect(contents).toHaveLength(1);
-    expect(contents[0].parts).toHaveLength(1);
-    expect(contents[0].parts?.[0]).toEqual(expect.objectContaining({text:expect.stringContaining(draft)}));
-    expect(JSON.stringify(contents)).not.toContain('inlineData');
-  });
-
+describe('legacy JSON adapter is offline-only', () => {
   it('keeps no grounded claims, invalid JSON and schema failure as distinct outcomes', () => {
     const noClaims = parseAgentProviderOutput(JSON.stringify({ answer: 'Text without linked claims.', answerParts:[], claims: [], limitations: [], inspectImage: null }));
     let malformedJsonError: unknown;
@@ -446,6 +437,23 @@ describe('Gemini final-response failure classification', () => {
     try { parseAgentProviderOutput(JSON.stringify({ answer: 'PRIVATE LABEL NUMBER', claims: 'bad', limitations: [], inspectImage: null })); } catch (error) { failure = error; }
     expect(failure).toMatchObject({ code: 'provider_schema_invalid', issuePaths: expect.arrayContaining(['claims']) });
     expect(JSON.stringify(failure)).not.toContain('PRIVATE LABEL NUMBER');
+  });
+});
+
+describe('natural NutriScan agent contract', () => {
+  it('uses one concise natural-answer instruction and exposes operation tools rather than a UI catalog', () => {
+    const instruction = getAgentSystemInstruction();
+    const tools = getAgentToolDeclarations(false, false);
+    expect(instruction).toContain('Answer directly in plain text');
+    expect(instruction).toContain('give the judgment first');
+    expect(instruction).toContain('Before making a health-specific suitability recommendation, retrieve the narrowest applicable guidance or research evidence');
+    expect(instruction).toContain('a condition mentioned in an unrelated request alone does not justify clinical lookup');
+    expect(instruction).toContain('use an exact printed row or supplied deterministic calculation when its nutrient, value, unit and basis match the request');
+    expect(instruction).toContain('If a needed quantity is absent, call the appropriate calculator');
+    expect(instruction.length).toBeLessThan(2_000);
+    expect(tools.map(tool => tool.name)).toContain('calculate_nutrition');
+    expect(tools.find(tool => tool.name === 'calculate_nutrition')?.description).toContain('do not repeat those calculations');
+    expect(tools.map(tool => tool.name)).not.toContain('show_nutrition_table');
   });
 });
 

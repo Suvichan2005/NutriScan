@@ -66,6 +66,21 @@ export function asksForDeclaredPieceCount(question: string, serving: Reconstruct
     && description.every((part, offset) => questionWords[index + offset + 1] === part));
 }
 
+/** True when a question selects a concrete package amount that can use saved deterministic calculations. */
+export function hasExplicitPortionRequest(question: string, netWeight?: PortionChoice, serving?: ReconstructedServingPortion | null): boolean {
+  const amount = question.match(/\b(\d+(?:\.\d+)?)\s*(g|grams?|ml|millilit(?:er|re)s?)\b/i);
+  if (amount) {
+    const value = Number(amount[1]);
+    if (value > 0 && value <= 2000) return true;
+  }
+  if (/\bhalf (?:a |the )?(?:pack|packet)\b/i.test(question) && netWeight && netWeight.value > 0) return true;
+  const normalizedServing = normalizeReconstructedServing(serving);
+  if (asksForDeclaredPieceCount(question, normalizedServing)) return true;
+  return !!normalizedServing?.quantity && !!normalizedServing.unit
+    && ['clear', 'provisional'].includes(normalizedServing.status)
+    && /\b(?:a|one|my|this|that)\s+serving\b/i.test(question);
+}
+
 const reconstructedNutrientLabels: Record<NutrientKey, string[]> = {
   energy: ['energy', 'calories', 'calorie'],
   carbohydrate: ['carbohydrate', 'carbohydrates', 'carbs'],
@@ -81,9 +96,18 @@ const reconstructedNutrientLabels: Record<NutrientKey, string[]> = {
 
 function reconstructedNutrientKey(value: string): NutrientKey | null {
   const normalized = value.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  if (/^(?:soluble|insoluble) (?:dietary )?(?:fiber|fibre)$/.test(normalized)) return 'fiber';
   return (Object.keys(reconstructedNutrientLabels) as NutrientKey[]).find(key => reconstructedNutrientLabels[key].some(label =>
     normalized === label.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim(),
   )) ?? null;
+}
+
+function reconstructedNutrientComponent(key:NutrientKey,row:Pick<NonNullable<PackageData['reconstruction']>['nutritionRows'][number],'nutrient'|'printedLabel'>):string{
+  if(key!=='fiber')return key;
+  const label=`${row.nutrient} ${row.printedLabel}`.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[_-]+/g,' ');
+  if(/\binsoluble\b/.test(label))return 'fiber:insoluble';
+  if(/\bsoluble\b/.test(label))return 'fiber:soluble';
+  return 'fiber:total';
 }
 
 /**
@@ -100,28 +124,34 @@ export function calculationsFromReconstruction(pkg: PackageData, portion: number
     ...(pkg.ocrCaptures ?? []).map(capture => capture.imageId),
     ...(pkg.visionCaptures ?? []).map(capture => capture.imageId),
   ]);
-  const selected = new Map<NutrientKey, typeof reconstruction.nutritionRows[number]>();
+  const selected:Array<{ key:NutrientKey; row:typeof reconstruction.nutritionRows[number] }> = [];
   for (const key of Object.keys(reconstructedNutrientLabels) as NutrientKey[]) {
     const eligible = reconstruction.nutritionRows.filter(row => {
       if (!['clear', 'provisional'].includes(row.status) || row.value === null || !row.unit || row.qualifier || !row.basisAmount || !row.basisUnit) return false;
-      if (row.basisUnit !== portionUnit || reconstructedNutrientKey(row.nutrient || row.printedLabel) !== key) return false;
+      if (row.basisUnit !== portionUnit || (reconstructedNutrientKey(row.nutrient)??reconstructedNutrientKey(row.printedLabel)) !== key) return false;
       return row.evidence.observationIds.some(id => observations.has(id))
         || row.evidence.imageRegions.some(region => retainedImages.has(region.imageId));
     });
     if (!eligible.length) continue;
-    // Prefer the printed basis matching this requested amount, then the
-    // conventional per-100 basis. Never choose between conflicting same-basis rows.
-    const requestedBasis = eligible.find(row => Math.abs(row.basisAmount! - portion) <= 1e-6)?.basisAmount;
-    const preferredBasis = requestedBasis !== undefined ? requestedBasis
-      : eligible.some(row => row.basisAmount === 100) ? 100
-        : eligible[0].basisAmount;
-    const candidates = eligible.filter(row => row.basisAmount === preferredBasis);
-    const distinctValues = new Set(candidates.map(row => `${row.value} ${row.unit}`));
-    if (distinctValues.size !== 1) continue;
-    selected.set(key, candidates[0]);
+    // Distinct printed components (for example total, soluble and insoluble
+    // fibre) are separate rows, not conflicts. Within each component, prefer
+    // the requested basis, then per-100, and abstain on contradictory duplicate
+    // readings at that same basis.
+    const components=new Map<string,typeof eligible>();
+    for(const row of eligible){
+      const component=reconstructedNutrientComponent(key,row);
+      components.set(component,[...(components.get(component)??[]),row]);
+    }
+    for(const rows of components.values()){
+      const requestedBasis=rows.find(row=>Math.abs(row.basisAmount!-portion)<=1e-6)?.basisAmount;
+      const preferredBasis=requestedBasis!==undefined?requestedBasis:rows.some(row=>row.basisAmount===100)?100:rows[0].basisAmount;
+      const candidates=rows.filter(row=>row.basisAmount===preferredBasis);
+      const distinctValues=new Set(candidates.map(row=>`${row.value} ${row.unit}`));
+      if(distinctValues.size===1)selected.push({key,row:candidates[0]});
+    }
   }
 
-  return [...selected].flatMap(([key, row]) => {
+  return selected.flatMap(({key,row}) => {
     if (row.basisUnit !== portionUnit || !row.basisAmount || row.value === null || !row.unit) return [];
     const result = row.value * portion / row.basisAmount;
     if (!Number.isFinite(result)) return [];
@@ -136,7 +166,8 @@ export function calculationsFromReconstruction(pkg: PackageData, portion: number
     if (!observationIds.length && !imageIds.length) return [];
     const basisText = row.basisText || row.columnLabel || `per ${row.basisAmount} ${row.basisUnit}`;
     const id = `reconstruction-${row.rowId.slice(0, 72)}-${portion}-${portionUnit}`;
-    const label = `${key} in ${portion} ${portionUnit}`;
+    const displayNutrient=row.nutrient.trim().replace(/[_-]+/g,' ').replace(/^\p{L}/u,letter=>letter.toLocaleUpperCase('en-IN'))||row.printedLabel;
+    const label = `${displayNutrient} in ${portion} ${portionUnit}`;
     const formula = `${row.value} ${row.unit} × ${portion} ${portionUnit} ÷ ${row.basisAmount} ${row.basisUnit}`;
     return [{
       id, label, nutrient: key, input: row.value, inputUnit: row.unit, basisAmount: row.basisAmount,
@@ -169,10 +200,10 @@ export function defaultPortion(pkg: { serving?: PortionChoice; netWeight?: Porti
 /** Use an amount the user typed in their question, falling back to the current portion. */
 export function resolveQuestionPortion(question: string, fallback: PortionChoice, netWeight?: PortionChoice, serving?: ReconstructedServingPortion | null): PortionChoice {
   const normalizedServing = normalizeReconstructedServing(serving);
-  const amount = question.match(/\b(\d+(?:\.\d+)?)\s*(g|grams?|ml)\b/i);
+  const amount = question.match(/\b(\d+(?:\.\d+)?)\s*(g|grams?|ml|millilit(?:er|re)s?)\b/i);
   if (amount) {
     const value = Number(amount[1]);
-    if (value > 0 && value <= 2000) return { value, unit: amount[2].toLowerCase() === 'ml' ? 'ml' : 'g' };
+    if (value > 0 && value <= 2000) return { value, unit: /^(?:ml|millilit)/i.test(amount[2]) ? 'ml' : 'g' };
   }
   if (/\bhalf (?:a |the )?(?:pack|packet)\b/i.test(question) && netWeight) {
     return { value: netWeight.value / 2, unit: netWeight.unit };

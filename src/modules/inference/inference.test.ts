@@ -97,6 +97,64 @@ describe('provider-independent inference output validation', () => {
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
   });
 
+  it('recognizes a source-linked declared serving as the basis for natural prose',()=>{
+    const pkg=packageSchema.parse({...fixturePackage,reconstruction:{
+      ...reconstructionFixture(),revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture-model',current:true,
+    }});
+
+    const checked=validateNaturalAnswerText(
+      'The package declares a 13.4 g serving, and this amount is described per serving.',
+      {package:pkg,question:'How much is one serving?'},
+    );
+
+    expect(checked.answer).toContain('described per serving');
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(0);
+  });
+
+  it('keeps useful natural prose and gives a concise notice when one unsupported quantity is withheld', () => {
+    const checked = validateNaturalAnswerText(
+      'This is a refined-flour-heavy cracker. It contains 99 g carbohydrate per 100 g.',
+      { package: fixturePackage, question: 'Is this a sensible snack?' },
+    );
+    expect(checked.answer).toContain('This is a refined-flour-heavy cracker.');
+    expect(checked.answer).toContain('One quantity did not match the saved package reading');
+    expect(checked.answer).not.toContain('99 g');
+    expect(checked.answer).not.toContain('against the saved package or retrieved evidence');
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
+  });
+
+  it('preserves supported Markdown answer lines when one approximate quantity is unsupported',()=>{
+    const baseReconstruction=reconstructionFixture();
+    const evidence=baseReconstruction.nutritionRows[0].evidence;
+    const pkg=packageSchema.parse({...fixturePackage,reconstruction:{
+      ...baseReconstruction,
+      serving:{printedText:'38 g serving',quantity:38,unit:'g',pieceCount:1,pieceDescription:'pack',status:'provisional',evidence},
+      nutritionRows:[...baseReconstruction.nutritionRows,{rowId:'fiber-per-100g',nutrient:'Dietary fibre',printedLabel:'Dietary fibre',printedValue:'12.4 g',value:12.4,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence}],
+      revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture-model',current:true,
+    }});
+    const calculation:Calculation={
+      id:'portion-fiber',label:'fiber per serving (38 g)',nutrient:'fiber',
+      input:12.4,inputUnit:'g',basisAmount:100,portion:38,portionUnit:'g',result:12.4*38/100,unit:'g',
+      formula:'12.4 g × 38 g ÷ 100 g',evidenceText:'fiber per serving (38 g); per 38 g; 12.4 g × 38 g ÷ 100 g = 4.712 g',
+      observationIds:[],imageIds:['synthetic-image'],interpretationIds:['fiber-per-100g'],assumptions:[],
+    };
+    const answer=[
+      '### Portion',
+      '* The label lists 69.29 g carbohydrate per 100 g.',
+      '* A 38 g serving provides ~4.7 g fibre.',
+      '* It provides 99 g fibre per 38 g.',
+    ].join('\n');
+
+    const checked=validateNaturalAnswerText(answer,{package:pkg,question:'How much fibre in 38 g?',calculations:[calculation]});
+
+    expect(checked.answer).toContain('### Portion');
+    expect(checked.answer).toContain('~4.7 g fibre.');
+    expect(checked.answer).not.toContain('99 g');
+    expect(checked.answer).toContain('One quantity did not match the saved package reading');
+    expect(checked.acceptedSentenceCount).toBe(3);
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
+  });
+
   it('compacts follow-up package context without breaking saved reconstruction lineage', () => {
     const pkg=packageSchema.parse({
       ...fixturePackage,

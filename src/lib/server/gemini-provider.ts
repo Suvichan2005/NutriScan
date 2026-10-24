@@ -744,16 +744,15 @@ function unsupportedModelFeature(error: unknown) {
     || /(?:not supported|unsupported).{0,100}(?:model|function calling|tool use|response schema|json schema)/.test(message);
 }
 
-function fallbackCategory(error: unknown, signal?: AbortSignal, deadlineAt?: number, signalIsRouterTimeout = false): ModelCooldown['kind'] | null {
-  const safe = safeProviderFailure(error);
+function fallbackCategory(error: unknown, signal?: AbortSignal, deadlineAt?: number, parentSignal?: AbortSignal): ModelCooldown['kind'] | null {
+  const safe = safeProviderFailure(error, signal);
   if (safe.status === 429) {
     const message = error instanceof Error ? error.message : '';
     return quotaDetails(message).startsWith('daily') ? 'daily-quota' : 'short-quota';
   }
   if (safe.status === 404) return 'model-unavailable';
-  const agentDeadlineRemaining = deadlineAt === undefined ? null : deadlineAt - Date.now();
-  const hasAgentTime = agentDeadlineRemaining === null ? !signal?.aborted : agentDeadlineRemaining > 0;
-  if ((safe.status === 503 || safe.status === 504 || safe.failureClass === 'timeout' || (signalIsRouterTimeout && signal?.aborted)) && hasAgentTime) return 'service-unavailable';
+  const hasAgentTime = !parentSignal?.aborted && (deadlineAt === undefined || deadlineAt > Date.now());
+  if ((safe.status === 503 || safe.status === 504 || safe.failureClass === 'timeout') && hasAgentTime) return 'service-unavailable';
   const errorMessage = error instanceof Error ? error.message : '';
   if (safe.status === null && /(?:request|operation|provider) (?:timed? ?out|timeout)|deadline exceeded/i.test(errorMessage) && hasAgentTime) return 'service-unavailable';
   if (unsupportedModelFeature(error)) return 'unsupported-feature';
@@ -783,6 +782,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
     ? configuredFreeModels()
     : [context.model];
   let lastRetryableError: unknown = null;
+  const parentSignal = params.config?.abortSignal;
 
   for (const model of models) {
     const cooldown = requestedTier === 'free' ? cooldownFor(model, params) : null;
@@ -796,16 +796,16 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
       ? context
       : { tier: requestedTier, model, purpose: context.purpose, client: buildClient(apiKey, requestedTier, context.purpose, model) };
     let routeAttemptSignal: AbortSignal | undefined;
-    let routeUsesOwnTimeout = false;
     const invoke = () => {
       const remaining = diagnosticContext.deadlineAt === undefined ? null : diagnosticContext.deadlineAt - Date.now();
       if (remaining !== null && remaining <= 0) throw new ApiError(504, 'agent_timeout', 'Gemini analysis reached its bounded time limit. Your scan and local analysis remain available.');
-      // Leave time for another eligible free model after one slow attempt.
-      // The enclosing agent deadline still bounds the complete investigation.
-      const timeout = remaining === null ? null : Math.max(1, Math.min(45_000, remaining));
-      const attemptSignal = timeout === null ? params.config?.abortSignal : AbortSignal.timeout(timeout);
+      // Bound each route attempt separately. The caller's stage signal still
+      // caps the complete operation, but a slow model must not consume the
+      // entire stage timeout and prevent the next eligible route from running.
+      const timeout = remaining === null ? 20_000 : Math.max(1, Math.min(20_000, remaining));
+      const ownTimeoutSignal = AbortSignal.timeout(timeout);
+      const attemptSignal = parentSignal ? AbortSignal.any([parentSignal, ownTimeoutSignal]) : ownTimeoutSignal;
       routeAttemptSignal = attemptSignal;
-      routeUsesOwnTimeout = timeout !== null;
       const routeParams = {
         ...params,
         model,
@@ -824,7 +824,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
       await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', ...route });
       return response;
     } catch (error) {
-      const category = fallbackCategory(error, routeAttemptSignal, diagnosticContext.deadlineAt, routeUsesOwnTimeout);
+      const category = fallbackCategory(error, routeAttemptSignal, diagnosticContext.deadlineAt, parentSignal);
       if (requestedTier !== 'free' || context.purpose !== 'application' || !category) {
         const failure = safeProviderFailure(error, routeAttemptSignal);
         attempts.push({ model, outcome: 'failed', reason: category ?? failure.failureClass });
@@ -854,7 +854,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
           await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', ...route });
           return response;
         } catch (retryError) {
-          const retryCategory = fallbackCategory(retryError, routeAttemptSignal, diagnosticContext.deadlineAt, routeUsesOwnTimeout);
+          const retryCategory = fallbackCategory(retryError, routeAttemptSignal, diagnosticContext.deadlineAt, parentSignal);
           if (!retryCategory) throw retryError;
           const retryWait = errorRetryAfterMs(retryError) ?? null;
           const retryCooldown = recordModelCooldown(model, retryCategory, retryWait, params);
@@ -865,7 +865,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
     }
   }
 
-  if (requestedTier === 'free' && context.purpose === 'application' && paidFallbackReady()) {
+  if (requestedTier === 'free' && context.purpose === 'application' && !parentSignal?.aborted && paidFallbackReady()) {
     const paidModel = validModel(process.env.GEMINI_PAID_MODEL) ?? validModel(process.env.GEMINI_MODEL);
     const paidKey = selectedKey('paid');
     if (paidModel && paidKey) {
@@ -874,26 +874,28 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
       if (remaining !== null && remaining <= 0) {
         attempts.push({ model: paidModel, outcome: 'skipped', reason: 'agent-deadline' });
       } else {
-        const timeout = remaining === null ? null : Math.max(1, Math.min(45_000, remaining));
+        const timeout = remaining === null ? 45_000 : Math.max(1, Math.min(45_000, remaining));
+        const paidTimeoutSignal = AbortSignal.timeout(timeout);
+        const paidAttemptSignal = parentSignal ? AbortSignal.any([parentSignal, paidTimeoutSignal]) : paidTimeoutSignal;
         const paidParams = {
           ...params,
           model: paidModel,
-          ...(params.config ? { config: { ...params.config, ...(timeout === null ? {} : { abortSignal: AbortSignal.timeout(timeout) }) } } : {}),
+          ...(params.config ? { config: { ...params.config, abortSignal: paidAttemptSignal } } : {}),
         };
-      try {
-        const response = await generateTrackedOnce(paidContext, paidParams, diagnosticContext);
-        attempts.push({ model: paidModel, outcome: 'used', reason: 'explicitly-enabled-paid-last-resort' });
-        context.tier = 'paid'; context.model = paidModel; context.client = paidContext.client;
-        const route = { requestedTier, actualTier: 'paid' as const, requestedModel, actualModel: paidModel, fallback: true, completedWithRequiredCapabilities: true, attempts };
-        await recordGeminiDiagnostic({ event: 'provider_route', analysisId: diagnosticContext.analysisId, ...route });
-        await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', ...route });
-        return response;
-      } catch (error) {
-        attempts.push({ model: paidModel, outcome: 'failed', reason: 'paid-last-resort-failed' });
-        await recordGeminiDiagnostic({ event: 'provider_route', analysisId: diagnosticContext.analysisId, requestedTier, actualTier: 'paid', requestedModel, actualModel: null, fallback: true, completedWithRequiredCapabilities: false, attempts });
-        await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', requestedTier, actualTier: 'paid', requestedModel, actualModel: null, fallback: true, completedWithRequiredCapabilities: false, attempts });
-        throw error;
-      }
+        try {
+          const response = await generateTrackedOnce(paidContext, paidParams, diagnosticContext);
+          attempts.push({ model: paidModel, outcome: 'used', reason: 'explicitly-enabled-paid-last-resort' });
+          context.tier = 'paid'; context.model = paidModel; context.client = paidContext.client;
+          const route = { requestedTier, actualTier: 'paid' as const, requestedModel, actualModel: paidModel, fallback: true, completedWithRequiredCapabilities: true, attempts };
+          await recordGeminiDiagnostic({ event: 'provider_route', analysisId: diagnosticContext.analysisId, ...route });
+          await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', ...route });
+          return response;
+        } catch (error) {
+          attempts.push({ model: paidModel, outcome: 'failed', reason: 'paid-last-resort-failed' });
+          await recordGeminiDiagnostic({ event: 'provider_route', analysisId: diagnosticContext.analysisId, requestedTier, actualTier: 'paid', requestedModel, actualModel: null, fallback: true, completedWithRequiredCapabilities: false, attempts });
+          await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', requestedTier, actualTier: 'paid', requestedModel, actualModel: null, fallback: true, completedWithRequiredCapabilities: false, attempts });
+          throw error;
+        }
       }
     }
   }

@@ -84,6 +84,86 @@ describe('free-tier Gemini model routing', () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
+  it('treats an SDK AbortError as a model-attempt timeout and reaches the authorized paid last resort', async () => {
+    vi.stubEnv('ENABLE_PAID_GEMINI', 'true');
+    vi.stubEnv('ENABLE_PAID_GEMINI_FALLBACK', 'true');
+    vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash');
+    vi.stubEnv('GEMINI_FREE_PROJECT_ID', 'free-project');
+    vi.stubEnv('GEMINI_PAID_PROJECT_ID', 'paid-project');
+    vi.stubEnv('GEMINI_PAID_BUDGET_USD', '1');
+    vi.stubEnv('GEMINI_PAID_MAX_CALLS', '3');
+    vi.stubEnv('GEMINI_PAID_MAX_INPUT_TOKENS', '1000');
+    vi.stubEnv('GEMINI_PAID_MAX_OUTPUT_TOKENS', '100');
+    vi.stubEnv('GEMINI_PAID_INPUT_USD_PER_MILLION', '1');
+    vi.stubEnv('GEMINI_PAID_OUTPUT_USD_PER_MILLION', '1');
+
+    const originalTimeout = AbortSignal.timeout.bind(AbortSignal);
+    const alreadyTimedOut = AbortSignal.abort(new DOMException('The model attempt timed out.', 'TimeoutError'));
+    let attemptTimeoutCount = 0;
+    vi.spyOn(AbortSignal, 'timeout').mockImplementation((milliseconds) => {
+      if (milliseconds === 20_000 && attemptTimeoutCount++ === 1) return alreadyTimedOut;
+      return originalTimeout(milliseconds);
+    });
+
+    let sawPaidCredential = false;
+    const fetcher = vi.fn(async (target: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(target);
+      const key = new Headers(init?.headers).get('x-goog-api-key') ?? new URL(url).searchParams.get('key');
+      if (key === 'paid-must-not-be-used') sawPaidCredential = true;
+      if (url.includes('countTokens')) {
+        return new Response(JSON.stringify({ totalTokens: 10 }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url.includes('gemini-3.8-flash') && key === 'free-test-key') {
+        return new Response(JSON.stringify({ error: { code: 503, status: 'UNAVAILABLE', message: 'Model temporarily unavailable' } }), { status: 503, headers: { 'content-type': 'application/json' } });
+      }
+      if (url.includes('gemini-3.7-flash') && key === 'free-test-key') {
+        throw new DOMException('The operation was aborted.', 'AbortError');
+      }
+      return new Response(success('gemini-3.8-flash'), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetcher);
+
+    const parent = new AbortController();
+    const context = applicationGeminiContext();
+    const result = await generateTracked(context, {
+      model: context.model,
+      contents: 'authorized timeout fallback test',
+      config: { maxOutputTokens: 40, abortSignal: parent.signal },
+    });
+
+    expect(result.modelVersion).toBe('gemini-3.8-flash-test');
+    expect(parent.signal.aborted).toBe(false);
+    expect(context.tier).toBe('paid');
+    expect(sawPaidCredential).toBe(true);
+    expect(fetcher).toHaveBeenCalledTimes(4);
+  });
+
+  it('does not route to another model or paid fallback after the caller cancels the whole request', async () => {
+    vi.stubEnv('ENABLE_PAID_GEMINI', 'true');
+    vi.stubEnv('ENABLE_PAID_GEMINI_FALLBACK', 'true');
+    vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash');
+    vi.stubEnv('GEMINI_FREE_PROJECT_ID', 'free-project');
+    vi.stubEnv('GEMINI_PAID_PROJECT_ID', 'paid-project');
+    vi.stubEnv('GEMINI_PAID_BUDGET_USD', '1');
+    vi.stubEnv('GEMINI_PAID_MAX_CALLS', '3');
+    vi.stubEnv('GEMINI_PAID_MAX_INPUT_TOKENS', '1000');
+    vi.stubEnv('GEMINI_PAID_MAX_OUTPUT_TOKENS', '100');
+    vi.stubEnv('GEMINI_PAID_INPUT_USD_PER_MILLION', '1');
+    vi.stubEnv('GEMINI_PAID_OUTPUT_USD_PER_MILLION', '1');
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: 503, status: 'UNAVAILABLE', message: 'Model temporarily unavailable' } }), { status: 503, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetcher);
+    const parent = AbortSignal.abort(new DOMException('The request was cancelled.', 'AbortError'));
+    const context = applicationGeminiContext();
+
+    await expect(generateTracked(context, {
+      model: context.model,
+      contents: 'cancelled request must not route',
+      config: { maxOutputTokens: 40, abortSignal: parent },
+    })).rejects.toBeDefined();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(context.tier).toBe('free');
+  });
+
   it('records a timed-out provider attempt as timeout when the SDK drops its abort cause', () => {
     const timedOutSignal = AbortSignal.abort();
     expect(safeProviderFailure(new TypeError('fetch failed'), timedOutSignal)).toMatchObject({ status: null, failureClass: 'timeout' });

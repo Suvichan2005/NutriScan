@@ -196,7 +196,10 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
   const sources = new Map((data.evidence ?? []).map(source => [source.id, `${source.summary}\n${source.limitations}`]));
   const calculations = new Map((data.calculations ?? []).map(calculation => [
     calculation.id,
-    calculation.evidenceText ?? calculationEvidenceText(calculation),
+    // evidenceText is a legacy presentation cache and can be stale after a
+    // deployed wording change. Build validation evidence only from typed,
+    // arithmetic-checked fields linked to the current package.
+    calculationEvidenceText(calculation),
   ]));
   const calculationsById = new Map((data.calculations ?? []).map(calculation=>[calculation.id,calculation]));
   const profileFields = new Map(Object.entries(data.profile ?? {}).filter(([, value]) => value.trim().length > 0));
@@ -617,7 +620,7 @@ function numericOccurrences(text:string){
 }
 
 function isApproximateNumericClaim(text:string,index:number){
-  return /\b(?:about|around|approximately|approx\.?|nearly|roughly)\s*$/i.test(text.slice(Math.max(0,index-24),index));
+  return /(?:~|≈|\b(?:about|around|approximately|approx\.?|nearly|roughly))\s*$/i.test(text.slice(Math.max(0,index-24),index));
 }
 
 function basisMentionsAreSupported(text: string, evidenceTexts: string[]): boolean {
@@ -638,12 +641,28 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[],calcula
   const claimed = numericOccurrences(claim);
   if (!claimed.length) return true;
   const cited = citedSpans.flatMap(numericOccurrences);
-  const calculated=calculatedResults.flatMap(item=>numericMentions(`${item.value} ${item.unit}`));
+  // Calculations are typed application outputs, not locale-formatted strings.
+  // A value such as 4.712 can look locale-ambiguous when parsed back from text,
+  // which incorrectly rejects normal display rounding to 4.7. Keep the
+  // unit-derived dimension and trust the structured numeric value.
+  const calculated=calculatedResults.flatMap(item=>numericMentions(`${item.value} ${item.unit}`).map(mention=>({...mention,localeAmbiguous:false})));
   return claimed.every(({mention:value,operator,index})=>{
     const approximate=isApproximateNumericClaim(claim,index);
     const matchesEvidence=cited.some(({mention:evidence,operator:evidenceOperator})=>{
       if(value.dimension!==evidence.dimension||operator!==evidenceOperator)return false;
-      if(value.localeAmbiguous||evidence.localeAmbiguous)return value.localeAmbiguous&&evidence.localeAmbiguous&&value.rawValue===evidence.rawValue&&value.factor===evidence.factor;
+      if(value.localeAmbiguous||evidence.localeAmbiguous){
+        if(value.localeAmbiguous&&evidence.localeAmbiguous)return value.rawValue===evidence.rawValue&&value.factor===evidence.factor;
+        // In English output, comma-grouped thousands can be parsed as a
+        // locale-ambiguous decimal. Accept that presentation only when the
+        // exact grouped integer matches an independently stored numeric fact
+        // with the same unit dimension; e.g. 2,283 mg against 2283 mg.
+        const grouped=value.localeAmbiguous?value:evidence;
+        const unambiguous=value.localeAmbiguous?evidence:value;
+        if(!/^\d{1,3}(?:,\d{3})+$/.test(grouped.rawValue))return false;
+        const groupedValue=Number(grouped.rawValue.replaceAll(',',''))*grouped.factor;
+        const tolerance=Number.EPSILON*Math.max(1,Math.abs(groupedValue),Math.abs(unambiguous.value))*8;
+        return Math.abs(groupedValue-unambiguous.value)<=tolerance;
+      }
       const tolerance=Number.EPSILON*Math.max(1,Math.abs(value.value),Math.abs(evidence.value))*8;
       if(Math.abs(value.value-evidence.value)<=tolerance)return true;
       if(!approximate||value.value===0||evidence.value===0)return false;
@@ -675,8 +694,7 @@ export function validateNaturalAnswerText(
   answer: string,
   context: Pick<AssistValidationContext, 'package' | 'question' | 'evidence' | 'calculations'>,
 ): { answer: string; acceptedSentenceCount: number; withheldUnsupportedQuantitySentenceCount: number } {
-  const normalized = answer.replace(/\s+/g, ' ').trim().slice(0, 7000);
-  const sentences = normalized.split(/(?<=[.!?])\s+(?=[\p{L}\p{N}"“])/u).filter(Boolean);
+  const normalized = answer.replace(/\r\n?/g, '\n').trim().slice(0, 7000);
   const pkg = context.package;
   const reconstructedBasisEvidence = pkg.reconstruction?.current
     ? pkg.reconstruction.nutritionRows.flatMap(row => {
@@ -696,6 +714,12 @@ export function validateNaturalAnswerText(
     ...pkg.observations.filter(item => item.origin !== 'ocr').map(item => item.text),
     ...pkg.nutrients.filter(item => item.status !== 'conflict' && item.basis).map(item =>
       `${item.key} ${item.value} ${item.unit} per ${item.basis!.amount} ${item.basis!.unit}`),
+    ...(pkg.reconstruction?.current&&pkg.reconstruction.serving
+      &&['clear','provisional'].includes(pkg.reconstruction.serving.status)
+      &&pkg.reconstruction.serving.quantity!==null&&pkg.reconstruction.serving.unit
+      &&(pkg.reconstruction.serving.evidence.observationIds.length>0||pkg.reconstruction.serving.evidence.imageRegions.length>0)
+      ?[`per serving ${pkg.reconstruction.serving.printedText??''} ${pkg.reconstruction.serving.quantity} ${pkg.reconstruction.serving.unit}`]
+      :[]),
     ...(pkg.reconstruction?.current ? [
       ...(pkg.reconstruction.serving && ['clear', 'provisional'].includes(pkg.reconstruction.serving.status)
         ? [`${pkg.reconstruction.serving.printedText ?? ''} ${pkg.reconstruction.serving.quantity ?? ''} ${pkg.reconstruction.serving.unit ?? ''} ${pkg.reconstruction.serving.pieceCount ?? ''} ${pkg.reconstruction.serving.pieceDescription ?? ''}`]
@@ -713,25 +737,33 @@ export function validateNaturalAnswerText(
     ] : []),
     ...reconstructedBasisEvidence,
     ...(context.evidence ?? []).flatMap(source => [source.title, source.publisher, source.summary, source.limitations]),
-    ...(context.calculations ?? []).map(calculation => calculation.evidenceText ?? calculationEvidenceText(calculation)),
+    ...(context.calculations ?? []).map(calculation => calculationEvidenceText(calculation)),
   ].filter(Boolean);
   const calculatedResults = (context.calculations ?? []).map(item => ({ value: item.result, unit: item.unit }));
-  const accepted: string[] = [];
+  const acceptedLines: string[] = [];
+  let acceptedSentenceCount = 0;
   let withheldUnsupportedQuantitySentenceCount = 0;
-  for (const sentence of sentences) {
-    if (!numericMentionsAreSupported(sentence, evidenceTexts, calculatedResults)
-      || !basisMentionsAreSupported(sentence, evidenceTexts)) {
-      withheldUnsupportedQuantitySentenceCount += 1;
-      continue;
+  for (const line of normalized.split('\n')) {
+    const acceptedSentences: string[] = [];
+    const sentences = line.trim().split(/(?<=[.!?])\s+(?=[\p{L}\p{N}"“])/u).filter(Boolean);
+    for (const sentence of sentences) {
+      if (!numericMentionsAreSupported(sentence, evidenceTexts, calculatedResults)
+        || !basisMentionsAreSupported(sentence, evidenceTexts)) {
+        withheldUnsupportedQuantitySentenceCount += 1;
+        continue;
+      }
+      acceptedSentences.push(sentence);
+      acceptedSentenceCount += 1;
     }
-    accepted.push(sentence);
+    if (acceptedSentences.length) acceptedLines.push(acceptedSentences.join(' '));
   }
-  if (withheldUnsupportedQuantitySentenceCount && accepted.length) {
-    accepted.push('I left out a quantity that I could not verify against the saved package or retrieved evidence.');
+  const acceptedAnswer = acceptedLines.join('\n').trim();
+  if (withheldUnsupportedQuantitySentenceCount && acceptedAnswer) {
+    acceptedLines.push('', 'One quantity did not match the saved package reading, so I left that detail out.');
   }
   return {
-    answer: accepted.join(' ').trim(),
-    acceptedSentenceCount: accepted.length - Number(withheldUnsupportedQuantitySentenceCount > 0 && accepted.length > 0),
+    answer: acceptedLines.join('\n').trim(),
+    acceptedSentenceCount,
     withheldUnsupportedQuantitySentenceCount,
   };
 }

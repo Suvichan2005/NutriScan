@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 25 October 2026 — derive calculation evidence from validated fields, not client prose
+
+- Keep portion calculations usable across saved client/package versions by treating typed nutrient, value, unit, basis and requested portion as the contract. Validate arithmetic within floating tolerance and require the calculation to match a current evidence-linked reconstructed row, candidate or package nutrient. Regenerate canonical calculation evidence text on the server; never accept a client label or explanation as proof.
+- Preserve distinct rows for total, soluble and insoluble fibre when calculating a portion. Continue abstaining on duplicate conflicting rows for the same component.
+- Reuse an exact supplied calculation in natural conversation. Ask the deterministic calculator only for a missing quantity, avoiding a redundant tool round while keeping arithmetic outside model prose.
+- Evidence: a real free-tier Bagrry's 70 g follow-up reused the saved 30-row package reconstruction, attached no photos and returned carbohydrate plus total/soluble/insoluble fibre from ten linked calculations in one provider generation. This was an API-route run and separate transcript from the earlier image analysis, not same-revision browser acceptance or independent package accuracy evaluation.
+
 ## 24 October 2026 — do not spend another generation solely to improve coverage
 
 - Accept the first package-answer synthesis only when the provider response has a displayable natural answer, at least one validated evidence-linked claim, and does not drop a facet already covered by the prior answer. For food-choice questions, retain the existing requirement for a direct qualified judgment; a bare factual fragment still gets one bounded synthesis repair.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { packageSchema } from '../contracts';
 import { parseLabel } from '../parser';
-import { calculationsFromReconstruction, defaultPortion, normalizeReconstructedServing, resolveQuestionPortion } from '../portion';
+import { calculationsFromReconstruction, defaultPortion, hasExplicitPortionRequest, normalizeReconstructedServing, resolveQuestionPortion } from '../portion';
 
 function reconstructedPackage(rows: Array<{
   rowId: string; nutrient: string; value: number | null; unit: string | null; basisAmount: number | null; basisUnit: 'g' | 'ml' | null; qualifier?: string | null;
@@ -55,6 +55,16 @@ describe('question-directed portions',()=>{
   it('uses half the declared pack when requested',()=>{
     expect(resolveQuestionPortion('How about half a pack?',{value:30,unit:'g'},{value:200,unit:'g'})).toEqual({value:100,unit:'g'});
   });
+  it('identifies only explicit, supported portions for contextual calculator presentation',()=>{
+    const serving={quantity:13.4,unit:'g' as const,status:'provisional',pieceCount:2,pieceDescription:'biscuits'};
+    expect(hasExplicitPortionRequest('How much carbohydrate in 70 g?',undefined,serving)).toBe(true);
+    expect(hasExplicitPortionRequest('What about two biscuits?',undefined,serving)).toBe(true);
+    expect(hasExplicitPortionRequest('How about half the packet?',{value:200,unit:'g'},serving)).toBe(true);
+    expect(hasExplicitPortionRequest('How much in one serving?',undefined,serving)).toBe(true);
+    expect(hasExplicitPortionRequest('What can you tell me about this package?',undefined,serving)).toBe(false);
+    expect(hasExplicitPortionRequest('How much is 3000 g?',undefined,serving)).toBe(false);
+    expect(hasExplicitPortionRequest('What about two biscuits?',undefined,{...serving,status:'conflict'})).toBe(false);
+  });
   it('maps an exact named piece count to the printed serving without estimating other counts',()=>{
     const serving={quantity:13.4,unit:'g' as const,status:'provisional',pieceCount:2,pieceDescription:'biscuits'};
     expect(resolveQuestionPortion('What about just two biscuits?',{value:100,unit:'g'},undefined,serving)).toEqual({value:13.4,unit:'g'});
@@ -87,6 +97,21 @@ describe('calculations from saved package reconstruction',()=>{
     expect(calculation).toMatchObject({nutrient:'carbohydrate',input:68.29,basisAmount:100,portion:13.4,result:68.29*13.4/100,unit:'g',imageIds:['package-back'],observationIds:[],interpretationIds:['carbs-r1']});
     expect(calculation.assumptions.join(' ')).toMatch(/not been independently verified/i);
     expect(calculation.evidenceText).toMatch(/unverified provisional package interpretation/i);
+  });
+
+  it('calculates separately printed nutrient components without treating them as conflicts',()=>{
+    const pkg=reconstructedPackage([
+      {rowId:'fiber-total',nutrient:'Dietary Fibre',value:10.2,unit:'g',basisAmount:100,basisUnit:'g'},
+      {rowId:'fiber-soluble',nutrient:'Soluble Dietary Fibre',value:4.4,unit:'g',basisAmount:100,basisUnit:'g'},
+      {rowId:'fiber-insoluble',nutrient:'Insoluble Dietary Fibre',value:5.8,unit:'g',basisAmount:100,basisUnit:'g'},
+    ]);
+    const calculations=calculationsFromReconstruction(pkg,70,'g');
+    expect(calculations).toEqual(expect.arrayContaining([
+      expect.objectContaining({nutrient:'fiber',label:'Dietary Fibre in 70 g',result:7.14,interpretationIds:['fiber-total']}),
+      expect.objectContaining({nutrient:'fiber',label:'Soluble Dietary Fibre in 70 g',result:3.08,interpretationIds:['fiber-soluble']}),
+      expect.objectContaining({nutrient:'fiber',label:'Insoluble Dietary Fibre in 70 g',result:4.06,interpretationIds:['fiber-insoluble']}),
+    ]));
+    expect(calculations).toHaveLength(3);
   });
 
   it('withholds conflicting rows, qualified amounts, missing values and dimension mismatches',()=>{

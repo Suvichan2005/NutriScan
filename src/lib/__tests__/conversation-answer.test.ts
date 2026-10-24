@@ -11,4 +11,9 @@ describe('presentConversationAnswer', () => {
     expect(presentConversationAnswer('Two biscuits provide 9.28 g carbohydrate [,,, ]. This additive is INS [INS 319].'))
       .toBe('Two biscuits provide 9.28 g carbohydrate. This additive is INS [INS 319].');
   });
+
+  it('presents common Gemini Markdown as readable conversation text',()=>{
+    expect(presentConversationAnswer('## Printed values\n\n- **Energy:** 139 kcal\n- **Carbohydrate:** 23.1 g\n\n*(Approximate values.)*'))
+      .toBe('Printed values\n\n• Energy: 139 kcal\n• Carbohydrate: 23.1 g\n\n(Approximate values.)');
+  });
 });

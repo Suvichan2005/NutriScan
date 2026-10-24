@@ -390,7 +390,7 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(data.evidence?.[0].category).toBe('literature');
   });
 
-  it('accepts only supplied deterministic calculations as calculation evidence',()=>{
+  it('rebuilds calculation evidence from source-linked numeric fields instead of trusting stale client prose',()=>{
     const pkg=parseLabel('Nutrition per 100 g\nProtein 8.8 g',{origin:'user'});
     const baseCalculation={id:'calc-protein-30g',label:'Protein in 30 g',nutrient:'protein' as const,input:8.8,inputUnit:'g',basisAmount:100,portion:30,portionUnit:'g' as const,result:2.64,unit:'g',formula:'8.8 g × 30 g ÷ 100 g',observationIds:[pkg.observations.find(item=>item.field==='protein')!.id],assumptions:['The label reading is correct.']};
     const calculation={...baseCalculation,evidenceText:calculationEvidenceText(baseCalculation)};
@@ -400,18 +400,28 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(result.claims[0].text).toBe(quote);
     expect(result.answer).toBe(quote);
     expect(assistInput.safeParse({consent:true,question:'How much protein?',package:pkg,calculations:[{...calculation,observationIds:['missing-observation']}]}).success).toBe(false);
-    expect(assistInput.safeParse({consent:true,question:'How much protein?',package:pkg,calculations:[{...calculation,evidenceText:'forged calculation text'}]}).success).toBe(false);
+    // Old saved calculations may carry a former evidence sentence. It is not
+    // a request-contract field and is never used as validation evidence.
+    expect(assistInput.safeParse({consent:true,question:'How much protein?',package:pkg,calculations:[{...calculation,evidenceText:'forged calculation text'}]}).success).toBe(true);
+    expect(assistInput.safeParse({consent:true,question:'How much protein?',package:pkg,calculations:[{...calculation,input:88,result:26.4,formula:'88 g × 30 g ÷ 100 g'}]}).success).toBe(false);
+    expect(assistInput.safeParse({consent:true,question:'How much protein?',package:pkg,calculations:[{...calculation,result:900,evidenceText:'900 g protein'}]}).success).toBe(false);
 
     const imageId='photo-nutrition-side';
     const imageCalculation={...baseCalculation,id:'calc-photo-protein',observationIds:[],imageIds:[imageId],interpretationIds:['visual-protein'],evidenceText:undefined};
     const attachedPhoto={imageId,mimeType:'image/jpeg' as const,base64:'A'.repeat(32),side:'back' as const,sourceImage:{width:1200,height:1800},preprocessing:{rotation:0 as const,contrast:false,invert:false,crop:null}};
-    const imageRequest={consent:true as const,question:'How much protein?',package:pkg,images:[{handle:imageId,side:'back' as const,width:1200,height:1800}],visualImages:[attachedPhoto],calculations:[{...imageCalculation,evidenceText:calculationEvidenceText(imageCalculation)}]};
+    const imagePackage=packageSchema.parse({...pkg,visionCaptures:[{runId:'visual-protein-capture',imageId,side:'back',sourceImage:{width:1200,height:1800},processing:{rotation:0,contrast:false,invert:false,crop:null},model:'Gemini'}],reconstruction:{
+      identity:{brand:null,name:null,variant:null,status:'provisional',evidence:{observationIds:[],imageRegions:[]}},serving:null,
+      nutritionRows:[{rowId:'visual-protein',nutrient:'protein',printedLabel:'Protein',printedValue:'8.8 g',value:8.8,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[{imageId,region:null}]}}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Image-linked provisional package reading.',
+      revision:1,updatedAt:new Date().toISOString(),model:'Gemini',current:true,
+    }});
+    const imageRequest={consent:true as const,question:'How much protein?',package:imagePackage,images:[{handle:imageId,side:'back' as const,width:1200,height:1800}],visualImages:[attachedPhoto],calculations:[{...imageCalculation,evidenceText:calculationEvidenceText(imageCalculation)}]};
     expect(assistInput.safeParse(imageRequest).success).toBe(true);
-    expect(assistInput.safeParse({...imageRequest,visualImages:[],images:[]}).success).toBe(false);
+    expect(assistInput.safeParse({...imageRequest,visualImages:[],images:[]}).success).toBe(true); // Saved image lineage remains usable without retransmitting the photo.
     expect(assistInput.safeParse({...imageRequest,visualImages:[],images:[],calculations:[{...imageCalculation,imageIds:['unretained-photo'],evidenceText:calculationEvidenceText({...imageCalculation,imageIds:['unretained-photo']})}]}).success).toBe(false);
     expect(assistInput.safeParse({...imageRequest,visualImages:[{...attachedPhoto,imageId:'another-photo'}]}).success).toBe(false);
     const retainedImageCalculation={...imageCalculation,imageIds:['photo-private-1']};
-    expect(assistInput.safeParse({...imageRequest,package:makePackage(),visualImages:[],images:[],calculations:[{...retainedImageCalculation,evidenceText:calculationEvidenceText(retainedImageCalculation)}]}).success).toBe(true);
+    expect(assistInput.safeParse({...imageRequest,package:makePackage(),visualImages:[],images:[],calculations:[{...retainedImageCalculation,evidenceText:calculationEvidenceText(retainedImageCalculation)}]}).success).toBe(false); // Retaining a photo alone cannot establish the numeric reading.
     const focusedImages=[
       attachedPhoto,
       {...attachedPhoto,regionRole:'nutrition-table' as const,preprocessing:{...attachedPhoto.preprocessing,crop:{x:0.1,y:0.2,width:0.3,height:0.2}}},

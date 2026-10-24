@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import sharp from 'sharp';
 import {
@@ -7,12 +7,32 @@ import {
   assistPromptPayload,
   getAgentSystemInstruction,
   getAgentToolDeclarations,
+  getPackageReconstructionSystemInstruction,
   packageReconstructionPromptPayload,
 } from '../src/lib/server/gemini';
 
 const root = process.cwd();
 const outputPath = resolve(root, '.data/gemini-prompt-audit/current.json');
 const runId = `prompt-audit-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+let previousPrompt: { head: string | null; generatedAt: string | null; systemInstruction: string; reconstructionSystemInstruction?: string } | null = null;
+try {
+  const previous = JSON.parse(await readFile(outputPath, 'utf8')) as {
+    repository?: { head?: unknown };
+    generatedAt?: unknown;
+    systemInstruction?: unknown;
+    reconstruction?: { systemInstruction?: unknown };
+  };
+  if (typeof previous.systemInstruction === 'string') {
+    previousPrompt = {
+      head: typeof previous.repository?.head === 'string' ? previous.repository.head : null,
+      generatedAt: typeof previous.generatedAt === 'string' ? previous.generatedAt : null,
+      systemInstruction: previous.systemInstruction,
+      ...(typeof previous.reconstruction?.systemInstruction === 'string' ? { reconstructionSystemInstruction: previous.reconstruction.systemInstruction } : {}),
+    };
+  }
+} catch {
+  // The first audit has no earlier prompt snapshot to compare.
+}
 const imageId = 'audit-photo-1';
 const observationId = 'audit-ocr-1';
 const observation = {
@@ -104,7 +124,26 @@ const snapshot = {
     utf8Bytes: Buffer.byteLength(getAgentSystemInstruction(), 'utf8'),
     providerTokenCount: null,
   },
+  effectiveInstructions: {
+    conversation: getAgentSystemInstruction(),
+    reconstruction: getPackageReconstructionSystemInstruction(),
+    reconstructionCharacters: getPackageReconstructionSystemInstruction().length,
+    reconstructionUtf8Bytes: Buffer.byteLength(getPackageReconstructionSystemInstruction(), 'utf8'),
+    reconstructionProviderTokenCount: null,
+  },
+  promptComparison: {
+    priorSnapshot: previousPrompt,
+    currentSnapshot: {
+      systemInstruction: getAgentSystemInstruction(),
+      characters: getAgentSystemInstruction().length,
+      utf8Bytes: Buffer.byteLength(getAgentSystemInstruction(), 'utf8'),
+    },
+    reconstructionPrior: previousPrompt?.reconstructionSystemInstruction ?? null,
+    reconstructionChanged: previousPrompt?.reconstructionSystemInstruction !== getPackageReconstructionSystemInstruction(),
+    changed: previousPrompt?.systemInstruction !== getAgentSystemInstruction(),
+  },
   reconstruction: {
+    systemInstruction: getPackageReconstructionSystemInstruction(),
     userPayload: packageReconstructionPromptPayload(initial),
     textPayloadUtf8Bytes: utf8(packageReconstructionPromptPayload(initial)),
     imageBytesIncludedInArtifact: false,
@@ -137,6 +176,8 @@ const snapshot = {
       maxToolRounds: 5,
       maxToolCalls: 12,
       wallClockLimitMs: 110000,
+      freeProviderModelAttemptTimeoutMs: 20000,
+      paidLastResortAttemptTimeoutMs: 45000,
       responseMimeType: null,
       responseJsonSchema: null,
     },
@@ -149,8 +190,8 @@ const snapshot = {
   legacyPaths: {
     oldQuestionCoverageAndAnswerIntentPromptBlocks: 'Removed from the canonical agent instruction.',
     rootJsonAnswerEnvelope: 'Not sent or required in the canonical conversational agent.',
-    answerStructureRepairAndClaimSynthesis: 'Not called by the canonical assist route.',
-    compatibilityHelpers: 'Some old provider-shape and claim-validation helpers remain exported for offline regression tests; they are not on the production assist call path.',
+    answerStructureRepairAndClaimSynthesis: 'The unreferenced final JSON formatter and structure-repair prompt builder were removed. The canonical assist route does not run claim synthesis or answer-format repair.',
+    compatibilityHelpers: 'Historical provider-shape and claim-validation adapters remain only for offline regression tests; the active assist route does not call them.',
   },
   providerMeasurements: {
     providerCallsMadeByThisAudit: 0,
