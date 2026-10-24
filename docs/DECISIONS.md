@@ -6,6 +6,7 @@
 - A remaining coverage gap is quality metadata, not by itself a reason to repeat a valid answer. Preserve the missing facets and uncertainty in the result. Do not relax numeric, basis, source, jurisdiction or safety validation.
 - Union compact evidence references with typed arrays during provider adaptation. Empty schema defaults must not erase valid recognized aliases, and the ordinary validator remains responsible for rejecting unknown IDs.
 - Evidence: one saved free-tier task spent 3,364 tokens on an answer-equivalent repair after a valid synthesis; a mocked regression now uses two rather than three calls for that branch. No post-change live provider comparison was made.
+- A bounded offline replay of the same saved follow-up through the current checkout used its first recorded response only and retained two validated claims, compared with the original three-response run. This replay does not establish live billing or model-quality improvement.
 
 ## 24 October 2026 — make profile/label vocabulary links source-backed and non-diagnostic
 

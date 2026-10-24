@@ -7,6 +7,7 @@
 - Removed the second synthesis trigger based only on unchanged coverage. A direct, displayable, evidence-linked food-choice answer is kept even when some package facets remain missing; a factual fragment without a direct judgment still receives one bounded repair.
 - Historical run `a222683e-9a21-401f-9b4a-af91422c3fbc` used 3 free Flash-Lite calls and 11,974 provider-reported tokens, including a 3,364-token answer-equivalent repair. The new route regression executes the equivalent accepted-answer branch with 2 mocked calls. Estimated avoided tokens/call are a replay comparison, not a live post-change saving.
 - Verification: 139 focused server/inference tests passed; full suite 661 passed and 1 skipped; TypeScript and whitespace checks passed. No live model request, browser acceptance, billing read or OCR-accuracy result in this checkpoint.
+- Offline replay of saved follow-up `a222683e-9a21-401f-9b4a-af91422c3fbc` against the current checkout consumed one of the three stored responses and returned 2 validated claims. The skipped historical synthesis/repair responses represented 6,379 tokens; no provider request or usage-ledger entry was created. The run manifest marked its profile as synthetic opt-in and the request had no images. This is path evidence only, not a live cost or answer-quality result.
 
 ## 2026-10-24 — retain supported row claims when a provider bundles an unsupported value
 
