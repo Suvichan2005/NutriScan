@@ -93,9 +93,12 @@ function linkExactReconstructedPackageFacts<T extends { text: string; packageFac
     if (matches && availableFacts.has(factId)) linked.add(factId);
   };
 
-  const identityParts = [reconstruction.identity.brand, reconstruction.identity.name, reconstruction.identity.variant]
-    .filter((part): part is string => !!part?.trim());
-  add('identity', identityParts.some(part => normalizedPhraseAppears(claim.text, part)));
+  const identity=reconstruction.identity;
+  const informativeIdentityPhrase=(part:string|null)=>!!part?.trim()
+    &&part.trim().split(/[^\p{L}\p{N}]+/u).filter(token=>token.length>=3).length>=2
+    &&normalizedPhraseAppears(claim.text,part);
+  add('identity',!!identity.brand?.trim()&&normalizedPhraseAppears(claim.text,identity.brand)
+    ||informativeIdentityPhrase(identity.name)||informativeIdentityPhrase(identity.variant));
 
   const serving = reconstruction.serving;
   if (serving) {
@@ -291,6 +294,38 @@ function hasEvidenceSpecificAnswerAnchor(answer:string,claims:{text:string}[]):b
   return [...terms(answer)].some(term=>evidenceTerms.has(term));
 }
 
+function hasStrongAnswerPartAnchor(answer:string,claims:{text:string}[]):boolean{
+  const terms=(text:string)=>new Set((text.toLocaleLowerCase().match(/[\p{L}]{4,}/gu)??[])
+    .map(term=>term.endsWith('ies')&&term.length>5?`${term.slice(0,-3)}y`:term.endsWith('s')&&term.length>5?term.slice(0,-1):term)
+    .filter(term=>!genericAnswerTerms.has(term)));
+  const answerTerms=terms(answer);
+  if(!answerTerms.size)return false;
+  const evidenceTerms=new Set(claims.flatMap(claim=>[...terms(claim.text)]));
+  const shared=[...answerTerms].filter(term=>evidenceTerms.has(term)).length;
+  const required=answerTerms.size<=6?2:Math.max(4,Math.ceil(answerTerms.size*0.3));
+  return shared>=required;
+}
+
+function hasExplicitUncertainty(text:string):boolean{
+  return /\b(?:not enough|insufficient|cannot establish|can't establish|could not establish|does not establish|doesn't establish|can't determine|cannot determine|could not determine|cannot tell|can't tell|unclear|unresolved|unknown|not established|missing|ambiguous|conflict(?:ing)?)\b|\b(?:does not|doesn't)\s+\w{1,30}\s+(?:enough|sufficient)\s+(?:information|evidence)\b/i.test(text);
+}
+
+function nutrientFamily(text:string):string|null{
+  const families:Array<[string,RegExp]>=[
+    ['added-sugars',/\badded sugars?\b/i],['carbohydrate',/\b(?:carbohydrat\w*|carbs?)\b/i],
+    ['sugars',/\b(?:total )?sugars?\b/i],['protein',/\b(?:protein|proten)\b/i],
+    ['saturated-fat',/\bsaturat\w* fat\b/i],['fat',/\b(?:total )?fat\b/i],
+    ['fiber',/\b(?:fibre|fiber)\b/i],['sodium',/\bsodium\b/i],['salt',/\bsalt\b/i],
+    ['energy',/\b(?:energy|calories?|kcal|kilojoules?|kj)\b/i],
+  ];
+  return families.find(([,pattern])=>pattern.test(text))?.[0]??null;
+}
+
+function repeatsValidatedClaimText(answer:string,claims:{text:string}[]):boolean{
+  const normalized=answer.replace(/\s+/g,' ').trim().toLocaleLowerCase();
+  return claims.some(claim=>claim.text.replace(/\s+/g,' ').trim().toLocaleLowerCase()===normalized);
+}
+
 /** A natural-language comparison may synthesize package facts with relevant source evidence. */
 function hasRelevantSourceForComparativeAnswer(answer:string,claims:Array<{
   text:string;
@@ -390,6 +425,24 @@ function hasRelevantSourceForPhysiologicalEffect(
     }));
 }
 
+const sourceAttributionPattern=/\baccording to\b|\b(?:official|authoritative|clinical|dietary|nutrition|medical)\b.{0,140}\b(?:guidance|guidelines?|recommendations?|standards?|assessment|research|stud(?:y|ies)|report)\b|\b(?:guidance|guidelines?|recommendations?|standards?|assessment|research|stud(?:y|ies)|report)\b.{0,120}\b(?:from|by|published by)\b/i;
+function sourceAcronym(source:Pick<EvidenceSource,'publisher'>):string{
+  return(source.publisher.match(/[\p{L}\p{N}]+/gu)??[]).map(word=>word[0]).join('').toLocaleUpperCase();
+}
+function sourceAttributionHasMatchingReference(
+  text:string,
+  sourceIds:readonly string[],
+  evidence:readonly Pick<EvidenceSource,'id'|'title'|'publisher'>[],
+):boolean{
+  if(!sourceAttributionPattern.test(text))return true;
+  const linked=evidence.filter(source=>sourceIds.includes(source.id));
+  if(!linked.length)return false;
+  const acronyms=[...text.matchAll(/\(([A-Z][A-Z0-9-]{1,9})\)/g)].map(match=>match[1]);
+  if(!acronyms.length)return true;
+  return acronyms.every(acronym=>linked.some(source=>sourceAcronym(source)===acronym
+    ||new RegExp(`(?:^|[^\\p{L}\\p{N}])${acronym}(?:$|[^\\p{L}\\p{N}])`,'iu').test(`${source.publisher} ${source.title}`)));
+}
+
 function claimsHaveOverlappingOutcome(statement: string, claimText: string, outcomes: RegExp[]): boolean {
   return outcomes.some(pattern => pattern.test(claimText) && pattern.test(statement));
 }
@@ -436,6 +489,13 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
 
   const reconstructionRows=result.data.packageReconstruction?.nutritionRows
     ??(data.package.reconstruction?.current?data.package.reconstruction.nutritionRows:[]);
+  const hasUnresolvedNutrientAnchor=(text:string)=>{
+    if(!hasExplicitUncertainty(text))return false;
+    const family=nutrientFamily(text);
+    if(!family)return false;
+    const matchingRows=reconstructionRows.filter(row=>nutrientFamily(`${row.nutrient} ${row.printedLabel}`)===family);
+    return matchingRows.every(row=>row.status!=='clear'||row.value===null||!row.unit);
+  };
   const packageFacts = new Map(packageReconstructionFactReferences(
     result.data.packageReconstruction ?? (data.package.reconstruction?.current ? data.package.reconstruction : undefined),
     data.package,
@@ -447,7 +507,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     const hasNumericBasis=row.basisAmount!==null&&!!row.basisUnit;
     if(!hasEvidence||!['clear','provisional'].includes(row.status)||row.value===null||!row.unit||(!hasNumericBasis&&!printedBasis))return [];
     const normalizedBasis=hasNumericBasis?`; per ${row.basisAmount} ${row.basisUnit}`:'';
-    return [[row.rowId,`${row.nutrient} ${row.value} ${row.unit}${row.qualifier?` (${row.qualifier})`:''}; ${printedBasis}${normalizedBasis}`] as const];
+    return [[row.rowId,`${row.nutrient} ${row.qualifier?`${row.qualifier} `:''}${row.value} ${row.unit}; ${printedBasis}${normalizedBasis}`] as const];
   }));
   const traceableRows=reconstructionRows.filter(row=>interpretationRows.has(row.rowId));
   const reconstructionForUi=result.data.packageReconstruction??(data.package.reconstruction?.current?data.package.reconstruction:undefined);
@@ -496,6 +556,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
       || (claim.interpretationRowIds??[]).some(id=>!interpretationRows.has(id))
       || (claim.packageFactIds??[]).some(id=>!packageFacts.has(id))
       || (claim.profileFieldIds ?? []).some(id => !profileFields.has(id))) return reject('unknown-evidence-id');
+    if(answerSentences(claim.text).some(sentence=>!sourceAttributionHasMatchingReference(sentence,claim.sourceIds,data.evidence??[])))return reject('source-attribution-needs-linked-source');
     if (visualEvidence.some(reference => !imageIds.has(reference.imageId))) {
       return reject('unknown-image-id');
     }
@@ -698,6 +759,13 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     ...(claim.packageFactIds??[]).map(id=>packageFacts.get(id)),
     ...(claim.profileFieldIds??[]).map(id=>profileFields.get(id)),
   ].filter((text):text is string=>typeof text==='string');
+  const claimSupportsAnswer=(answer:string,claim:typeof result.data.claims[number])=>{
+    if(hasEvidenceSpecificAnswerAnchor(answer,[claim])
+      ||isQuestionBoundPackageAssessment(answer,data.question,[claim]))return true;
+    if(numericOccurrences(answer).length&&numericMentionsAreSupported(answer,[claim.text]))return true;
+    const uncertainty=/\b(?:not enough|insufficient|cannot establish|can't establish|could not establish|cannot tell|can't tell|unclear|unresolved|unknown|not established|missing|ambiguous|conflict(?:ing)?)\b/i;
+    return uncertainty.test(answer)&&uncertainty.test(claim.text);
+  };
 
   const answerPartRejections: string[] = [];
   const validatedAnswerParts = (result.data.answerParts ?? []).flatMap((part, answerPartIndex) => {
@@ -708,57 +776,88 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     };
     const linkedClaims = part.claimIndexes.map(index => displayedClaimsByIndex.get(index));
     if (!linkedClaims.length || linkedClaims.some(claim => !claim)) return reject('unsupported-claim-link');
+    const supportedLinkedClaims=linkedClaims.filter((claim):claim is NonNullable<(typeof linkedClaims)[number]>=>!!claim);
     const answerText = part.text.replace(/\s+/g, ' ').trim();
     if (!answerText) return reject('empty-answer-part');
-    const linkedEvidence = linkedClaims.flatMap(claim=>referencedEvidenceTexts(claim!));
-    const linkedCalculationResults=[...new Set(linkedClaims.flatMap(claim=>claim!.calculationIds??[]))].flatMap(id=>{
-      const calculation=calculationsById.get(id);
-      return calculation?[
-        {value:calculation.result,unit:calculation.unit},
-        {value:calculation.portion,unit:calculation.portionUnit},
-      ]:[];
-    });
-    // The answer refers to accepted, independently checked claim records; it
-    // does not need to repeat corrupted OCR as a literal quotation.
-    if (!numericMentionsAreSupported(answerText, linkedEvidence,linkedCalculationResults)) return reject('unsupported-numeric-value');
-    if (!basisMentionsAreSupported(answerText, linkedEvidence)) return reject('unsupported-basis');
-    if (requiresPhysiologicalSource(answerText)
-      && !hasRelevantSourceForPhysiologicalEffect(answerText, linkedClaims, data.evidence ?? [])) return reject('health-effect-needs-relevant-source');
-    if (needsComparativeReference(answerText) && !hasRelevantSourceForComparativeAnswer(answerText, linkedClaims)
-      &&!isQuestionBoundPackageAssessment(answerText,data.question,linkedClaims)) return reject('comparative-judgment-needs-reference');
-    if (isUnsafeMedicalConclusion(answerText)) return reject('unsafe-medical-conclusion');
+    const acceptedSegments:string[]=[];
+    for(const segment of answerSentences(answerText)){
+      const segmentClaims=supportedLinkedClaims;
+      const linkedEvidence=segmentClaims.flatMap(claim=>referencedEvidenceTexts(claim));
+      const linkedCalculationResults=[...new Set(segmentClaims.flatMap(claim=>claim.calculationIds??[]))].flatMap(id=>{
+        const calculation=calculationsById.get(id);
+        return calculation?[
+          {value:calculation.result,unit:calculation.unit},
+          {value:calculation.portion,unit:calculation.portionUnit},
+        ]:[];
+      });
+      // Validate every displayed sentence against only its linked evidence;
+      // nearby package facts cannot authenticate a separate source claim.
+      if (!numericMentionsAreSupported(segment, linkedEvidence,linkedCalculationResults)) return reject('unsupported-numeric-value');
+      if (!basisMentionsAreSupported(segment, linkedEvidence)) return reject('unsupported-basis');
+      if (requiresPhysiologicalSource(segment)
+        && !hasRelevantSourceForPhysiologicalEffect(segment, segmentClaims, data.evidence ?? [])) return reject('health-effect-needs-relevant-source');
+       if(!sourceAttributionHasMatchingReference(segment,segmentClaims.flatMap(claim=>claim.sourceIds),data.evidence??[]))return reject('source-attribution-needs-linked-source');
+      if (needsComparativeReference(segment) && !hasRelevantSourceForComparativeAnswer(segment, segmentClaims)
+        &&!isQuestionBoundPackageAssessment(segment,data.question,segmentClaims)) return reject('comparative-judgment-needs-reference');
+      if (isUnsafeMedicalConclusion(segment)) return reject('unsafe-medical-conclusion');
+      const family=nutrientFamily(segment);
+      const quantitativeAnchor=numericOccurrences(segment).length>0
+        &&numericMentionsAreSupported(segment,linkedEvidence,linkedCalculationResults)
+        &&basisMentionsAreSupported(segment,linkedEvidence)
+        &&!!family&&segmentClaims.some(claim=>nutrientFamily(claim.text)===family);
+      const uncertaintyAnchored=hasExplicitUncertainty(segment)&&segmentClaims.some(claim=>hasExplicitUncertainty(claim.text));
+      if(!hasStrongAnswerPartAnchor(segment,segmentClaims)
+        &&!quantitativeAnchor
+        &&!repeatsValidatedClaimText(segment,segmentClaims)
+        &&!uncertaintyAnchored
+        &&!hasUnresolvedNutrientAnchor(segment))return reject('unsupported-claim-link');
+      acceptedSegments.push(segment);
+    }
+    if(!acceptedSegments.length)return reject('empty-answer-part');
     data.diagnostic?.({ stage: 'answer-part', index: answerPartIndex, decision: 'accepted' });
-    return [answerText];
+    return [acceptedSegments.join(' ')];
   });
-  // The model's natural answer is the conversational response. It is checked
-  // against the union of independently validated claims and calculations; it
-  // does not need a brittle sentence-to-claim index map. Numeric and basis
-  // mentions still must be present in that evidence, and comparative or
-  // medical language remains subject to the same source/safety checks.
+  // The model's natural answer is checked sentence-by-sentence against only
+  // validated claims with a relevant semantic anchor. Aggregate references
+  // cannot lend support to unrelated prose; numbers, bases, sources and safety
+  // language remain independently checked.
   const naturalAnswer = result.data.answer.replace(/\s+/g, ' ').trim();
   let validatedNaturalAnswer: string | null = null;
   if (naturalAnswer) {
-    const answerEvidence = displayedClaims.flatMap(referencedEvidenceTexts);
-    const answerCalculations = [...new Set(displayedClaims.flatMap(claim => claim.calculationIds ?? []))].flatMap(id => {
-      const calculation = calculationsById.get(id);
-      return calculation ? [
-        { value: calculation.result, unit: calculation.unit },
-        { value: calculation.portion, unit: calculation.portionUnit },
-      ] : [];
-    });
     const segments=answerSentences(naturalAnswer);
     const supportedSegments:string[]=[];
     if (!displayedClaims.length) data.diagnostic?.({ stage: 'natural-answer', index: 0, decision: 'rejected', reason:'no-validated-claims' });
     else for(const [index,segment] of segments.entries()){
       const reject=(reason:string)=>data.diagnostic?.({stage:'natural-answer',index:index+1,decision:'rejected',reason});
-      if(!hasEvidenceSpecificAnswerAnchor(segment,displayedClaims)){reject('no-validated-claim-anchor');continue;}
+      const segmentClaims=displayedClaims.filter(claim=>claimSupportsAnswer(segment,claim));
+      if(!segmentClaims.length){reject('no-validated-claim-anchor');continue;}
+      const answerEvidence=segmentClaims.flatMap(referencedEvidenceTexts);
+      const answerCalculations = [...new Set(segmentClaims.flatMap(claim => claim.calculationIds ?? []))].flatMap(id => {
+        const calculation = calculationsById.get(id);
+        return calculation ? [
+          { value: calculation.result, unit: calculation.unit },
+          { value: calculation.portion, unit: calculation.portionUnit },
+        ] : [];
+      });
       if(!numericMentionsAreSupported(segment,answerEvidence,answerCalculations)){reject('unsupported-numeric-value');continue;}
       if(!basisMentionsAreSupported(segment,answerEvidence)){reject('unsupported-basis');continue;}
       if(isUnsafeMedicalConclusion(segment)){reject('unsafe-medical-conclusion');continue;}
       if(requiresPhysiologicalSource(segment)
-        && !hasRelevantSourceForPhysiologicalEffect(segment, displayedClaims, data.evidence ?? [])){reject('health-effect-needs-relevant-source');continue;}
-      if(needsComparativeReference(segment)&&!hasRelevantSourceForComparativeAnswer(segment,displayedClaims)
-        &&!isQuestionBoundPackageAssessment(segment,data.question,displayedClaims)){reject('comparative-judgment-needs-reference');continue;}
+        && !hasRelevantSourceForPhysiologicalEffect(segment, segmentClaims, data.evidence ?? [])){reject('health-effect-needs-relevant-source');continue;}
+      if(!sourceAttributionHasMatchingReference(segment,segmentClaims.flatMap(claim=>claim.sourceIds),data.evidence??[])){reject('source-attribution-needs-linked-source');continue;}
+      if(needsComparativeReference(segment)&&!hasRelevantSourceForComparativeAnswer(segment,segmentClaims)
+        &&!isQuestionBoundPackageAssessment(segment,data.question,segmentClaims)){reject('comparative-judgment-needs-reference');continue;}
+      const family=nutrientFamily(segment);
+      const quantitativeAnchor=numericOccurrences(segment).length>0
+        &&numericMentionsAreSupported(segment,answerEvidence,answerCalculations)
+        &&basisMentionsAreSupported(segment,answerEvidence)
+        &&!!family&&segmentClaims.some(claim=>nutrientFamily(claim.text)===family);
+      const uncertaintyAnchored=hasExplicitUncertainty(segment)&&segmentClaims.some(claim=>hasExplicitUncertainty(claim.text));
+      if(!hasStrongAnswerPartAnchor(segment,segmentClaims)
+        &&!quantitativeAnchor
+        &&!repeatsValidatedClaimText(segment,segmentClaims)
+        &&!uncertaintyAnchored
+        &&!hasUnresolvedNutrientAnchor(segment)){reject('no-validated-claim-anchor');continue;}
       supportedSegments.push(segment);
     }
     if(supportedSegments.length){
@@ -857,6 +956,26 @@ function numericMentions(text: string): NumericMention[] {
   return result;
 }
 
+function numericComparisonOperator(text:string,index:number):'<='|'<'|'>='|'>'|null{
+  const prefix=text.slice(Math.max(0,index-36),index);
+  if(/(?:<=|≤|less than or equal to|at most|no more than|not greater than)\s*$/i.test(prefix))return'<=';
+  if(/(?:>=|≥|greater than or equal to|at least|no less than|not less than)\s*$/i.test(prefix))return'>=';
+  if(/(?:<|less than|below|under)\s*$/i.test(prefix))return'<';
+  if(/(?:>|greater than|above|over)\s*$/i.test(prefix))return'>';
+  return null;
+}
+
+function numericOccurrences(text:string){
+  return [...text.matchAll(numericMentionPattern)].flatMap(match=>{
+    const mention=numericMentions(match[0])[0];
+    return mention?[{mention,operator:numericComparisonOperator(text,match.index??0),index:match.index??0}]:[];
+  });
+}
+
+function isApproximateNumericClaim(text:string,index:number){
+  return /\b(?:about|around|approximately|approx\.?|nearly|roughly)\s*$/i.test(text.slice(Math.max(0,index-24),index));
+}
+
 function basisMentionsAreSupported(text: string, evidenceTexts: string[]): boolean {
   const mentions = [
     ...[...text.matchAll(/\bper\s*\d+(?:[.,]\d+)?\s*(?:g|grams?|mg|milligrams?|kg|ml|millilit(?:er|re)s?)\b/gi)].map(match => match[0]),
@@ -872,25 +991,33 @@ function basisMentionsAreSupported(text: string, evidenceTexts: string[]): boole
 
 /** Arabic-numeric synthesis must match a quantity in its cited spans, allowing basic unit equivalence. */
 function numericMentionsAreSupported(claim: string, citedSpans: string[],calculatedResults:{value:number;unit:string}[]=[]): boolean {
-  const claimed = numericMentions(claim);
+  const claimed = numericOccurrences(claim);
   if (!claimed.length) return true;
-  const cited = citedSpans.flatMap(numericMentions);
+  const cited = citedSpans.flatMap(numericOccurrences);
   const calculated=calculatedResults.flatMap(item=>numericMentions(`${item.value} ${item.unit}`));
-  return claimed.every(value => cited.some(evidence => {
-    if (value.dimension !== evidence.dimension) return false;
-    if (value.localeAmbiguous || evidence.localeAmbiguous) {
-      return value.localeAmbiguous && evidence.localeAmbiguous && value.rawValue === evidence.rawValue && value.factor === evidence.factor;
-    }
-    const tolerance = Number.EPSILON * Math.max(1, Math.abs(value.value), Math.abs(evidence.value)) * 8;
-    return Math.abs(value.value - evidence.value) <= tolerance;
-  })||calculated.some(result=>{
-    if(value.dimension!==result.dimension||value.localeAmbiguous||result.localeAmbiguous)return false;
-    // Do not let rounding turn a small non-zero amount into an asserted zero.
-    if(value.value===0||result.value===0)return value.value===result.value;
-    const roundingTolerance=0.5*10**(-value.decimalPlaces)*value.factor;
-    const floatingTolerance=Number.EPSILON*Math.max(1,Math.abs(value.value),Math.abs(result.value))*8;
-    return Math.abs(value.value-result.value)<=roundingTolerance+floatingTolerance;
-  }));
+  return claimed.every(({mention:value,operator,index})=>{
+    const approximate=isApproximateNumericClaim(claim,index);
+    const matchesEvidence=cited.some(({mention:evidence,operator:evidenceOperator})=>{
+      if(value.dimension!==evidence.dimension||operator!==evidenceOperator)return false;
+      if(value.localeAmbiguous||evidence.localeAmbiguous)return value.localeAmbiguous&&evidence.localeAmbiguous&&value.rawValue===evidence.rawValue&&value.factor===evidence.factor;
+      const tolerance=Number.EPSILON*Math.max(1,Math.abs(value.value),Math.abs(evidence.value))*8;
+      if(Math.abs(value.value-evidence.value)<=tolerance)return true;
+      if(!approximate||value.value===0||evidence.value===0)return false;
+      // Explicit approximation may use conventional rounding at the displayed
+      // precision. Exact-looking numbers still require an exact evidence match.
+      const roundingTolerance=0.5*10**(-value.decimalPlaces)*value.factor;
+      return Math.abs(value.value-evidence.value)<=roundingTolerance+tolerance;
+    });
+    const matchesCalculation=calculated.some(result=>{
+      if(operator!==null||value.dimension!==result.dimension||value.localeAmbiguous||result.localeAmbiguous)return false;
+      // Do not let rounding turn a small non-zero amount into an asserted zero.
+      if(value.value===0||result.value===0)return value.value===result.value;
+      const roundingTolerance=0.5*10**(-value.decimalPlaces)*value.factor;
+      const floatingTolerance=Number.EPSILON*Math.max(1,Math.abs(value.value),Math.abs(result.value))*8;
+      return Math.abs(value.value-result.value)<=roundingTolerance+floatingTolerance;
+    });
+    return matchesEvidence||matchesCalculation;
+  });
 }
 
 function numericValueAppearsInEvidence(value: number, text: string): boolean {

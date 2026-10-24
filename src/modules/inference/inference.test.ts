@@ -459,6 +459,27 @@ describe('provider-independent inference output validation', () => {
     expect(events).toContainEqual({ stage: 'claim', index: 0, decision: 'rejected', reason: 'unsupported-basis' });
   });
 
+  it('preserves printed inequality qualifiers and accepts only explicitly rounded numeric descriptions',()=>{
+    const sugarObservation={id:'sugar-line',field:'ocr-line',text:'TOTAL SUGARS <0.5 g per 100 g',side:'back' as const,confidence:86,origin:'ocr' as const};
+    const ingredientObservation={id:'flour-line',field:'ocr-line',text:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',side:'back' as const,confidence:86,origin:'ocr' as const};
+    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,sugarObservation,ingredientObservation]});
+    const reconstruction={
+      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},serving:null,
+      nutritionRows:[{rowId:'total-sugars-per-100g',nutrient:'Total sugars',printedLabel:'TOTAL SUGARS',printedValue:'<0.5 g',value:0.5,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:'<',status:'provisional' as const,evidence:{observationIds:['sugar-line'],imageRegions:[]}}],
+      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional' as const,evidence:{observationIds:['flour-line'],imageRegions:[]}}],
+      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional label reconstruction.',
+    };
+    const validate=(text:string)=>validateInferenceOutput({answer:text,packageReconstruction:reconstruction,claims:[{mode:'synthesis',text,observationIds:[],sourceIds:[]}],answerParts:[{text,claimIndexes:[0]}],limitations:[],inspectImage:null},{package:pkg});
+    const bounded=validate('The label appears to list less than 0.5 g of total sugars per 100 g.');
+    const falseExact=validate('The label appears to list 0.5 g of total sugars per 100 g.');
+    const rounded=validate('Refined wheat flour is present at nearly 90%.');
+    const unsupportedRounded=validate('Refined wheat flour is present at nearly 99%.');
+    expect(bounded.claims).toHaveLength(1);
+    expect(falseExact.claims).toEqual([]);
+    expect(rounded.claims).toHaveLength(1);
+    expect(unsupportedRounded.claims).toEqual([]);
+  });
+
   it('uses a saved photo region as reconstruction lineage on follow-up without reattaching image bytes',()=>{
     const pkg=packageSchema.parse({
       ...fixturePackage,
@@ -649,6 +670,24 @@ describe('provider-independent inference output validation', () => {
     expect(events).toContainEqual({stage:'natural-answer',index:1,decision:'rejected',reason:'comparative-judgment-needs-reference'});
   });
 
+  it('rejects named clinical guidance when its authority is not linked or disagrees with the linked source',()=>{
+    const text='Official diabetes guidance from the International Diabetes Federation (IDF) emphasizes whole grains and limited refined carbohydrates rather than focusing on one snack.';
+    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
+    const unlinked=validateInferenceOutput({
+      answer:text,claims:[{mode:'synthesis',text,observationIds:['ocr-line-1'],sourceIds:[]}],limitations:[],inspectImage:null,
+    },{package:fixturePackage,question:'What does IDF guidance say?',diagnostic:event=>events.push(event)});
+    expect(unlinked.claims).toEqual([]);
+    expect(unlinked.answer).not.toContain('International Diabetes Federation');
+    expect(events).toContainEqual(expect.objectContaining({stage:'claim',decision:'rejected',reason:'source-attribution-needs-linked-source'}));
+
+    const who={id:'who-guidance',title:'Healthy diet',publisher:'World Health Organization',url:'https://example.org/who',category:'guideline' as const,jurisdiction:'Global',publishedAt:null,effectiveAt:null,retrievedAt:'2026-10-24T00:00:00.000Z',summary:'General healthy diet guidance.',limitations:'Not product-specific.'};
+    const mismatched=validateInferenceOutput({
+      answer:text,claims:[{mode:'synthesis',text,observationIds:[],sourceIds:[who.id]}],limitations:[],inspectImage:null,
+    },{package:fixturePackage,question:'What does IDF guidance say?',evidence:[who]});
+    expect(mismatched.claims).toEqual([]);
+    expect(mismatched.answer).not.toContain('International Diabetes Federation');
+  });
+
   it('keeps a cautious suitability answer when it states that the evidence is insufficient', () => {
     const cautiousAnswer = 'The package evidence does not provide enough information to establish whether this is suitable for daily snacking.';
     const result = validateInferenceOutput({
@@ -701,6 +740,20 @@ describe('provider-independent inference output validation', () => {
     expect(result.answer).toBe('The label lists refined wheat flour, so I would treat this as an occasional rather than a good daily snack.');
     expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'unsupported-numeric-value'});
     expect(events).toContainEqual({stage:'natural-answer',index:0,decision:'accepted'});
+  });
+
+  it('does not authorize an adjacent sentence through one or two shared package words',()=>{
+    const observation={id:'sugar-flour-line',field:'ocr-line',text:'SUGAR FREE; INGREDIENTS: REFINED WHEAT FLOUR (MAIDA)',side:'back' as const,confidence:84,origin:'ocr' as const};
+    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
+    const answer='This sugar-free cracker has refined wheat flour as its primary ingredient. Although the label states it is free of added sugars and contains dietary fibre, it remains a refined grain product.';
+    const claim='This sugar-free cracker has refined wheat flour as its primary ingredient.';
+    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
+    const unsupportedSentence='Although the label states it is free of added sugars and contains dietary fibre, it remains a refined grain product.';
+    const result=validateInferenceOutput({answer,claims:[{mode:'synthesis',text:claim,observationIds:[observation.id],sourceIds:[]}],answerParts:[{text:claim,claimIndexes:[0]},{text:unsupportedSentence,claimIndexes:[0]}],limitations:[],inspectImage:null},{package:pkg,diagnostic:event=>events.push(event)});
+    expect(result.claims).toHaveLength(1);
+    expect(result.answer).toBe(claim);
+    expect(events).toContainEqual({stage:'answer-part',index:1,decision:'rejected',reason:'unsupported-claim-link'});
+    expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'no-validated-claim-anchor'});
   });
 
   it('does not let a package-specific judgment exemption admit unsupported physiological comparisons',()=>{

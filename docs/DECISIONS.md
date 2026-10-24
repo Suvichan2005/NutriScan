@@ -945,3 +945,9 @@ Treat semantically equivalent provider JSON dialects as an adapter concern. Map 
 ## 24 October 2026 — filter local retrieval by topic and explicit applicability
 
 Preserve retrieval identity-match metadata through parsing and apply the same bounded topical test to the consumer evidence view and Gemini knowledge tool. Specific named substances require a source mention; exact-identity results remain eligible unless the source explicitly excludes the asked population. Keep India/global guidance by default and honor an explicitly configured/requested jurisdiction. An empty post-filter result is an honest coverage gap, not evidence that no source exists; the dedicated clinical-guidance path remains available.
+
+## 24 October 2026 — validate conversational sentences against their linked claims
+
+Validate natural-answer sentences and supplemental answer parts against relevant accepted claims rather than allowing aggregate references or one shared word to support adjacent prose. Preserve concise exact repetitions of an accepted claim, quantitatively supported nutrient/value/unit/basis statements, matching uncertainty statements and qualified question-specific package assessments. Keep numerical/source/safety checks unchanged; reject unsupported answer clauses individually and retain supported siblings. This is a bounded lexical evidence-alignment check, not semantic entailment; provider replays and route-level tests do not establish a live-provider cost or quality gain.
+
+When a consumer-facing sentence says a nutrient amount is unresolved, allow that statement only when the current reconstruction has no clear, complete row for that nutrient. This reports the state of NutriScan's available reconstruction; it does not claim the nutrient is absent from the package.

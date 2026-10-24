@@ -130,7 +130,7 @@ const regulatoryScopeInstruction='When interpreting flattened regulatory PDF tab
 const assessmentFollowupInstruction='A local assessment index can return identity, reference values and linked publication titles without the publication conclusion. If the user asks for that conclusion, use search_research on the exact identity and assessment topic returned by the local tool; never infer a publication finding from its title or date alone.';
 const nutritionGuidanceInstruction='For package-suitability questions, answer from package-specific observations first. Consider get_nutrition_guidance only when applicable guidance materially helps with the user’s actual question; do not call it merely because a condition word appears. If relevant jurisdiction-compatible guidance is already supplied, use and cite its finding when it materially informs the answer; do not retrieve a source and then leave its useful finding out. A condition mentioned in a question is not proof of the user’s diagnosis. Pass only context explicitly stated by the user or present in authorized profile context, and preserve each source’s jurisdiction and date. NutriScan serves an Indian-market default: prefer India, global or international guidance, and never present U.S. guidance as locally applicable unless the user asks for it or shares a U.S. context. If no applicable condition-specific record exists, continue with the package-based assessment and mention the evidence gap only if it changes the answer; do not substitute generic condition education for a direct answer. When the user explicitly asks what a named guideline recommends, retrieve it and state the supported recommendation with its exact amount and unit when present, who it applies to, whether it is conditional, and its material exception. Guidance is not a personal target or a judgment about one product. Do not compare one package with a daily limit as a pass/fail threshold. CKD potassium, phosphorus, fluid and protein needs require individual clinical context; never invent an allowance. If the user asks whether retrieved CKD evidence includes a target, answer that point explicitly and limit the answer to the retrieved record.';
 
-function sanitizePackageReconstruction(value:unknown,data:z.infer<typeof assistInput>):{content:PackageReconstructionContent;coarseImageFallbackCount:number}|null{
+export function sanitizePackageReconstruction(value:unknown,data:z.infer<typeof assistInput>):{content:PackageReconstructionContent;coarseImageFallbackCount:number}|null{
   const parsed=packageReconstructionContentSchema.safeParse(value);
   if(!parsed.success)return null;
   const observationIds=new Set(data.package.observations.map(item=>item.id));
@@ -186,7 +186,7 @@ export function requiresExplicitNutritionGuidanceLookup(question:string) {
 }
 
 /** Recover grounded claims when only the model's optional prose-to-claim links are malformed. */
-export function normalizeProviderAssistOutput(value:unknown,requirePackageReconstruction=false):z.infer<typeof assistOutput>|null {
+export function normalizeProviderAssistOutput(value:unknown,requirePackageReconstruction=false,allowUnlinkedAnswerCandidates=false):z.infer<typeof assistOutput>|null {
   const unwrapped=unwrapProviderAssistEnvelope(value);
   const outputSchema=providerOutputSchema(requirePackageReconstruction);
   const normalizedProviderValue=requirePackageReconstruction?normalizeProviderPackageReconstructionShape(unwrapped):unwrapped;
@@ -195,7 +195,7 @@ export function normalizeProviderAssistOutput(value:unknown,requirePackageRecons
   const outputValue=!requirePackageReconstruction&&sourceValue
     ?Object.fromEntries(Object.entries(normalizedProviderValue as Record<string,unknown>).filter(([key])=>key!=='packageReconstruction'))
     :normalizedProviderValue;
-  const answerShape=normalizeProviderAnswerShape(outputValue);
+  const answerShape=normalizeProviderAnswerShape(outputValue,allowUnlinkedAnswerCandidates);
   const adapted=answerShape&&typeof answerShape==='object'&&!Array.isArray(answerShape)
     ?Object.fromEntries(Object.entries(answerShape as Record<string,unknown>).filter(([key])=>['answer','answerParts','claims','tentativeCandidates','packageReconstruction','uiComponents','limitations','inspectImage'].includes(key)))
     :answerShape;
@@ -465,7 +465,7 @@ function unwrapProviderAssistEnvelope(value:unknown):unknown{
 }
 
 /** Normalize provider transport shape before strict validation; add no facts or evidence. */
-function normalizeProviderAnswerShape(value:unknown):unknown {
+function normalizeProviderAnswerShape(value:unknown,allowUnlinkedAnswerCandidates=false):unknown {
   if(!value||typeof value!=='object'||Array.isArray(value))return value;
   const record=value as Record<string,unknown>;
   const evidenceReferences=(value:unknown)=>{
@@ -479,6 +479,47 @@ function normalizeProviderAnswerShape(value:unknown):unknown {
     }
     return refs;
   };
+  const splitAnswerSentences=(answer:string)=>{
+    const protectedText=answer.replace(/\b(approx|e\.g|i\.e|vs)\.(?=\s+[\p{L}\p{N}])/giu,'$1\uE000');
+    return protectedText.split(/(?<=[.!?])\s+(?=[\p{L}\p{N}])/u).map(part=>part.replace(/\uE000/g,'.').trim()).filter(Boolean);
+  };
+  const citation=/\[((?:\s*(?:package-fact:[a-z0-9:_-]+|(?:OBS|IMG|SRC|CALC|CAND|ROW)_[A-Z0-9]+)\s*,?)+)\]/giu;
+  const referenceIds=(text:string)=>text.match(/package-fact:[a-z0-9:_-]+|(?:OBS|IMG|SRC|CALC|CAND|ROW)_[A-Z0-9]+/giu)??[];
+  const standaloneCitedText=(raw:string,refs:ReturnType<typeof evidenceReferences>)=>{
+    let text=raw.replace(/\s+([,.;:!?])/g,'$1').replace(/\s{2,}/g,' ').trim().replace(/^[,;:]\s*/,'').replace(/^\(+\s*|\s*\)+$/g,'').trim();
+    if(!text)return '';
+    // Inline references often divide one fluent response into clause-sized
+    // evidence spans. Make common continuations readable as standalone parts
+    // without changing their factual content or borrowing adjacent evidence.
+    text=text.replace(/^(?:for [^,]{1,90},\s*)?(?:while|although|whereas)\s+(the (?:label|package|nutrition table)|it)\b/i,(_match,subject:string)=>`${subject[0].toLocaleUpperCase()}${subject.slice(1)}`);
+    text=text.replace(/^(?:or\s+)?(?:about|approximately|approx\.?|around)\s+(?=\d)/i,()=>refs.calculationIds.length?'The calculated amount is about ':'About ');
+    text=text.replace(/^(?:contributing|providing|showing|listing)\s+(?=\d)/i,'The nutrition table lists ');
+    text=text.replace(/^(?:and|but)\s+/i,'');
+    text=text[0].toLocaleUpperCase()+text.slice(1);
+    if(!/[.!?]$/.test(text))text+='.';
+    return text;
+  };
+  const citedSentenceParts=(sentence:string)=>{
+    const matches=[...sentence.matchAll(citation)];
+    if(!matches.length)return [] as {text:string;refs:ReturnType<typeof evidenceReferences>}[];
+    const parts:{text:string;ids:string[]}[]=[];
+    let previousEnd=0;
+    for(const match of matches){
+      const start=match.index??previousEnd;
+      const ids=referenceIds(match[1]);
+      const text=sentence.slice(previousEnd,start).trim();
+      if(text)parts.push({text,ids});
+      else if(parts.length)parts[parts.length-1].ids.push(...ids);
+      previousEnd=start+match[0].length;
+    }
+    return parts.flatMap(part=>{
+      const refs=evidenceReferences(part.ids);
+      if(!Object.values(refs).some(items=>items.length))return [];
+      const text=standaloneCitedText(part.text,refs);
+      return text?[{text,refs}]:[];
+    });
+  };
+  const emptyReferences=()=>({observationIds:[] as string[],sourceIds:[] as string[],calculationIds:[] as string[],interpretationRowIds:[] as string[],packageFactIds:[] as string[],profileFieldIds:[] as string[]});
   const providerRefs=(item:Record<string,unknown>)=>evidenceReferences(firstDefined(item,'evidenceIds','evidence_ids'));
   const suppliedClaims=record.claims??record.evidenceClaims??record.evidence_claims;
   const rawClaims=Array.isArray(record.claims)&&record.claims.length?record.claims:Array.isArray(record.evidenceClaims)?record.evidenceClaims:Array.isArray(record.evidence_claims)?record.evidence_claims:Array.isArray(record.claims)?record.claims:[];
@@ -503,7 +544,22 @@ function normalizeProviderAnswerShape(value:unknown):unknown {
     };
   });
   const rawParts=Array.isArray(record.answerParts)?record.answerParts:Array.isArray(record.answer_parts)?record.answer_parts:null;
-  const answerParts=rawParts?.map(raw=>{
+  const expandedParts=rawParts?.flatMap(raw=>{
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))return [raw];
+    const part=raw as Record<string,unknown>;
+    const text=typeof part.text==='string'?part.text:typeof part.body==='string'?part.body:typeof part.content==='string'?part.content:null;
+    const indexes=Array.isArray(part.claimIndexes)&&part.claimIndexes.length>0;
+    const claimIds=Array.isArray(part.claimIds)&&part.claimIds.length>0;
+    const hasReferences=Object.values(providerRefs(part)).some(items=>items.length>0);
+    const hasTypedReferences=['observationIds','observation_ids','sourceIds','source_ids','calculationIds','calculation_ids','interpretationRowIds','interpretation_row_ids','packageFactIds','package_fact_ids','profileFieldIds','profile_field_ids']
+      .some(key=>Array.isArray(part[key])&&part[key]!.length>0);
+    if(!allowUnlinkedAnswerCandidates||!text||claims.length>0)return [raw];
+    if(indexes||claimIds||hasReferences||hasTypedReferences)return [{...part,_unlinkedAnswerCandidate:true}];
+    const cited=citedSentenceParts(text);
+    if(cited.length)return cited.map(item=>({text:item.text,evidenceIds:Object.values(item.refs).flat(),_unlinkedAnswerCandidate:true}));
+    return [{text,evidenceIds:[],_unlinkedAnswerCandidate:true}];
+  })??null;
+  let answerParts=expandedParts?.map(raw=>{
     if(!raw||typeof raw!=='object'||Array.isArray(raw))return raw;
     const part=raw as Record<string,unknown>;
     const text=typeof part.text==='string'?part.text:typeof part.body==='string'?part.body:typeof part.content==='string'?part.content:undefined;
@@ -543,26 +599,43 @@ function normalizeProviderAnswerShape(value:unknown):unknown {
       profileFieldIds:part.profileFieldIds??part.profile_field_ids??providerRefs(part).profileFieldIds,
     };
     const hasExplicitRefs=Object.values(refs).some(items=>Array.isArray(items)&&items.length>0);
-    if(!indexes&&text&&hasExplicitRefs){
-      // The answer part supplies its own citation set. Preserve it as one
-      // validation unit rather than linking every overlapping sibling claim;
-      // one unrelated rejected claim must not erase a fully cited answer.
+    if(!indexes&&text&&(hasExplicitRefs||(allowUnlinkedAnswerCandidates&&(claims.length===0||part._unlinkedAnswerCandidate===true)))){
+      // Preserve explicit part-level evidence links. If the provider omitted
+      // links entirely, create only an untrusted candidate and let the
+      // inference boundary attach exact, traceable package facts/rows;
+      // external source references are never inferred here.
       if(claims.length<15){
         const index=claims.length;
         claims.push({
           mode:'synthesis',text,
-          observationIds:refs.observationIds??[],sourceIds:refs.sourceIds??[],
-          calculationIds:refs.calculationIds??[],interpretationRowIds:refs.interpretationRowIds??[],packageFactIds:refs.packageFactIds??[],profileFieldIds:refs.profileFieldIds??[],
+          observationIds:hasExplicitRefs?(refs.observationIds??[]):[],sourceIds:hasExplicitRefs?(refs.sourceIds??[]):[],
+          calculationIds:hasExplicitRefs?(refs.calculationIds??[]):[],interpretationRowIds:hasExplicitRefs?(refs.interpretationRowIds??[]):[],packageFactIds:hasExplicitRefs?(refs.packageFactIds??[]):[],profileFieldIds:hasExplicitRefs?(refs.profileFieldIds??[]):[],
         });
         indexes=[index];
       }
     }
     return {text,claimIndexes:indexes??explicitIndexes??[]};
   });
-  const normalizedAnswer=typeof record.answer==='string'?record.answer:answerParts?.map(part=>part&&typeof part==='object'&&!Array.isArray(part)?(part as Record<string,unknown>).text:'').filter((text):text is string=>typeof text==='string'&&text.trim().length>0).join('\n\n');
-  if(claims.length===0&&typeof normalizedAnswer==='string'&&normalizedAnswer.trim()&&normalizedAnswer.length<=1800){
-    const refs=providerRefs(record);
-    if(Object.values(refs).some(ids=>ids.length>0))claims.push({mode:'synthesis',text:normalizedAnswer,...refs});
+  let normalizedAnswer=typeof record.answer==='string'?record.answer:answerParts?.map(part=>part&&typeof part==='object'&&!Array.isArray(part)?(part as Record<string,unknown>).text:'').filter((text):text is string=>typeof text==='string'&&text.trim().length>0).join('\n\n');
+  if(allowUnlinkedAnswerCandidates&&claims.length===0&&typeof normalizedAnswer==='string'&&normalizedAnswer.trim()&&normalizedAnswer.length<=1800){
+    const sentences=splitAnswerSentences(normalizedAnswer);
+    // A top-level evidenceIds array is aggregate metadata, not a citation for
+    // every clause. Preserve only locally cited spans; otherwise let the
+    // inference validator re-link exact saved package facts/rows from the
+    // sentence and reject unsupported source or medical claims.
+    const linkedParts=sentences.flatMap(sentence=>citedSentenceParts(sentence));
+    const partsToRetain=linkedParts.length?linkedParts:sentences.map(text=>({text,refs:emptyReferences()}));
+    const mappedParts:{text:string;claimIndexes:number[]}[]=[];
+    for(const part of partsToRetain){
+      if(!part.text||claims.length>=15)continue;
+      const claimIndex=claims.length;
+      claims.push({mode:'synthesis',text:part.text,...part.refs});
+      mappedParts.push({text:part.text,claimIndexes:[claimIndex]});
+    }
+    if(mappedParts.length){
+      answerParts=mappedParts;
+      normalizedAnswer=mappedParts.map(part=>part.text).join(' ');
+    }
   }
   const canonical={
     // These provider-only fields are not part of the consumer contract. Raw
@@ -570,7 +643,7 @@ function normalizeProviderAnswerShape(value:unknown):unknown {
     ...Object.fromEntries(Object.entries(record).filter(([key])=>providerOutputFieldAliases.has(key)&&!['evidenceClaims','evidence_claims','evidenceIds','evidence_ids','ocrWordEvidence','ocr_word_evidence','answer_parts','tentative_candidates','package_reconstruction','reconstruction','ui_components','inspect_image','imageInspection','image_inspection'].includes(key))),
     answer:normalizedAnswer,
     claims:Array.isArray(suppliedClaims)||suppliedClaims===undefined?claims:suppliedClaims,
-    ...(rawParts?{answerParts}:{}),
+    ...(answerParts?{answerParts}:{}),
     ...(record.tentativeCandidates===undefined&&record.tentative_candidates!==undefined?{tentativeCandidates:record.tentative_candidates}:{}),
     ...(record.uiComponents===undefined&&record.ui_components!==undefined?{uiComponents:record.ui_components}:{}),
     ...(record.packageReconstruction===undefined&&record.package_reconstruction!==undefined?{packageReconstruction:record.package_reconstruction}:{}),
@@ -607,17 +680,20 @@ export function parseAgentProviderOutput(text: string,requirePackageReconstructi
     throw new ProviderSchemaValidationError(['$'],['invalid-json']);
   }
   const normalized = normalizeModelImageRegions(value);
-  const output = normalizeProviderAssistOutput(normalized.output,requirePackageReconstruction);
+  const output = normalizeProviderAssistOutput(normalized.output,requirePackageReconstruction,true);
   if (!output) {
     const schema=providerOutputSchema(requirePackageReconstruction);
     const parsed=schema.safeParse(normalized.output);
     const issues=parsed.success?{paths:['$'],codes:['normalization-failed']}:summarizeSchemaIssues(parsed.error);
     throw new ProviderSchemaValidationError(issues.paths,issues.codes);
   }
+  const hasReferencedClaim=output.claims.some(claim=>claim.observationIds.length>0||claim.sourceIds.length>0
+    ||(claim.calculationIds?.length??0)>0||(claim.interpretationRowIds?.length??0)>0||(claim.packageFactIds?.length??0)>0
+    ||(claim.profileFieldIds?.length??0)>0||(claim.visualEvidence?.length??0)>0);
   return {
     output,
     schemaMode: providerOutputSchema(requirePackageReconstruction).safeParse(output).success ? 'provider-schema' as const : 'compatible-schema-without-answer-parts' as const,
-    modelOutputStatus: output.claims.length ? 'claims-present' as const : 'no-grounded-claims' as const,
+    modelOutputStatus: hasReferencedClaim?'claims-present' as const:output.claims.length?'unlinked-answer-candidate' as const:'no-grounded-claims' as const,
     discardedRegionCount: normalized.discardedRegionCount,
   };
 }
@@ -1095,14 +1171,13 @@ async function repairCitationReferences(data: z.infer<typeof assistInput>, outpu
 }
 
 export function needsConversationalAnswerRepair(acceptedAnswerParts: number, rejectedAnswerParts: number, hasEvidence: boolean, answerRepairAlreadyUsed: boolean, acceptedNaturalAnswer=false, rejectedNaturalAnswerSegments=0) {
-  // Preserve valid wording, but repair once when validation dropped part of a
-  // mixed answer. Otherwise a supported opening clause can hide that a useful
-  // serving calculation or other independently grounded detail was discarded.
-  // Citation repair and conversational assembly remain separate bounded stages.
-  return !answerRepairAlreadyUsed && hasEvidence && (
-    (acceptedAnswerParts === 0 && !acceptedNaturalAnswer)
-    || rejectedNaturalAnswerSegments > 0
-  );
+  // Validation already returns only accepted answer parts/sentences. Rewriting
+  // a partially accepted answer with another generation risks reintroducing
+  // rejected prose and repeats context without improving the evidence. Repair
+  // only when no user-facing answer survived the first pass.
+  void rejectedAnswerParts;
+  void rejectedNaturalAnswerSegments;
+  return !answerRepairAlreadyUsed && hasEvidence && acceptedAnswerParts===0 && !acceptedNaturalAnswer;
 }
 
 async function repairConversationalAnswer(question: string, claims: { index: number; claim: z.infer<typeof assistOutput>['claims'][number] }[], rejectedReasons: string[], analysisId: string, profileIncluded: boolean) {
@@ -1363,6 +1438,15 @@ function normalizedAnswerTerm(value:string){
   const term=value.replace(/([a-z])([A-Z])/g,'$1 $2').toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
   return term.split(/\s+/).map(word=>word.endsWith('s')&&word.length>5?word.slice(0,-1):word).join(' ');
 }
+function answerMentionsPackageStatement(answer:string,statement:PackageReconstructionContent['statements'][number]){
+  const answerTerms=new Set(normalizedAnswerTerm(answer).split(' '));
+  const statementTerms=normalizedAnswerTerm(`${statement.label??''} ${statement.text}`).split(' ')
+    .filter(term=>term.length>=4&&!new Set(['with','from','this','that','free','full','taste','package','label','contains','claim','says','states']).has(term));
+  // Coverage means the validated paraphrase actually discusses the relevant
+  // label claim. Requiring the entire printed OCR sentence to appear verbatim
+  // falsely classifies ordinary natural-language summaries as missing.
+  return statementTerms.some(term=>answerTerms.has(term));
+}
 function answerMentionsNutritionRow(answer:string,row:PackageReconstructionContent['nutritionRows'][number],numbers:Set<number>){
   if(row.value===null||!row.unit||row.basisAmount===null||!row.basisUnit||!numbers.has(row.value))return false;
   const normalizedAnswer=normalizedAnswerTerm(answer);
@@ -1431,7 +1515,7 @@ export function packageAnswerCoverage(question:string,reconstruction:PackageReco
   const rows=packageAnswerNutritionRows(question,reconstruction);
   const ingredientCount=reconstruction.ingredients.length;
   const serving=!!reconstruction.serving;
-  const relevantNutritionClaims=reconstruction.statements.flatMap((statement,index)=>statement.kind==='claim'&&/\b(?:sugar|carbohydrat|carb|calorie|energy|fat|protein|fibre|fiber|gluten|low[- ]|high[- ])\b/i.test(statement.text)?[{statement,index}]:[]);
+  const relevantNutritionClaims=reconstruction.statements.flatMap((statement,index)=>statement.kind==='claim'&&/\b(?:sugars?|carbohydrates?|carbs?|calories?|energy|fat|protein|fibre|fiber|gluten|low[- ]|high[- ])\b/i.test(statement.text)?[{statement,index}]:[]);
   const contextualGuidanceIds=shouldRetrieveContextualNutritionGuidance(question,jurisdiction)
     ?new Set(getNutritionGuidance({query:question,jurisdiction,maxResults:3}).filter(source=>evidence.some(item=>item.id===source.id)).map(source=>source.id))
     :new Set<string>();
@@ -1441,7 +1525,8 @@ export function packageAnswerCoverage(question:string,reconstruction:PackageReco
   const hasNutritionClaim=rows.length&&claims.some(claim=>(claim.interpretationRowIds??[]).some(id=>relevantRowIds.has(id))||(claim.calculationIds??[]).length>0);
   const hasIngredientClaim=ingredientCount&&claims.some(claim=>(claim.packageFactIds??[]).some(id=>id.startsWith('package-fact:ingredient:'))||claim.observationIds.some(id=>reconstruction.ingredients.some(item=>item.evidence.observationIds.includes(id))));
   const hasServingClaim=serving&&claims.some(claim=>(claim.packageFactIds??[]).includes('package-fact:serving')||claim.observationIds.some(id=>reconstruction.serving?.evidence.observationIds.includes(id)));
-  const hasRelevantNutritionClaim=relevantNutritionClaims.length&&claims.some(claim=>relevantNutritionClaims.some(({index,statement})=>(claim.packageFactIds??[]).includes(`package-fact:statement:${index}`)||claim.observationIds.some(id=>statement.evidence.observationIds.includes(id))));
+  const linkedNutritionClaims=relevantNutritionClaims.filter(({index,statement})=>claims.some(claim=>(claim.packageFactIds??[]).includes(`package-fact:statement:${index}`)||claim.observationIds.some(id=>statement.evidence.observationIds.includes(id))));
+  const hasRelevantNutritionClaim=linkedNutritionClaims.length>0;
   const guidanceSources=evidence.filter(source=>contextualGuidanceIds.has(source.id));
   const answerTerms=new Set(answer?normalizedAnswerTerm(answer).split(' ').filter(term=>term.length>=5):[]);
   const hasRelevantGuidanceClaim=guidanceSources.some(source=>claims.some(claim=>claim.sourceIds.includes(source.id))
@@ -1449,7 +1534,7 @@ export function packageAnswerCoverage(question:string,reconstruction:PackageReco
   if(hasNutritionClaim&&(!answer||rows.some(row=>answerMentionsNutritionRow(answer,row,answerNumberSet(answer)))))covered.add('nutrition');
   if(hasIngredientClaim&&(!answer||reconstruction.ingredients.some(item=>item.name.split(/[^\p{L}\p{N}]+/u).filter(term=>term.length>=4).some(term=>normalizedAnswerTerm(answer).split(' ').includes(normalizedAnswerTerm(term))))))covered.add('ingredients');
   if(hasServingClaim&&(!answer||answerMentionsServing(answer,reconstruction,answerNumberSet(answer))))covered.add('serving');
-  if(hasRelevantNutritionClaim&&(!answer||relevantNutritionClaims.some(({statement})=>normalizedAnswerTerm(answer).includes(normalizedAnswerTerm(statement.text)))))covered.add('nutrition-claim');
+  if(hasRelevantNutritionClaim&&(!answer||linkedNutritionClaims.some(({statement})=>answerMentionsPackageStatement(answer,statement))))covered.add('nutrition-claim');
   if(hasRelevantGuidanceClaim)covered.add('local-guidance');
   return{available:available.length,covered:covered.size,availableFacets:available,missing:available.filter(axis=>!covered.has(axis))};
 }

@@ -102,14 +102,14 @@ describe('saved-package follow-up context',()=>{
 });
 
 describe('model answer-part recovery', () => {
-  it('keeps the answer-assembly repair available after citation repair recovers grounded claims', () => {
+  it('uses answer repair only when no conversational wording survived validation', () => {
     expect(needsConversationalAnswerRepair(1, 2, true, false)).toBe(false);
     // The citation-repair stage may already have run; only a prior
     // conversational answer repair consumes this independent one-shot budget.
     expect(needsConversationalAnswerRepair(0, 4, true, false)).toBe(true);
     expect(needsConversationalAnswerRepair(1, 0, true, false)).toBe(false);
     expect(needsConversationalAnswerRepair(0, 4, true, false, true)).toBe(false);
-    expect(needsConversationalAnswerRepair(0, 0, true, false, true, 1)).toBe(true);
+    expect(needsConversationalAnswerRepair(0, 0, true, false, true, 1)).toBe(false);
     expect(needsConversationalAnswerRepair(0, 0, true, true, true, 1)).toBe(false);
     expect(needsConversationalAnswerRepair(0, 4, true, true)).toBe(false);
     expect(needsConversationalAnswerRepair(0, 0, false, false)).toBe(false);
@@ -451,9 +451,9 @@ describe('provider package-reconstruction normalization',()=>{
       output:{answer:'The label reading is provisional.',claims:[],packageReconstruction:reconstruction,limitations:[],inspectImage:null},
       transportMetadata:{attempt:1},
     }),true);
-    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
+    expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
     expect(parsed.output.packageReconstruction?.identity.brand).toBe('Bisk Farm');
-    expect(parsed.output.claims).toEqual([]);
+    expect(parsed.output.claims).toMatchObject([{text:'The label reading is provisional.',observationIds:[],sourceIds:[]}]);
     expect(JSON.stringify(parsed.output)).not.toContain('transportMetadata');
   });
 
@@ -461,8 +461,8 @@ describe('provider package-reconstruction normalization',()=>{
     const parsed=parseAgentProviderOutput(JSON.stringify({
       answer:'The package interpretation remains unresolved.',limitations:[],inspectImage:null,providerMetadata:{finish:'stop'},
     }));
-    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
-    expect(parsed.output.claims).toEqual([]);
+    expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
+    expect(parsed.output.claims).toMatchObject([{text:'The package interpretation remains unresolved.',observationIds:[],sourceIds:[]}]);
   });
 
   it('continues rejecting malformed claim data instead of converting it into an empty claim set',()=>{
@@ -513,8 +513,8 @@ describe('provider package-reconstruction normalization',()=>{
       },
     }),true);
 
-    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
-    expect(parsed.output.claims).toEqual([]);
+    expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
+    expect(parsed.output.claims).toMatchObject([{text:'The package reading is provisional.',observationIds:[],sourceIds:[]}]);
     expect(parsed.output.packageReconstruction).toMatchObject({
       identity:{brand:'Bisk Farm',name:'Cream Cracker Sugar Free'},
       serving:{printedText:'2 biscuits (approx. 13.4 g)',quantity:13.4,unit:'g'},
@@ -570,8 +570,8 @@ describe('Gemini final-response failure classification', () => {
     let schemaError: unknown;
     try { parseAgentProviderOutput(JSON.stringify({ answer: 'bad schema', claims: 'not an array', limitations: [], inspectImage: null })); } catch (error) { schemaError = error; }
 
-    expect(noClaims.modelOutputStatus).toBe('no-grounded-claims');
-    expect(noClaims.output.claims).toEqual([]);
+    expect(noClaims.modelOutputStatus).toBe('unlinked-answer-candidate');
+    expect(noClaims.output.claims).toMatchObject([{text:'Text without linked claims.',observationIds:[],sourceIds:[]}]);
     expect(malformedJsonError).toMatchObject({ code: 'provider_invalid_json', status: 502 });
     expect(schemaError).toMatchObject({ code: 'provider_schema_invalid', status: 502 });
   });
