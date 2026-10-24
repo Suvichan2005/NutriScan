@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { FeatureExtractionPipeline } from '@huggingface/transformers';
+import { z } from 'zod';
 import { corpusVersion, evidenceSources, lookupAdditive, lookupExplicitAdditiveMention } from './index';
 import type { EvidenceSource } from '../../lib/contracts';
 
@@ -15,6 +16,11 @@ export const modelDirectory = path.join(process.cwd(), '.data', 'models');
 export const indexFile = path.join(process.cwd(), 'data', 'semantic-index.json');
 export const openFoodToxIndexFile = path.join(process.cwd(), '.data', 'knowledge', 'openfoodtox-3.0.json');
 export const openFoodToxSourceSha256 = '5181661e921651d4087b544981e1e5a63b99532844eac0112732806a00a85eda';
+export const foodOnIndexFile = path.join(process.cwd(), 'data', 'foodon-index.json');
+export const foodOnVersion = '2026-09-20';
+export const foodOnRepositoryCommit = 'cd73540243a84bcd511a500d9a497d12d7dc02f6';
+export const foodOnOntologySha256 = 'b897bf64c1b265c422db9ee01e1235c10c0b809e7f02326ef810a52068347edf';
+export const foodOnSynonymExportSha256 = '1900fb2c80d834287cfdd0b52a98957b18269e86c197617711bc3a5d8541deb2';
 export const documentText = (source: EvidenceSource) => `${source.title}. ${source.summary}`;
 export const corpusFingerprint = () => createHash('sha256').update(JSON.stringify(evidenceSources.map(s => ({ id: s.id, text: documentText(s), url: s.url })))).digest('hex');
 
@@ -56,6 +62,112 @@ export type OpenFoodToxSearch =
   | { status: 'ok'; source: OpenFoodToxSnapshot['dataset']; statistics: OpenFoodToxSnapshot['statistics']; results: OpenFoodToxHit[] }
   | { status: 'no_match'; source: OpenFoodToxSnapshot['dataset']; results: [] }
   | { status: 'unavailable'; reason: 'not-imported' | 'invalid-index'; results: [] };
+
+const foodOnAliasSchema = z.object({ text: z.string().min(1).max(180), kind: z.enum(['exact', 'synonym', 'narrow', 'broad', 'alternative-label']) }).strict();
+const foodOnTermSchema = z.object({
+  id: z.string().regex(/^FOODON_[0-9]{8}$/),
+  label: z.string().min(1).max(180),
+  aliases: z.array(foodOnAliasSchema).max(24),
+  parents: z.array(z.string().regex(/^FOODON_[0-9]{8}$/)).max(100),
+}).strict();
+const foodOnSnapshotSchema = z.object({
+  schemaVersion: z.literal(1),
+  source: z.object({
+    name: z.literal('FoodOn Food Ontology'), version: z.string(), versionIri: z.string().url(), repositoryCommit: z.string(),
+    ontologyUrl: z.string().url(), synonymExportUrl: z.string().url(), license: z.literal('CC BY 4.0'), licenseUrl: z.string().url(),
+    ontologySha256: z.string().regex(/^[a-f0-9]{64}$/), synonymExportSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  }).strict(),
+  terms: z.array(foodOnTermSchema).min(20_000).max(35_000),
+}).strict();
+export type FoodOnTerm = z.infer<typeof foodOnTermSchema>;
+type FoodOnSnapshot = z.infer<typeof foodOnSnapshotSchema>;
+export type FoodOnHit = { term: FoodOnTerm; matchedBy: 'exact-label' | 'exact-synonym' | 'exact-alias' | 'partial-token-overlap'; matchedText: string; parents: Array<{ id: string; label: string }> };
+export type FoodOnSearch =
+  | { status: 'ok'; source: FoodOnSnapshot['source']; results: FoodOnHit[] }
+  | { status: 'no_match'; source: FoodOnSnapshot['source']; results: [] }
+  | { status: 'unavailable'; reason: 'invalid-index'; results: [] };
+
+let foodOnSnapshotPromise: Promise<FoodOnSnapshot> | undefined;
+
+async function loadFoodOnSnapshot(): Promise<FoodOnSnapshot> {
+  if (!foodOnSnapshotPromise) {
+    foodOnSnapshotPromise = (async () => {
+      const text = await readFile(foodOnIndexFile, 'utf8');
+      if (Buffer.byteLength(text) > 12_000_000) throw new Error('Local FoodOn index exceeds its size limit.');
+      const parsed = foodOnSnapshotSchema.safeParse(JSON.parse(text) as unknown);
+      if (!parsed.success) throw new Error('Local FoodOn index does not match its documented schema.');
+      const { source, terms } = parsed.data;
+      if (source.version !== foodOnVersion || source.repositoryCommit !== foodOnRepositoryCommit
+        || source.ontologySha256 !== foodOnOntologySha256 || source.synonymExportSha256 !== foodOnSynonymExportSha256
+        || terms.length !== 25_143) throw new Error('Local FoodOn index does not match the pinned release.');
+      return parsed.data;
+    })();
+    foodOnSnapshotPromise.catch(() => { foodOnSnapshotPromise = undefined; });
+  }
+  try { return await foodOnSnapshotPromise; }
+  catch (error) { foodOnSnapshotPromise = undefined; throw error; }
+}
+
+function normalizeFoodOnTerm(value: string) {
+  return value.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
+}
+
+export function rankFoodOnTerms(query: string, terms: FoodOnTerm[], limit = 5): FoodOnHit[] {
+  if (typeof query !== 'string' || query.trim().length < 2 || query.length > 180 || !Number.isInteger(limit) || limit < 1 || limit > 5) {
+    throw new Error('Invalid FoodOn ingredient lookup request.');
+  }
+  const normalizedQuery = normalizeFoodOnTerm(query);
+  const queryTokens = [...new Set(normalizedQuery.split(' ').filter(token => token.length > 1))];
+  if (!queryTokens.length) return [];
+  const termById = new Map(terms.map(term => [term.id, term]));
+  const ranked: Array<FoodOnHit & { rank: number }> = [];
+  for (const term of terms) {
+    const names = [
+      { text: term.label, kind: 'label' as const },
+      ...term.aliases.map(alias => ({ text: alias.text, kind: alias.kind })),
+    ];
+    let best: (FoodOnHit & { rank: number }) | undefined;
+    for (const name of names) {
+      const normalizedName = normalizeFoodOnTerm(name.text);
+      if (!normalizedName) continue;
+      const matchedBy = name.kind === 'label' ? 'exact-label' : name.kind === 'exact' || name.kind === 'synonym' ? 'exact-synonym' : 'exact-alias';
+      let rank = 0;
+      let match: FoodOnHit['matchedBy'] = 'partial-token-overlap';
+      if (normalizedName === normalizedQuery) {
+        rank = name.kind === 'label' ? 3 : name.kind === 'exact' || name.kind === 'synonym' ? 2.9 : 2.7;
+        match = matchedBy;
+      } else {
+        const nameTokens = new Set(normalizedName.split(' ').filter(token => token.length > 1));
+        const overlap = queryTokens.filter(token => nameTokens.has(token)).length;
+        const queryCoverage = overlap / queryTokens.length;
+        const nameCoverage = overlap / Math.max(1, nameTokens.size);
+        if (queryCoverage < (queryTokens.length === 1 ? 1 : 0.67) || nameCoverage < 0.5) continue;
+        if (queryTokens.length > 1 && !normalizedName.includes(queryTokens.join(' '))) continue;
+        rank = 1 + queryCoverage * 0.7 + nameCoverage * 0.3 - (name.kind === 'label' ? 0 : 0.02);
+      }
+      const parents = term.parents.flatMap(parentId => {
+        const parent = termById.get(parentId);
+        return parent ? [{ id: parent.id, label: parent.label }] : [];
+      }).slice(0, 4);
+      const candidate = { term, matchedBy: match, matchedText: name.text, parents, rank };
+      if (!best || candidate.rank > best.rank || (candidate.rank === best.rank && candidate.matchedText.length < best.matchedText.length)) best = candidate;
+    }
+    if (best) ranked.push(best);
+  }
+  return ranked.sort((left, right) => right.rank - left.rank || left.term.id.localeCompare(right.term.id)).slice(0, limit)
+    .map(hit => ({ term: hit.term, matchedBy: hit.matchedBy, matchedText: hit.matchedText, parents: hit.parents }));
+}
+
+export async function searchFoodOn(query: string, limit = 5): Promise<FoodOnSearch> {
+  if (typeof query !== 'string' || query.trim().length < 2 || query.length > 180 || !Number.isInteger(limit) || limit < 1 || limit > 5) {
+    throw new Error('Invalid FoodOn ingredient lookup request.');
+  }
+  let snapshot: FoodOnSnapshot;
+  try { snapshot = await loadFoodOnSnapshot(); }
+  catch { return { status: 'unavailable', reason: 'invalid-index', results: [] }; }
+  const results = rankFoodOnTerms(query, snapshot.terms, limit);
+  return results.length ? { status: 'ok', source: snapshot.source, results } : { status: 'no_match', source: snapshot.source, results: [] };
+}
 
 let openFoodToxSnapshotPromise: Promise<OpenFoodToxSnapshot | null> | undefined;
 

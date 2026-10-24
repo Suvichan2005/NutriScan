@@ -16,6 +16,8 @@ The bundled records are concise attributed summaries and identity references, no
 
 The Node-only server entry can also query the local EFSA OpenFoodTox 3.0 snapshot at `.data/knowledge/openfoodtox-3.0.json`. The pinned 2026-04-30 release contains 7,880 substance identities, 5,620 with assessment references, 872 with recorded reference values, and 1,263 assessment rows with an ADI or acute reference dose. This is chemical-hazard reference data, not a food-product catalog or evidence of package exposure. The source is CC BY-ND 4.0; keep both the source workbook and derived local snapshot under ignored `.data/` and do not redistribute the extraction.
 
+The Node-only server entry also searches the bundled FoodOn identity index at `data/foodon-index.json`. It contains 25,143 active, English-labeled FoodOn classes from the 2026-09-20 release, including selected labels, synonym kinds, and parent links. The source is CC BY 4.0 with attribution; source hashes, version, repository commit, license, and URLs travel with every result. Import the official OWL and synonym export into ignored `.data/knowledge/foodon.owl` and `.data/knowledge/foodon-synonyms.tsv`, then run `python src/modules/knowledge/import_foodon.py`. The importer rejects unpinned or modified source files and writes a deterministic compact index. Search results are identity candidates only; taxonomy does not establish package presence, ingredient function, health effect, allergen relationship, dose, authorization, or safety. The snapshot is queried locally and does not transmit user text, profile data, or images. FoodOn does not include every Indian-market synonym; for example, the pinned release has no `maida` alias, so that query remains unresolved.
+
 Do not add restricted source text, private package images, health profiles, API keys, or user conversations. Do not use this module to turn missing information into zero, infer a product's contents, or produce a clinical/legal verdict.
 
 ## Offline checks and evaluation
@@ -36,6 +38,17 @@ python src/modules/knowledge/import_openfoodtox.py
 ```
 
 The importer verifies the pinned file size and hashes before writing the local-only index. A missing workbook or dependency is an explicit setup condition; application queries do not download or transmit data.
+
+To reproduce the bundled FoodOn index, obtain the two official files at the exact pinned repository commit, then run the importer:
+
+```powershell
+New-Item -ItemType Directory -Force .data/knowledge | Out-Null
+curl.exe --fail --location --output .data/knowledge/foodon.owl https://raw.githubusercontent.com/FoodOntology/foodon/cd73540243a84bcd511a500d9a497d12d7dc02f6/foodon.owl
+curl.exe --fail --location --output .data/knowledge/foodon-synonyms.tsv https://raw.githubusercontent.com/FoodOntology/foodon/cd73540243a84bcd511a500d9a497d12d7dc02f6/foodon-synonyms.tsv
+python src/modules/knowledge/import_foodon.py
+```
+
+The upstream source files remain in ignored `.data/`; only the compact attributed index is tracked. The importer checks both SHA-256 digests and the ontology release IRI before writing.
 
 ## Contribution boundary
 
