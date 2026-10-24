@@ -320,6 +320,18 @@ describe('package-answer synthesis coverage gate',()=>{
     expect(needsPackageAnswerSynthesis(question,reconstruction,ingredientOnly,guidance)).toBe(true);
   });
 
+  it('does not mistake an evidence question that mentions a snack for a suitability question',()=>{
+    const linkedFacts=[
+      {mode:'synthesis' as const,text:'The package lists refined wheat flour first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
+      {mode:'synthesis' as const,text:'A review reports a measured outcome.',observationIds:[],sourceIds:['review-source'],packageFactIds:[]},
+    ];
+    const evidenceQuestion='This snack lists rolled oats. What does evidence say about cholesterol, and what cannot be concluded from its ingredient list alone?';
+    const answer='Clinical evidence reports a measured outcome, but an ingredient list alone cannot establish the dose in this snack.';
+    expect(needsPackageAnswerSynthesis(evidenceQuestion,reconstruction,linkedFacts,[],answer)).toBe(false);
+    expect(needsPackageAnswerSynthesis('Could someone with diabetes have this as a daily snack?',reconstruction,linkedFacts,[],answer)).toBe(true);
+    expect(needsPackageAnswerSynthesis('Does this fit as a regular snack?',reconstruction,linkedFacts,[],answer)).toBe(true);
+  });
+
   it('synthesizes a grounded saved-package answer for an ungrounded quantity follow-up, but not a covered answer',()=>{
     const complete=[
       {mode:'synthesis' as const,text:'The provisional carbohydrate amount is 9.28 g per serving.',observationIds:[],sourceIds:[],interpretationRowIds:['carbs-serving']},

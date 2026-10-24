@@ -1878,7 +1878,10 @@ function answerNumberSet(answer:string){
 }
 
 function isFoodChoiceQuestion(question:string){
-  return /\b(?:good|bad|healthy|unhealthy|suitable|unsuitable|appropriate|daily|every\s+day|regular(?:ly)?|snack(?:ing)?|recommend(?:ed|ation)?|can\s+i\s+(?:eat|have|include)|should\s+(?:i|this|it)\s+(?:eat|have|include|choose|consume|avoid|make|use|take))\b/i.test(question);
+  const directJudgment=/\b(?:is|are|was|were|would|could|can|should)\s+(?:(?:this|it|that|these|those|the\s+(?:food|product|package|snack|meal|choice|option))\s+)?(?:(?:be|feel|seem)\s+)?(?:a\s+|an\s+)?(?:good|bad|healthy|unhealthy|suitable|unsuitable|appropriate|reasonable|safe|okay|ok|ideal|recommend(?:ed|ation)?)\b/i.test(question);
+  const personAction=/\b(?:should|can|could|would)\s+(?:i|we|someone|anyone|a\s+person|people|patients?|diabetic|diabetes)\b[\s\S]{0,140}\b(?:eat|have|consume|include|choose|avoid|snack(?:\s+on|ing)?|eaten|make)\b/i.test(question);
+  const productFit=/\b(?:does|would|could)\s+(?:this|it|the\s+(?:food|product|package|snack|meal))\b[\s\S]{0,100}\b(?:fit|work|suit|make\s+sense)\b/i.test(question);
+  return directJudgment||personAction||productFit;
 }
 function normalizedAnswerTerm(value:string){
   const term=value.replace(/([a-z])([A-Z])/g,'$1 $2').toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();

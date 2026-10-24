@@ -1033,3 +1033,7 @@ Maintain source-backed ingredient→outcome relations separately from package ob
 ## 24 October 2026 — treat health-support verbs as physiological claims
 
 When validating a food statement that says an ingredient supports or promotes a health outcome, require a linked, outcome-relevant source just as for “improves,” “protects,” or “benefits.” A package ingredient fact can establish the label wording, not the health effect. Reject only the unsupported sentence/claim when adjacent claims have independent evidence; preserve the validated answer and its sources.
+
+## 24 October 2026 — trigger package suitability synthesis from intent, not food nouns
+
+Do not infer that a user is asking whether to consume a product merely because the question contains “snack,” “daily,” or a food name. Require a direct judgment question, an explicit consumer action, or a product-fit question before running the suitability coverage/synthesis path. This avoids duplicate answer synthesis on scientific or informational questions while preserving the existing package-evidence, numerical, source and safety validators.
