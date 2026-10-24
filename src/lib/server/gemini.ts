@@ -191,7 +191,7 @@ export function normalizeProviderAssistOutput(value:unknown,requirePackageRecons
   const outputSchema=providerOutputSchema(requirePackageReconstruction);
   const normalizedProviderValue=requirePackageReconstruction?normalizeProviderPackageReconstructionShape(unwrapped):unwrapped;
   const sourceValue=normalizedProviderValue&&typeof normalizedProviderValue==='object'&&!Array.isArray(normalizedProviderValue)?normalizedProviderValue as Record<string,unknown>:null;
-  const hadAnswerParts=!!sourceValue&&Object.prototype.hasOwnProperty.call(sourceValue,'answerParts');
+  const hadAnswerParts=!!sourceValue&&(Object.prototype.hasOwnProperty.call(sourceValue,'answerParts')||Object.prototype.hasOwnProperty.call(sourceValue,'answer_parts'));
   const outputValue=!requirePackageReconstruction&&sourceValue
     ?Object.fromEntries(Object.entries(normalizedProviderValue as Record<string,unknown>).filter(([key])=>key!=='packageReconstruction'))
     :normalizedProviderValue;
@@ -201,7 +201,6 @@ export function normalizeProviderAssistOutput(value:unknown,requirePackageRecons
     :answerShape;
   const complete=outputSchema.safeParse(adapted);
   if(complete.success)return complete.data;
-  if(requirePackageReconstruction)return null;
   if(!adapted||typeof adapted!=='object'||Array.isArray(adapted))return null;
   if(hadAnswerParts){
     const parts=(adapted as Record<string,unknown>).answerParts;
@@ -215,7 +214,7 @@ export function normalizeProviderAssistOutput(value:unknown,requirePackageRecons
         &&record.claimIndexes.every(index=>Number.isInteger(index)&&Number(index)>=0&&Number(index)<claimCount);
     });
     if(linkedParts.length>0){
-      const retained=assistOutput.safeParse({...adapted,answerParts:linkedParts});
+      const retained=outputSchema.safeParse({...adapted,answerParts:linkedParts});
       if(retained.success)return retained.data;
     }
     }
@@ -225,6 +224,9 @@ export function normalizeProviderAssistOutput(value:unknown,requirePackageRecons
   }
   const withoutAnswerParts={...(adapted as Record<string,unknown>)};
   delete withoutAnswerParts.answerParts;
+  const withoutSupplementalParts=outputSchema.safeParse(withoutAnswerParts);
+  if(withoutSupplementalParts.success)return withoutSupplementalParts.data;
+  if(requirePackageReconstruction)return null;
   const grounded=assistOutput.safeParse(withoutAnswerParts);
   return grounded.success?grounded.data:null;
 }
@@ -286,7 +288,13 @@ function normalizeProviderReconstructionEvidence(value:unknown,item:Record<strin
  */
 export function normalizeProviderPackageReconstructionShape(value:unknown):unknown{
   const output=objectRecord(value);
-  const reconstruction=output?objectRecord(firstDefined(output,'packageReconstruction','package_reconstruction','reconstruction')):null;
+  const declaredReconstruction=output?objectRecord(firstDefined(output,'packageReconstruction','package_reconstruction','reconstruction')):null;
+  const packageCandidate=output?objectRecord(output.package):null;
+  const packageLooksLikeReconstruction=!!packageCandidate&&(
+    ['identity','productIdentity','product_identity','serving','servingDefinition','serving_definition','servingSize','serving_size'].some(key=>objectRecord(packageCandidate[key])!==null)
+    ||['nutritionRows','nutrition_rows','nutritionTable','nutrition_table'].some(key=>Array.isArray(packageCandidate[key]))
+  );
+  const reconstruction=declaredReconstruction??(packageLooksLikeReconstruction?packageCandidate:null);
   if(!output||!reconstruction)return value;
 
   const identityInput=objectRecord(firstDefined(reconstruction,'identity','productIdentity','product_identity'))??{};
@@ -304,10 +312,10 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
   if(servingInput){
     const evidence=normalizeProviderReconstructionEvidence(firstDefined(servingInput,'evidence','sourceEvidence','source_evidence'),servingInput);
     serving={
-      printedText:safeProviderText(firstDefined(servingInput,'printedText','printed_text','text','label'),300),
-      quantity:safeProviderNumber(firstDefined(servingInput,'quantity','amount','mass')),
+      printedText:safeProviderText(firstDefined(servingInput,'printedText','printed_text','statement','text','label'),300),
+      quantity:safeProviderNumber(firstDefined(servingInput,'quantity','amount','mass','size')),
       unit:firstDefined(servingInput,'unit','quantityUnit','quantity_unit')==='g'||firstDefined(servingInput,'unit','quantityUnit','quantity_unit')==='ml'?firstDefined(servingInput,'unit','quantityUnit','quantity_unit'):null,
-      pieceCount:safeProviderNumber(firstDefined(servingInput,'pieceCount','piece_count','count')),
+      pieceCount:safeProviderNumber(firstDefined(servingInput,'pieceCount','piece_count','count','pieces')),
       pieceDescription:safeProviderText(firstDefined(servingInput,'pieceDescription','piece_description','pieces'),100),
       status:safeProviderStatus(firstDefined(servingInput,'status','confidenceStatus','confidence_status'),evidence.observationIds.length>0||evidence.imageRegions.length>0),
       evidence,
@@ -344,7 +352,7 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
   const ingredientInput=firstDefined(reconstruction,'ingredients','ingredientList','ingredient_list');
   const ingredients=Array.isArray(ingredientInput)?ingredientInput.slice(0,250).flatMap((value,index)=>{
     const item=objectRecord(value);if(!item)return[];
-    const printedText=safeProviderText(firstDefined(item,'printedText','printed_text','text','label'),600)
+    const printedText=safeProviderText(firstDefined(item,'printedText','printed_text','printedLabel','printed_label','text','label'),600)
       ??safeProviderText(firstDefined(item,'name','ingredient','normalizedName','normalized_name'),600);
     const name=safeProviderText(firstDefined(item,'name','ingredient','normalizedName','normalized_name'),300)??printedText?.slice(0,300)??null;
     if(!name||!printedText)return[];
@@ -363,28 +371,42 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
   const additiveInput=firstDefined(reconstruction,'additives','additiveList','additive_list');
   const additives=Array.isArray(additiveInput)?additiveInput.slice(0,100).flatMap(value=>{
     const item=objectRecord(value);if(!item)return[];
-    const printedName=safeProviderText(firstDefined(item,'printedName','printed_name','name','label'),240);if(!printedName)return[];
+    const printedName=safeProviderText(firstDefined(item,'printedName','printed_name','printedText','printed_text','printedLabel','printed_label','name','label'),240);if(!printedName)return[];
     return[{
       printedName,code:safeProviderText(firstDefined(item,'code','insCode','ins_code','eNumber','e_number'),40),
-      normalizedName:safeProviderText(firstDefined(item,'normalizedName','normalized_name','canonicalName','canonical_name'),240),
+      normalizedName:safeProviderText(firstDefined(item,'normalizedName','normalized_name','canonicalName','canonical_name','name'),240),
       status:safeProviderStatus(firstDefined(item,'status','confidenceStatus','confidence_status'),(()=>{const evidence=normalizeProviderReconstructionEvidence(firstDefined(item,'evidence','sourceEvidence','source_evidence'),item);return evidence.observationIds.length>0||evidence.imageRegions.length>0;})()),
       evidence:normalizeProviderReconstructionEvidence(firstDefined(item,'evidence','sourceEvidence','source_evidence'),item),
     }];
   }):[];
 
-  const statementInput=firstDefined(reconstruction,'statements','packageStatements','package_statements','claimsAndWarnings','claims_and_warnings');
-  const statements=Array.isArray(statementInput)?statementInput.slice(0,100).flatMap(value=>{
-    const item=objectRecord(value);if(!item)return[];
-    const text=safeProviderText(firstDefined(item,'text','statement','printedText','printed_text','value'),1000);if(!text)return[];
+  const statementGroups:[unknown,string][]=[
+    [firstDefined(reconstruction,'statements','packageStatements','package_statements','claimsAndWarnings','claims_and_warnings'),'other'],
+    [firstDefined(reconstruction,'claims','packageClaims','package_claims'),'claim'],
+    [firstDefined(reconstruction,'warnings','precautions'),'warning'],
+    [firstDefined(reconstruction,'allergens','allergenStatements','allergen_statements'),'contains'],
+    [firstDefined(reconstruction,'certifications','regulatoryMarks','regulatory_marks'),'regulatory-mark'],
+    [firstDefined(reconstruction,'packageFacts','package_facts','otherDetails','other_details'),'other'],
+  ];
+  const statements=statementGroups.flatMap(([input,fallbackKind])=>Array.isArray(input)?input.slice(0,100).flatMap(value=>{
+    const item=objectRecord(value)??(typeof value==='string'?{text:value}:null);if(!item)return[];
+    const text=safeProviderText(firstDefined(item,'text','statement','printedText','printed_text','printedLabel','printed_label','value','description','name','label'),1000);if(!text)return[];
     const rawKind=firstDefined(item,'kind','type','category');
+    const kind=typeof rawKind==='string'&&reconstructionStatementKinds.has(rawKind)?rawKind:fallbackKind;
     const evidence=normalizeProviderReconstructionEvidence(firstDefined(item,'evidence','sourceEvidence','source_evidence'),item);
     return[{
-      kind:typeof rawKind==='string'&&reconstructionStatementKinds.has(rawKind)?rawKind:'other',
-      label:safeProviderText(firstDefined(item,'label','heading'),180),text,
+      kind:kind as 'contains'|'may-contain'|'precaution'|'claim'|'warning'|'manufacturer'|'regulatory-mark'|'instruction'|'other',
+      label:safeProviderText(firstDefined(item,'label','heading','claimType','claim_type'),180),text,
       status:safeProviderStatus(firstDefined(item,'status','confidenceStatus','confidence_status'),evidence.observationIds.length>0||evidence.imageRegions.length>0),
       evidence,
     }];
-  }):[];
+  }):[]);
+  const seenStatements=new Set<string>();
+  const uniqueStatements=statements.filter(statement=>{
+    const key=`${statement.kind}:${statement.text.normalize('NFKC').replace(/\s+/g,' ').trim().toLocaleLowerCase()}`;
+    if(seenStatements.has(key))return false;
+    seenStatements.add(key);return true;
+  });
 
   const regionInput=firstDefined(reconstruction,'regions','visualRegions','visual_regions');
   const regions=Array.isArray(regionInput)?regionInput.slice(0,40).flatMap(value=>{
@@ -410,7 +432,7 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
   const normalized={
     identity:identityValues,
     serving,
-    nutritionRows,ingredients,additives,statements,regions,unresolved,
+    nutritionRows,ingredients,additives,statements:uniqueStatements,regions,unresolved,
     interpretationNote:safeProviderText(firstDefined(reconstruction,'interpretationNote','interpretation_note','note','summary'),1000)??'',
   };
   return{
@@ -427,7 +449,7 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
  * numeric statement after this adapter.
  */
 const providerOutputFieldAliases=new Set([
-  'answer','answerParts','answer_parts','claims','evidenceClaims','evidence_claims','tentativeCandidates','tentative_candidates',
+  'answer','answerParts','answer_parts','claims','evidenceClaims','evidence_claims','evidenceIds','evidence_ids','tentativeCandidates','tentative_candidates',
   'packageReconstruction','package_reconstruction','reconstruction','uiComponents','ui_components','limitations',
   'inspectImage','inspect_image','imageInspection','image_inspection','ocrWordEvidence','ocr_word_evidence',
 ]);
@@ -446,23 +468,36 @@ function unwrapProviderAssistEnvelope(value:unknown):unknown{
 function normalizeProviderAnswerShape(value:unknown):unknown {
   if(!value||typeof value!=='object'||Array.isArray(value))return value;
   const record=value as Record<string,unknown>;
+  const evidenceReferences=(value:unknown)=>{
+    const refs={observationIds:[] as string[],sourceIds:[] as string[],calculationIds:[] as string[],interpretationRowIds:[] as string[],packageFactIds:[] as string[],profileFieldIds:[] as string[]};
+    const ids=Array.isArray(value)?value.slice(0,60):typeof value==='string'?[value]:[];
+    const profileIds=new Set(['dietaryPattern','avoidedIngredients','allergies','intolerances','healthConsiderations','goals','portionPreferences','ageGroup','sexOrReferenceGroup','country','locality']);
+    for(const id of ids){
+      if(typeof id!=='string')continue;
+      const target=id.startsWith('package-fact:')?'packageFactIds':/^OBS_[A-Z0-9]+$/i.test(id)?'observationIds':/^SRC_[A-Z0-9]+$/i.test(id)?'sourceIds':/^CALC_[A-Z0-9]+$/i.test(id)?'calculationIds':/^ROW_[A-Z0-9]+$/i.test(id)?'interpretationRowIds':profileIds.has(id)?'profileFieldIds':null;
+      if(target&&!refs[target].includes(id))refs[target].push(id);
+    }
+    return refs;
+  };
+  const providerRefs=(item:Record<string,unknown>)=>evidenceReferences(firstDefined(item,'evidenceIds','evidence_ids'));
   const suppliedClaims=record.claims??record.evidenceClaims??record.evidence_claims;
   const rawClaims=Array.isArray(record.claims)&&record.claims.length?record.claims:Array.isArray(record.evidenceClaims)?record.evidenceClaims:Array.isArray(record.evidence_claims)?record.evidence_claims:Array.isArray(record.claims)?record.claims:[];
   const claimIds=new Map<string,number>();
   const claims=rawClaims.map((raw,index)=>{
     if(!raw||typeof raw!=='object'||Array.isArray(raw))return raw;
     const claim=raw as Record<string,unknown>;
+    const fallbackRefs=providerRefs(claim);
     const claimId=typeof claim.claimId==='string'?claim.claimId:typeof claim.id==='string'?claim.id:null;
     if(claimId)claimIds.set(claimId,index);
     return {
       mode:claim.mode==='direct-quote'?'direct-quote':'synthesis',
       text:typeof claim.text==='string'?claim.text:typeof claim.statement==='string'?claim.statement:typeof claim.claim==='string'?claim.claim:claim.fact,
-      observationIds:claim.observationIds??claim.observation_ids??[],
-      sourceIds:claim.sourceIds??claim.source_ids??[],
-      calculationIds:claim.calculationIds??claim.calculation_ids,
-      interpretationRowIds:claim.interpretationRowIds??claim.interpretation_row_ids,
-      packageFactIds:claim.packageFactIds??claim.package_fact_ids,
-      profileFieldIds:claim.profileFieldIds??claim.profile_field_ids,
+      observationIds:claim.observationIds??claim.observation_ids??fallbackRefs.observationIds,
+      sourceIds:claim.sourceIds??claim.source_ids??fallbackRefs.sourceIds,
+      calculationIds:claim.calculationIds??claim.calculation_ids??fallbackRefs.calculationIds,
+      interpretationRowIds:claim.interpretationRowIds??claim.interpretation_row_ids??fallbackRefs.interpretationRowIds,
+      packageFactIds:claim.packageFactIds??claim.package_fact_ids??fallbackRefs.packageFactIds,
+      profileFieldIds:claim.profileFieldIds??claim.profile_field_ids??fallbackRefs.profileFieldIds,
       supportingSpans:claim.supportingSpans??claim.supporting_spans,
       visualEvidence:claim.visualEvidence??claim.visual_evidence,
     };
@@ -500,12 +535,12 @@ function normalizeProviderAnswerShape(value:unknown):unknown {
       if(exactClaimMatches.length===1)indexes=exactClaimMatches;
     }
     const refs={
-      observationIds:part.observationIds??part.observation_ids,
-      sourceIds:part.sourceIds??part.source_ids,
-      calculationIds:part.calculationIds??part.calculation_ids,
-      interpretationRowIds:part.interpretationRowIds??part.interpretation_row_ids,
-      packageFactIds:part.packageFactIds??part.package_fact_ids,
-      profileFieldIds:part.profileFieldIds??part.profile_field_ids,
+      observationIds:part.observationIds??part.observation_ids??providerRefs(part).observationIds,
+      sourceIds:part.sourceIds??part.source_ids??providerRefs(part).sourceIds,
+      calculationIds:part.calculationIds??part.calculation_ids??providerRefs(part).calculationIds,
+      interpretationRowIds:part.interpretationRowIds??part.interpretation_row_ids??providerRefs(part).interpretationRowIds,
+      packageFactIds:part.packageFactIds??part.package_fact_ids??providerRefs(part).packageFactIds,
+      profileFieldIds:part.profileFieldIds??part.profile_field_ids??providerRefs(part).profileFieldIds,
     };
     const hasExplicitRefs=Object.values(refs).some(items=>Array.isArray(items)&&items.length>0);
     if(!indexes&&text&&hasExplicitRefs){
@@ -525,10 +560,14 @@ function normalizeProviderAnswerShape(value:unknown):unknown {
     return {text,claimIndexes:indexes??explicitIndexes??[]};
   });
   const normalizedAnswer=typeof record.answer==='string'?record.answer:answerParts?.map(part=>part&&typeof part==='object'&&!Array.isArray(part)?(part as Record<string,unknown>).text:'').filter((text):text is string=>typeof text==='string'&&text.trim().length>0).join('\n\n');
+  if(claims.length===0&&typeof normalizedAnswer==='string'&&normalizedAnswer.trim()&&normalizedAnswer.length<=1800){
+    const refs=providerRefs(record);
+    if(Object.values(refs).some(ids=>ids.length>0))claims.push({mode:'synthesis',text:normalizedAnswer,...refs});
+  }
   const canonical={
     // These provider-only fields are not part of the consumer contract. Raw
     // OCR word evidence remains in the saved package and evaluation transcript.
-    ...Object.fromEntries(Object.entries(record).filter(([key])=>providerOutputFieldAliases.has(key)&&!['evidenceClaims','evidence_claims','ocrWordEvidence','ocr_word_evidence','answer_parts','tentative_candidates','package_reconstruction','reconstruction','ui_components','inspect_image','imageInspection','image_inspection'].includes(key))),
+    ...Object.fromEntries(Object.entries(record).filter(([key])=>providerOutputFieldAliases.has(key)&&!['evidenceClaims','evidence_claims','evidenceIds','evidence_ids','ocrWordEvidence','ocr_word_evidence','answer_parts','tentative_candidates','package_reconstruction','reconstruction','ui_components','inspect_image','imageInspection','image_inspection'].includes(key))),
     answer:normalizedAnswer,
     claims:Array.isArray(suppliedClaims)||suppliedClaims===undefined?claims:suppliedClaims,
     ...(rawParts?{answerParts}:{}),
@@ -1382,6 +1421,11 @@ export function packageAnswerSynthesisCompletesMissingFacets(before:ReturnType<t
   // A facet swap (for example adding nutrition while dropping serving) must
   // not count as a completed synthesis merely because every old gap vanished.
   return before.available>0&&before.missing.length>0&&after.available===before.available&&after.missing.length===0;
+}
+
+/** Avoid another generation when the validated synthesis materially improves answer coverage. */
+export function packageAnswerSynthesisImprovesCoverage(before:ReturnType<typeof packageAnswerCoverage>,after:ReturnType<typeof packageAnswerCoverage>){
+  return before.available===after.available&&(before.missing.length===0||after.covered>before.covered);
 }
 
 /** Keep a validated, package-linked answer when it preserves covered facets, even if some details remain unresolved. */
@@ -2626,7 +2670,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       if(firstSynthesisCanBeShown){
         acceptedSynthesis={result:validated,output:combinedOutput,claims:validated.claims,summary:firstSynthesisSummary,coverage:afterSynthesisCoverage,schemaMode:generated.schemaMode,modelOutputStatus:generated.modelOutputStatus};
       }
-      if(!firstSynthesisCanBeShown||afterSynthesisCoverage.missing.length>0){
+      if(!firstSynthesisCanBeShown||!packageAnswerSynthesisImprovesCoverage(preSynthesisCoverage,afterSynthesisCoverage)){
         const candidateClaims=synthesized.claims.slice(0,8).map(claim=>({
           text:claim.text.slice(0,900),observationIds:claim.observationIds,sourceIds:claim.sourceIds,
           calculationIds:claim.calculationIds??[],interpretationRowIds:claim.interpretationRowIds??[],packageFactIds:claim.packageFactIds??[],

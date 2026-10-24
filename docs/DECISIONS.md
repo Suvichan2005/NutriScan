@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 24 October 2026 — normalize Gemini package and compact-evidence dialects before validation
+
+- Adapt a reconstruction-shaped root `package` into the shared `packageReconstruction` contract, including common provider aliases for serving statements/mass and package claims, warnings, allergens, certifications and facts. Drop unusable supplemental answer-part links when the core response still parses. Do not fabricate evidence or treat schema repair as an answer-quality repair.
+- Map compact provider `evidenceIds` to known typed references using existing aliases. Build one natural-language synthesis claim only when the provider supplied such references; let the unchanged validator reject unknown IDs and unsupported numbers. A response with no claims and no references remains an ungrounded-output outcome and may receive the existing bounded answer synthesis.
+- Stop the second answer synthesis when the first displayable, validated synthesis increases package-facet coverage; do not chase an optional remaining facet with an answer-equivalent generation. Focused image recovery remains available when the parsed label still lacks enough distinct nutrient families.
+- Evidence: replay of the actual saved follow-up output now validates its natural answer as one grounded claim; changing 9.28 g to 19.28 g is still rejected. One live photo-free follow-up completed in one free `gemini-3.5-flash-lite` call (9,783 reported tokens, estimated $0 / ₹0) and returned a package-specific answer. No live initial re-analysis was performed. The saved initial trace suggests three calls remain (first interpretation, required focused recovery, one grounded answer synthesis), versus five before the adapter changes; this is an offline path estimate.
+
 ## 23 October 2026 — preserve evidence-linked answers across Gemini schema dialects and free-first routing
 
 - Normalize documented provider variants (`fact`/`id` claims, `body` answer parts, and evidence aliases used where claim IDs were expected) into the shared inference contract without adding prose or evidence. Keep follow-up package reconstruction out of the response, and leave unknown or invalid evidence references to the normal validator/repair path.

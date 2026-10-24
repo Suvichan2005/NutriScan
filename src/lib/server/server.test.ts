@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fixedFetch, input, localGate, readBounded, route } from './http';
 import { lookupProducts, normalizeProduct, productInput } from './products';
-import { assist, assistInput, assistOutput, assistPromptPayload, canAcceptPackageAnswerSynthesis, geminiResponseJsonSchema, linkVisionResponseToCapture, needsPackageAnswerSynthesis, packageAnswerCoverage, providerAssistOutput, providerStatus, validateClaims, validateImage, vision, visionInput } from './gemini';
+import { assist, assistInput, assistOutput, assistPromptPayload, canAcceptPackageAnswerSynthesis, geminiResponseJsonSchema, linkVisionResponseToCapture, needsPackageAnswerSynthesis, packageAnswerCoverage, packageAnswerSynthesisImprovesCoverage, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, validateClaims, validateImage, vision, visionInput } from './gemini';
 import { applicationGeminiContext, committedPaidSpendUsd, countGoogleSearchQueries, freeTierSyntheticSmokeContext, resetGeminiUsageLedgerForTests, safeProviderFailure } from './gemini-provider';
 import { research, researchInput, researchRecalls } from './research';
 import { getNutritionGuidance } from './nutrition-guidance';
@@ -699,7 +699,7 @@ describe('provider validation, independent of provider invocation', () => {
     expect(JSON.stringify(repairRequest.contents)).toContain('validationIssuePaths');
     expect(String(repairRequest.contents[0].parts[0].text)).toContain('BISK FARM CREAM CRACKER');
   });
-  it('recovers package fields during the multimodal retry after malformed reconstruction output',async()=>{
+  it('keeps valid reconstruction when only supplemental answer links are malformed',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const initialOutput={
       answer:'The package lists refined wheat flour and carbohydrates.',
@@ -739,7 +739,8 @@ describe('provider validation, independent of provider invocation', () => {
     ],rawText:'Package evidence',warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
 
     const result=await assist(data);
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(result.agentTrace.some(step=>step.name==='package-structure-repair')).toBe(false);
     expect((result as unknown as {packageReconstruction:unknown}).packageReconstruction).toMatchObject({
       identity:{brand:'Bisk Farm',name:'Cream Cracker'},
       serving:{quantity:13.4,pieceCount:2},
@@ -781,6 +782,108 @@ describe('provider validation, independent of provider invocation', () => {
     expect(JSON.stringify(initialRequest.systemInstruction)).toContain('assess the specified portion against that same question');
     expect(synthesisPrompt).not.toContain('validationIssuePaths');
     expect(synthesisPrompt).not.toContain('rawText');
+  });
+  it('normalizes package-native reconstruction fields and ignores malformed supplemental answer links', () => {
+    const providerOutput={
+      answer:'The package appears to list a two-biscuit serving and a nutrition table.',
+      answerParts:[{heading:'An optional provider-only panel'}],
+      package:{
+        identity:{brand:'Example Foods',productName:'Oat Biscuits',variant:'Original',observationIds:['OBS_1']},
+        serving:{statement:'2 biscuits (approx. 13.4 g)',size:13.4,unit:'g',observationIds:['OBS_1']},
+        nutritionRows:[{rowId:'ROW_1',nutrient:'Carbohydrates',printedLabel:'CARBOHYDRATES',printedValue:'69.29',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',observationIds:['OBS_1']}],
+        ingredients:[{ingredientId:'ingredient-1',printedLabel:'Refined wheat flour (maida) (89.98%)',normalizedName:'refined wheat flour',percentage:89.98,observationIds:['OBS_1']}],
+        additives:[{name:'Citric acid',printedText:'Acidity regulator (330)',code:'330',observationIds:['OBS_1']}],
+        claims:[{type:'sugar_free',printedText:'SUGAR FREE - FREE OF SUGAR',observationIds:['OBS_1']}],
+        allergens:['Contains wheat'],
+        warnings:[{text:'May contain milk',observationIds:['OBS_1']}],
+        certifications:[{type:'regulatory-mark',printedText:'FSSAI licence number',observationIds:['OBS_1']}],
+        packageFacts:[{type:'manufacturer',label:'Manufacturer',value:'Example Foods Pvt Ltd',observationIds:['OBS_1']}],
+      },
+      limitations:[],inspectImage:null,
+    };
+
+    const parsed=parseAgentProviderOutput(JSON.stringify(providerOutput),true);
+    expect(parsed.schemaMode).toBe('provider-schema');
+    expect(parsed.output).not.toHaveProperty('answerParts');
+    expect(parsed.output.packageReconstruction).toMatchObject({
+      identity:{brand:'Example Foods',name:'Oat Biscuits',variant:'Original'},
+      serving:{printedText:'2 biscuits (approx. 13.4 g)',quantity:13.4,unit:'g'},
+      nutritionRows:[{rowId:'ROW_1',value:69.29,basisText:'per 100 g'}],
+      ingredients:[{name:'refined wheat flour',printedText:'Refined wheat flour (maida) (89.98%)',printedPercentage:89.98}],
+      additives:[{printedName:'Acidity regulator (330)',normalizedName:'Citric acid',code:'330'}],
+    });
+    expect(parsed.output.packageReconstruction?.statements.map(item=>item.kind)).toEqual(['claim','warning','contains','regulatory-mark','manufacturer']);
+  });
+  it('maps compact provider evidenceIds into typed references, avoids a duplicate synthesis, and still rejects changed values', async() => {
+    const observation={id:'label-line',field:'label-note',text:'SERVING SIZE 2 biscuits approximately 13.4 g; carbohydrates 9.28 g per serving',side:'back' as const,confidence:82,origin:'user' as const};
+    const reconstruction={
+      identity:{brand:'Example Foods',name:'Biscuits',variant:null,status:'provisional' as const,evidence:{observationIds:['label-line'],imageRegions:[]}},
+      serving:{printedText:'2 biscuits approximately 13.4 g',quantity:13.4,unit:'g' as const,pieceCount:2,pieceDescription:'biscuits',status:'provisional' as const,evidence:{observationIds:['label-line'],imageRegions:[]}},
+      nutritionRows:[{rowId:'carbohydrates-per-serving',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g',columnLabel:'Per serving',basisText:'per serving (13.4 g)',basisAmount:13.4,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['label-line'],imageRegions:[]}}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstructed package reading.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true,
+    };
+    const calculation={id:'carbohydrate-serving',label:'Carbohydrates in one serving',nutrient:'carbohydrate' as const,input:9.28,inputUnit:'g',basisAmount:13.4,portion:13.4,portionUnit:'g' as const,result:9.28,unit:'g',formula:'9.28 g per serving × 1 serving',observationIds:['label-line'],interpretationIds:['carbohydrates-per-serving'],assumptions:['Provisional package interpretation.']};
+    const data=assistInput.parse({consent:true,question:'What about two biscuits?',package:{id:'evidence-id-contract',name:'Biscuits',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction:reconstruction as PackageReconstructionContent&{revision:number;updatedAt:string;model:string;current:boolean},observations:[observation],rawText:observation.text,warnings:[],synthetic:false,createdAt:new Date().toISOString()},calculations:[calculation]});
+    const answer='Two biscuits (about 13.4 g) are one serving, and the reconstructed label lists 9.28 g of carbohydrates for that serving.';
+    const evidenceIds=['package-fact:serving','ROW_1','CALC_1'];
+    const parse=(text:string)=>parseAgentProviderOutput(JSON.stringify({answer:text,evidenceIds,limitations:[],inspectImage:null})).output;
+    const aliases=new Map([['ROW_1','carbohydrates-per-serving'],['CALC_1','carbohydrate-serving']]);
+    const output=replaceReferenceIds(parse(answer),aliases);
+    expect(output.claims).toMatchObject([{text:answer,interpretationRowIds:['carbohydrates-per-serving'],calculationIds:['carbohydrate-serving'],packageFactIds:['package-fact:serving']}]);
+    const accepted=validateClaims(output,data);
+    expect(accepted.claims).toHaveLength(1);
+    expect(accepted.answer).toContain('9.28 g');
+
+    const wrongOutput=replaceReferenceIds(parse(answer.replace('9.28 g','19.28 g')),aliases);
+    const decisions:Array<{stage:string;decision:string;reason?:string}>=[];
+    const rejected=validateClaims(wrongOutput,data,event=>decisions.push(event));
+    expect(rejected.claims).toEqual([]);
+    expect(rejected.answer).not.toContain('19.28 g');
+    expect(decisions).toContainEqual(expect.objectContaining({stage:'claim',decision:'rejected',reason:'unsupported-numeric-value'}));
+
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const providerPayload=JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({answer,evidenceIds,limitations:[],inspectImage:null})}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:120,candidatesTokenCount:90,totalTokenCount:210}});
+    const fetcher=vi.fn().mockResolvedValue(new Response(providerPayload,{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const livePath=await assist(data);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(livePath).toMatchObject({status:'ok',answer,agentDiagnostics:{acceptedClaims:1,answerStatus:'model-answer'}});
+  });
+  it('avoids a second answer generation when a valid synthesis adds useful package coverage', async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const observations=[
+      {id:'serving-line',field:'label-note',text:'SERVING SIZE 2 biscuits approximately 13.4 g',side:'back' as const,confidence:80,origin:'ocr' as const},
+      {id:'carbs-line',field:'label-note',text:'CARBOHYDRATES 9.28 g per serving',side:'back' as const,confidence:82,origin:'ocr' as const},
+      {id:'ingredient-line',field:'label-note',text:'INGREDIENTS: REFINED WHEAT FLOUR (MAIDA)',side:'back' as const,confidence:84,origin:'ocr' as const},
+      {id:'claim-line',field:'label-note',text:'SUGAR FREE - FREE OF SUGAR, FULL OF TASTE',side:'front' as const,confidence:88,origin:'ocr' as const},
+    ];
+    const reconstruction:PackageReconstructionContent={
+      identity:{brand:'Example Foods',name:'Biscuits',variant:null,status:'provisional',evidence:{observationIds:['ingredient-line'],imageRegions:[]}},
+      serving:{printedText:'2 biscuits approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['serving-line'],imageRegions:[]}},
+      nutritionRows:[{rowId:'carbohydrates-per-serving',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g',columnLabel:'Per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carbs-line'],imageRegions:[]}}],
+      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:null,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['ingredient-line'],imageRegions:[]}}],
+      additives:[],statements:[{kind:'claim',label:'Sugar free',text:'SUGAR FREE - FREE OF SUGAR, FULL OF TASTE',status:'provisional',evidence:{observationIds:['claim-line'],imageRegions:[]}}],regions:[],unresolved:[],interpretationNote:'Provisional package interpretation.',
+    };
+    const initial={answer:'',claims:[],packageReconstruction:reconstruction,limitations:[],inspectImage:null};
+    const answer='This is not a strong everyday snack default: the ingredient list starts with refined wheat flour, and the label lists 9.28 g of carbohydrates for one serving of two biscuits (about 13.4 g).';
+    const synthesis={answer,claims:[
+      {mode:'synthesis',text:'The ingredient list starts with refined wheat flour.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
+      {mode:'synthesis',text:'The serving is two biscuits (about 13.4 g) and the table lists 9.28 g carbohydrates.',observationIds:[],sourceIds:[],interpretationRowIds:['carbohydrates-per-serving'],packageFactIds:['package-fact:serving']},
+      {mode:'synthesis',text:'The packet displays a sugar-free claim.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:statement:0']},
+    ],limitations:[],inspectImage:null};
+    const payload=(value:unknown)=>JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(value)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:120,candidatesTokenCount:90,totalTokenCount:210}});
+    const fetcher=vi.fn()
+      .mockResolvedValueOnce(new Response(payload(initial),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(payload(synthesis),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question:'Is this a good daily snack?',package:{id:'coverage-improvement',name:'Biscuits',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction:{...reconstruction,revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true},observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
+
+    const result=await assist(data);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result.answer).toBe(answer);
+    const coverage=packageAnswerCoverage(data.question,reconstruction,result.claims,[],result.answer);
+    expect(coverage.covered).toBe(3);
+    expect(coverage.missing).toEqual(['nutrition-claim']);
   });
   it('classifies a Gemini rejection without retaining provider error text', () => {
     const error = Object.assign(new Error('got status: INVALID_ARGUMENT. {"error":{"code":400,"status":"INVALID_ARGUMENT","message":"Invalid value at \'generationConfig.responseJsonSchema.properties.secret\': PRIVATE PACKAGE TEXT"}}'), { status: 400 });
