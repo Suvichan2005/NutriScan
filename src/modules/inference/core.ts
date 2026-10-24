@@ -194,8 +194,16 @@ function linkExactReconstructedRows<T extends {
     const mentionsServing = /\bper\s+(?:the\s+)?serving\b/i.test(claim.text);
     const sameAsDeclaredServing = !!servingBasis && row.basisAmount === servingBasis.quantity
       && row.basisUnit?.toLocaleLowerCase() === servingBasis.unit.toLocaleLowerCase();
+    // Natural answers commonly say "for the 35 g serving" or "on the 35 g
+    // serving basis". Those are the same explicit basis as "per 35 g" when
+    // the quantity matches the package's declared serving. Keep this link
+    // exact: a different column (for example, per 100 g) cannot inherit it.
+    const namesDeclaredServingMass = sameAsDeclaredServing
+      && quantityWithUnitAppears(claim.text, row.basisAmount!, row.basisUnit!)
+      && /\b(?:servings?|portions?)\b/i.test(claim.text);
     const hasRowBasis = (hasNumericBasis&&quantityWithUnitAppears(claim.text, row.basisAmount!, row.basisUnit!, true))
       || (mentionsServing && sameAsDeclaredServing)
+      || namesDeclaredServingMass
       || (/\bper\s+(?:servings?|portions?|packs?|packages?|biscuits?|pieces?)\b/i.test(claim.text)
         && basisMentionsAreSupported(claim.text, [printedBasis, ...(hasNumericBasis?[`per ${row.basisAmount} ${row.basisUnit}`]:[])]));
     return quantityWithUnitAppears(claim.text, row.value, row.unit) && hasRowBasis;
@@ -261,7 +269,9 @@ function isUnsafeMedicalConclusion(text: string) {
 // "low", "high", "healthy", or otherwise favorable. Those judgments need an
 // applicable cited source so interpretation is not mistaken for a label fact.
 function needsComparativeReference(text:string){
-  return /\b(?:low|high|rich|poor|good|great|excellent|bad|healthy|unhealthy|balanced|unbalanced|better|worse|moderate|excessive|too much|too little|ideal|preferable|favorable|unfavourable|unfavorable|reasonable|appropriate|recommend(?:ed|ation)?|riskier|safer)\b/i.test(text);
+  // Reporting what a source recommends is not itself a comparative product
+  // judgment. Source statements and their quantities are checked separately.
+  return /\b(?:low|high|rich|poor|good|great|excellent|bad|healthy|unhealthy|balanced|unbalanced|better|worse|moderate|excessive|too much|too little|ideal|preferable|favorable|unfavourable|unfavorable|reasonable|appropriate|riskier|safer)\b/i.test(text);
 }
 
 /** A requested food-choice judgment may synthesize cited package facts without claiming clinical safety. */
@@ -433,6 +443,32 @@ const sourceAttributionPattern=/\baccording to\b|\b(?:official|authoritative|cli
 function sourceAcronym(source:Pick<EvidenceSource,'publisher'>):string{
   return(source.publisher.match(/[\p{L}\p{N}]+/gu)??[]).map(word=>word[0]).join('').toLocaleUpperCase();
 }
+const sourceLinkStopWords=new Set('about after also among because being could does every from have into itself more most other over same says some than that their them then there these they this those through under upon using very what when where which while with would'.split(' '));
+function explicitlyNamedSourceSupportsClaim(text:string,source:Pick<EvidenceSource,'title'|'publisher'|'summary'>):boolean{
+  const normalizedText=normalizeLabelText(text);
+  const publisher=normalizeLabelText(source.publisher);
+  const title=normalizeLabelText(source.title);
+  const acronym=sourceAcronym(source as Pick<EvidenceSource,'publisher'>);
+  const namesSource=(publisher.length>=8&&normalizedText.includes(publisher))
+    ||(title.split(' ').filter(word=>word.length>2).length>=3&&normalizedText.includes(title))
+    ||(acronym.length>=3&&new RegExp(`(?:^|[^\\p{L}\\p{N}])${acronym}(?:$|[^\\p{L}\\p{N}])`,'iu').test(text));
+  if(!namesSource)return false;
+  const words=(value:string)=>new Set(normalizeLabelText(value).split(' ').filter(word=>word.length>=4&&!sourceLinkStopWords.has(word))
+    .map(word=>word.endsWith('ies')&&word.length>5?`${word.slice(0,-3)}y`:word.endsWith('s')&&word.length>5?word.slice(0,-1):word));
+  const claimWords=words(text);
+  const overlap=[...words(`${source.title} ${source.summary}`)].filter(word=>claimWords.has(word));
+  // A source name alone is not evidence. Require the named record to overlap
+  // on at least two substantive concepts; numeric mentions are independently
+  // checked against the cited record below.
+  return new Set(overlap).size>=2;
+}
+
+function linkExplicitlyNamedSource<T extends {text:string;sourceIds:string[]}>(claim:T,evidence:readonly EvidenceSource[]):T{
+  if(claim.sourceIds.length)return claim;
+  const matches=evidence.filter(source=>explicitlyNamedSourceSupportsClaim(claim.text,source));
+  return matches.length===1?{...claim,sourceIds:[matches[0].id]}:claim;
+}
+
 function sourceAttributionHasMatchingReference(
   text:string,
   sourceIds:readonly string[],
@@ -542,7 +578,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
   // independently validated row summary can preserve the supported portion.
   let numericAnswerOrBasisWithheld=false;
   const supported = result.data.claims.flatMap((originalClaim, claimIndex) => {
-    let claim = linkRowToClaim(originalClaim);
+    let claim = linkExplicitlyNamedSource(linkRowToClaim(originalClaim),data.evidence??[]);
     const hasLinkedPackageContext = claim.observationIds.length > 0 || (claim.calculationIds?.length ?? 0) > 0
       || (claim.interpretationRowIds?.length ?? 0) > 0 || (claim.packageFactIds?.length ?? 0) > 0
       || (claim.visualEvidence?.length ?? 0) > 0;
@@ -893,11 +929,39 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     /\b(?:nutrition|nutrients?|calories?|energy|carbohydrat\w*|carbs?|sugars?|protein|fat|fibre|fiber|sodium|salt|per\s+(?:the\s+)?serving|per\s+\d+(?:\.\d+)?\s*(?:g|grams?|mg|milligrams?|ml|millilit(?:er|re)s?))\b/i.test(data.question)
     ||nutrientFamily(data.question)!==null
   );
+  const acceptedModelAnswerText=[validatedNaturalAnswer,...validatedAnswerParts].filter(Boolean).join(' ');
   const structuredNutritionSummary=(()=>{
     if(!numericAnswerOrBasisWithheld||!isNutritionQuestion)return null;
     const availableClaims=Math.max(0,15-displayedClaims.length);
     if(!availableClaims)return null;
     let selectedRows=traceableRows.filter(row=>row.value!==null&&!!row.unit&&['clear','provisional'].includes(row.status));
+    const explicitlyRequestedFamilies:[RegExp,RegExp][]=[
+      [/\b(?:carbohydrat\w*|carbs?)\b/i,/carbohydrat\w*|carbs?/i],
+      [/\bprotein\b/i,/protein/i],
+      [/\b(?:total\s+)?sugars?\b/i,/sugars?/i],
+      [/\b(?:dietary\s+)?(?:fibre|fiber)\b/i,/(?:fibre|fiber)/i],
+      [/\b(?:total\s+)?fat\b/i,/fat/i],
+      [/\b(?:energy|calories?|kcal)\b/i,/(?:energy|calories?|kcal)/i],
+      [/\b(?:sodium|salt)\b/i,/(?:sodium|salt)/i],
+    ].filter((entry):entry is [RegExp,RegExp]=>entry[0].test(data.question!));
+    if(explicitlyRequestedFamilies.length){
+      selectedRows=selectedRows.filter(row=>explicitlyRequestedFamilies.some(([,rowPattern])=>rowPattern.test(`${row.nutrient} ${row.printedLabel}`)));
+    }
+    if(acceptedModelAnswerText){
+      selectedRows=selectedRows.filter(row=>{
+        if(row.value===null||!row.unit||!claimNamesReconstructedNutrient(acceptedModelAnswerText,row)
+          ||!quantityWithUnitAppears(acceptedModelAnswerText,row.value,row.unit))return true;
+        const hasNumericBasis=row.basisAmount!==null&&!!row.basisUnit;
+        const sameAsDeclaredServing=!!servingBasis&&row.basisAmount===servingBasis.quantity
+          &&row.basisUnit?.toLocaleLowerCase()===servingBasis.unit.toLocaleLowerCase();
+        const basisCovered=hasNumericBasis
+          ?quantityWithUnitAppears(acceptedModelAnswerText,row.basisAmount!,row.basisUnit!,true)
+            ||(sameAsDeclaredServing&&quantityWithUnitAppears(acceptedModelAnswerText,row.basisAmount!,row.basisUnit!)&&/\b(?:servings?|portions?)\b/i.test(acceptedModelAnswerText))
+            ||(/\bper\s+(?:servings?|portions?)\b/i.test(acceptedModelAnswerText)&&sameAsDeclaredServing)
+          :[row.columnLabel,row.basisText].some(basis=>normalizedPhraseAppears(acceptedModelAnswerText,basis));
+        return !basisCovered;
+      });
+    }
     const requestedAmount=/\bper\s+(\d+(?:\.\d+)?)\s*(g|grams?|mg|milligrams?|ml|millilit(?:er|re)s?)\b/i.exec(data.question!);
     if(requestedAmount){
       const amount=Number(requestedAmount[1]);
@@ -948,28 +1012,29 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     if(!numericMentionsAreSupported(answer,supportingTexts)||!basisMentionsAreSupported(answer,supportingTexts))return null;
     return {answer,claims:rowClaims};
   })();
-  if(structuredNutritionSummary)data.diagnostic?.({stage:'structured-answer',index:0,decision:'accepted',reason:'traceable-nutrition-rows-after-numeric-withholding'});
   // Keep every independently grounded part. A malformed optional answer-part
   // link must not erase a natural answer that passed evidence validation.
   const hasValidatedModelAnswer = validatedAnswerParts.length > 0 || !!validatedNaturalAnswer;
-  const hasValidatedAnswer=hasValidatedModelAnswer||!!structuredNutritionSummary;
-  const answer = structuredNutritionSummary?.answer ?? validatedNaturalAnswer ?? (validatedAnswerParts.length
-    ? validatedAnswerParts.join('\n\n')
-    : displayedClaims.length
-      ? 'I found relevant package evidence, but could not safely assemble it into a clear answer. You can inspect the supporting details or ask a narrower follow-up.'
-    : result.data.inspectImage
-      ? 'I need a closer look at one part of the package before I can answer. Review the requested photo area and decide whether to send it.'
-      : tentativeCandidates.length
-        ? 'I found a few possible readings, but the current evidence does not establish enough to answer reliably. I can take a closer look at the relevant package area.'
-          : 'I can’t establish a reliable answer from the package evidence available yet. The photos are still here, so you can try a closer view or ask about a detail that is legible.');
+  const useStructuredNutritionSummary=!!structuredNutritionSummary;
+  if(useStructuredNutritionSummary)data.diagnostic?.({stage:'structured-answer',index:0,decision:'accepted',reason:'traceable-nutrition-rows-after-numeric-withholding'});
+  const hasValidatedAnswer=hasValidatedModelAnswer||useStructuredNutritionSummary;
+  const selectedModelAnswer=validatedNaturalAnswer??(validatedAnswerParts.length?validatedAnswerParts.join('\n\n'):null);
+  const answer = [selectedModelAnswer,useStructuredNutritionSummary?structuredNutritionSummary!.answer:null].filter((part):part is string=>!!part).join('\n\n') || (useStructuredNutritionSummary?structuredNutritionSummary!.answer
+      : displayedClaims.length
+        ? 'I found relevant package evidence, but could not safely assemble it into a clear answer. You can inspect the supporting details or ask a narrower follow-up.'
+        : result.data.inspectImage
+          ? 'I need a closer look at one part of the package before I can answer. Review the requested photo area and decide whether to send it.'
+          : tentativeCandidates.length
+            ? 'I found a few possible readings, but the current evidence does not establish enough to answer reliably. I can take a closer look at the relevant package area.'
+            : 'I can’t establish a reliable answer from the package evidence available yet. The photos are still here, so you can try a closer view or ask about a detail that is legible.');
 
   const answerStatus = hasValidatedModelAnswer ? 'model-answer' as const
     : displayedClaims.length ? 'grounded-claims-answer-unavailable' as const
       : tentativeCandidates.length ? 'tentative-only' as const
         : 'insufficient-evidence' as const;
-  data.diagnostic?.({ stage: 'answer-part', index: -1, decision: hasValidatedAnswer ? 'accepted' : 'rejected', reason: structuredNutritionSummary?'structured-package-summary':hasValidatedModelAnswer ? 'answer-ready' : answerStatus });
+  data.diagnostic?.({ stage: 'answer-part', index: -1, decision: hasValidatedAnswer ? 'accepted' : 'rejected', reason: useStructuredNutritionSummary?'structured-package-summary':hasValidatedModelAnswer ? 'answer-ready' : answerStatus });
   return {
-    claims: structuredNutritionSummary?[...displayedClaims,...structuredNutritionSummary.claims]:displayedClaims,
+    claims: useStructuredNutritionSummary?[...displayedClaims,...structuredNutritionSummary!.claims]:displayedClaims,
     tentativeCandidates,
     uiComponents,
     limitations: ['Generated explanations are not independently verified. Tentative candidates never alter original package observations. The application may use a complete OCR-linked candidate only for explicitly labeled arithmetic after checking its evidence and layout; that reading remains unverified. Image-only text and region references stay outside calculations. No diagnosis, medication advice, or safety assessment is provided.'],

@@ -2803,8 +2803,9 @@ export async function assist(data: z.infer<typeof assistInput>) {
       const acceptedAnswerParts=events.filter(event => event.stage === 'answer-part' && event.index >= 0 && event.decision === 'accepted').length;
       const acceptedModelClaims=events.filter(event=>event.stage==='claim'&&event.decision==='accepted').length;
       const acceptedStructuredNutritionClaims=structuredPackageSummaryAccepted?Math.max(0,validated.claims.length-acceptedModelClaims):0;
-      const answerStatus = structuredPackageSummaryAccepted ? 'structured-package-summary'
-        : acceptedNaturalAnswer||acceptedAnswerParts>0 ? 'model-answer'
+      const answerStatus = acceptedNaturalAnswer||acceptedAnswerParts>0
+        ? structuredPackageSummaryAccepted?'model-answer-with-structured-supplement':'model-answer'
+        : structuredPackageSummaryAccepted ? 'structured-package-summary'
         : validated.claims.length ? 'grounded-claims-answer-unavailable'
           : validated.tentativeCandidates.length ? 'tentative-only'
             : 'insufficient-evidence';
@@ -2821,7 +2822,9 @@ export async function assist(data: z.infer<typeof assistInput>) {
         acceptedNaturalAnswer,
         structuredPackageSummaryAccepted,
         rejectedNaturalAnswerSegments,
-        acceptedConversationalAnswers:Number(acceptedNaturalAnswer)+acceptedAnswerParts,
+        // Natural answer text and answerParts can represent the same turn.
+        // Count accepted conversational turns once, not each schema view.
+        acceptedConversationalAnswers:Number(acceptedNaturalAnswer||acceptedAnswerParts>0),
         acceptedClaims: validated.claims.length,
         acceptedModelClaims,
         acceptedStructuredNutritionClaims,

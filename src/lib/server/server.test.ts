@@ -1105,7 +1105,39 @@ describe('provider validation, independent of provider invocation', () => {
     vi.stubGlobal('fetch',fetcher);
     const livePath=await assist(data);
     expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(livePath).toMatchObject({status:'ok',answer,agentDiagnostics:{acceptedClaims:1,answerStatus:'model-answer'}});
+    expect(livePath).toMatchObject({status:'ok',answer,agentDiagnostics:{acceptedClaims:1,answerStatus:'model-answer',acceptedConversationalAnswers:1}});
+  });
+  it('links natural serving-basis wording to exact rows and preserves the answer over an unrelated table fallback',()=>{
+    const who=getNutritionGuidance({query:'naturally occurring dietary fibre carbohydrate quality WHO',jurisdiction:'India',maxResults:8}).find(item=>item.id==='who-carbohydrate-2023')!;
+    expect(who).toBeDefined();
+    const observations=[
+      {id:'serving-line',field:'label-note',text:'Serving size 35 g',side:'back' as const,confidence:94,origin:'ocr' as const},
+      {id:'carbohydrate-line',field:'label-note',text:'Carbohydrate 23.1 g',side:'back' as const,confidence:92,origin:'ocr' as const},
+      {id:'fibre-line',field:'label-note',text:'Dietary Fibre 1.5 g',side:'back' as const,confidence:93,origin:'ocr' as const},
+      {id:'protein-line',field:'label-note',text:'Protein 14.2 g 5.0 g',side:'back' as const,confidence:91,origin:'ocr' as const},
+    ];
+    const reconstruction={
+      identity:{brand:null,name:'Unidentified food package',variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},
+      serving:{printedText:'Serving size 35 g',quantity:35,unit:'g' as const,pieceCount:null,pieceDescription:null,status:'provisional' as const,evidence:{observationIds:['serving-line'],imageRegions:[]}},
+      nutritionRows:[
+        {rowId:'carbohydrate-35g',nutrient:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'23.1 g',value:23.1,unit:'g',columnLabel:'Per 35 g serving',basisText:'Per 35 g serving',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['carbohydrate-line'],imageRegions:[]}},
+        {rowId:'fibre-35g',nutrient:'dietary_fibre',printedLabel:'Dietary Fibre',printedValue:'1.5 g',value:1.5,unit:'g',columnLabel:'Per 35 g serving',basisText:'Per 35 g serving',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['fibre-line'],imageRegions:[]}},
+        {rowId:'protein-35g',nutrient:'protein',printedLabel:'Protein',printedValue:'5.7 g',value:5.7,unit:'g',columnLabel:'Per 35 g serving',basisText:'Per 35 g serving',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['protein-line'],imageRegions:[]}},
+      ],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional package reconstruction.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true,
+    } satisfies PackageReconstructionContent&{revision:number;updatedAt:string;model:string;current:boolean};
+    const data=assistInput.parse({consent:true,question:'What does the 35 g serving provide for carbohydrate and dietary fibre, and what does WHO say about dietary fibre?',evidence:[who],package:{id:'serving-wording-adapter',name:'Unidentified food package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
+    const answer='For the 35 g serving, the label appears to provide 23.1 g of carbohydrate and 1.5 g of dietary fibre. WHO guidance recommends adults consume at least 25 g of naturally occurring dietary fibre each day.';
+    const parsed=parseAgentProviderOutput(JSON.stringify({answer,limitations:[],inspectImage:null}));
+    const decisions:Array<{stage:string;decision:string;reason?:string}>=[];
+    const result=validateClaims(parsed.output,data,event=>decisions.push(event));
+    expect(result.answer).toBe(answer);
+    expect(result.claims.map(claim=>claim.text)).toEqual(parsed.output.claims.map(claim=>claim.text));
+    expect(result.claims.find(claim=>claim.text.includes('23.1 g'))?.interpretationRowIds).toContain('carbohydrate-35g');
+    expect(result.claims.find(claim=>claim.text.includes('1.5 g'))?.interpretationRowIds).toContain('fibre-35g');
+    expect(result.claims.find(claim=>claim.text.includes('WHO'))?.sourceIds).toContain(who.id);
+    expect(result.answer).not.toContain('Protein 5.7 g');
+    expect(decisions).not.toContainEqual(expect.objectContaining({stage:'structured-answer',decision:'accepted'}));
   });
   it('avoids a second answer generation when a valid synthesis adds useful package coverage', async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
