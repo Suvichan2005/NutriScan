@@ -90,6 +90,34 @@ describe('provider-independent inference output validation', () => {
     expect(result.claims[0].supportingSpans).toEqual([]);
   });
 
+  it('keeps a grounded natural paraphrase anchored by the claim’s linked package facts while withholding an unlinked source claim',()=>{
+    const labelText='INGREDIENTS: RAISING AGENT (INS 450(i)).';
+    const pkg=packageSchema.parse({
+      ...fixturePackage,
+      observations:fixturePackage.observations.map(observation=>({...observation,text:labelText})),
+      rawText:labelText,
+    });
+    const packageReconstruction={
+      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},
+      serving:null,
+      nutritionRows:[],ingredients:[],
+      additives:[{printedName:'INS 450(i)',code:null,normalizedName:'Disodium diphosphate',status:'provisional' as const,evidence:{observationIds:['ocr-line-1'],imageRegions:[]}}],
+      statements:[{kind:'other' as const,label:null,text:labelText,status:'provisional' as const,evidence:{observationIds:['ocr-line-1'],imageRegions:[]}}],
+      regions:[],unresolved:[],interpretationNote:'Provisional package interpretation.',
+    };
+    const naturalAnswer='The package lists INS 450(i), which corresponds to disodium diphosphate. The retrieved EFSA record describes toxicological reference values, but it does not establish exposure from this product.';
+    const events:Array<{stage:string;index:number;decision:string;reason?:string}>=[];
+    const result=validateInferenceOutput({
+      answer:naturalAnswer,
+      packageReconstruction,
+      claims:[{mode:'synthesis',text:'The package lists INS 450(i) as a raising agent.',observationIds:['ocr-line-1'],sourceIds:[],packageFactIds:['package-fact:additive:0']}],
+      limitations:[],inspectImage:null,
+    },{package:pkg,question:'What does INS 450(i) mean?',diagnostic:event=>events.push(event)});
+    expect(result.answer).toBe('The package lists INS 450(i), which corresponds to disodium diphosphate.');
+    expect(events).toContainEqual(expect.objectContaining({stage:'natural-answer',index:0,decision:'accepted'}));
+    expect(events).toContainEqual(expect.objectContaining({stage:'natural-answer',index:2,decision:'rejected',reason:'no-validated-claim-anchor'}));
+  });
+
   it('anchors a citation-free table inventory to every named, traceable row and rejects incomplete inventories',()=>{
     const imageRegion={imageId:'synthetic-image',region:null};
     const rows=[

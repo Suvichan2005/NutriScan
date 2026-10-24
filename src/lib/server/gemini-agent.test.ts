@@ -151,6 +151,25 @@ describe('model answer-part recovery', () => {
     expect(output?.answer).toBe('The label names refined wheat flour.');
   });
 
+  it('adapts the provider package.reconstruction dialect without a second structure-generation pass',()=>{
+    const answer='Protein 8 g per 25 g.';
+    const parsed=parseAgentProviderOutput(JSON.stringify({
+      answer,
+      package:{reconstruction:{
+        current:true,
+        packageFacts:[],
+        nutritionRows:[{rowId:'protein-25g',nutrient:'Protein',printedLabel:'Protein',value:8,unit:'g',basis:'Per 25 g',status:'provisional',observationIds:['OBS_1']}],
+      }},
+      uiComponents:[],
+    }),true);
+    expect(parsed.schemaMode).toBe('adapted-provider-schema');
+    expect(parsed.modelOutputStatus).toBe('adapter-derived-package-claims');
+    expect(parsed.output.packageReconstruction?.nutritionRows).toMatchObject([{
+      nutrient:'Protein',value:8,unit:'g',basisText:'Per 25 g',basisAmount:25,basisUnit:'g',
+    }]);
+    expect(parsed.output.claims).toMatchObject([{text:expect.stringContaining('8 g'),interpretationRowIds:['protein-25g']}]);
+  });
+
   it('repairs a missing answer link only when the answer part exactly repeats one grounded claim', () => {
     const answer = 'The label names refined wheat flour.';
     const normalized = normalizeProviderAssistOutput({

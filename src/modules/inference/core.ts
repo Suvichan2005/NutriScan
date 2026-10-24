@@ -852,9 +852,19 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     ...(claim.packageFactIds??[]).map(id=>packageFacts.get(id)),
     ...(claim.profileFieldIds??[]).map(id=>profileFields.get(id)),
   ].filter((text):text is string=>typeof text==='string');
+  const answerAnchorEvidence=(claims:readonly (typeof result.data.claims[number])[])=>
+    claims.flatMap(claim=>[claim.text,...referencedEvidenceTexts(claim)].map(text=>({text})));
   const claimSupportsAnswer=(answer:string,claim:typeof result.data.claims[number])=>{
     if(hasEvidenceSpecificAnswerAnchor(answer,[claim])
       ||isQuestionBoundPackageAssessment(answer,data.question,[claim]))return true;
+    // Gemini often keeps its atomic claim concise while using a normalized
+    // label fact in the conversational sentence. The answer may paraphrase
+    // that explicitly linked fact without repeating the claim wording. Let a
+    // strong multi-term match to the claim's own validated references anchor
+    // that sentence; numeric, basis and source checks below still run against
+    // the same references independently.
+    const linkedEvidence=answerAnchorEvidence([claim]);
+    if(linkedEvidence.length&&hasStrongAnswerPartAnchor(answer,linkedEvidence))return true;
     if(numericOccurrences(answer).length&&numericMentionsAreSupported(answer,[claim.text]))return true;
     const uncertainty=/\b(?:not enough|insufficient|cannot establish|can't establish|could not establish|cannot tell|can't tell|unclear|unresolved|unknown|not established|missing|ambiguous|conflict(?:ing)?)\b/i;
     return uncertainty.test(answer)&&uncertainty.test(claim.text);
@@ -901,7 +911,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
         &&basisMentionsAreSupported(segment,linkedEvidence)
         &&!!family&&segmentClaims.some(claim=>nutrientFamily(claim.text)===family);
       const uncertaintyAnchored=hasExplicitUncertainty(segment)&&segmentClaims.some(claim=>hasExplicitUncertainty(claim.text));
-      if(!hasStrongAnswerPartAnchor(segment,segmentClaims)
+      if(!hasStrongAnswerPartAnchor(segment,answerAnchorEvidence(segmentClaims))
         &&!quantitativeAnchor
         &&!repeatsValidatedClaimText(segment,segmentClaims)
         &&!uncertaintyAnchored
@@ -952,7 +962,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
         &&basisMentionsAreSupported(segment,answerEvidence)
         &&!!family&&segmentClaims.some(claim=>nutrientFamily(claim.text)===family);
       const uncertaintyAnchored=hasExplicitUncertainty(segment)&&segmentClaims.some(claim=>hasExplicitUncertainty(claim.text));
-      if(!hasStrongAnswerPartAnchor(segment,segmentClaims)
+      if(!hasStrongAnswerPartAnchor(segment,answerAnchorEvidence(segmentClaims))
         &&!quantitativeAnchor
         &&!repeatsValidatedClaimText(segment,segmentClaims)
         &&!uncertaintyAnchored

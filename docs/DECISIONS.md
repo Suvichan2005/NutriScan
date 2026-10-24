@@ -1015,3 +1015,7 @@ Normalize known provider dialects locally before requesting a structure repair. 
 ## 24 October 2026 — resolve observed INS codes through Codex without treating identity as authorization
 
 Use the official Codex GSFA search only as an on-demand identity resolver for an INS number explicitly present in the user question or recorded package evidence. Send the code alone to one fixed POST endpoint; validate the response, exact numeric base, and subtype before returning attributed candidates. Link an EFSA substance record only on exact-name match. A base code with multiple subtypes stays ambiguous, and neither identity record establishes product presence, dose, exposure, health effect, food-category permission, Indian authorization, or personal safety. Do not persist the live Codex payload. Record the FAO reuse restriction and obtain rights review before commercial or corpus redistribution.
+
+## 24 October 2026 — anchor natural answers to their linked evidence
+
+When a validated claim cites a structured package fact or source, allow a natural-language sentence to paraphrase that linked record only when it has a strong multi-term evidence match. Do not lend evidence across unrelated claims. Independently recheck every numeric value, unit, basis, external-source attribution and safety statement. Never infer a missing external source ID from a package fact or model wording. This preserves grounded prose without another generation while keeping unsupported source or numeric statements out.
