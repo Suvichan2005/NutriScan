@@ -38,6 +38,14 @@ describe('embedding retrieval integrity', () => {
     expect(milkTerms.results[0]?.source.id).toBe('fssai-whey-casein-milk-products-2022');
     expect(milkTerms.results[0]?.source.summary).toMatch(/whey powders as milk products/i);
   });
+  it('retrieves oat beta-glucan evidence by the outcome asked about', async () => {
+    const lipidEvidence = await semanticRetrieve('What does oat beta-glucan do for cholesterol in adults?', 5);
+    expect(lipidEvidence.results[0]?.source.id).toBe('pubmed-oat-beta-glucan-lipids-2022');
+    const glucosePeakEvidence = await semanticRetrieve('Do oat beta-glucans reduce post-meal glucose peaks and what amounts were studied?', 5);
+    expect(glucosePeakEvidence.results[0]?.source.id).toBe('efsa-oat-beta-glucan-glycaemic-peak-2026');
+    const lowerDoseEvidence = await semanticRetrieve('What did EFSA conclude about a lower oat beta-glucan dose and postprandial glycaemic response?', 5);
+    expect(lowerDoseEvidence.results[0]?.source.id).toBe('efsa-oat-barley-beta-glucan-glycaemic-2025');
+  });
   it('uses a finite, conservative local candidate floor without treating it as a probability', () => {
     expect(localEvidenceScoreFloor).toBe(0.4);
     expect(clearsLocalEvidenceFloor(0.39999)).toBe(false);

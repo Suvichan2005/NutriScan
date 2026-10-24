@@ -19,5 +19,8 @@
   {"id":"msg-identity","query":"MSG monosodium glutamate INS 621","relevant":["fao-621"]},
   {"id":"xanthan-identity","query":"What is the number for xanthan gum?","relevant":["fao-415"]},
   {"id":"lecithin-family-identity","query":"INS 322","relevant":["fao-322"]},
-  {"id":"silica-identity","query":"What additive identity does INS 551 or silica refer to?","relevant":["fao-551"]}
+  {"id":"silica-identity","query":"What additive identity does INS 551 or silica refer to?","relevant":["fao-551"]},
+  {"id":"oat-beta-glucan-cholesterol","query":"What does oat beta-glucan do for cholesterol in adults?","relevant":["pubmed-oat-beta-glucan-lipids-2022"]},
+  {"id":"oat-beta-glucan-glucose-peak","query":"Do oat beta-glucans reduce post-meal glucose peaks and what amounts were studied?","relevant":["efsa-oat-beta-glucan-glycaemic-peak-2026"]},
+  {"id":"oat-beta-glucan-iAUC-dose","query":"What did EFSA conclude about a lower oat beta-glucan dose and postprandial glycaemic response?","relevant":["efsa-oat-barley-beta-glucan-glycaemic-2025"]}
 ]

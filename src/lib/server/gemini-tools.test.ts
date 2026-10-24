@@ -98,6 +98,26 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.output).toMatchObject({ status: 'ok' });
   });
 
+  it('returns relevant oat outcome evidence alongside local ingredient identity lookup', async () => {
+    const result = await executeGeminiTool(
+      'resolve_ingredient',
+      { query: 'oats' },
+      context('What evidence is there about oats and cholesterol?', 'INGREDIENTS: rolled oats, salt'),
+    );
+
+    expect(result.status).toBe('ok');
+    expect(result.resultCount).toBeLessThanOrEqual(5);
+    expect(result.evidence?.map(source => source.id)).toContain('pubmed-oat-beta-glucan-lipids-2022');
+    expect(result.output).toMatchObject({
+      relatedIngredientEvidence: [expect.objectContaining({
+        id: 'oat-beta-glucan-lipid-outcomes',
+        sourceIds: ['pubmed-oat-beta-glucan-lipids-2022'],
+        limitations: expect.stringMatching(/does not establish.*dose/i),
+      })],
+    });
+    expect(JSON.stringify(result.output)).toMatch(/do not establish package composition, dose, exposure/i);
+  });
+
   it('abstains when semantically ranked candidates lack topical evidence for an ingredient-effect question', async () => {
     const unrelated = evidenceSources.find(source => source.id === 'fssai-labelling-allergen-faq-2023')!;
     mocks.semanticRetrieve.mockResolvedValue({

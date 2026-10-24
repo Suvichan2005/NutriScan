@@ -2,6 +2,14 @@
 
 Updated: 2026-10-24. This is a local development application and research workspace. Feature levels below describe evidence available in this checkout; they do not imply clinical or production acceptance.
 
+## Current checkpoint — 24 October 2026: link ingredient identity to question-relevant outcome evidence
+
+- A direct local MiniLM retrieval probe for “oat beta-glucan cholesterol effects” returned no candidates at the configured evidence floor. The corpus had no outcome-specific oat beta-glucan records; this was a coverage gap, not a Gemini/provider failure.
+- Added three concise attributed records: EFSA’s 2026 postprandial glucose-peak opinion, its 2025 opinion on a distinct postprandial glucose iAUC endpoint/condition, and a 2022 systematic review of oat beta-glucan/lipid interventions. The records preserve the population, endpoint, exposure conditions, jurisdiction and the limit that an oats ingredient mention does not establish beta-glucan quantity or personal/product effect.
+- Added a small typed ingredient→outcome→source relation registry. When an observed ingredient and the question’s outcome match, `resolve_ingredient` returns relevant source records alongside local FoodOn identity candidates. If the topic does not match, it returns no effect relationship. The response explicitly keeps label presence, dose, exposure and effect separate.
+- The refreshed local MiniLM corpus contains 29 source records. On 24 developer-authored queries, hybrid retrieval scored Top-1 1.00, Recall@3 1.00 and MRR@5 1.00; semantic-only scored 0.875 / 0.958 / 0.917 and lexical-only 0.958 / 0.958 / 0.958. These are developer-authored regression measurements, not independent relevance evidence. Each of the three new outcome queries ranked its intended source first.
+- Verification: full Vitest suite passed (685 passed, 1 skipped across 48 files); TypeScript and `git diff --check` passed. No Gemini/provider call, browser acceptance, profile submission, independent package evaluation or billing event occurred in this checkpoint.
+
 ## Current checkpoint — 24 October 2026: filter knowledge scope before limiting candidates
 
 - Gemini's local `search_knowledge` tool now retrieves up to five ranked candidates, applies topical and jurisdiction checks, then returns at most three eligible records. This prevents the first three out-of-scope hits from suppressing a relevant later candidate without increasing the tool's maximum evidence count.

@@ -14,7 +14,7 @@ import {
 } from '../contracts';
 import { matchesPackageRows, reconcileInterpretedNutrition } from '../interpreted-nutrients';
 import { isGuidanceEvidenceInScope, isLocalEvidenceTopicallyRelevant } from '../followup-evidence';
-import { evidenceSources, indianStapleIdentitySources, lookupAdditive, lookupExplicitAdditiveMention, lookupIndianStapleIngredientIdentity, resolveTentativeAdditiveIdentity } from '../../modules/knowledge';
+import { evidenceSources, findIngredientEvidence, indianStapleIdentitySources, lookupAdditive, lookupExplicitAdditiveMention, lookupIndianStapleIngredientIdentity, resolveTentativeAdditiveIdentity } from '../../modules/knowledge';
 import { searchOpenFoodTox, semanticRetrieve } from '../semantic';
 import { searchFoodComposition, type FoodCompositionFood } from './food-composition';
 import { searchFoodOn, type FoodOnHit, type FoodOnSearch, type OpenFoodToxHit, type OpenFoodToxSearch } from '../../modules/knowledge/server';
@@ -66,7 +66,7 @@ export const geminiToolDeclarations: FunctionDeclaration[] = [
   { name: 'search_knowledge', description: 'Search NutriScan’s local, attributed food and ingredient evidence index. This does not make a network request.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A focused food, nutrient, ingredient, or guidance query.' } }, required: ['query'] } },
   { name: 'get_nutrition_guidance', description: 'Retrieve a small local set of source-linked nutrition guidance for an explicitly relevant condition or goal. Uses only NutriScan-authored summaries of official sources and sends no query, profile, or image to an external service. Prefer the user’s stated jurisdiction when known. Keep population guidance separate from personal targets and package facts; do not infer diagnoses or prescribe a nutrient allowance.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'The nutrition question and relevant words from the user’s request.' }, condition: { type: Type.STRING, description: 'Only a condition explicitly stated by the user or included in authorized profile context.' }, goal: { type: Type.STRING, description: 'Only a nutrition goal stated by the user or included in authorized profile context.' }, jurisdiction: { type: Type.STRING, description: 'A jurisdiction stated by the user or available in authorized context, such as India.' }, maxResults: { type: Type.NUMBER, description: 'Optional result limit from 1 to 5.' } }, required: ['query'] } },
   { name: 'search_food_composition', description: 'Search local USDA FoodData Central Foundation Foods and FNDDS structured snapshots for generic food-composition reference values. FNDDS includes U.S. survey records for some Indian-style dishes, not authoritative Indian recipes. Use when the user asks how a basic food compares or requests composition context; request relevant nutrient families. Values are source-reported per 100 g edible portion, not facts about a branded Indian product, its package, portion or an individual. Survey portion examples are not package servings. Missing nutrient rows are unavailable, not zero. Includes release, source citation, license and limitations. No external query is sent.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific generic food name or phrase, such as dry chickpeas, idli, chapatti or roti.' }, nutrients: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Up to eight requested nutrient families, such as protein, carbohydrate, fiber, sodium, potassium, energy, or saturated fat. Omit to return common macronutrient and sodium fields.' } }, required: ['query'] } },
-  { name: 'resolve_ingredient', description: 'Resolve an observed additive locally, apply exact source-attributed Indian staple label aliases (including Atta/Maida/Suji/Rawa), and search the bundled FoodOn ontology for ordinary ingredients. For an explicitly observed INS code not in the local registry, NutriScan sends only that code to the official Codex GSFA identity search and may link an exact EFSA substance record. No image, question, profile or conversation is sent to Codex. Identity matches are candidates only; Codex is international and does not establish Indian authorization, package presence, dose, effects, allergen relationships or personal safety.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A short observed ingredient phrase or additive identifier.' } }, required: ['query'] } },
+  { name: 'resolve_ingredient', description: 'Resolve an observed additive locally, apply exact source-attributed Indian staple label aliases (including Atta/Maida/Suji/Rawa), and search the bundled FoodOn ontology for ordinary ingredients. When the question asks about a known outcome, it can also return linked ingredient-effect evidence and its population/exposure limitations. For an explicitly observed INS code not in the local registry, NutriScan sends only that code to the official Codex GSFA identity search and may link an exact EFSA substance record. No image, question, profile or conversation is sent to Codex. Identity matches are candidates only; Codex is international and does not establish Indian authorization, package presence, dose, effects, allergen relationships or personal safety.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A short observed ingredient phrase or additive identifier.' } }, required: ['query'] } },
   { name: 'lookup_chemical_identity', description: 'Read-only PubChem PUG REST lookup of a chemical name already present in the user question/package text or returned by exact local ingredient or assessment lookup. Returns registry identity candidates only, not food-use authorization, dose, hazard assessment or personal safety. Sends only the name; never photos or profile data.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific chemical name from the question, printed package text or an exact local identity result, not a numeric value or general food question.' } }, required: ['query'] } },
   { name: 'get_substance_assessments', description: 'Search the locally imported EFSA OpenFoodTox 3.0 assessment snapshot for a named substance or exact identifier. Returns attributed EFSA assessment records and toxicological reference values when available. The local snapshot may only link a scientific output without its conclusion; if the user asks what the linked assessment found, follow that title with search_research using the exact local identity returned. Use to distinguish hazard assessments from package exposure; this does not establish Indian authorization, package dose, product presence or personal safety. No network request is made.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A substance name, synonym, CAS number or PubChem CID from the question, package text or a locally resolved ingredient identity.' } }, required: ['query'] } },
   { name: 'calculate_nutrition', description: 'Calculate a portion from an unconflicted user-confirmed package nutrient, a currently attached evidence-linked interpretation, or an exact rowId from the saved package reconstruction. Interpretation-based arithmetic is explicitly provisional and never confirms or changes the package record. A matching known mass or volume basis and linked package observations are required.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Portion amount in grams or millilitres.' }, unit: { type: Type.STRING, enum: ['g', 'ml'] }, candidateId:{type:Type.STRING,description:'Optional exact candidateId from supplied interpretations or exact rowId from the saved package reconstruction.'} }, required: ['nutrient', 'amount', 'unit'] } },
@@ -509,17 +509,35 @@ async function resolveIngredient(args: z.infer<typeof toolArgs.resolve_ingredien
       },
     };
   }
+  const relatedEvidence = findIngredientEvidence(args.query, context.question);
+  const relatedSources = [...new Set(relatedEvidence.flatMap(relation => relation.sourceIds))]
+    .map(id => evidenceSources.find(item => item.id === id))
+    .filter((item): item is EvidenceSource => Boolean(item));
   const response = await searchFoodOn(args.query, 5);
-  if (response.status === 'unavailable') return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', reason: response.reason, message: 'NutriScan could not read its local FoodOn index. No ingredient identity was inferred.' } };
-  if (response.status === 'no_match') return { status: 'empty', resultCount: 0, output: { status: 'no_identity_match', query: args.query, message: 'The local FoodOn index has no sufficiently close label or synonym match. No ingredient identity was inferred.' } };
-  const candidateEvidence = response.results.map(hit => foodOnEvidence(hit, response.source)).filter((item): item is EvidenceSource => Boolean(item));
+  if (response.status === 'unavailable' && !relatedSources.length) return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', reason: response.reason, message: 'NutriScan could not read its local FoodOn index. No ingredient identity was inferred.' } };
+  if (response.status === 'no_match' && !relatedSources.length) return { status: 'empty', resultCount: 0, output: { status: 'no_identity_match', query: args.query, message: 'The local FoodOn index has no sufficiently close label or synonym match. No ingredient identity was inferred.' } };
+  const identityHits = response.status === 'ok'
+    ? response.results.slice(0, relatedSources.length ? 3 : 5)
+    : [];
+  const candidateEvidence = response.status === 'ok'
+    ? identityHits.map(hit => foodOnEvidence(hit, response.source)).filter((item): item is EvidenceSource => item !== null)
+    : [];
+  const allEvidence = [...candidateEvidence, ...relatedSources];
+  const identityCandidates = identityHits.slice(0, candidateEvidence.length).map(hit => ({ sourceId: `foodon-${hit.term.id.toLowerCase()}`, title: `${hit.term.label} (${hit.term.id})`, matchedBy: hit.matchedBy, matchedText: hit.matchedText, parents: hit.parents }));
   return {
-    status: candidateEvidence.length ? 'ok' : 'empty',
-    resultCount: candidateEvidence.length,
-    evidence: candidateEvidence,
-    output: candidateEvidence.length
-      ? { status: 'ontology_identity_candidates', query: args.query, candidates: response.results.slice(0, candidateEvidence.length).map(hit => ({ sourceId: `foodon-${hit.term.id.toLowerCase()}`, title: `${hit.term.label} (${hit.term.id})`, matchedBy: hit.matchedBy, matchedText: hit.matchedText, parents: hit.parents })), sourceVersion: response.source.version, caveat: 'These are ontology matches, not confirmed package ingredients. Compare the printed wording before using an identity.' }
-      : { status: 'no_identity_match', query: args.query, message: 'The local FoodOn index had no usable term record. No ingredient identity was inferred.' },
+    status: allEvidence.length ? 'ok' : 'empty',
+    resultCount: allEvidence.length,
+    evidence: allEvidence,
+    searchTerms: relatedEvidence.map(item => item.ingredient),
+    output: {
+      status: identityCandidates.length ? 'ontology_identity_candidates' : relatedEvidence.length ? 'ingredient_effect_evidence' : 'no_identity_match',
+      query: args.query,
+      ...(identityCandidates.length ? { candidates: identityCandidates } : {}),
+      ...(response.status === 'ok' ? { sourceVersion: response.source.version } : { identityIndexStatus: response.status }),
+      ...(relatedEvidence.length ? { relatedIngredientEvidence: relatedEvidence } : {}),
+      caveat: 'Ontology matches are identity candidates, not confirmed package ingredients. Related studies or assessments describe evidence for a defined ingredient and outcome; they do not establish package composition, dose, exposure, individual effect, clinical advice or product suitability.',
+      ...(!identityCandidates.length && !relatedEvidence.length ? { message: 'No linked ingredient identity or outcome evidence was found.' } : {}),
+    },
   };
 }
 

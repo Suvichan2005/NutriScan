@@ -6,6 +6,7 @@ import {
   detectAdditives,
   evidenceSources,
   findNutrientContentClaimGuidance,
+  findIngredientEvidence,
   indianStapleIdentities,
   indianStapleIdentitySources,
   lookupAdditive,
@@ -54,6 +55,18 @@ describe('knowledge module offline contract', () => {
     });
     expect(lookupDeclaredFoodLabelAlias('allergy', 'cashew', 'Ingredients: almond flour')).toBeUndefined();
     expect(lookupDeclaredFoodLabelAlias('intolerance', 'gluten', 'Ingredients: oats')).toBeUndefined();
+  });
+
+  it('links ordinary oat ingredients to outcome-specific evidence without inferring package dose or effect', () => {
+    expect(findIngredientEvidence('oats', 'Could oat beta-glucan affect cholesterol?')).toMatchObject([
+      { id: 'oat-beta-glucan-lipid-outcomes', sourceIds: ['pubmed-oat-beta-glucan-lipids-2022'] },
+    ]);
+    expect(findIngredientEvidence('rolled oats', 'What evidence is there about post-meal glucose peaks?')).toMatchObject([
+      { id: 'oat-beta-glucan-postprandial-glucose', sourceIds: ['efsa-oat-beta-glucan-glycaemic-peak-2026', 'efsa-oat-barley-beta-glucan-glycaemic-2025'] },
+    ]);
+    expect(findIngredientEvidence('oats', 'What is the serving size?')).toEqual([]);
+    expect(findIngredientEvidence('almonds', 'Can this affect cholesterol?')).toEqual([]);
+    expect(findIngredientEvidence('oats', 'Could this change cholesterol?')[0].limitations).toMatch(/does not establish.*dose/i);
   });
 
   it('resolves exact additive identifiers while keeping fuzzy OCR interpretation tentative', () => {
