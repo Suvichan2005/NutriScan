@@ -1311,10 +1311,47 @@ function researchIntent(question: string) {
 }
 
 /** Preload applicable local guidance only when the user asks for food-choice or frequency advice. */
-export function shouldRetrieveContextualNutritionGuidance(question: string, jurisdiction = 'India') {
+export function shouldRetrieveContextualNutritionGuidance(question: string, jurisdiction = 'India', authorizedContext = '') {
   const foodChoiceIntent = /\b(?:good|healthy|suitable|appropriate|should|can\s+(?:i|someone|a\s+person)|daily|every\s+day|regular(?:ly)?|snack(?:ing)?|often|include\s+in\s+(?:a|the)\s+diet)\b/i.test(question);
   if (!foodChoiceIntent) return false;
-  return getNutritionGuidance({ query: question, jurisdiction, maxResults: 1 }).length > 0;
+  return getNutritionGuidance({ query: `${question} ${authorizedContext}`.slice(0, 2400), jurisdiction, maxResults: 1 }).length > 0;
+}
+
+/** Build a bounded local-search query from user-authorized context and the current structured package reading. */
+function contextualNutritionSearchContext(data: z.infer<typeof assistInput>): string {
+  const profile = data.profile;
+  const profileTerms = [
+    profile?.dietaryPattern,
+    profile?.avoidedIngredients,
+    profile?.allergies,
+    profile?.intolerances,
+    profile?.healthConsiderations,
+    profile?.goals,
+    profile?.portionPreferences,
+    profile?.ageGroup,
+    profile?.sexOrReferenceGroup,
+    profile?.country,
+  ].filter((value): value is string => Boolean(value?.trim())).map(value => value.slice(0, 180));
+  const reconstruction = data.package.reconstruction?.current ? data.package.reconstruction : undefined;
+  const packageTerms = reconstruction
+    ? [
+        reconstruction.identity.brand,
+        reconstruction.identity.name,
+        reconstruction.identity.variant,
+        ...reconstruction.ingredients.slice(0, 12).flatMap(item => [item.name, item.normalizedName]),
+        ...reconstruction.nutritionRows.slice(0, 12).flatMap(row => [row.nutrient, row.printedLabel]),
+        ...reconstruction.statements.slice(0, 8).map(statement => statement.text),
+      ]
+    : [
+        data.package.name,
+        ...data.package.ingredients.slice(0, 12),
+        ...data.package.additives.slice(0, 8),
+        ...data.package.claims.slice(0, 8),
+        ...data.package.nutrients.slice(0, 12).map(nutrient => nutrient.key),
+      ];
+  // Retrieval stays local; raw OCR, image bytes, and unstructured conversation history are not included.
+  return [...profileTerms, ...packageTerms.filter((value): value is string => Boolean(value?.trim()))]
+    .map(value => value.slice(0, 180)).join(' ').slice(0, 1800);
 }
 
 /** Detect when a food-choice answer ignored multiple usable package/evidence facets. */
@@ -2358,8 +2395,9 @@ export async function assist(data: z.infer<typeof assistInput>) {
   if(!status.enabled)throw new ApiError(503,'provider_disabled',status.message);
   const analysisId = randomUUID();
   const guidanceJurisdiction=data.profile?.country.trim()||'India';
-  if(shouldRetrieveContextualNutritionGuidance(data.question,guidanceJurisdiction)){
-    const relevantGuidance=getNutritionGuidance({query:data.question,jurisdiction:guidanceJurisdiction,maxResults:3});
+  const contextualNutritionContext=contextualNutritionSearchContext(data);
+  if(shouldRetrieveContextualNutritionGuidance(data.question,guidanceJurisdiction,contextualNutritionContext)){
+    const relevantGuidance=getNutritionGuidance({query:`${data.question} ${contextualNutritionContext}`.slice(0,2400),jurisdiction:guidanceJurisdiction,maxResults:3});
     if(relevantGuidance.length){
       const evidenceById=new Map([...(data.evidence??[]),...relevantGuidance].map(source=>[source.id,source]));
       data=assistInput.parse({...data,evidence:[...evidenceById.values()].slice(0,30)});

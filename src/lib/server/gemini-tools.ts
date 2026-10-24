@@ -283,7 +283,7 @@ async function searchKnowledge(args: z.infer<typeof toolArgs.search_knowledge>, 
       .filter(item => isGuidanceEvidenceInScope(item.source, context.question, context.profile?.country ?? ''))
       .map(item => ({ source: item.source, score: item.score, exactIdentity: item.exactIdentity }));
     const evidence = hits.map(hit => asEvidenceSource(hit.source)).filter((item): item is EvidenceSource => item !== null);
-    return { status: evidence.length ? 'ok' : 'empty', resultCount: evidence.length, evidence, output: { status: response.status, mode: response.mode, corpusVersion: response.corpusVersion, results: hits.filter(hit => evidence.some(item => item.id === hit.source.id)), limitations: response.limitations.slice(0, 4), message: response.message ?? 'No sufficiently relevant local source was found.' } };
+    return { status: evidence.length ? 'ok' : 'empty', resultCount: evidence.length, evidence, output: { status: evidence.length ? 'ok' : 'empty', mode: response.mode, corpusVersion: response.corpusVersion, results: hits.filter(hit => evidence.some(item => item.id === hit.source.id)), limitations: response.limitations.slice(0, 4), message: evidence.length ? response.message ?? 'Relevant local source candidates are available.' : 'No candidate passed the topical relevance and applicability checks. This does not establish that no relevant evidence exists.' } };
   } catch {
     return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', message: 'The local knowledge index could not be queried. Do not infer that no relevant evidence exists.' } };
   }

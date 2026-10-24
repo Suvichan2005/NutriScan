@@ -75,6 +75,21 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.resultCount).toBe(0);
   });
 
+  it('abstains when semantically ranked candidates lack topical evidence for an ingredient-effect question', async () => {
+    const unrelated = evidenceSources.find(source => source.id === 'fssai-labelling-allergen-faq-2023')!;
+    mocks.semanticRetrieve.mockResolvedValue({
+      status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
+      results: [{ source: unrelated, score: 0.82, exactIdentity: false }],
+    });
+
+    const result = await executeGeminiTool('search_knowledge', { query: 'Does beta-glucan in oats affect blood cholesterol?' }, context('Does beta-glucan in oats affect blood cholesterol?'));
+
+    expect(result.status).toBe('empty');
+    expect(result.resultCount).toBe(0);
+    expect(result.evidence).toEqual([]);
+    expect(result.output).toMatchObject({ status: 'empty', message: expect.stringMatching(/topical relevance and applicability/i) });
+  });
+
   it('inspects the full source image when an OCR-guided crop shares its image handle', async () => {
     const imageContext=context('Read the nutrient row.');
     const original={imageId:'image-1',mimeType:'image/jpeg' as const,base64:'b3JpZ2luYWwgaW1hZ2UgYnl0ZXM=',side:'back' as const,sourceImage:{width:1000,height:500},preprocessing:{rotation:0 as const,contrast:false,invert:false,crop:null}};

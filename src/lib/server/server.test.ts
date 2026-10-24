@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fixedFetch, input, localGate, readBounded, route } from './http';
 import { lookupProducts, normalizeProduct, productInput } from './products';
-import { assist, assistInput, assistOutput, assistPromptPayload, canAcceptPackageAnswerSynthesis, geminiResponseJsonSchema, linkVisionResponseToCapture, needsPackageAnswerSynthesis, packageAnswerCoverage, packageAnswerSynthesisImprovesCoverage, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, validateClaims, validateImage, vision, visionInput } from './gemini';
+import { assist, assistInput, assistOutput, assistPromptPayload, canAcceptPackageAnswerSynthesis, geminiResponseJsonSchema, linkVisionResponseToCapture, needsPackageAnswerSynthesis, packageAnswerCoverage, packageAnswerSynthesisImprovesCoverage, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, shouldRetrieveContextualNutritionGuidance, validateClaims, validateImage, vision, visionInput } from './gemini';
 import { applicationGeminiContext, committedPaidSpendUsd, countGoogleSearchQueries, freeTierSyntheticSmokeContext, resetGeminiUsageLedgerForTests, safeProviderFailure } from './gemini-provider';
 import { research, researchInput, researchRecalls } from './research';
 import { getNutritionGuidance } from './nutrition-guidance';
@@ -492,6 +492,33 @@ describe('provider validation, independent of provider invocation', () => {
     expect(String(JSON.parse(String(fetcher.mock.calls[0][1]?.body)).contents[0].parts[0].text)).toContain(source!.title);
     expect(result.agentEvidence).toMatchObject([{ id: source!.id, publisher: 'International Diabetes Federation', jurisdiction: 'Global' }]);
     expect(result.uiComponents).toContainEqual({ type: 'source-reference-cards', observationIds: [], sourceIds: [source!.id], calculationIds: [] });
+  });
+  it('uses a declared profile and structured package context for local guidance without inferring it from an unrelated query', async () => {
+    vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
+    const question = 'Would this fit my goals as a regular snack?';
+    const profile = { dietaryPattern:'', avoidedIngredients:'', allergies:'', intolerances:'', healthConsiderations:'Type 2 diabetes', goals:'Manage blood glucose with my care team', portionPreferences:'', ageGroup:'', sexOrReferenceGroup:'', country:'India', locality:'' };
+    const packageData = { id:'profile-context-rag', name:'Unidentified package', ingredients:['Refined wheat flour (maida)'], additives:[], allergens:[], claims:['Sugar free'], nutrients:[], observations:[], rawText:'', warnings:[], synthetic:false, createdAt:new Date().toISOString() };
+    expect(shouldRetrieveContextualNutritionGuidance(question,'India','Type 2 diabetes Refined wheat flour')).toBe(true);
+    expect(shouldRetrieveContextualNutritionGuidance('How much protein is printed per 100 g?','India','Type 2 diabetes')).toBe(false);
+    const searchText = `${question} ${profile.healthConsiderations} ${profile.goals} ${packageData.ingredients.join(' ')}`;
+    const source = getNutritionGuidance({ query:searchText, jurisdiction:'India', maxResults:3 }).find(item => item.id === 'idf-healthy-nutrition-diabetes-2024');
+    expect(source).toBeDefined();
+    const answer = 'IDF patient education says refined carbohydrate choices can raise blood glucose more quickly than high-fibre choices, and that snack choices should be individualized.';
+    const output = {
+      answer,
+      answerParts:[{text:answer,claimIndexes:[0]}],
+      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[source!.id],calculationIds:[],interpretationRowIds:[],profileFieldIds:[],supportingSpans:[{kind:'source',id:source!.id,quote:source!.summary.slice(0,100)}],visualEvidence:[]}],
+      uiComponents:[{type:'source-reference-cards',observationIds:[],sourceIds:[source!.id],calculationIds:[]}],
+      limitations:[],inspectImage:null,
+      packageReconstruction:{identity:{brand:null,name:'Unidentified package',variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:''},
+    };
+    const payload=JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(output)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:50,candidatesTokenCount:100,totalTokenCount:150}});
+    const fetcher=vi.fn().mockResolvedValue(new Response(payload,{status:200,headers:{'content-type':'application/json'}})); vi.stubGlobal('fetch',fetcher);
+    const result=await assist(assistInput.parse({consent:true,question,profile,package:packageData}));
+    const requestBody=JSON.stringify(JSON.parse(String(fetcher.mock.calls[0][1]?.body)));
+    expect(requestBody).toContain(source!.title);
+    expect(result.agentEvidence).toMatchObject([{id:source!.id,publisher:'International Diabetes Federation',jurisdiction:'Global'}]);
+    expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[source!.id],calculationIds:[]});
   });
   it('repairs incomplete photo-free package synthesis once to cover available nutrition and serving details',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
