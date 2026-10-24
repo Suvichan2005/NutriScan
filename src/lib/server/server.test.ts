@@ -510,6 +510,56 @@ describe('provider validation, independent of provider invocation', () => {
     expect(JSON.stringify(investigationRequest)).toContain('each printed numeric cell as its own nutritionRows entry');
     expect(JSON.stringify(investigationRequest)).toContain('never combine labels such as “per 100 g and per serving” into one row');
   });
+  it('carries an exact Codex identity tool result through the agent loop into a validated answer claim', async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const answer='INS 450(i) is Disodium diphosphate. The identity record does not establish the amount in this package or Indian authorization.';
+    const reconstruction={
+      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
+      serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'No product facts are reconstructed in this fixture.',
+      revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true,
+    };
+    const data=assistInput.parse({consent:true,question:'What does INS 450(i) mean?',package:{
+      id:'codex-identity-agent-loop',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,
+      observations:[{id:'ingredient-line',field:'ocr-line',text:'INGREDIENTS: raising agent INS 450(i)',side:'back',confidence:80,origin:'ocr',imageId:'package-back',readingOrder:{runId:'ocr-run',blockIndex:0,paragraphIndex:0,lineIndex:0}}],
+      ocrCaptures:[{runId:'ocr-run',imageId:'package-back',side:'back',sourceImage:{width:900,height:363},preparedImage:{width:900,height:363},bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'tesseract',version:'fixture',language:'eng',confidenceScale:'0-100',segmentationMode:'auto'},processing:{rotation:0,contrast:false,invert:false,cropPercent:null}}],
+      rawText:'INGREDIENTS: raising agent INS 450(i)',warnings:[],synthetic:true,createdAt:new Date().toISOString(),
+    }});
+    const providerResponse=(value:unknown)=>JSON.stringify({candidates:[{content:{parts:[value as never],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:80,candidatesTokenCount:45,totalTokenCount:125}});
+    let providerCalls=0;
+    const outbound:Array<{url:string;body:BodyInit|null|undefined}> = [];
+    const fetcher=vi.fn().mockImplementation(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input);
+      outbound.push({url,body:init?.body});
+      if(url.includes('generativelanguage.googleapis.com')){
+        providerCalls+=1;
+        const body=providerCalls===1
+          ?{functionCall:{id:'resolve-call-1',name:'resolve_ingredient',args:{query:'INS 450(i)'}}}
+          :{text:JSON.stringify({answer,claims:[],limitations:[],inspectImage:null})};
+        return new Response(providerResponse(body),{status:200,headers:{'content-type':'application/json'}});
+      }
+      if(url.includes('SearchAdditivesByInsNumber'))return new Response(JSON.stringify({
+        success:true,data:[{Id:'exact',Label:'Disodium diphosphate',InsNumber:'450(i)',Language:'en',MatchType:'INS Exact',MatchedSynonym:null}],count:1,
+      }),{status:200,headers:{'content-type':'application/json'}});
+      throw new Error(`Unexpected test request to ${new URL(url).hostname}`);
+    });
+    vi.stubGlobal('fetch',fetcher);
+
+    const result=await assist(data);
+
+    expect(providerCalls).toBe(2);
+    expect(result.status).toBe('ok');
+    expect(result.answer).toBe(answer);
+    expect(result.agentDiagnostics).toMatchObject({acceptedNaturalAnswer:true,answerStatus:'model-answer',acceptedClaims:1});
+    expect(result.claims).toContainEqual(expect.objectContaining({
+      sourceIds:['codex-gsfa-ins-450-i'],observationIds:['ingredient-line'],
+      text:expect.stringContaining('Disodium diphosphate'),
+    }));
+    expect(result.agentTrace).toContainEqual(expect.objectContaining({name:'resolve_ingredient',status:'ok'}));
+    expect(result.agentTrace).toContainEqual(expect.objectContaining({name:'requested_ingredient_identity_coverage',status:'ok'}));
+    expect(result.agentTrace.some(step=>step.name==='answer_repair'||step.name==='evidence_answer_repair')).toBe(false);
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(new URLSearchParams(String(outbound.find(request=>request.url.includes('SearchAdditivesByInsNumber'))?.body)).get('insNumber')).toBe('450(i)');
+  });
   it('validates an image-linked ingredient and nutrition row from one reconstruction without heuristic parser acceptance',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const image=await sharp({create:{width:8,height:8,channels:3,background:'#f2f1eb'}}).png().toBuffer();

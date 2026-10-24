@@ -3093,7 +3093,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
   let targetedRepairUsed = false;
   let answerRepairUsed = false;
   let conversationalAnswerClaims:z.infer<typeof assistOutput>['claims']=[];
-  const validateWithDiagnostics = async (candidateOutput: unknown) => {
+  const validateWithDiagnostics = async (candidateOutput: unknown, providerOutput?: unknown) => {
     const events: Parameters<NonNullable<Parameters<typeof validateInferenceOutput>[1]['diagnostic']>>[0][] = [];
     try {
       const cleanedCandidateOutput=sanitizeAssistantEvidenceLabels(candidateOutput);
@@ -3156,7 +3156,9 @@ export async function assist(data: z.infer<typeof assistInput>) {
         rejectionCategoriesByStage,
       };
       await recordGeminiEvaluationEvent(analysisId, {
-        event: 'claim_validation', modelOutput: candidateOutput, acceptedOutput: validated,
+        event: 'claim_validation', modelOutput: providerOutput??candidateOutput,
+        ...(providerOutput!==undefined?{validationCandidate:candidateOutput}:{}),
+        acceptedOutput: validated,
         decisions: events, summary: validationSummary,
       });
       await recordGeminiDiagnostic({
@@ -3181,8 +3183,15 @@ export async function assist(data: z.infer<typeof assistInput>) {
       throw error;
     }
   };
+  const providerOutputBeforeIdentityCoverage=output;
+  const initialIngredientCoverage=supplementRequestedIngredientIdentityCoverage(output,generated.ingredientIdentityCoverageFacts);
+  const providerOutputForValidation=initialIngredientCoverage.added?providerOutputBeforeIdentityCoverage:undefined;
+  if(initialIngredientCoverage.added){
+    output=initialIngredientCoverage.output;
+    generated.trace.push({name:'requested_ingredient_identity_coverage',status:'ok',resultCount:initialIngredientCoverage.added,elapsedMs:0});
+  }
   let result;
-  try { result = await validateWithDiagnostics(output); }
+  try { result = await validateWithDiagnostics(output,providerOutputForValidation); }
   catch (error) {
     if (!(error instanceof ApiError) || !['unknown_citation', 'unknown_image'].includes(error.code)) throw error;
     const repairStarted = Date.now();

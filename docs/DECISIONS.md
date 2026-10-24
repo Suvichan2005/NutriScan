@@ -1023,3 +1023,5 @@ When a validated claim cites a structured package fact or source, allow a natura
 ## 24 October 2026 — adapt exact Codex identity results at the answer boundary
 
 Keep identity retrieval and answer coverage dialect-independent at the boundary. Normalize the local identity result and the exact Codex GSFA result only when the requested code, single candidate subtype, candidate-linked evidence source, user question and OCR ingredient observation agree. Preserve ambiguity and never turn identity lookup into an authorization, exposure, effect or safety conclusion.
+
+Apply such deterministic requested-identity coverage before the first answer-repair decision, but pass it through the unchanged inference validator. Record the normalized provider output separately from the application-enriched validation candidate so local evaluation can distinguish model content from deterministic evidence assembly.
