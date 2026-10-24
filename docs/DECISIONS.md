@@ -1,5 +1,11 @@
 # Chronological decisions
 
+## 25 October 2026 — distinguish presentation syntax and bibliography from nutritional quantities
+
+- Validate the factual content of a Markdown list item independently of its ordered-list marker. Preserve a publication year only when a retrieved source supplies that dated metadata; an unknown year still fails the numerical evidence check. This does not establish that a matching number supports the correct nutrient, dose, endpoint or population.
+- A live research transcript exposed both false rejections (list numbering and a real review year) and a remaining false acceptance (a cholesterol dose borrowed from unrelated numerical context). Fix the presentation/metadata boundary, retain the actual failed research receipt, and do not treat `answer-ready` as a scientific-quality verdict or add product-specific answer rules.
+- Handle inspector Escape at the document boundary because opening it leaves focus on the toolbar trigger. Respect active dialogs and already-handled events. Actual desktop/mobile browser acceptance proves internal scroll and keyboard dismissal.
+
 ## 25 October 2026 — derive calculation evidence from validated fields, not client prose
 
 - Keep portion calculations usable across saved client/package versions by treating typed nutrient, value, unit, basis and requested portion as the contract. Validate arithmetic within floating tolerance and require the calculation to match a current evidence-linked reconstructed row, candidate or package nutrient. Regenerate canonical calculation evidence text on the server; never accept a client label or explanation as proof.
