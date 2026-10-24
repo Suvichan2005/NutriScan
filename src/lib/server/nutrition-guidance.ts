@@ -1,4 +1,5 @@
 import { sourceSchema, type EvidenceSource } from '../contracts';
+import { evidenceSources } from '../knowledge';
 
 const snapshotRetrievedAt = '2026-10-23T00:00:00.000Z';
 
@@ -21,6 +22,12 @@ export type NutritionGuidanceCoverageFact = {
 
 function guidanceSource(value: EvidenceSource): EvidenceSource {
   return sourceSchema.parse(value);
+}
+
+function curatedGuidanceSource(id: string): EvidenceSource {
+  const source = evidenceSources.find(item => item.id === id);
+  if (!source) throw new Error(`Missing curated guidance source: ${id}`);
+  return guidanceSource(source);
 }
 
 const entries: readonly GuidanceEntry[] = [
@@ -77,6 +84,11 @@ const entries: readonly GuidanceEntry[] = [
       license: 'Source-linked, NutriScan-authored paraphrase only. No WHO source text is bundled.',
     }),
     terms: ['healthy diet', 'free sugar', 'sugar', 'sodium', 'salt', 'saturated fat', 'trans fat', 'dietary pattern', 'population guidance'],
+    conditions: [],
+  },
+  {
+    source: curatedGuidanceSource('who-carbohydrate-2023'),
+    terms: ['carbohydrate quality', 'refined wheat flour', 'refined flour', 'whole grain', 'whole grains', 'wholegrain', 'dietary fibre', 'dietary fiber', 'pulses'],
     conditions: [],
   },
   {
@@ -188,9 +200,9 @@ function jurisdictionCompatible(record: EvidenceSource, jurisdiction: string | u
   const source = normalize(record.jurisdiction);
   if (!jurisdiction) return source === 'global' || source === 'international';
   const requested = normalize(jurisdiction);
-  if (source === 'global' || source === 'international') return true;
-  if (requested === 'india') return source === 'india';
-  if (requested === 'united states' || requested === 'us' || requested === 'usa') return source === 'united states';
+  if (/^(?:global|international)(?:\s|$)/.test(source)) return true;
+  if (requested === 'india') return /^(?:india|indian)(?:\s|$)/.test(source);
+  if (requested === 'united states' || requested === 'us' || requested === 'usa') return /^(?:united states|us|usa)(?:\s|$)/.test(source);
   return source === requested;
 }
 
@@ -207,19 +219,22 @@ export function getNutritionGuidance(input: {
   const ranked = entries
     .map(entry => {
       const explicitSource = explicitlyNamesSource(query, entry.source);
-      if (!jurisdictionCompatible(entry.source, input.jurisdiction, explicitSource)) return { entry, score: 0 };
       const matchedTerms = entry.terms.filter(term => mentions(contextualText, term));
+      if (!jurisdictionCompatible(entry.source, input.jurisdiction, explicitSource)) return { entry, score: 0, matchedTerms };
       const matchedCondition = entry.conditions.some(condition => mentions(contextualText, condition));
-      if (entry.conditions.length > 0 && !matchedCondition && !explicitSource) return { entry, score: 0 };
+      if (entry.conditions.length > 0 && !matchedCondition && !explicitSource) return { entry, score: 0, matchedTerms };
       const score = matchedTerms.length + (matchedCondition ? 3 : 0) + (explicitSource ? 2 : 0);
-      return { entry, score };
+      return { entry, score, matchedTerms };
     })
     .filter(item => item.score > 0)
     .sort((a, b) => b.score - a.score || a.entry.source.id.localeCompare(b.entry.source.id));
   const conditionSpecificIntent = entries.some(entry => entry.conditions.some(condition => mentions(contextualText, condition)));
   const relevant = conditionSpecificIntent
     ? ranked.filter(item => item.entry.conditions.some(condition => mentions(contextualText, condition))
-      || explicitlyNamesSource(query, item.entry.source) && item.entry.terms.some(term => mentions(contextualText, term)))
+      || explicitlyNamesSource(query, item.entry.source) && item.matchedTerms.length > 0
+      // General population guidance may complement a condition-specific record
+      // only when the package/query contains multiple direct topic matches.
+      || item.entry.conditions.length === 0 && item.matchedTerms.length >= 2)
     : ranked;
 
   return relevant

@@ -577,19 +577,27 @@ describe('provider validation, independent of provider invocation', () => {
   it('uses a declared profile and structured package context for local guidance without inferring it from an unrelated query', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
     const question = 'Would this fit my goals as a regular snack?';
-    const profile = { dietaryPattern:'', avoidedIngredients:'', allergies:'', intolerances:'', healthConsiderations:'Type 2 diabetes', goals:'Manage blood glucose with my care team', portionPreferences:'', ageGroup:'', sexOrReferenceGroup:'', country:'India', locality:'' };
+    const profile = { dietaryPattern:'', avoidedIngredients:'', allergies:'', intolerances:'', healthConsiderations:'Type 2 diabetes', goals:'Manage blood glucose and carbohydrate quality with my care team', portionPreferences:'', ageGroup:'', sexOrReferenceGroup:'', country:'India', locality:'' };
     const packageData = { id:'profile-context-rag', name:'Unidentified package', ingredients:['Refined wheat flour (maida)'], additives:[], allergens:[], claims:['Sugar free'], nutrients:[], observations:[], rawText:'', warnings:[], synthetic:false, createdAt:new Date().toISOString() };
     expect(shouldRetrieveContextualNutritionGuidance(question,'India','Type 2 diabetes Refined wheat flour')).toBe(true);
     expect(shouldRetrieveContextualNutritionGuidance('How much protein is printed per 100 g?','India','Type 2 diabetes')).toBe(false);
     const searchText = `${question} ${profile.healthConsiderations} ${profile.goals} ${packageData.ingredients.join(' ')}`;
-    const source = getNutritionGuidance({ query:searchText, jurisdiction:'India', maxResults:3 }).find(item => item.id === 'idf-healthy-nutrition-diabetes-2024');
+    const sources = getNutritionGuidance({ query:searchText, jurisdiction:'India', maxResults:3 });
+    const source = sources.find(item => item.id === 'idf-healthy-nutrition-diabetes-2024');
+    const qualitySource = sources.find(item => item.id === 'who-carbohydrate-2023');
     expect(source).toBeDefined();
-    const answer = 'IDF patient education says refined carbohydrate choices can raise blood glucose more quickly than high-fibre choices, and that snack choices should be individualized.';
+    expect(qualitySource).toBeDefined();
+    const idfClaim = 'IDF patient education says refined carbohydrate choices can raise blood glucose more quickly than high-fibre choices, and that snack choices should be individualized.';
+    const whoClaim = 'WHO population guidance recommends that carbohydrate come primarily from whole grains, vegetables, fruits and pulses.';
+    const answer = `${idfClaim} ${whoClaim}`;
     const output = {
       answer,
-      answerParts:[{text:answer,claimIndexes:[0]}],
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[source!.id],calculationIds:[],interpretationRowIds:[],profileFieldIds:[],supportingSpans:[{kind:'source',id:source!.id,quote:source!.summary.slice(0,100)}],visualEvidence:[]}],
-      uiComponents:[{type:'source-reference-cards',observationIds:[],sourceIds:[source!.id],calculationIds:[]}],
+      answerParts:[{text:idfClaim,claimIndexes:[0]},{text:whoClaim,claimIndexes:[1]}],
+      claims:[
+        {mode:'synthesis',text:idfClaim,observationIds:[],sourceIds:[source!.id],calculationIds:[],interpretationRowIds:[],profileFieldIds:[],supportingSpans:[{kind:'source',id:source!.id,quote:source!.summary}],visualEvidence:[]},
+        {mode:'synthesis',text:whoClaim,observationIds:[],sourceIds:[qualitySource!.id],calculationIds:[],interpretationRowIds:[],profileFieldIds:[],supportingSpans:[{kind:'source',id:qualitySource!.id,quote:qualitySource!.summary}],visualEvidence:[]},
+      ],
+      uiComponents:[{type:'source-reference-cards',observationIds:[],sourceIds:[source!.id,qualitySource!.id],calculationIds:[]}],
       limitations:[],inspectImage:null,
       packageReconstruction:{identity:{brand:null,name:'Unidentified package',variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:''},
     };
@@ -598,8 +606,13 @@ describe('provider validation, independent of provider invocation', () => {
     const result=await assist(assistInput.parse({consent:true,question,profile,package:packageData}));
     const requestBody=JSON.stringify(JSON.parse(String(fetcher.mock.calls[0][1]?.body)));
     expect(requestBody).toContain(source!.title);
-    expect(result.agentEvidence).toMatchObject([{id:source!.id,publisher:'International Diabetes Federation',jurisdiction:'Global'}]);
-    expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[source!.id],calculationIds:[]});
+    expect(requestBody).toContain(qualitySource!.title);
+    expect(result.agentEvidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({id:source!.id,publisher:'International Diabetes Federation',jurisdiction:'Global'}),
+      expect.objectContaining({id:qualitySource!.id,publisher:'World Health Organization',jurisdiction:expect.stringMatching(/^Global/)}),
+    ]));
+    expect(result.answer).toContain('WHO population guidance recommends');
+    expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[source!.id,qualitySource!.id],calculationIds:[]});
   });
   it('repairs incomplete photo-free package synthesis once to cover available nutrition and serving details',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');

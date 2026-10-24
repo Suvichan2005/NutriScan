@@ -990,3 +990,7 @@ Treat “how should I think about this quantity?” as an interpretation request
 ## 24 October 2026 — compare profile context with current reconstructed ingredients
 
 The local profile-aware package audit should consider the active evidence-linked reconstruction as well as OCR observations already categorized by the heuristic parser. Use only current non-unreadable ingredient readings and allergen-related statements with links to recorded package observations. Treat each match as provisional when it comes from model reconstruction, preserve terminology-source links, and retain explicit uncertainty. Never turn a missing match into a safety clearance. Ignore archived reconstruction revisions.
+
+## 24 October 2026 — retrieve population carbohydrate guidance only with package relevance
+
+Reuse the curated WHO carbohydrate-quality source in the existing local guidance retriever. Keep condition-specific sources preferred for condition questions; add a general global source only when at least two of its direct topic terms match the question, explicit profile context, or structured package context. Carry population scope and limitations unchanged. Do not turn the guidance into a package threshold or individualized prescription, and do not inject it into every diabetes question.

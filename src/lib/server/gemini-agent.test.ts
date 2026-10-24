@@ -38,6 +38,26 @@ describe('nutrition-guidance tool routing', () => {
       limitations: expect.stringContaining('not a clinical practice guideline'),
     });
   });
+
+  it('adds global carbohydrate-quality guidance only when package context makes it specifically relevant', () => {
+    const generalQuestion = 'Is this a good daily snack for someone with diabetes?';
+    const general = getNutritionGuidance({ query: generalQuestion, jurisdiction: 'India', maxResults: 3 });
+    expect(general.map(source => source.id)).toContain('idf-healthy-nutrition-diabetes-2024');
+    expect(general.map(source => source.id)).not.toContain('who-carbohydrate-2023');
+    const singleTopic = getNutritionGuidance({ query: `${generalQuestion} carbohydrate quality`, jurisdiction: 'India', maxResults: 3 });
+    expect(singleTopic.map(source => source.id)).not.toContain('who-carbohydrate-2023');
+
+    const packageContext = `${generalQuestion} Refined wheat flour (maida), carbohydrate quality`;
+    const contextual = getNutritionGuidance({ query: packageContext, jurisdiction: 'India', maxResults: 3 });
+    expect(contextual.map(source => source.id)).toContain('who-carbohydrate-2023');
+    expect(contextual.find(source => source.id === 'who-carbohydrate-2023')).toMatchObject({
+      publisher: 'World Health Organization',
+      jurisdiction: expect.stringMatching(/^Global/),
+      summary: expect.stringContaining('whole grains, vegetables, fruits and pulses'),
+      limitations: expect.stringContaining('not a package-specific threshold'),
+    });
+    expect(contextual.map(source => source.id)).not.toContain('ada-standards-diabetes-2026-nutrition');
+  });
 });
 
 describe('saved-package follow-up context',()=>{
