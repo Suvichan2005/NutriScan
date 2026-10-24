@@ -332,6 +332,33 @@ describe('nutrition numerical invariants',()=>{
       expect(finding?.detail).toMatch(/not a medical determination|does not establish actual allergen presence/i);
     }
   });
+  it('applies declared restrictions to the current reconstructed ingredient list when OCR rows were not parsed as ingredients',()=>{
+    const pkg=label('Nutrition panel and ingredient column merged by OCR');
+    pkg.ingredients=[];
+    pkg.allergens=[];
+    pkg.observations=[{id:'merged-column-ocr',field:'ocr-line',text:'CARBOHYDRATES 69.29g REFINED WHEAT FLOUR MAIDA',side:'back',confidence:74,origin:'ocr'}];
+    pkg.reconstruction={
+      identity:{brand:null,name:'Example crackers',variant:null,status:'provisional',evidence:{observationIds:['merged-column-ocr'],imageRegions:[]}},
+      serving:null,nutritionRows:[],
+      ingredients:[{position:0,name:'Refined wheat flour',printedText:'Refined wheat flour (maida)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['merged-column-ocr'],imageRegions:[]}}],
+      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional interpretation.',
+      revision:1,updatedAt:'2026-10-24T00:00:00.000Z',model:'fixture',current:true,
+    };
+    const profile={...defaultProfile,allergies:'wheat',intolerances:'gluten'};
+
+    const audit=buildAudit(pkg,30,'g',profile,'Does the interpreted ingredient list match my declared restrictions?');
+    const wheat=audit.findings.find(finding=>finding.title==='Food allergy: provisional reconstruction match');
+    const gluten=audit.findings.find(finding=>finding.title==='Food intolerance: provisional reconstruction match');
+
+    expect(wheat?.status).toBe('uncertain');
+    expect(wheat?.observationIds).toEqual(['merged-column-ocr']);
+    expect(wheat?.detail).toMatch(/saved package interpretation proposes a possible match.*still provisional/i);
+    expect(wheat?.detail).toMatch(/provisional reconstructed ingredient-list wording.*still unverified/i);
+    expect(wheat?.detail).toMatch(/does not establish actual allergen presence|not a medical determination/i);
+    expect(gluten?.sourceIds).toContain('fssai-atta-maida-nomenclature-2019');
+    expect(gluten?.observationIds).toEqual(['merged-column-ocr']);
+    expect(wheat?.detail).not.toMatch(/A direct text match/);
+  });
   it('describes a matched May-contain line as precautionary wording without implying cross-contact is absent',()=>{
     const pkg=label('Ingredients: oats\nMay contain traces of peanuts');
     const profile={...defaultProfile,allergies:'peanuts'};

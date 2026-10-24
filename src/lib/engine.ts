@@ -128,9 +128,20 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     finding({title:'User-provided product details',detail:`${pkg.userDescription} These details were supplied by the user and have not been verified against the package or an external product record.`,status:'context',observationIds:descriptionIds,sourceIds:[],calculationIds:[]});
     limitations.push('User-provided product details are unverified context, not package-label evidence.');
   }
-  const ingredientEvidence=pkg.observations.filter(o=>o.field==='ingredients'||o.field==='allergens').map(o=>o.id);
+  const currentReconstruction=pkg.reconstruction?.current?pkg.reconstruction:null;
+  const reconstructedIngredientEvidence=currentReconstruction?.ingredients.flatMap(item=>item.evidence.observationIds)??[];
+  const reconstructedStatementEvidence=currentReconstruction?.statements
+    .filter(item=>['contains','may-contain'].includes(item.kind)
+      ||(['precaution','warning'].includes(item.kind)&&/\ballergen\b|^\s*(?:may\s+contain|contains)\b/i.test(item.text)))
+    .flatMap(item=>item.evidence.observationIds)??[];
+  const ingredientEvidence=unique([
+    ...pkg.observations.filter(o=>o.field==='ingredients'||o.field==='allergens').map(o=>o.id),
+    ...reconstructedIngredientEvidence,
+    ...reconstructedStatementEvidence,
+  ]);
   for(const mention of findDeclaredFoodMentions(pkg,profile)){
-    const labelTextPresent=pkg.ingredients.length>0||pkg.allergens.length>0;
+    const labelTextPresent=pkg.ingredients.length>0||pkg.allergens.length>0
+      ||Boolean(currentReconstruction&&(currentReconstruction.ingredients.length>0||reconstructedStatementEvidence.length>0));
     const kind=mention.kind==='allergy'?'Food allergy':mention.kind==='intolerance'?'Food intolerance':'Avoided ingredient';
     const evidenceLabels={
       'ingredient-list':'ingredient-list wording',
@@ -138,11 +149,14 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       'precautionary-cross-contact':'May-contain precautionary wording',
       'other-allergen-statement':'other allergen-statement wording',
     } as const;
-    const matchingEvidence=mention.evidence.map(item=>`${evidenceLabels[item.type]}: ${JSON.stringify(item.text)}${item.matchBasis==='source-backed-alias'?` (label term “${item.matchedLabelTerm}” matches by a source-backed vocabulary relation)`:''}`);
+    const matchingEvidence=mention.evidence.map(item=>`${item.interpretation?`provisional reconstructed ${evidenceLabels[item.type]}`:evidenceLabels[item.type]}: ${JSON.stringify(item.text)}${item.interpretation?' (linked to its original package reading; still unverified)':''}${item.matchBasis==='source-backed-alias'?` (label term “${item.matchedLabelTerm}” matches by a source-backed vocabulary relation)`:''}`);
     const categories=unique(mention.evidence.map(item=>evidenceLabels[item.type]));
     const hasPrecautionaryWording=mention.evidence.some(item=>item.type==='precautionary-cross-contact');
-    const matchDescription=mention.matchBasis==='literal'
-      ?`A direct text match for “${mention.term}” appears in ${categories.join(' and ')}.`
+    const reconstructedOnly=mention.evidence.length>0&&mention.evidence.every(item=>item.interpretation);
+    const matchDescription=reconstructedOnly
+      ?`The saved package interpretation proposes a possible match for “${mention.term}” in ${categories.join(' and ')}; the reading is still provisional.`
+      :mention.matchBasis==='literal'
+        ?`A direct text match for “${mention.term}” appears in ${categories.join(' and ')}.`
       :mention.matchBasis==='source-backed-alias'
         ?`A recorded label term is related to “${mention.term}” through a source-backed food-label vocabulary crosswalk.`
         :'';
@@ -151,7 +165,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       :labelTextPresent
         ?`No direct or supported label-term match for “${mention.term}” was found in the extracted ingredient/allergen wording. OCR omissions, unlisted derivatives and cross-contact remain possible; this is not a safety clearance.`
         :'No readable ingredient/allergen wording is available to compare with “'+mention.term+'”. Its absence from the extraction is not evidence that it is absent from the product.';
-    const matchLabel=mention.matchBasis==='literal'?'literal mention':mention.matchBasis==='source-backed-alias'?'possible label-term relation':'not established';
+    const matchLabel=reconstructedOnly?'provisional reconstruction match':mention.matchBasis==='literal'?'literal mention':mention.matchBasis==='source-backed-alias'?'possible label-term relation':'not established';
     finding({title:`${kind}: ${matchLabel}`,detail,status:'uncertain',observationIds:mention.observationIds.length?mention.observationIds:ingredientEvidence,sourceIds:mention.sourceIds,calculationIds:[]});
   }
   const candidates=new Map<NutrientKey,Usable>();

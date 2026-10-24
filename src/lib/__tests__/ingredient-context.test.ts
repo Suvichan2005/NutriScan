@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { findDeclaredFoodMentions } from '../ingredient-context';
 import { parseLabel } from '../parser';
+import type { PackageData } from '../contracts';
 
 describe('declared allergy and intolerance label mentions', () => {
   it('returns literal ingredient/allergen text matches with supporting observations', () => {
@@ -71,5 +72,57 @@ describe('declared allergy and intolerance label mentions', () => {
     const result = findDeclaredFoodMentions(pkg, { allergies: '', intolerances: '', avoidedIngredients: 'coconut' });
     expect(result).toEqual([expect.objectContaining({ kind: 'avoidance', term: 'coconut', matched: true })]);
     expect(result[0].observationIds).toEqual([pkg.observations.find(observation => observation.field === 'ingredients')?.id]);
+  });
+  it('matches current reconstructed ingredients through linked OCR evidence and keeps their provisional status', () => {
+    const pkg = parseLabel('Nutrition panel text', { origin: 'ocr' });
+    pkg.ingredients = [];
+    pkg.allergens = [];
+    pkg.observations = [{ id: 'merged-ingredient-line', field: 'ocr-line', text: 'CARBOHYDRATES 69.29g 9.28g REFINED WHEAT FLOUR MAIDA', side: 'back', confidence: 78, origin: 'ocr' }];
+    pkg.reconstruction = {
+      identity: { brand: null, name: null, variant: null, status: 'provisional', evidence: { observationIds: [], imageRegions: [] } },
+      serving: null, nutritionRows: [],
+      ingredients: [{ position: 0, name: 'Refined wheat flour', printedText: 'Refined wheat flour (maida)', printedPercentage: 89.98, normalizedName: 'refined wheat flour', status: 'provisional', evidence: { observationIds: ['merged-ingredient-line'], imageRegions: [] } }],
+      additives: [], statements: [], regions: [], unresolved: [], interpretationNote: 'Provisional package interpretation.',
+      revision: 1, updatedAt: '2026-10-24T00:00:00.000Z', model: 'fixture', current: true,
+    } as PackageData['reconstruction'];
+
+    const result = findDeclaredFoodMentions(pkg, { allergies: 'wheat', intolerances: 'gluten' });
+    expect(result.map(({ kind, term, matched, matchBasis }) => [kind, term, matched, matchBasis])).toEqual([
+      ['allergy', 'wheat', true, 'literal'],
+      ['intolerance', 'gluten', true, 'source-backed-alias'],
+    ]);
+    expect(result[0].evidence[0]).toMatchObject({
+      observationId: 'merged-ingredient-line',
+      interpretation: { packageFactId: 'package-fact:ingredient:0', status: 'provisional' },
+    });
+    expect(result[1].sourceIds).toContain('fssai-atta-maida-nomenclature-2019');
+  });
+  it('uses reconstructed May-contain wording as a provisional precaution, not proof of allergen presence', () => {
+    const pkg = parseLabel('Merged label line', { origin: 'ocr' });
+    pkg.ingredients = [];
+    pkg.allergens = [];
+    pkg.observations = [{ id: 'merged-warning-line', field: 'ocr-line', text: 'MAY CONTAIN TRACE PEANUTS', side: 'back', confidence: 72, origin: 'ocr' }];
+    pkg.reconstruction = {
+      identity: { brand: null, name: null, variant: null, status: 'provisional', evidence: { observationIds: [], imageRegions: [] } },
+      serving: null, nutritionRows: [], ingredients: [], additives: [],
+      statements: [{ kind: 'may-contain', label: 'May contain', text: 'May contain traces of peanuts', status: 'provisional', evidence: { observationIds: ['merged-warning-line'], imageRegions: [] } }],
+      regions: [], unresolved: [], interpretationNote: 'Provisional package interpretation.',
+      revision: 1, updatedAt: '2026-10-24T00:00:00.000Z', model: 'fixture', current: true,
+    } as PackageData['reconstruction'];
+
+    const result = findDeclaredFoodMentions(pkg, { allergies: 'peanuts', intolerances: '' })[0];
+    expect(result).toMatchObject({ matched: true, evidence: [{ type: 'precautionary-cross-contact', observationId: 'merged-warning-line', interpretation: { packageFactId: 'package-fact:statement:0', status: 'provisional' } }] });
+  });
+  it('ignores archived reconstruction when checking profile context', () => {
+    const pkg = parseLabel('Merged label line', { origin: 'ocr' });
+    pkg.observations = [{ id: 'old-line', field: 'ocr-line', text: 'REFINED WHEAT FLOUR', side: 'back', confidence: 70, origin: 'ocr' }];
+    pkg.reconstruction = {
+      identity: { brand: null, name: null, variant: null, status: 'provisional', evidence: { observationIds: [], imageRegions: [] } },
+      serving: null, nutritionRows: [],
+      ingredients: [{ position: 0, name: 'Refined wheat flour', printedText: 'Refined wheat flour', printedPercentage: null, normalizedName: null, status: 'provisional', evidence: { observationIds: ['old-line'], imageRegions: [] } }],
+      additives: [], statements: [], regions: [], unresolved: [], interpretationNote: 'Archived package interpretation.',
+      revision: 1, updatedAt: '2026-10-24T00:00:00.000Z', model: 'fixture', current: false,
+    } as PackageData['reconstruction'];
+    expect(findDeclaredFoodMentions(pkg, { allergies: 'wheat', intolerances: '' })[0].matched).toBe(false);
   });
 });

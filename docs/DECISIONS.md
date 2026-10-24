@@ -986,3 +986,7 @@ Accept `package.reconstruction` as a provider transport envelope and normalize i
 ## 24 October 2026 — classify food-choice intent and coverage from normalized serving basis
 
 Treat “how should I think about this quantity?” as an interpretation request unless the question asks whether or how to consume the food. Do not trigger a suitability synthesis solely from the words “should I”. When a response gives a nutrient value for the declared serving mass, count it as covering the corresponding row only if the serving mass and unit exactly match that row's reconstructed basis. For source-only physiological comparisons, retain the sentence when its linked source passed relevance checks; this does not authorize a product-specific judgment without linked package facts. Preserve all numeric, basis, source-membership and safety validation.
+
+## 24 October 2026 — compare profile context with current reconstructed ingredients
+
+The local profile-aware package audit should consider the active evidence-linked reconstruction as well as OCR observations already categorized by the heuristic parser. Use only current non-unreadable ingredient readings and allergen-related statements with links to recorded package observations. Treat each match as provisional when it comes from model reconstruction, preserve terminology-source links, and retain explicit uncertainty. Never turn a missing match into a safety clearance. Ignore archived reconstruction revisions.
