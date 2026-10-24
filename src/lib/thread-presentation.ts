@@ -1,5 +1,5 @@
 import type { AssistantUiComponent, Calculation, PackageData, SavedConversationTurn, TentativeStructuredCandidate } from './contracts';
-import { asksForDeclaredPieceCount, calculationsFromReconstruction, normalizeReconstructedServing, type ReconstructedServingPortion } from './portion';
+import { calculationsFromReconstruction, normalizeReconstructedServing } from './portion';
 
 export type ThreadMessage = SavedConversationTurn & {
   status?: 'pending' | 'fallback';
@@ -12,14 +12,15 @@ export type ThreadMessage = SavedConversationTurn & {
 
 export type ThreadAgentTrace = { name: string; status: string; resultCount: number; elapsedMs: number };
 export type ThreadAgentDiagnostics = {
-  schemaMode: string;
-  modelOutputStatus: string;
+  contract: string;
   answerStatus: string;
-  acceptedClaims: number;
-  rejectedClaims: number;
-  acceptedAnswerParts: number;
-  rejectedAnswerParts: number;
-  rejectedReasons: Record<string, number>;
+  acceptedSentences: number;
+  withheldQuantitySentences: number;
+  generationCount: number;
+  toolCallCount: number;
+  packageReconstructionRevision: number | null;
+  retrievedSourceCount: number;
+  calculationCount: number;
 };
 
 /** A failed package recheck must not erase a previously successful answer. */
@@ -60,24 +61,22 @@ export function parseThreadAgentTrace(value: unknown): ThreadAgentTrace[] {
 export function parseThreadAgentDiagnostics(value: unknown): ThreadAgentDiagnostics | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   const record = value as Record<string, unknown>;
-  const count = (key: string) => typeof record[key] === 'number' && Number.isInteger(record[key]) && (record[key] as number) >= 0 && (record[key] as number) <= 100;
-  if (typeof record.schemaMode !== 'string' || !/^[a-z-]{1,80}$/.test(record.schemaMode)
-    || typeof record.modelOutputStatus !== 'string' || !/^[a-z-]{1,80}$/.test(record.modelOutputStatus)
+  const count = (key: string) => typeof record[key] === 'number' && Number.isInteger(record[key]) && (record[key] as number) >= 0 && (record[key] as number) <= 1000;
+  if (record.contract !== 'native-tools-and-natural-text'
     || typeof record.answerStatus !== 'string' || !/^[a-z-]{1,80}$/.test(record.answerStatus)
-    || !count('acceptedClaims') || !count('rejectedClaims') || !count('acceptedAnswerParts') || !count('rejectedAnswerParts')
-    || !record.rejectedReasons || typeof record.rejectedReasons !== 'object' || Array.isArray(record.rejectedReasons)) return undefined;
-  const rejectedReasons = Object.fromEntries(Object.entries(record.rejectedReasons as Record<string, unknown>).slice(0, 12).flatMap(([reason, total]) =>
-    /^[a-z-]{1,80}$/.test(reason) && typeof total === 'number' && Number.isInteger(total) && total > 0 && total <= 100 ? [[reason, total]] : [],
-  ));
+    || !count('acceptedSentences') || !count('withheldQuantitySentences') || !count('generationCount')
+    || !count('toolCallCount') || !count('retrievedSourceCount') || !count('calculationCount')
+    || !(record.packageReconstructionRevision === null || (typeof record.packageReconstructionRevision === 'number' && Number.isInteger(record.packageReconstructionRevision) && record.packageReconstructionRevision >= 1 && record.packageReconstructionRevision <= 1000))) return undefined;
   return {
-    schemaMode: record.schemaMode,
-    modelOutputStatus: record.modelOutputStatus,
+    contract: record.contract,
     answerStatus: record.answerStatus,
-    acceptedClaims: record.acceptedClaims as number,
-    rejectedClaims: record.rejectedClaims as number,
-    acceptedAnswerParts: record.acceptedAnswerParts as number,
-    rejectedAnswerParts: record.rejectedAnswerParts as number,
-    rejectedReasons,
+    acceptedSentences: record.acceptedSentences as number,
+    withheldQuantitySentences: record.withheldQuantitySentences as number,
+    generationCount: record.generationCount as number,
+    toolCallCount: record.toolCallCount as number,
+    packageReconstructionRevision: record.packageReconstructionRevision as number | null,
+    retrievedSourceCount: record.retrievedSourceCount as number,
+    calculationCount: record.calculationCount as number,
   };
 }
 
@@ -103,76 +102,8 @@ export function hasVisibleProvisionalPackageAmounts(components: AssistantUiCompo
   return calculations.some(calculation => visibleCalculationIds.has(calculation.id) && Boolean(calculation.interpretationIds?.length));
 }
 
-/** Keep the full nutrition table on demand; a long table should not displace a short conversational answer. */
-export function shouldShowNutritionTable(question: string, usableReadingCount: number, conflictingReadingCount = 0): boolean {
-  const asksForTable = /\b(?:nutrition|nutrients?|macros?|full label table|show (?:me )?(?:the )?table|per\s*100\b|list (?:the )?(?:values|amounts))\b/i.test(question);
-  return asksForTable && (usableReadingCount > 0 || conflictingReadingCount > 0);
-}
-
-/** Add a serving calculator when the answer discusses a food choice or a named amount. */
-export function addContextualServingCalculator(
-  question: string,
-  components: AssistantUiComponent[],
-  calculations: Calculation[],
-  serving: ReconstructedServingPortion | null | undefined,
-): AssistantUiComponent[] {
-  // These types intentionally render in the inspector, never inline in the
-  // conversation. Remove them before the component limit is applied so an
-  // evidence-only model proposal cannot crowd out a useful serving tool.
-  const conversationComponents = components.filter(component =>
-    !['package-evidence', 'package-details', 'source-reference-cards'].includes(component.type),
-  );
-  const asksForAmount = /\b\d+(?:\.\d+)?\s*(?:g|grams?|ml)\b/i.test(question) || asksForDeclaredPieceCount(question, serving);
-  const asksForFoodChoice = /\b(?:good|bad|healthy|unhealthy|suitable|unsuitable|appropriate|daily|every\s+day|regular(?:ly)?|snack(?:ing)?|recommend(?:ed|ation)?|should\s+i|can\s+i\s+(?:eat|have|include))\b/i.test(question);
-  const normalizedServing = normalizeReconstructedServing(serving);
-  if (!normalizedServing?.quantity || !normalizedServing.unit || !['clear', 'provisional'].includes(normalizedServing.status)
-    || (!asksForFoodChoice && !asksForAmount)
-    || conversationComponents.some(component => component.type === 'portion-calculator') || conversationComponents.length >= 6) return conversationComponents;
-  const calculation = calculations.find(item => item.nutrient === 'carbohydrate'
-    && Math.abs(item.portion - normalizedServing.quantity!) <= 1e-6 && item.portionUnit === normalizedServing.unit
-    && Boolean(item.interpretationIds?.length) && Boolean(item.observationIds.length || item.imageIds?.length));
-  if (!calculation) return conversationComponents;
-  return [...conversationComponents, {
-    type: 'portion-calculator',
-    observationIds: calculation.observationIds.slice(0, 20),
-    sourceIds: [],
-    calculationIds: [calculation.id],
-  }];
-}
-
-/** Add a concise, deterministic serving calculation when Gemini answered the follow-up without it. */
-export function includeTraceableServingCalculation(
-  answer: string,
-  question: string,
-  calculations: Calculation[],
-  serving: ReconstructedServingPortion | null | undefined,
-): string {
-  const normalizedServing = normalizeReconstructedServing(serving);
-  if (!normalizedServing?.quantity || !normalizedServing.unit || !['clear', 'provisional'].includes(normalizedServing.status)
-    || !asksForDeclaredPieceCount(question, normalizedServing)) return answer;
-  const calculation = calculations.find(item => item.nutrient === 'carbohydrate'
-    && Math.abs(item.portion - normalizedServing.quantity!) <= 1e-6 && item.portionUnit === normalizedServing.unit
-    && Boolean(item.interpretationIds?.length) && Boolean(item.observationIds.length || item.imageIds?.length));
-  if (!calculation) return answer;
-  const alreadyIncludesQuantity = /\b(?:carbohydrat\w*|carbs?)\b.{0,48}\b\d+(?:\.\d+)?\s*g\b/i.test(answer)
-    || /\b\d+(?:\.\d+)?\s*g\b.{0,48}\b(?:carbohydrat\w*|carbs?)\b/i.test(answer);
-  if (alreadyIncludesQuantity) return answer;
-  const servingName = normalizedServing.pieceCount && normalizedServing.pieceDescription
-    ? `${normalizedServing.pieceCount} ${normalizedServing.pieceDescription}`
-    : 'the printed serving';
-  const amount = `about ${normalizedServing.quantity} ${normalizedServing.unit}`;
-  const qualifier = calculation.interpretationIds?.length ? 'current unverified label reading' : 'saved label reading';
-  const calculatedAmount = `about ${Number(calculation.result.toFixed(2)).toLocaleString('en-IN')} g of carbohydrate`;
-  const alreadyNamesServing = asksForDeclaredPieceCount(answer, normalizedServing);
-  const sentence = alreadyNamesServing
-    ? `With the ${qualifier}, that serving works out to ${calculatedAmount}.`
-    : `Using the ${qualifier}, ${servingName} (${amount}) works out to ${calculatedAmount}.`;
-  return `${answer.trim()}${answer.trim() ? ' ' : ''}${sentence}`;
-}
-
-/** Combine validated provider calculations with deterministic saved-serving calculations for one rendered assistant turn. */
+/** Bind only explicitly returned operations to their trusted UI components. */
 export function prepareAssistantTurnPresentation(
-  question: string,
   components: AssistantUiComponent[],
   providerCalculations: Calculation[],
   pkg: PackageData,
@@ -191,16 +122,10 @@ export function prepareAssistantTurnPresentation(
   const calculations = [...byBasis.values()].slice(0, 20);
   return {
     calculations,
-    components: addContextualServingCalculator(question, components, calculations, serving),
+    components: components
+      .filter(component => !['package-evidence', 'package-details', 'source-reference-cards'].includes(component.type))
+      .slice(0, 6),
   };
-}
-
-/** Keep label explorers out of general answers; raw OCR review belongs in the inspector. */
-export function shouldShowLabelExplorer(question: string, kind: 'ingredient' | 'allergen'): boolean {
-  return kind === 'ingredient'
-    ? /\b(?:ingredients?|additives?|preservatives?|what(?:'s| is) (?:in|inside)|made from)\b/i.test(question)
-      || /\b(?:suitab\w*|daily|everyday|snack\w*|good for|better choice|food choice)\b/i.test(question)
-    : /\b(?:allerg(?:y|ies|en)|cross[- ]contact|may contain|allergen statement)\b/i.test(question);
 }
 
 /** Turn safe server failure codes into explanations users can act on. */

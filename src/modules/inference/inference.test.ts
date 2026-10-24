@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { defaultProfile, packageSchema, tentativeStructuredCandidateSchema, type Calculation, type PackageData } from '../../lib/contracts';
+import { defaultProfile, packageReconstructionContentSchema, packageSchema, tentativeStructuredCandidateSchema, type Calculation, type PackageData } from '../../lib/contracts';
 import { reconcileInterpretedNutrition } from '../../lib/interpreted-nutrients';
 import { packageForAssist } from './evidence';
-import { InferenceModuleError, validateInferenceOutput } from './index';
+import { InferenceModuleError, validateInferenceOutput, validateNaturalAnswerText } from './index';
 
 const fixturePackage: PackageData = packageSchema.parse({
   id: 'synthetic-package',
@@ -47,7 +47,56 @@ const fixturePackage: PackageData = packageSchema.parse({
 
 const observationSpan = { kind: 'observation' as const, id: 'ocr-line-1', quote: 'Protein approx 8.8 g' };
 
+function reconstructionFixture() {
+  const imageEvidence = [{ imageId: 'synthetic-image', region: null }];
+  const evidence = { observationIds: [], imageRegions: imageEvidence };
+  return packageReconstructionContentSchema.parse({
+    identity: { brand: 'Example', name: 'Crackers', variant: 'Sugar Free', status: 'provisional', evidence },
+    serving: { printedText: '2 biscuits (13.4 g)', quantity: 13.4, unit: 'g', pieceCount: 2, pieceDescription: 'biscuits', status: 'provisional', evidence },
+    nutritionRows: [{ rowId: 'carbohydrate-per-100g', nutrient: 'Carbohydrates', printedLabel: 'Carbohydrates', printedValue: '69.29 g', value: 69.29, unit: 'g', columnLabel: 'Per 100 g', basisText: 'per 100 g', basisAmount: 100, basisUnit: 'g', qualifier: null, status: 'provisional', evidence }],
+    ingredients: [{ position: 0, name: 'Refined wheat flour', printedText: 'REFINED WHEAT FLOUR (MAIDA)', printedPercentage: 89.98, normalizedName: 'refined wheat flour', status: 'provisional', evidence }],
+    additives: [],
+    statements: [{ kind: 'claim', label: 'Sugar free', text: 'FREE OF SUGAR', status: 'provisional', evidence }],
+    regions: [],
+    unresolved: [],
+    interpretationNote: 'Provisional package interpretation.',
+  });
+}
+
 describe('provider-independent inference output validation', () => {
+  it('keeps natural prose and checks only quantities against canonical package rows and tools', () => {
+    const pkg = packageSchema.parse({
+      ...fixturePackage,
+      reconstruction: {
+        ...reconstructionFixture(), revision: 1, updatedAt: '2026-10-24T00:00:00.000Z', model: 'fixture-model', current: true,
+      },
+    });
+    const checked = validateNaturalAnswerText(
+      'This is a refined-flour-heavy cracker. The label appears to list 69.29 g carbohydrate per 100 g.',
+      { package: pkg, question: 'What can you tell me about it?' },
+    );
+    expect(checked.answer).toContain('This is a refined-flour-heavy cracker.');
+    expect(checked.answer).toContain('69.29 g carbohydrate per 100 g.');
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(0);
+
+    const mixed = validateNaturalAnswerText(
+      'This is a refined-flour-heavy cracker. It contains 99 g carbohydrate per 100 g.',
+      { package: pkg, question: 'What can you tell me about it?' },
+    );
+    expect(mixed.answer).toContain('This is a refined-flour-heavy cracker.');
+    expect(mixed.answer).not.toContain('99 g');
+    expect(mixed.withheldUnsupportedQuantitySentenceCount).toBe(1);
+  });
+
+  it('does not treat a numeric value in raw OCR as a usable package quantity', () => {
+    const checked = validateNaturalAnswerText(
+      'The package lists 8.8 g protein per 100 g.',
+      { package: fixturePackage, question: 'What can you tell me about it?' },
+    );
+    expect(checked.answer).toBe('');
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
+  });
+
   it('compacts follow-up package context without breaking saved reconstruction lineage', () => {
     const pkg=packageSchema.parse({
       ...fixturePackage,
@@ -90,1019 +139,248 @@ describe('provider-independent inference output validation', () => {
     expect(result.claims[0].supportingSpans).toEqual([]);
   });
 
-  it('keeps a grounded natural paraphrase anchored by the claim’s linked package facts while withholding an unlinked source claim',()=>{
-    const labelText='INGREDIENTS: RAISING AGENT (INS 450(i)).';
-    const pkg=packageSchema.parse({
-      ...fixturePackage,
-      observations:fixturePackage.observations.map(observation=>({...observation,text:labelText})),
-      rawText:labelText,
-    });
-    const packageReconstruction={
-      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},
-      serving:null,
-      nutritionRows:[],ingredients:[],
-      additives:[{printedName:'INS 450(i)',code:null,normalizedName:'Disodium diphosphate',status:'provisional' as const,evidence:{observationIds:['ocr-line-1'],imageRegions:[]}}],
-      statements:[{kind:'other' as const,label:null,text:labelText,status:'provisional' as const,evidence:{observationIds:['ocr-line-1'],imageRegions:[]}}],
-      regions:[],unresolved:[],interpretationNote:'Provisional package interpretation.',
-    };
-    const naturalAnswer='The package lists INS 450(i), which corresponds to disodium diphosphate. The retrieved EFSA record describes toxicological reference values, but it does not establish exposure from this product.';
-    const events:Array<{stage:string;index:number;decision:string;reason?:string}>=[];
-    const result=validateInferenceOutput({
-      answer:naturalAnswer,
-      packageReconstruction,
-      claims:[{mode:'synthesis',text:'The package lists INS 450(i) as a raising agent.',observationIds:['ocr-line-1'],sourceIds:[],packageFactIds:['package-fact:additive:0']}],
-      limitations:[],inspectImage:null,
-    },{package:pkg,question:'What does INS 450(i) mean?',diagnostic:event=>events.push(event)});
-    expect(result.answer).toBe('The package lists INS 450(i), which corresponds to disodium diphosphate.');
-    expect(events).toContainEqual(expect.objectContaining({stage:'natural-answer',index:0,decision:'accepted'}));
-    expect(events).toContainEqual(expect.objectContaining({stage:'natural-answer',index:2,decision:'rejected',reason:'no-validated-claim-anchor'}));
-  });
-
-  it('anchors a citation-free table inventory to every named, traceable row and rejects incomplete inventories',()=>{
-    const imageRegion={imageId:'synthetic-image',region:null};
-    const rows=[
-      {rowId:'energy-100g',nutrient:'Energy',printedLabel:'Energy',printedValue:'384 kcal',value:384,unit:'kcal',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-      {rowId:'protein-100g',nutrient:'Protein',printedLabel:'Protein',printedValue:'8.2 g',value:8.2,unit:'g',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-      {rowId:'carbohydrate-100g',nutrient:'Carbohydrate',printedLabel:'Carbohydrates',printedValue:'59.6 g',value:59.6,unit:'g',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-      {rowId:'trans-fat-100g',nutrient:'Trans Fatty Acids',printedLabel:'Trans Fatty Acids',printedValue:'0 g',value:0,unit:'g',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-      {rowId:'iron-100g',nutrient:'Iron',printedLabel:'Iron',printedValue:'1.5 mg',value:1.5,unit:'mg',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-    ];
-    const reconstruction={
-      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},serving:null,
-      nutritionRows:rows,ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'',
-    };
-    const answer='The package displays a nutrition table per 100 g, listing energy, protein, carbohydrates, trans fat and iron.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[]}],limitations:[],inspectImage:null,
-    },{package:packageSchema.parse({...fixturePackage,observations:[],rawText:''}),images:[{handle:'synthetic-image'}],question:'Summarize the nutrition panel.'});
-    expect(result.answer).toBe(answer);
-    expect(result.claims[0].interpretationRowIds).toEqual(rows.map(row=>row.rowId));
-
-    const incomplete=validateInferenceOutput({
-      answer,packageReconstruction:{...reconstruction,nutritionRows:rows.filter(row=>row.nutrient!=='Iron')},
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[]}],limitations:[],inspectImage:null,
-    },{package:packageSchema.parse({...fixturePackage,observations:[],rawText:''}),images:[{handle:'synthetic-image'}],question:'Summarize the nutrition panel.'});
-    expect(incomplete.claims).toEqual([]);
-    expect(incomplete.answer).not.toBe(answer);
-  });
-
-  it('keeps evidence-linked nutrition rows usable when an unlinked model list contains extra unsupported values',()=>{
-    const imageRegion={imageId:'synthetic-image',region:null};
-    const reconstruction={
-      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},
-      serving:{printedText:'Serving size 35 g',quantity:35,unit:'g' as const,pieceCount:null,pieceDescription:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-      nutritionRows:[
-        {rowId:'energy-per-35g',nutrient:'Energy',printedLabel:'Energy value',printedValue:'139',value:139,unit:'kcal' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-        {rowId:'protein-per-35g',nutrient:'Protein',printedLabel:'Protein',printedValue:'5.0',value:5,unit:'g' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-        {rowId:'carbohydrate-per-35g',nutrient:'Carbohydrate',printedLabel:'Carbohydrate',printedValue:'23.1',value:23.1,unit:'g' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-        {rowId:'sugars-per-35g',nutrient:'Sugars',printedLabel:'Sugars',printedValue:'0',value:0,unit:'g' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-        {rowId:'fibre-per-35g',nutrient:'Fibre',printedLabel:'Dietary fibre',printedValue:'3.6',value:3.6,unit:'g' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-        {rowId:'fat-per-35g',nutrient:'Fat',printedLabel:'Fat',printedValue:'3.0',value:3,unit:'g' as const,columnLabel:'Per 35 g',basisText:'Per 35 g',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
-      ],
-      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional image-linked reconstruction.',
-    };
-    const answer='The label declares a serving size of 35 g. Per serving, it lists Energy 139 kcal, Protein 5 g, Carbohydrate 23.1 g, Sugars 0 g, Fibre 3.6 g, Fat 3 g, and Sodium 999 mg.';
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const result=validateInferenceOutput({
-      answer,
-      packageReconstruction:reconstruction,
-      claims:[
-        {mode:'synthesis',text:'The label declares a serving size of 35 g.',observationIds:[],sourceIds:[]},
-        {mode:'synthesis',text:'Per serving, it lists Energy 139 kcal, Protein 5 g, Carbohydrate 23.1 g, Sugars 0 g, Fibre 3.6 g, Fat 3 g, and Sodium 999 mg.',observationIds:[],sourceIds:[]},
-      ],
-      answerParts:[
-        {text:'The label declares a serving size of 35 g.',claimIndexes:[0]},
-        {text:'Per serving, it lists Energy 139 kcal, Protein 5 g, Carbohydrate 23.1 g, Sugars 0 g, Fibre 3.6 g, Fat 3 g, and Sodium 999 mg.',claimIndexes:[1]},
-      ],
-      limitations:[],inspectImage:null,
-    },{package:packageSchema.parse({...fixturePackage,observations:[],rawText:''}),images:[{handle:'synthetic-image'}],question:'What nutrition does this label declare per 35 g serving?',diagnostic:event=>events.push(event)});
-
-    expect(result.answer).toContain('For the 35 g serving');
-    expect(result.answer).toContain('Energy 139 kcal');
-    expect(result.answer).toContain('Protein 5 g');
-    expect(result.answer).toContain('Carbohydrate 23.1 g');
-    expect(result.answer).toContain('Fibre 3.6 g');
-    expect(result.answer).not.toContain('999 mg');
-    expect(result.answer).not.toMatch(/Sodium\s+999/);
-    expect(result.answer).toContain('provisional label readings');
-    expect(result.claims.flatMap(claim=>claim.interpretationRowIds??[])).toEqual(expect.arrayContaining(reconstruction.nutritionRows.map(row=>row.rowId)));
-    expect(events).toContainEqual({stage:'structured-answer',index:0,decision:'accepted',reason:'traceable-nutrition-rows-after-numeric-withholding'});
-    expect(events).toContainEqual(expect.objectContaining({stage:'natural-answer',decision:'rejected',reason:'unsupported-numeric-value'}));
-  });
-
-  it('links a rounded nutrient claim to one uniquely matching deterministic calculation',()=>{
-    const reconstruction={
-      identity:{brand:'Example',name:'Crackers',variant:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
-      serving:{printedText:'2 biscuits (13.4 g)',quantity:13.4,unit:'g' as const,pieceCount:2,pieceDescription:'biscuits',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
-      nutritionRows:[{rowId:'carbohydrate-per-100g',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}}],
-      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional image-linked interpretation.',
-    };
-    const calculation:Calculation={
-      id:'carbohydrate-two-biscuits',label:'Carbohydrate in 2 biscuits',nutrient:'carbohydrate',input:69.29,inputUnit:'g',basisAmount:100,
-      portion:13.4,portionUnit:'g',result:9.28,unit:'g',formula:'69.29 g × 13.4 g ÷ 100 g',
-      evidenceText:'Carbohydrates in 2 biscuits; 69.29 g per 100 g × 13.4 g ÷ 100 g = 9.28 g; provisional image-linked calculation.',
-      observationIds:[],imageIds:['synthetic-image'],interpretationIds:['carbohydrate-per-100g'],assumptions:['Unverified package interpretation.'],
-    };
-    const answer='Two biscuits provide approximately 9.3 g of carbohydrates.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[]}],
-      limitations:[],inspectImage:null,
-    },{package:fixturePackage,images:[{handle:'synthetic-image'}],calculations:[calculation]});
-    expect(result.claims).toHaveLength(1);
-    expect(result.claims[0].calculationIds).toEqual([calculation.id]);
-    expect(result.claims[0].packageFactIds).toContain('package-fact:serving');
-    expect(result.answer).toBe(answer);
-
-    const ambiguous=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[]}],limitations:[],inspectImage:null,
-    },{package:fixturePackage,images:[{handle:'synthetic-image'}],calculations:[calculation,{...calculation,id:'same-result-other-portion',portion:25,label:'Carbohydrate in 25 g'}]});
-    expect(ambiguous.claims).toEqual([]);
-    expect(ambiguous.answer).toContain('can’t establish a reliable answer');
-
-    const wrongValue=validateInferenceOutput({
-      answer:'Two biscuits provide 9.5 g of carbohydrates.',packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:'Two biscuits provide 9.5 g of carbohydrates.',observationIds:[],sourceIds:[]}],limitations:[],inspectImage:null,
-    },{package:fixturePackage,images:[{handle:'synthetic-image'}],calculations:[calculation]});
-    expect(wrongValue.claims).toEqual([]);
-    expect(wrongValue.answer).not.toContain('9.5 g');
-  });
-
-  it('validates a serving-mass paraphrase against the linked reconstructed nutrition row and serving declaration', () => {
-    const reconstruction = {
-      identity: { brand: 'Bisk Farm', name: 'Cream Cracker', variant: 'Sugar Free', status: 'provisional' as const, evidence: { observationIds: [], imageRegions: [{ imageId: 'synthetic-image', region: null }] } },
-      serving: { printedText: '2 biscuits (approximately 13.4 g)', quantity: 13.4, unit: 'g' as const, pieceCount: 2, pieceDescription: 'biscuits', status: 'provisional' as const, evidence: { observationIds: [], imageRegions: [{ imageId: 'synthetic-image', region: null }] } },
-      nutritionRows: [{ rowId: 'carbohydrates-per-serving', nutrient: 'Carbohydrates', printedLabel: 'Carbohydrates', printedValue: '9.28 g', value: 9.28, unit: 'g' as const, columnLabel: 'Per serving', basisText: 'per serving', basisAmount: 13.4, basisUnit: 'g' as const, qualifier: null, status: 'provisional' as const, evidence: { observationIds: [], imageRegions: [{ imageId: 'synthetic-image', region: null }] } }],
-      ingredients: [], additives: [], statements: [], regions: [], unresolved: [], interpretationNote: 'Provisional visual reconstruction.',
-    };
-    const answer = 'For the printed serving of 2 biscuits (approx. 13.4 g), the provisional table reading is 9.28 g of carbohydrates per 13.4 g.';
-    const events: { stage: string; index: number; decision: string; reason?: string }[] = [];
+  it("keeps Gemini's natural answer as the only conversational answer", () => {
+    const reconstruction = reconstructionFixture();
+    const answer = "The ingredient list puts refined wheat flour first. The label appears to list 69.29 g of carbohydrates per 100 g, so this is better as an occasional than a default daily snack.";
     const result = validateInferenceOutput({
       answer,
       packageReconstruction: reconstruction,
-      claims: [{ mode: 'synthesis', text: 'The table appears to list 9.28 g of carbohydrates per serving.', observationIds: [], sourceIds: [], interpretationRowIds: ['carbohydrates-per-serving'], packageFactIds: ['package-fact:serving'] }],
+      claims: [
+        { mode: 'synthesis', text: 'The ingredient list places refined wheat flour first.', observationIds: [], sourceIds: [], packageFactIds: ['package-fact:ingredient:0'] },
+        { mode: 'synthesis', text: 'Carbohydrates appear to be 69.29 g per 100 g.', observationIds: [], sourceIds: [], interpretationRowIds: ['carbohydrate-per-100g'] },
+      ],
+      answerParts: [{ text: answer, claimIndexes: [0, 1] }],
+      limitations: [],
+      inspectImage: null,
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }] });
+
+    expect(result.answer).toBe(answer);
+    expect(result.claims).toHaveLength(2);
+    expect(result.answer).not.toContain('Evidence-linked interpretation');
+    expect(result.answer).not.toContain('The label appears to list 69.29 g of carbohydrates per 100 g. The label appears to list');
+  });
+
+  it('withholds an unsupported numeric segment while retaining an independently grounded package statement', () => {
+    const reconstruction = reconstructionFixture();
+    const grounded = 'The ingredient list puts refined wheat flour first.';
+    const unsupported = 'The table appears to list 969 g of carbohydrates per 100 g.';
+    const events: { stage: string; index: number; decision: string; reason?: string }[] = [];
+    const result = validateInferenceOutput({
+      answer: grounded + ' ' + unsupported,
+      packageReconstruction: reconstruction,
+      claims: [
+        { mode: 'synthesis', text: grounded, observationIds: [], sourceIds: [], packageFactIds: ['package-fact:ingredient:0'] },
+        { mode: 'synthesis', text: unsupported, observationIds: [], sourceIds: [], interpretationRowIds: ['carbohydrate-per-100g'] },
+      ],
+      answerParts: [
+        { text: grounded, claimIndexes: [0] },
+        { text: unsupported, claimIndexes: [1] },
+      ],
+      limitations: [],
+      inspectImage: null,
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }], diagnostic: event => events.push(event) });
+
+    expect(result.answer).toBe(grounded);
+    expect(result.answer).not.toContain('969 g');
+    expect(events).toContainEqual({ stage: 'claim', index: 1, decision: 'rejected', reason: 'unsupported-numeric-value' });
+    expect(events).toContainEqual({ stage: 'answer-part', index: 1, decision: 'rejected', reason: 'unsupported-claim-link' });
+  });
+
+  it('does not manufacture evidence links by matching answer wording to package reconstruction', () => {
+    const answer = 'The label appears to list 69.29 g of carbohydrates per 100 g and refined wheat flour first.';
+    const result = validateInferenceOutput({
+      answer,
+      packageReconstruction: reconstructionFixture(),
+      claims: [{ mode: 'synthesis', text: answer, observationIds: [], sourceIds: [] }],
+      limitations: [],
+      inspectImage: null,
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }] });
+
+    expect(result.claims).toEqual([]);
+    expect(result.answer).not.toContain('69.29 g');
+    expect(result.answer).toContain('can’t establish a reliable answer');
+  });
+
+  it('validates a cited nutrition row by identity, value, unit and printed basis', () => {
+    const reconstruction = reconstructionFixture();
+    const validate = (text: string) => validateInferenceOutput({
+      answer: text,
+      packageReconstruction: reconstruction,
+      claims: [{ mode: 'synthesis', text, observationIds: [], sourceIds: [], interpretationRowIds: ['carbohydrate-per-100g'] }],
+      answerParts: [{ text, claimIndexes: [0] }],
+      limitations: [],
+      inspectImage: null,
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }] });
+
+    expect(validate('The table appears to list 69.29 g of carbohydrates per 100 g.').answer)
+      .toBe('The table appears to list 69.29 g of carbohydrates per 100 g.');
+    expect(validate('The table appears to list 70 g of carbohydrates per 100 g.').answer)
+      .not.toContain('70 g');
+    expect(validate('The table appears to list 69.29 g of protein per 100 g.').answer)
+      .not.toContain('69.29 g');
+    expect(validate('The table appears to list 69.29 g of carbohydrates per serving.').answer)
+      .not.toContain('69.29 g');
+  });
+
+  it('uses only explicitly referenced deterministic calculations for portion quantities', () => {
+    const calculation: Calculation = {
+      id: 'carbohydrate-two-biscuits',
+      label: 'Carbohydrate in two biscuits',
+      nutrient: 'carbohydrate',
+      input: 69.29,
+      inputUnit: 'g',
+      basisAmount: 100,
+      portion: 13.4,
+      portionUnit: 'g',
+      result: 9.28,
+      unit: 'g',
+      formula: '69.29 g × 13.4 g ÷ 100 g',
+      evidenceText: 'Carbohydrates in two biscuits; 69.29 g per 100 g × 13.4 g ÷ 100 g = 9.28 g; provisional.',
+      observationIds: [],
+      imageIds: ['synthetic-image'],
+      interpretationIds: ['carbohydrate-per-100g'],
+      assumptions: ['Unverified package interpretation.'],
+    };
+    const answer = 'Two biscuits provide an estimated 9.28 g of carbohydrates.';
+    const withCalculation = validateInferenceOutput({
+      answer,
+      packageReconstruction: reconstructionFixture(),
+      claims: [{ mode: 'synthesis', text: answer, observationIds: [], sourceIds: [], calculationIds: [calculation.id], interpretationRowIds: ['carbohydrate-per-100g'], packageFactIds: ['package-fact:serving'] }],
       answerParts: [{ text: answer, claimIndexes: [0] }],
       limitations: [],
       inspectImage: null,
-    }, { package: fixturePackage, diagnostic: event => events.push(event) });
-
-    expect(result.claims).toHaveLength(1);
-    expect(events).toContainEqual({ stage: 'natural-answer', index: 0, decision: 'accepted' });
-    expect(result.answer).toBe(answer);
-  });
-
-  it('keeps a complete serving sentence when a following unsupported quantity is discarded',()=>{
-    const reconstruction={
-      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},
-      serving:{printedText:'2 biscuits (approx. 13.4 g)',quantity:13.4,unit:'g' as const,pieceCount:2,pieceDescription:'biscuits',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
-      nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional package reading.',
-    };
-    const answer='Two biscuits represent the printed serving (approx. 13.4 g). The table provides 9.28 g of carbohydrates per serving.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:'The printed serving is two biscuits, approximately 13.4 g.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:serving']}],
-      limitations:[],inspectImage:null,
-    },{package:fixturePackage});
-
-    expect(result.answer).toBe('Two biscuits represent the printed serving (approx. 13.4 g).');
-  });
-
-  it('does not leave a dangling serving sentence when a later numeric sentence is withheld',()=>{
-    const reconstruction={
-      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},
-      serving:{printedText:'2 biscuits (approx. 13.4 g)',quantity:13.4,unit:'g' as const,pieceCount:2,pieceDescription:'biscuits',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
-      nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional package reading.',
-    };
-    const answer='Two biscuits represent the printed serving (approx. 13.4 g). The table provides 9.28 g of carbohydrates per serving.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:'The printed serving is two biscuits, approximately 13.4 g.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:serving']}],
-      limitations:[],inspectImage:null,
-    },{package:fixturePackage});
-
-    expect(result.answer).toBe('Two biscuits represent the printed serving (approx. 13.4 g).');
-  });
-
-  it('accepts an exact printed per-serving row when its numeric serving mass is unreadable, without converting it',()=>{
-    const reconstruction={
-      identity:{brand:'Bisk Farm',name:'Sugar Free Cream Cracker',variant:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
-      serving:{printedText:'2 biscuits (approximately 13.4 g)',quantity:null,unit:null,pieceCount:2,pieceDescription:'biscuits',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
-      nutritionRows:[{rowId:'carbohydrate-per-serving',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g' as const,columnLabel:'Quantity per serving',basisText:'SERVING',basisAmount:null,basisUnit:null,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}}],
-      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Photo-linked provisional interpretation.',
-    };
-    const answer='The provisional table reading is 9.28 g of carbohydrates per serving; the package appears to define that serving as two biscuits, while its serving mass remains partly unreadable.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:'The photo-backed table appears to list 9.28 g of carbohydrates per serving.',observationIds:[],sourceIds:[]}],
-      answerParts:[{text:answer,claimIndexes:[0]}],limitations:[],inspectImage:null,
-    },{package:fixturePackage});
-    expect(result.claims).toHaveLength(1);
-    expect(result.claims[0].interpretationRowIds).toEqual(['carbohydrate-per-serving']);
-    expect(result.answer).toBe(answer);
-
-    const noPrintedBasis={...reconstruction,nutritionRows:[{...reconstruction.nutritionRows[0],rowId:'basis-missing',columnLabel:null,basisText:null}]};
-    const unsupported=validateInferenceOutput({
-      answer:'The label shows 9.28 g of carbohydrates per serving.',packageReconstruction:noPrintedBasis,
-      claims:[{mode:'synthesis',text:'The label shows 9.28 g of carbohydrates per serving.',observationIds:[],sourceIds:[],interpretationRowIds:['basis-missing']}],
-      limitations:[],inspectImage:null,
-    },{package:fixturePackage});
-    expect(unsupported.claims).toEqual([]);
-  });
-
-  it('restores an omitted nutrition citation only for an exact traceable value, unit and printed basis',()=>{
-    const reconstruction={
-      identity:{brand:null,name:'Example crackers',variant:null,status:'provisional' as const,evidence:{observationIds:['ocr-line-1'],imageRegions:[]}},
-      serving:null,
-      nutritionRows:[{rowId:'protein-per-100g',nutrient:'Protein',printedLabel:'Protein',printedValue:'8.8 g',value:8.8,unit:'g' as const,columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['ocr-line-1'],imageRegions:[]}}],
-      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Photo-linked provisional interpretation.',
-    };
-    const answer='The photographed table appears to list 8.8 g of protein per 100 g; this remains a provisional reading.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[]}],
-      limitations:[],inspectImage:null,
-    },{package:fixturePackage});
-
-    expect(result.claims).toHaveLength(1);
-    expect(result.claims[0].interpretationRowIds).toEqual(['protein-per-100g']);
-    expect(result.answer).toBe(answer);
-  });
-
-  it('does not restore a nutrition citation when the generated amount differs from the traceable row',()=>{
-    const reconstruction={
-      identity:{brand:null,name:'Example crackers',variant:null,status:'provisional' as const,evidence:{observationIds:['ocr-line-1'],imageRegions:[]}},
-      serving:null,
-      nutritionRows:[{rowId:'protein-per-100g',nutrient:'Protein',printedLabel:'Protein',printedValue:'8.8 g',value:8.8,unit:'g' as const,columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['ocr-line-1'],imageRegions:[]}}],
-      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Photo-linked provisional interpretation.',
-    };
-    const answer='The photographed table appears to list 9 g of protein per 100 g.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[]}],
-      limitations:[],inspectImage:null,
-    },{package:fixturePackage});
-
-    expect(result.claims).toEqual([]);
-    expect(result.answer).not.toContain('9 g of protein');
-  });
-
-  it('restores ingredient, identity and serving citations from exact package reconstruction text',()=>{
-    const reconstruction={
-      identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
-      serving:{printedText:'2 biscuits approximately 13.4 g',quantity:13.4,unit:'g' as const,pieceCount:2,pieceDescription:'biscuits',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
-      nutritionRows:[],
-      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}}],
-      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Photo-linked provisional interpretation.',
-    };
-    const answer='Bisk Farm Cream Cracker appears to list refined wheat flour first. One serving is two biscuits weighing 13.4 g.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[
-        {mode:'synthesis',text:'Bisk Farm Cream Cracker appears to list refined wheat flour first.',observationIds:[],sourceIds:[]},
-        {mode:'synthesis',text:'One serving is two biscuits weighing 13.4 g.',observationIds:[],sourceIds:[]},
-      ],
-      limitations:[],inspectImage:null,
-    },{package:fixturePackage});
-
-    expect(result.claims).toHaveLength(2);
-    expect(result.claims[0].packageFactIds).toEqual(['package-fact:identity','package-fact:ingredient:0']);
-    expect(result.claims[1].packageFactIds).toEqual(['package-fact:serving']);
-    expect(result.answer).toBe(answer);
-  });
-
-  it('accepts a reconstructed ingredient as provisional package evidence without requiring a parser observation',()=>{
-    const reconstruction={
-      identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}] }},
-      serving:null,nutritionRows:[],
-      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}}],
-      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Photo-backed provisional reconstruction.',
-    };
-    const answer='The package appears to list refined wheat flour first; this is a provisional visual interpretation.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']}],
-      answerParts:[{text:answer,claimIndexes:[0]}],limitations:[],inspectImage:null,
-    },{package:fixturePackage});
-
-    expect(result.claims).toHaveLength(1);
-    expect(result.claims[0].packageFactIds).toEqual(['package-fact:ingredient:0']);
-    expect(result.answer).toBe(answer);
-  });
-
-  it('accepts provisional package facts linked to a photo attached in the current request',()=>{
-    const reconstruction={
-      identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'current-photo',region:null}] }},
-      serving:null,nutritionRows:[],
-      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'current-photo',region:null}]}}],
-      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'A provisional interpretation from the attached photo.',
-    };
-    const answer='The attached package photo appears to identify a Bisk Farm Cream Cracker and list refined wheat flour.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[],packageFactIds:['package-fact:identity','package-fact:ingredient:0']}],
-      answerParts:[{text:answer,claimIndexes:[0]}],limitations:[],inspectImage:null,
-    },{package:packageSchema.parse({...fixturePackage,observations:[],ocrCaptures:[],visionCaptures:[]}),images:[{handle:'current-photo'}]});
-
-    expect(result.claims[0].packageFactIds).toEqual(['package-fact:identity','package-fact:ingredient:0']);
-    expect(result.answer).toBe(answer);
-  });
-
-  it('rejects package facts that have no retained observation or photo lineage',()=>{
-    const reconstruction={
-      identity:{brand:null,name:null,variant:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[]}},
-      serving:null,nutritionRows:[],
-      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR',printedPercentage:null,normalizedName:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[]}}],
-      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Unlinked candidate.',
-    };
-    const answer='The package lists refined wheat flour.';
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']}],
-      answerParts:[{text:answer,claimIndexes:[0]}],limitations:[],inspectImage:null,
-    },{package:fixturePackage,diagnostic:event=>events.push(event)});
-
-    expect(result.claims).toEqual([]);
-    expect(events).toContainEqual({stage:'claim',index:0,decision:'rejected',reason:'unknown-evidence-id'});
-  });
-
-  it('links a numeric claim to one exact reconstruction row only when nutrient, value, unit, basis and OCR lineage agree', () => {
-    const observation = { id: 'ocr-carbs', field: 'ocr-line', text: 'Carbohydrates 69.29 g', side: 'back' as const, confidence: 72, origin: 'ocr' as const, imageId: 'synthetic-image' };
-    const packageData = packageSchema.parse({ ...fixturePackage, observations: [...fixturePackage.observations, observation], rawText: `${fixturePackage.rawText}\n${observation.text}` });
-    const reconstruction = {
-      identity: { brand: null, name: 'Example crackers', variant: null, status: 'provisional' as const, evidence: { observationIds: ['ocr-carbs'], imageRegions: [] } },
-      serving: null,
-      nutritionRows: [{ rowId: 'carbs-per-100g', nutrient: 'Carbohydrates', printedLabel: 'Carbohydrates', printedValue: '69.29 g', value: 69.29, unit: 'g', columnLabel: 'Per 100 g', basisText: 'per 100 g', basisAmount: 100, basisUnit: 'g' as const, qualifier: null, status: 'provisional' as const, evidence: { observationIds: ['ocr-carbs'], imageRegions: [] } }],
-      ingredients: [], additives: [], statements: [], regions: [], unresolved: [], interpretationNote: 'Provisional visual reconstruction.',
-    };
-    const text = 'The reconstructed label appears to list 69.29 g of carbohydrates per 100 g.';
-    const output = { answer: text, packageReconstruction: reconstruction, claims: [{ mode: 'synthesis' as const, text, observationIds: ['ocr-carbs'], sourceIds: [] }], answerParts: [{ text, claimIndexes: [0] }], limitations: [], inspectImage: null };
-    const result = validateInferenceOutput(output, { package: packageData });
-
-    expect(result.claims).toHaveLength(1);
-    expect(result.claims[0].interpretationRowIds).toEqual(['carbs-per-100g']);
-    expect(result.answer).toBe(text);
-  });
-
-  it('accepts the printed per-serving basis for an image-linked provisional row',()=>{
-    const reconstruction={
-      identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:{x:0.08,y:0.06,width:0.42,height:0.35}}]}},
-      serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g' as const,pieceCount:2,pieceDescription:'biscuits',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:{x:0.08,y:0.06,width:0.42,height:0.35}}]}},
-      nutritionRows:[{rowId:'carbs-per-serving',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g',columnLabel:'Quantity per serving',basisText:'Per serving',basisAmount:13.4,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:{x:0.08,y:0.06,width:0.42,height:0.35}}]}}],
-      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Image-linked provisional reconstruction.',
-    };
-    const answer='The photographed table appears to list 9.28 g of carbohydrates per serving; the value remains provisional.';
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[],interpretationRowIds:['carbs-per-serving']}],
-      answerParts:[{text:answer,claimIndexes:[0]}],limitations:[],inspectImage:null,
-    },{package:fixturePackage,diagnostic:event=>events.push(event)});
-
-    expect(result.claims).toHaveLength(1);
-    expect(result.answer).toBe(answer);
-    expect(events).not.toContainEqual({stage:'claim',index:0,decision:'rejected',reason:'unsupported-basis'});
-  });
-
-  it('validates a cited reconstruction row even when its supporting OCR excerpt omits the table basis',()=>{
-    const observation={id:'ocr-carbs',field:'ocr-line',text:'Carbohydrates 69.29 g',side:'back' as const,confidence:72,origin:'ocr' as const,imageId:'synthetic-image'};
-    const packageData=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
-    const reconstruction={
-      identity:{brand:null,name:'Example crackers',variant:null,status:'provisional' as const,evidence:{observationIds:['ocr-carbs'],imageRegions:[]}},
-      serving:null,
-      nutritionRows:[{rowId:'carbs-per-100g',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g' as const,columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['ocr-carbs'],imageRegions:[]}}],
-      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional visual table reconstruction.',
-    };
-    const answer='The table appears to list 69.29 g of carbohydrates per 100 g; this reading is provisional.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:answer,observationIds:['ocr-carbs'],sourceIds:[],interpretationRowIds:['carbs-per-100g'],supportingSpans:[{kind:'observation',id:'ocr-carbs',quote:'Carbohydrates 69.29 g'}]}],
-      limitations:[],inspectImage:null,
-    },{package:packageData});
-    expect(result.claims).toHaveLength(1);
-    expect(result.answer).toBe(answer);
-
-    const wrongBasis='The table appears to list 69.29 g of carbohydrates per serving.';
-    const rejected=validateInferenceOutput({
-      answer:wrongBasis,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:wrongBasis,observationIds:['ocr-carbs'],sourceIds:[],interpretationRowIds:['carbs-per-100g'],supportingSpans:[{kind:'observation',id:'ocr-carbs',quote:'Carbohydrates 69.29 g'}]}],
-      limitations:[],inspectImage:null,
-    },{package:packageData});
-    expect(rejected.claims).toEqual([]);
-    expect(rejected.answer).not.toContain(wrongBasis);
-  });
-
-  it('uses image-linked package facts as package evidence when a sourced food-choice judgment is requested',()=>{
-    const source={id:'diabetes-guidance',title:'Food and carbohydrate guidance',publisher:'Public health source',url:'https://example.org/guidance',category:'guideline' as const,jurisdiction:'Global',publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',summary:'Carbohydrate portions should be individualized as part of diabetes care.',limitations:'General guidance; not an individual target or product-specific clinical advice.'};
-    const reconstruction={
-      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},serving:null,nutritionRows:[],
-      ingredients:[{position:0,name:'Refined wheat flour (maida)',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:null,normalizedName:'refined wheat flour',status:'provisional' as const,evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}}],
-      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Image-linked provisional ingredient reconstruction.',
-    };
-    const answer='This is not a great daily snack default because the package lists refined wheat flour first; the guidance emphasizes individualized carbohydrate portions.';
-    const result=validateInferenceOutput({
-      answer,packageReconstruction:reconstruction,
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[source.id],packageFactIds:['package-fact:ingredient:0'],supportingSpans:[{kind:'source',id:source.id,quote:source.summary}]}],
-      limitations:[],inspectImage:null,
-    },{package:fixturePackage,question:'Is this good to have for diabetic patients daily for snacking?',evidence:[source]});
-    expect(result.claims).toHaveLength(1);
-    expect(result.answer).toBe(answer);
-  });
-
-  it('accepts a derived declared-serving calculation as evidence for natural per-serving wording',()=>{
-    const observation={id:'serving-and-carbs',field:'label-note',text:'Serving size 2 biscuits approximately 13.4 g; carbohydrates 69.29 g per 100 g.',side:'back' as const,confidence:78,origin:'user' as const};
-    const packageData=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
-    const reconstruction={
-      identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional' as const,evidence:{observationIds:['serving-and-carbs'],imageRegions:[]}},
-      serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g' as const,pieceCount:2,pieceDescription:'biscuits',status:'provisional' as const,evidence:{observationIds:['serving-and-carbs'],imageRegions:[]}},
-      nutritionRows:[{rowId:'carbs-per-100g',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['serving-and-carbs'],imageRegions:[]}}],
-      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional visual reconstruction.',
-    };
-    const calculation={id:'carbs-declared-serving',label:'carbohydrate per serving (2 biscuits, approximately 13.4 g)',nutrient:'carbohydrate' as const,input:69.29,inputUnit:'g',basisAmount:100,portion:13.4,portionUnit:'g' as const,result:69.29*13.4/100,unit:'g',formula:'69.29 g × 13.4 g ÷ 100 g',observationIds:['serving-and-carbs'],interpretationIds:['carbs-per-100g'],assumptions:['The source row remains provisional.']};
-    const answer='For 2 biscuits (about 13.4 g), the provisional calculation is approximately 9.28 g carbohydrate per serving.';
-    const result=validateInferenceOutput({answer,packageReconstruction:reconstruction,claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[],calculationIds:[calculation.id],packageFactIds:['package-fact:serving']}],answerParts:[{text:answer,claimIndexes:[0]}],limitations:[],inspectImage:null},{package:packageData,calculations:[calculation]});
-
-    expect(result.claims).toHaveLength(1);
-    expect(result.answer).toBe(answer);
-  });
-
-  it('does not attach an adjacent reconstructed row when the claimed nutrient or printed basis differs', () => {
-    const observation = { id: 'ocr-carbs', field: 'ocr-line', text: 'Carbohydrates 69.29 g', side: 'back' as const, confidence: 72, origin: 'ocr' as const, imageId: 'synthetic-image' };
-    const packageData = packageSchema.parse({ ...fixturePackage, observations: [...fixturePackage.observations, observation], rawText: `${fixturePackage.rawText}\n${observation.text}` });
-    const reconstruction = {
-      identity: { brand: null, name: null, variant: null, status: 'provisional' as const, evidence: { observationIds: ['ocr-carbs'], imageRegions: [] } },
-      serving: null,
-      nutritionRows: [{ rowId: 'carbs-per-100g', nutrient: 'Carbohydrates', printedLabel: 'Carbohydrates', printedValue: '69.29 g', value: 69.29, unit: 'g', columnLabel: 'Per 100 g', basisText: 'per 100 g', basisAmount: 100, basisUnit: 'g' as const, qualifier: null, status: 'provisional' as const, evidence: { observationIds: ['ocr-carbs'], imageRegions: [] } }],
-      ingredients: [], additives: [], statements: [], regions: [], unresolved: [], interpretationNote: 'Provisional visual reconstruction.',
-    };
-    const wrongNutrient = 'Protein is 69.29 g per 100 g.';
-    const events: { stage: string; index: number; decision: string; reason?: string }[] = [];
-    const result = validateInferenceOutput({
-      answer: wrongNutrient,
-      packageReconstruction: reconstruction,
-      claims: [{ mode: 'synthesis', text: wrongNutrient, observationIds: ['ocr-carbs'], sourceIds: [] }],
-      answerParts: [{ text: wrongNutrient, claimIndexes: [0] }], limitations: [], inspectImage: null,
-    }, { package: packageData, diagnostic: event => events.push(event) });
-    const wrongBasis = 'Carbohydrates are 69.29 g per serving.';
-    const basisResult = validateInferenceOutput({
-      answer: wrongBasis,
-      packageReconstruction: reconstruction,
-      claims: [{ mode: 'synthesis', text: wrongBasis, observationIds: ['ocr-carbs'], sourceIds: [] }],
-      answerParts: [{ text: wrongBasis, claimIndexes: [0] }], limitations: [], inspectImage: null,
-    }, { package: packageData, diagnostic: event => events.push(event) });
-
-    expect(result.claims).toEqual([]);
-    expect(result.answer).not.toContain(wrongNutrient);
-    expect(events).toContainEqual({ stage: 'claim', index: 0, decision: 'rejected', reason: 'unsupported-nutrient-association' });
-    expect(basisResult.claims).toEqual([]);
-    expect(events).toContainEqual({ stage: 'claim', index: 0, decision: 'rejected', reason: 'unsupported-basis' });
-  });
-
-  it('preserves printed inequality qualifiers and accepts only explicitly rounded numeric descriptions',()=>{
-    const sugarObservation={id:'sugar-line',field:'ocr-line',text:'TOTAL SUGARS <0.5 g per 100 g',side:'back' as const,confidence:86,origin:'ocr' as const};
-    const ingredientObservation={id:'flour-line',field:'ocr-line',text:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',side:'back' as const,confidence:86,origin:'ocr' as const};
-    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,sugarObservation,ingredientObservation]});
-    const reconstruction={
-      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},serving:null,
-      nutritionRows:[{rowId:'total-sugars-per-100g',nutrient:'Total sugars',printedLabel:'TOTAL SUGARS',printedValue:'<0.5 g',value:0.5,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:'<',status:'provisional' as const,evidence:{observationIds:['sugar-line'],imageRegions:[]}}],
-      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional' as const,evidence:{observationIds:['flour-line'],imageRegions:[]}}],
-      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional label reconstruction.',
-    };
-    const validate=(text:string)=>validateInferenceOutput({answer:text,packageReconstruction:reconstruction,claims:[{mode:'synthesis',text,observationIds:[],sourceIds:[]}],answerParts:[{text,claimIndexes:[0]}],limitations:[],inspectImage:null},{package:pkg});
-    const bounded=validate('The label appears to list less than 0.5 g of total sugars per 100 g.');
-    const falseExact=validate('The label appears to list 0.5 g of total sugars per 100 g.');
-    const rounded=validate('Refined wheat flour is present at nearly 90%.');
-    const unsupportedRounded=validate('Refined wheat flour is present at nearly 99%.');
-    expect(bounded.claims).toHaveLength(1);
-    expect(falseExact.claims).toEqual([]);
-    expect(rounded.claims).toHaveLength(1);
-    expect(unsupportedRounded.claims).toEqual([]);
-  });
-
-  it('uses a saved photo region as reconstruction lineage on follow-up without reattaching image bytes',()=>{
-    const pkg=packageSchema.parse({
-      ...fixturePackage,
-      reconstruction:{
-        identity:{brand:null,name:'Example crackers',variant:null,status:'provisional',evidence:{observationIds:['ocr-line-1'],imageRegions:[]}},
-        serving:null,
-        nutritionRows:[{rowId:'carbohydrate-per-100g',nutrient:'Carbohydrate',printedLabel:'Carbohydrate',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:{x:0.1,y:0.2,width:0.3,height:0.2}}]}}],
-        ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'A saved, provisional photo interpretation.',revision:1,updatedAt:'2026-10-23T00:00:00.000Z',model:'fixture-model',current:true,
-      },
-    });
-    const answer='The saved table interpretation lists 69.29 g of carbohydrate per 100 g; it remains provisional.';
-    const result=validateInferenceOutput({
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }], calculations: [calculation] });
+    const withoutCalculationReference = validateInferenceOutput({
       answer,
-      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[],interpretationRowIds:['carbohydrate-per-100g']}],
-      answerParts:[{text:answer,claimIndexes:[0]}],limitations:[],inspectImage:null,
-    },{package:pkg});
-
-    expect(result.claims).toHaveLength(1);
-    expect(result.answer).toBe(answer);
-  });
-
-  it('supports source-linked allergen, warning and package-claim candidate kinds', () => {
-    const base = { candidateId: 'label-candidate', field: 'label-content', proposedValue: 'Contains wheat', numericValue: null, unit: null, basis: null, normalizedEntity: null, status: 'tentative' as const, observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [{ kind: 'observation' as const, id: 'ocr-line-1', quote: 'Protein approx 8.8 g' }], uncertainty: 'Preserved as an unverified example.' };
-    for (const kind of ['allergen', 'warning', 'package-claim'] as const) expect(tentativeStructuredCandidateSchema.safeParse({ ...base, kind }).success).toBe(true);
-  });
-
-  it('uses conversational answer text when it links accepted claims and preserves supported numbers', () => {
-    const output = {
-      answer: 'The label appears to show about 8.8 g of protein, but the serving basis is not established.',
-      claims: [{
-        mode: 'synthesis',
-        text: 'The OCR line appears to show about 8.8 g of protein, but its serving basis is unresolved.',
-        observationIds: ['ocr-line-1'],
-        sourceIds: [],
-        supportingSpans: [observationSpan],
-      }],
-      answerParts: [{ text: 'The label may show about 8.8 g of protein, but I cannot tell what amount that applies to.', claimIndexes: [0] }],
+      packageReconstruction: reconstructionFixture(),
+      claims: [{ mode: 'synthesis', text: answer, observationIds: [], sourceIds: [], interpretationRowIds: ['carbohydrate-per-100g'], packageFactIds: ['package-fact:serving'] }],
+      answerParts: [{ text: answer, claimIndexes: [0] }],
       limitations: [],
       inspectImage: null,
-    };
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }], calculations: [calculation] });
 
-    const result = validateInferenceOutput(output, { package: fixturePackage });
-
-    expect(result.claims).toHaveLength(1);
-    expect(result.answer).toBe(output.answer);
-    expect(result.answer).not.toContain('Evidence-linked interpretation');
-    expect(result.answer).not.toContain('[observation:');
+    expect(withCalculation.answer).toBe(answer);
+    expect(withCalculation.claims[0].calculationIds).toEqual([calculation.id]);
+    expect(withoutCalculationReference.answer).not.toContain('9.28 g');
   });
 
-  it('accepts a natural answer when independently validated claims support its numbers and no answer-part links are supplied', () => {
-    const answer = 'The label appears to show about 8.8 g of protein, but its serving basis is unresolved.';
+  it('keeps a valid answer part when another part points to a missing claim', () => {
+    const grounded = 'The ingredient list puts refined wheat flour first.';
+    const result = validateInferenceOutput({
+      answer: grounded + ' Unsupported extra sentence.',
+      packageReconstruction: reconstructionFixture(),
+      claims: [{ mode: 'synthesis', text: grounded, observationIds: [], sourceIds: [], packageFactIds: ['package-fact:ingredient:0'] }],
+      answerParts: [
+        { text: grounded, claimIndexes: [0] },
+        { text: 'Unsupported extra sentence.', claimIndexes: [20] },
+      ],
+      limitations: [],
+      inspectImage: null,
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }] });
+
+    expect(result.answer).toBe(grounded);
+  });
+
+  it('preserves a mapped useful answer while withholding a rejected sibling claim', () => {
+    const reconstruction = reconstructionFixture();
+    const supportedAnswer = 'The first ingredient is refined wheat flour.';
+    const unsupportedAnswer = 'It is medically safe for diabetes.';
+    const answer = `${supportedAnswer} ${unsupportedAnswer}`;
     const events: { stage: string; index: number; decision: string; reason?: string }[] = [];
     const result = validateInferenceOutput({
       answer,
-      claims: [{
-        mode: 'synthesis', text: 'The OCR line appears to show about 8.8 g of protein, but its serving basis is unresolved.',
-        observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [observationSpan],
-      }],
-      limitations: [], inspectImage: null,
-    }, { package: fixturePackage, diagnostic: event => events.push(event) });
-
-    expect(result.answer).toBe(answer);
-    expect(result.claims).toHaveLength(1);
-    expect(events).toContainEqual({ stage: 'natural-answer', index: 0, decision: 'accepted' });
-  });
-
-  it('rejects unsupported quantities in natural prose while preserving supported claims', () => {
-    const result = validateInferenceOutput({
-      answer: 'The label shows 9 g of protein per serving.',
-      claims: [{
-        mode: 'synthesis', text: 'The OCR line appears to show about 8.8 g of protein, but its serving basis is unresolved.',
-        observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [observationSpan],
-      }],
-      limitations: [], inspectImage: null,
-    }, { package: fixturePackage });
-
-    expect(result.claims).toHaveLength(1);
-    expect(result.answer).toContain('could not safely assemble it into a clear answer');
-    expect(result.answer).not.toContain('9 g');
-    expect(result.answer).not.toContain('8.8 g');
-  });
-
-  it('keeps valid answer parts when a sibling part cites a claim that did not survive validation', () => {
-    const supportedAnswer = 'The label may show about 8.8 g of protein, but its serving basis is unresolved.';
-    const result = validateInferenceOutput({
-      answer: 'This is a healthy daily snack.',
-      claims: [{
-        mode: 'synthesis', text: 'The OCR line appears to show about 8.8 g of protein, but its serving basis is unresolved.',
-        observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [observationSpan],
-      }],
+      packageReconstruction: reconstruction,
+      claims: [
+        { mode: 'synthesis', text: 'The ingredient list names refined wheat flour first.', observationIds: [], sourceIds: [], packageFactIds: ['package-fact:ingredient:0'] },
+        { mode: 'synthesis', text: 'An unrelated unsupported finding.', observationIds: ['missing-observation'], sourceIds: [] },
+      ],
       answerParts: [
         { text: supportedAnswer, claimIndexes: [0] },
-        { text: 'Unsupported extra sentence.', claimIndexes: [7] },
+        { text: unsupportedAnswer, claimIndexes: [1] },
       ],
-      limitations: [], inspectImage: null,
-    }, { package: fixturePackage });
+      limitations: [],
+      inspectImage: null,
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }], diagnostic: event => events.push(event) });
 
     expect(result.answer).toBe(supportedAnswer);
-    expect(result.answer).not.toContain('Unsupported extra sentence');
-    expect(result.answer).not.toContain('Some details are interpreted');
-  });
-
-  it('retains a valid claim but does not substitute a claim record for a rejected conversational answer', () => {
-    const result = validateInferenceOutput({
-      answer: 'The label shows 9 g of protein per serving.',
-      claims: [{
-        mode: 'synthesis', text: 'The OCR line appears to show 8.8 g of protein, but the basis is unresolved.',
-        observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [observationSpan],
-      }],
-      limitations: [], inspectImage: null,
-    }, { package: fixturePackage });
-
-    expect(result.claims[0].text).toContain('8.8 g of protein');
-    expect(result.answer).toContain('could not safely assemble it into a clear answer');
-    expect(result.answer).not.toContain('8.8 g of protein');
-    expect(result.answer).not.toContain('9 g');
-  });
-
-  it('does not use an unsafe natural answer even when nearby package claims are supported', () => {
-    const result = validateInferenceOutput({
-      answer: 'You should eat these biscuits every day to manage diabetes.',
-      claims: [{
-        mode: 'synthesis', text: 'The label appears to show 8.8 g of protein, but the basis is unresolved.',
-        observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [observationSpan],
-      }],
-      limitations: [], inspectImage: null,
-    }, { package: fixturePackage });
-
-    expect(result.claims[0].text).toContain('8.8 g of protein');
-    expect(result.answer).toContain('could not safely assemble it into a clear answer');
-    expect(result.answer).not.toContain('8.8 g of protein');
-    expect(result.answer).not.toMatch(/eat these biscuits every day/i);
-  });
-
-  it('accepts a qualified product judgment grounded by package facts and a relevant source without requiring the source to repeat the judgment adjective', () => {
-    const observation = {
-      id: 'package-label', field: 'ocr-line',
-      text: 'Carbohydrates 69.29 g per 100 g. Refined wheat flour 89.98%.',
-      side: 'back' as const, confidence: 78, origin: 'ocr' as const, imageId: 'synthetic-image',
-    };
-    const packageData = packageSchema.parse({
-      ...fixturePackage,
-      observations: [...fixturePackage.observations, observation],
-      rawText: `${fixturePackage.rawText}\n${observation.text}`,
-    });
-    const guidance = {
-      id: 'global-diabetes-food-guidance', title: 'Food choices and glucose', publisher: 'International diabetes education',
-      url: 'https://example.org/diabetes-food-guidance', category: 'guideline' as const, jurisdiction: 'Global',
-      publishedAt: '2026-01-01', effectiveAt: null, retrievedAt: '2026-01-02',
-      summary: 'International diabetes education notes carbohydrate choices affect glucose and refined carbohydrates may raise it more quickly than higher-fibre choices.',
-      limitations: 'General education, not a personal target or a conclusion about this specific product.',
-    };
-    const answer = 'Given the label’s 69.29 g of carbohydrates per 100 g and 89.98% refined wheat flour, this may not be an ideal everyday snack for someone managing diabetes. International diabetes education notes refined carbohydrates can raise glucose more quickly; the package readings remain provisional.';
-    const events: { stage: string; index: number; decision: string; reason?: string }[] = [];
-    const result = validateInferenceOutput({
-      answer,
-      claims: [
-        { mode: 'synthesis', text: 'The package observation lists 69.29 g of carbohydrates per 100 g and refined wheat flour at 89.98%.', observationIds: ['package-label'], sourceIds: [] },
-        { mode: 'synthesis', text: guidance.summary, observationIds: [], sourceIds: [guidance.id], supportingSpans: [{ kind: 'source', id: guidance.id, quote: guidance.summary }] },
-      ],
-      answerParts: [{ text: answer, claimIndexes: [0, 1] }],
-      limitations: [], inspectImage: null,
-    }, { package: packageData, evidence: [guidance], diagnostic: event => events.push(event) });
-
-    expect(result.answer).toBe(answer);
-    expect(result.claims).toHaveLength(2);
-    expect(events).toContainEqual({ stage: 'natural-answer', index: 0, decision: 'accepted' });
-    expect(events).toContainEqual({ stage: 'answer-part', index: 0, decision: 'accepted' });
-  });
-
-  it('does not treat general comparative guidance as package-specific without a linked package fact',()=>{
-    const guidance={
-      id:'global-diabetes-food-guidance',title:'Food choices and glucose',publisher:'International diabetes education',
-      url:'https://example.org/diabetes-food-guidance',category:'guideline' as const,jurisdiction:'Global',
-      publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',
-      summary:'Refined carbohydrates may raise blood glucose more quickly than higher-fibre choices.',
-      limitations:'General education, not a conclusion about this specific product.',
-    };
-    const answer='Refined carbohydrates may make this a poor everyday snack for someone managing diabetes.';
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const result=validateInferenceOutput({
-      answer,
-      claims:[{mode:'synthesis',text:guidance.summary,observationIds:[],sourceIds:[guidance.id],supportingSpans:[{kind:'source',id:guidance.id,quote:guidance.summary}]}],
-      answerParts:[{text:answer,claimIndexes:[0]}],limitations:[],inspectImage:null,
-    },{package:fixturePackage,evidence:[guidance],diagnostic:event=>events.push(event)});
-
-    expect(result.answer).not.toBe(answer);
-    expect(events).toContainEqual({stage:'natural-answer',index:1,decision:'rejected',reason:'comparative-judgment-needs-reference'});
-  });
-
-  it('accepts a source-backed general nutrient comparison without requiring an unrelated package fact link',()=>{
-    const guidance={
-      id:'global-diabetes-food-guidance',title:'Food choices and glucose',publisher:'International Diabetes Federation',
-      url:'https://example.org/diabetes-food-guidance',category:'guideline' as const,jurisdiction:'Global',
-      publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',
-      summary:'Refined carbohydrates may raise blood glucose more quickly than higher-fibre choices.',
-      limitations:'General education, not a conclusion about a specific product.',
-    };
-    const answer='According to the International Diabetes Federation (IDF) guidance, refined carbohydrates may raise blood glucose more quickly than higher-fibre choices.';
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const result=validateInferenceOutput({
-      answer,
-      claims:[{mode:'synthesis',text:guidance.summary,observationIds:[],sourceIds:[guidance.id],supportingSpans:[{kind:'source',id:guidance.id,quote:guidance.summary}]}],
-      answerParts:[{text:answer,claimIndexes:[0]}],limitations:[],inspectImage:null,
-    },{package:fixturePackage,evidence:[guidance],diagnostic:event=>events.push(event)});
-
-    expect(result.answer).toBe(answer);
     expect(result.claims).toHaveLength(1);
-    expect(events).toContainEqual({stage:'natural-answer',index:0,decision:'accepted'});
-    expect(events).toContainEqual({stage:'answer-part',index:0,decision:'accepted'});
-    expect(events).not.toContainEqual(expect.objectContaining({decision:'rejected',reason:'comparative-judgment-needs-reference'}));
+    expect(events).toContainEqual({ stage: 'claim', index: 1, decision: 'rejected', reason: 'unknown-evidence-id' });
+    expect(events).toContainEqual({ stage: 'natural-answer', index: 0, decision: 'accepted', reason: 'unsupported-answer-parts-withheld' });
   });
 
-  it('rejects named clinical guidance when its authority is not linked or disagrees with the linked source',()=>{
-    const text='Official diabetes guidance from the International Diabetes Federation (IDF) emphasizes whole grains and limited refined carbohydrates rather than focusing on one snack.';
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const unlinked=validateInferenceOutput({
-      answer:text,claims:[{mode:'synthesis',text,observationIds:['ocr-line-1'],sourceIds:[]}],limitations:[],inspectImage:null,
-    },{package:fixturePackage,question:'What does IDF guidance say?',diagnostic:event=>events.push(event)});
-    expect(unlinked.claims).toEqual([]);
-    expect(unlinked.answer).not.toContain('International Diabetes Federation');
-    expect(events).toContainEqual(expect.objectContaining({stage:'claim',decision:'rejected',reason:'source-attribution-needs-linked-source'}));
-
-    const who={id:'who-guidance',title:'Healthy diet',publisher:'World Health Organization',url:'https://example.org/who',category:'guideline' as const,jurisdiction:'Global',publishedAt:null,effectiveAt:null,retrievedAt:'2026-10-24T00:00:00.000Z',summary:'General healthy diet guidance.',limitations:'Not product-specific.'};
-    const mismatched=validateInferenceOutput({
-      answer:text,claims:[{mode:'synthesis',text,observationIds:[],sourceIds:[who.id]}],limitations:[],inspectImage:null,
-    },{package:fixturePackage,question:'What does IDF guidance say?',evidence:[who]});
-    expect(mismatched.claims).toEqual([]);
-    expect(mismatched.answer).not.toContain('International Diabetes Federation');
-  });
-
-  it('keeps a cautious suitability answer when it states that the evidence is insufficient', () => {
-    const cautiousAnswer = 'The package evidence does not provide enough information to establish whether this is suitable for daily snacking.';
+  it('still withholds a natural answer whose numeric claim is unsupported by the surviving references', () => {
+    const reconstruction = reconstructionFixture();
+    const answer = 'The label lists 999 g carbohydrates per 100 g; refined wheat flour is listed first.';
     const result = validateInferenceOutput({
-      answer: '',
-      claims: [{
-        mode: 'synthesis',
-        text: 'The OCR line appears to show about 8.8 g of protein, but its serving basis is unresolved.',
-        observationIds: ['ocr-line-1'],
-        sourceIds: [],
-        supportingSpans: [observationSpan],
-      }],
-      answerParts: [{ text: cautiousAnswer, claimIndexes: [0] }],
+      answer,
+      packageReconstruction: reconstruction,
+      claims: [
+        { mode: 'synthesis', text: 'Refined wheat flour is listed first.', observationIds: [], sourceIds: [], packageFactIds: ['package-fact:ingredient:0'] },
+        { mode: 'synthesis', text: 'The label lists 999 g carbohydrates per 100 g.', observationIds: ['missing-observation'], sourceIds: [] },
+      ],
+      answerParts: [
+        { text: 'The label lists 999 g carbohydrates per 100 g;', claimIndexes: [1] },
+        { text: 'refined wheat flour is listed first.', claimIndexes: [0] },
+      ],
       limitations: [],
       inspectImage: null,
-    }, { package: fixturePackage });
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }] });
 
-    expect(result.answer).toBe(cautiousAnswer);
-  });
-
-  it('classifies answer-assembly rejection separately and retains individually valid claims', () => {
-    const claim = 'The OCR line appears to show about 8.8 g of protein, but its serving basis is unresolved.';
-    const events: { stage: string; index: number; decision: string; reason?: string }[] = [];
-    const result = validateInferenceOutput({
-      answer: 'This is a great daily snack.',
-      claims: [{ mode: 'synthesis', text: claim, observationIds: ['ocr-line-1'], sourceIds: [], supportingSpans: [observationSpan] }],
-      answerParts: [{ text: 'This is a great daily snack with 9 g sugar. ' + claim, claimIndexes: [0] }],
-      limitations: [], inspectImage: null,
-    }, { package: fixturePackage, diagnostic: event => events.push(event) });
-
-    expect(result.claims[0].text).toBe(claim);
-    expect(result.answer).toContain('could not safely assemble it into a clear answer');
-    expect(result.answer).not.toContain('8.8 g of protein');
-    expect(result.answer).not.toContain('9 g sugar');
-    expect(result.answer).not.toContain('great daily snack');
-    expect(events).toContainEqual({ stage: 'answer-part', index: 0, decision: 'rejected', reason: 'unsupported-numeric-value' });
-    expect(events).toContainEqual({ stage: 'answer-part', index: -1, decision: 'rejected', reason: 'grounded-claims-answer-unavailable' });
-  });
-
-  it('keeps a supported package-specific judgment while dropping only an unsupported numeric sentence',()=>{
-    const answer='The label lists refined wheat flour, so I would treat this as an occasional rather than a good daily snack. Each serving contains 80 g of carbohydrate.';
-    const flourLine={id:'flour-label-line',field:'ocr-line',text:'REFINED WHEAT FLOUR (MAIDA); CARBOHYDRATES 69.29 g',side:'back' as const,confidence:84,origin:'ocr' as const,imageId:'synthetic-image',readingOrder:{runId:'synthetic-run',blockIndex:1,paragraphIndex:0,lineIndex:1}};
-    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,flourLine],rawText:`${fixturePackage.rawText}\n${flourLine.text}`});
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const result=validateInferenceOutput({
-      answer,
-      claims:[{mode:'synthesis',text:'The label lists refined wheat flour (maida) as an ingredient and lists 69.29 g of carbohydrates.',observationIds:['flour-label-line'],sourceIds:[],supportingSpans:[{kind:'observation',id:'flour-label-line',quote:flourLine.text}]}],
-      limitations:[],inspectImage:null,
-    },{package:pkg,question:'Is this good as a daily snack?',diagnostic:event=>events.push(event)});
-
-    expect(result.answer).toBe('The label lists refined wheat flour, so I would treat this as an occasional rather than a good daily snack.');
-    expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'unsupported-numeric-value'});
-    expect(events).toContainEqual({stage:'natural-answer',index:0,decision:'accepted'});
-  });
-
-  it('does not authorize an adjacent sentence through one or two shared package words',()=>{
-    const observation={id:'sugar-flour-line',field:'ocr-line',text:'SUGAR FREE; INGREDIENTS: REFINED WHEAT FLOUR (MAIDA)',side:'back' as const,confidence:84,origin:'ocr' as const};
-    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
-    const answer='This sugar-free cracker has refined wheat flour as its primary ingredient. Although the label states it is free of added sugars and contains dietary fibre, it remains a refined grain product.';
-    const claim='This sugar-free cracker has refined wheat flour as its primary ingredient.';
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const unsupportedSentence='Although the label states it is free of added sugars and contains dietary fibre, it remains a refined grain product.';
-    const result=validateInferenceOutput({answer,claims:[{mode:'synthesis',text:claim,observationIds:[observation.id],sourceIds:[]}],answerParts:[{text:claim,claimIndexes:[0]},{text:unsupportedSentence,claimIndexes:[0]}],limitations:[],inspectImage:null},{package:pkg,diagnostic:event=>events.push(event)});
+    expect(result.answer).not.toContain('999 g');
     expect(result.claims).toHaveLength(1);
-    expect(result.answer).toBe(claim);
-    expect(events).toContainEqual({stage:'answer-part',index:1,decision:'rejected',reason:'unsupported-claim-link'});
-    expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'no-validated-claim-anchor'});
   });
 
-  it('does not let a package-specific judgment exemption admit unsupported physiological comparisons',()=>{
-    const answer='The label lists refined wheat flour, so I would treat this as an occasional rather than a daily snack. Refined carbohydrates may raise blood glucose faster than high-fibre alternatives.';
-    const flourLine={id:'flour-label-line',field:'ocr-line',text:'REFINED WHEAT FLOUR (MAIDA)',side:'back' as const,confidence:84,origin:'ocr' as const,imageId:'synthetic-image',readingOrder:{runId:'synthetic-run',blockIndex:1,paragraphIndex:0,lineIndex:1}};
-    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,flourLine],rawText:`${fixturePackage.rawText}\n${flourLine.text}`});
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const result=validateInferenceOutput({
-      answer,
-      claims:[{mode:'synthesis',text:'The label lists refined wheat flour as an ingredient.',observationIds:['flour-label-line'],sourceIds:[],supportingSpans:[{kind:'observation',id:'flour-label-line',quote:flourLine.text}]}],
-      limitations:[],inspectImage:null,
-    },{package:pkg,question:'Is this good as a daily snack for diabetes?',diagnostic:event=>events.push(event)});
-
-    expect(result.answer).toBe('The label lists refined wheat flour, so I would treat this as an occasional rather than a daily snack.');
-    expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'health-effect-needs-relevant-source'});
-  });
-
-  it('preserves a supported serving answer while removing an unsourced physiological sentence from a mixed claim',()=>{
-    const observation={
-      id:'package-summary-line',field:'ocr-line',
-      text:'Carbohydrates 9.28 g; total sugars 0.067 g; serving size 2 biscuits (13.4 g); ingredients: refined wheat flour',
-      side:'back' as const,confidence:82,origin:'ocr' as const,imageId:'synthetic-image',
-    };
-    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
-    const answer="Two biscuits of the package provide 9.28 g of carbohydrates and 0.067 g of sugars based on the label's serving declaration of 13.4 g. Even though it is sugar-free, its primary ingredient is refined wheat flour, which can still affect blood glucose.";
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const result=validateInferenceOutput({
-      answer,
-      claims:[{mode:'synthesis',text:answer,observationIds:[observation.id],sourceIds:[],calculationIds:[],interpretationRowIds:[],packageFactIds:[],profileFieldIds:[]}],
-      limitations:[],inspectImage:null,
-    },{package:pkg,diagnostic:event=>events.push(event)});
-
-    expect(result.answer).toBe("Two biscuits of the package provide 9.28 g of carbohydrates and 0.067 g of sugars based on the label's serving declaration of 13.4 g.");
-    expect(result.claims).toHaveLength(1);
-    expect(result.claims[0].text).toBe(result.answer);
-    expect(events).toContainEqual({stage:'claim',index:0,decision:'rejected',reason:'health-effect-needs-relevant-source'});
-    expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'health-effect-needs-relevant-source'});
-    expect(events).toContainEqual({stage:'natural-answer',index:0,decision:'accepted'});
-  });
-
-  it('accepts a food-related physiological statement when the linked guideline covers the same effect and food concept',()=>{
-    const observation={id:'refined-flour-line',field:'ocr-line',text:'Ingredients: refined wheat flour (maida)',side:'back' as const,confidence:84,origin:'ocr' as const,imageId:'synthetic-image'};
-    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
-    const guidance={
-      id:'refined-carb-glucose-guidance',title:'Carbohydrate and glucose guidance',publisher:'Public health authority',
-      url:'https://example.org/refined-carb-glucose',category:'guideline' as const,jurisdiction:'Global',
-      publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',
-      summary:'Refined carbohydrates may raise blood glucose more quickly than higher-fibre choices.',
-      limitations:'General guidance, not a personal target or a product-specific clinical judgment.',
-    };
-    const answer='The ingredient list names refined wheat flour. Refined carbohydrates may raise blood glucose more quickly than higher-fibre choices.';
-    const result=validateInferenceOutput({
-      answer,
-      claims:[
-        {mode:'synthesis',text:'The ingredient list names refined wheat flour.',observationIds:[observation.id],sourceIds:[]},
-        {mode:'synthesis',text:guidance.summary,observationIds:[],sourceIds:[guidance.id],supportingSpans:[{kind:'source',id:guidance.id,quote:guidance.summary}]},
-      ],
-      limitations:[],inspectImage:null,
-    },{package:pkg,evidence:[guidance]});
-
-    expect(result.answer).toBe(answer);
-    expect(result.claims).toHaveLength(2);
-  });
-
-  it('links a uniquely relevant retrieved source when the model omitted its source ID',()=>{
-    const observation={id:'refined-flour-line',field:'ocr-line',text:'Ingredients: refined wheat flour (maida)',side:'back' as const,confidence:84,origin:'ocr' as const,imageId:'synthetic-image'};
-    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
-    const guidance={
-      id:'refined-carb-glucose-guidance',title:'Carbohydrate and glucose guidance',publisher:'Public health authority',
-      url:'https://example.org/refined-carb-glucose',category:'guideline' as const,jurisdiction:'Global',
-      publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',
-      summary:'Refined carbohydrates may raise blood glucose more quickly than higher-fibre choices.',
-      limitations:'General guidance, not a personal target or a product-specific clinical judgment.',
-    };
-    const answer='The ingredient list names refined wheat flour. Refined wheat flour is a refined carbohydrate and may raise blood glucose more quickly than higher-fibre choices.';
-    const result=validateInferenceOutput({
-      answer,
-      claims:[{mode:'synthesis',text:answer,observationIds:[observation.id],sourceIds:[]}],
-      limitations:[],inspectImage:null,
-    },{package:pkg,evidence:[guidance]});
-
-    expect(result.answer).toBe(answer);
-    expect(result.claims[0].sourceIds).toContain(guidance.id);
-    expect(result.claims[0].supportingSpans).toContainEqual({kind:'source',id:guidance.id,quote:guidance.summary});
-  });
-
-  it('does not accept a physiological claim merely because an unrelated source covers the same health outcome',()=>{
-    const observation={id:'refined-flour-line',field:'ocr-line',text:'Ingredients: refined wheat flour (maida)',side:'back' as const,confidence:84,origin:'ocr' as const,imageId:'synthetic-image'};
-    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
-    const unrelated={
-      id:'insulin-glucose-guidance',title:'Insulin and glucose',publisher:'Public health authority',
-      url:'https://example.org/insulin-glucose',category:'guideline' as const,jurisdiction:'Global',
-      publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',
-      summary:'Insulin can lower blood glucose in some people with diabetes.',
-      limitations:'This does not assess foods or carbohydrate choices.',
-    };
-    const answer='The ingredient list names refined wheat flour. Refined carbohydrates can raise blood glucose.';
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const result=validateInferenceOutput({
-      answer,
-      claims:[
-        {mode:'synthesis',text:'The ingredient list names refined wheat flour.',observationIds:[observation.id],sourceIds:[]},
-        {mode:'synthesis',text:unrelated.summary,observationIds:[],sourceIds:[unrelated.id],supportingSpans:[{kind:'source',id:unrelated.id,quote:unrelated.summary}]},
-      ],
-      limitations:[],inspectImage:null,
-    },{package:pkg,evidence:[unrelated],diagnostic:event=>events.push(event)});
-
-    expect(result.answer).toBe('The ingredient list names refined wheat flour.');
-    expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'health-effect-needs-relevant-source'});
-  });
-
-  it('requires an outcome-relevant source for generic health-support claims attached to an ingredient fact',()=>{
-    const observation={id:'oats-label-line',field:'ingredient-line',text:'Ingredients: rolled oats, salt',side:'back' as const,confidence:90,origin:'ocr' as const,imageId:'synthetic-image'};
-    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
-    const source={id:'oat-beta-glucan-review',title:'Oat beta-glucan intervention review',publisher:'Clinical Nutrition ESPEN',url:'https://example.org/oat-review',category:'literature' as const,jurisdiction:'Included adult trials; not a dietary guideline',publishedAt:'2022-05-13',effectiveAt:null,retrievedAt:'2026-10-24',summary:'A meta-analysis reported lower total and LDL cholesterol after oat beta-glucan interventions.',limitations:'This does not establish an effective dose in an ordinary oats-containing product.'};
-    const sourced='A review reported lower total and LDL cholesterol after oat beta-glucan interventions.';
-    const labelFact='The ingredient list includes rolled oats, but does not state a beta-glucan amount.';
-    const unsupported='Rolled oats provide soluble fiber that generally supports heart health.';
-    const answer=`${sourced} ${labelFact} ${unsupported}`;
-    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
-    const result=validateInferenceOutput({
-      answer,
-      claims:[
-        {mode:'synthesis',text:sourced,observationIds:[],sourceIds:[source.id],supportingSpans:[{kind:'source',id:source.id,quote:source.summary}]},
-        {mode:'synthesis',text:labelFact,observationIds:[observation.id],sourceIds:[],supportingSpans:[{kind:'observation',id:observation.id,quote:observation.text}]},
-        {mode:'synthesis',text:unsupported,observationIds:[observation.id],sourceIds:[],supportingSpans:[{kind:'observation',id:observation.id,quote:observation.text}]},
-      ],
-      answerParts:[{text:sourced,claimIndexes:[0]},{text:labelFact,claimIndexes:[1]},{text:unsupported,claimIndexes:[2]}],limitations:[],inspectImage:null,
-    },{package:pkg,evidence:[source],diagnostic:event=>events.push(event)});
-
-    expect(result.claims.map(claim=>claim.text)).toEqual([sourced,labelFact]);
-    expect(result.answer).toBe(`${sourced} ${labelFact}`);
-    expect(events).toContainEqual({stage:'claim',index:2,decision:'rejected',reason:'health-effect-needs-relevant-source'});
-    expect(events).toContainEqual({stage:'natural-answer',index:3,decision:'rejected',reason:'health-effect-needs-relevant-source'});
-  });
-
-  it('does not link a source whose physiological direction contradicts the answer',()=>{
-    const observation={id:'refined-flour-line',field:'ocr-line',text:'Ingredients: refined wheat flour (maida)',side:'back' as const,confidence:84,origin:'ocr' as const,imageId:'synthetic-image'};
-    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
-    const contradictory={
-      id:'contradictory-refined-carb-guidance',title:'Refined carbohydrate study',publisher:'Research source',
-      url:'https://example.org/refined-carb-study',category:'literature' as const,jurisdiction:'Global',
-      publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',
-      summary:'Refined carbohydrates do not raise blood glucose in the studied context.',
-      limitations:'The finding is limited to the study conditions.',
-    };
-    const answer='The ingredient list names refined wheat flour. Refined carbohydrates can raise blood glucose.';
-    const result=validateInferenceOutput({
-      answer,
-      claims:[{mode:'synthesis',text:answer,observationIds:[observation.id],sourceIds:[]}],
-      limitations:[],inspectImage:null,
-    },{package:pkg,evidence:[contradictory]});
-
-    expect(result.answer).toBe('The ingredient list names refined wheat flour.');
-    expect(result.claims[0].sourceIds).not.toContain(contradictory.id);
-  });
-
-  it('accepts exact citations to a source record limitation', () => {
+  it('requires an explicit reference when the answer names an external authority, but accepts a natural paraphrase', () => {
     const source = {
-      id: 'assessment-source', title: 'Assessment record', publisher: 'Public authority',
-      url: 'https://example.org/assessment', category: 'assessment' as const, jurisdiction: 'European Union',
-      publishedAt: '2026-01-01', effectiveAt: null, retrievedAt: '2026-01-02',
-      summary: 'This assessment discusses a substance under stated conditions.',
-      limitations: 'It does not establish product presence, dose or personal safety.',
+      id: 'efsa-assessment',
+      title: 'EFSA food additive assessment',
+      publisher: 'European Food Safety Authority',
+      url: 'https://example.org/efsa-assessment',
+      category: 'assessment' as const,
+      jurisdiction: 'European Union',
+      publishedAt: '2024-01-01',
+      effectiveAt: null,
+      retrievedAt: '2026-10-24',
+      summary: 'The assessment describes toxicological reference values for the substance.',
+      limitations: 'It does not establish product exposure or individual risk.',
     };
-    const result = validateInferenceOutput({
-      answer: '',
-      claims: [{
-        mode: 'synthesis', text: 'The assessment does not establish this product’s dose or personal safety.',
-        observationIds: [], sourceIds: [source.id],
-        supportingSpans: [{ kind: 'source', id: source.id, quote: source.limitations }],
-      }],
-      limitations: [], inspectImage: null,
+    const answer = 'The EFSA assessment describes a reference value, but does not establish exposure from this product.';
+    const missingReference = validateInferenceOutput({
+      answer,
+      claims: [{ mode: 'synthesis', text: answer, observationIds: [], sourceIds: [] }],
+      answerParts: [{ text: answer, claimIndexes: [0] }],
+      limitations: [],
+      inspectImage: null,
+    }, { package: fixturePackage, evidence: [source] });
+    const linkedAnswer='The assessment summarizes a toxicological reference value; that alone does not show how much is in this product.';
+    const linkedReference = validateInferenceOutput({
+      answer: linkedAnswer,
+      claims: [{ mode: 'synthesis', text: 'The assessment summarizes a toxicological reference value.', observationIds: [], sourceIds: [source.id] }],
+      answerParts: [{ text: linkedAnswer, claimIndexes: [0] }],
+      limitations: [],
+      inspectImage: null,
     }, { package: fixturePackage, evidence: [source] });
 
-    expect(result.claims).toHaveLength(1);
-    expect(result.claims[0].text).toContain('dose or personal safety');
-    expect(result.answer).toContain('could not safely assemble it into a clear answer');
+    expect(missingReference.claims).toEqual([]);
+    expect(missingReference.answer).not.toContain('EFSA assessment');
+    expect(linkedReference.answer).toContain('The assessment summarizes');
+    expect(linkedReference.claims[0].sourceIds).toEqual([source.id]);
   });
 
-  it('keeps dose and exposure limitations while withholding personalized safety and treatment advice', () => {
+  it('allows a qualified package-specific food-choice judgment without lexical medical filtering', () => {
+    const answer = 'I would not make this the default daily snack: the ingredient list puts refined wheat flour first, although the package also carries a sugar-free claim.';
     const result = validateInferenceOutput({
-      answer: '',
-      claims: [
-        {
-          mode: 'synthesis',
-          text: 'This OCR line does not state a dose, so product amount and dietary exposure cannot be calculated.',
-          observationIds: ['ocr-line-1'],
-          sourceIds: [],
-          supportingSpans: [observationSpan],
-        },
-        {
-          mode: 'synthesis',
-          text: 'This product is safe for you.',
-          observationIds: ['ocr-line-1'],
-          sourceIds: [],
-          supportingSpans: [observationSpan],
-        },
-        {
-          mode: 'synthesis',
-          text: 'The available record does not establish that this product is safe for you.',
-          observationIds: ['ocr-line-1'],
-          sourceIds: [],
-          supportingSpans: [observationSpan],
-        },
-        {
-          mode: 'synthesis',
-          text: 'You should avoid this product to treat diabetes.',
-          observationIds: ['ocr-line-1'],
-          sourceIds: [],
-          supportingSpans: [observationSpan],
-        },
-      ],
+      answer,
+      packageReconstruction: reconstructionFixture(),
+      claims: [{ mode: 'synthesis', text: answer, observationIds: [], sourceIds: [], packageFactIds: ['package-fact:ingredient:0', 'package-fact:statement:0'] }],
+      answerParts: [{ text: answer, claimIndexes: [0] }],
       limitations: [],
       inspectImage: null,
-    }, { package: fixturePackage });
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }], question: 'Should someone choose this as a daily snack?' });
 
-    expect(result.claims).toHaveLength(2);
-    expect(result.claims.map(claim => claim.text).join(' ')).toContain('does not state a dose');
-    expect(result.claims.map(claim => claim.text).join(' ')).not.toContain('This product is safe for you.');
-    expect(result.claims.map(claim => claim.text).join(' ')).toContain('does not establish that this product is safe');
-    expect(result.claims.map(claim => claim.text).join(' ')).not.toContain('avoid this product');
-    expect(result.answer).toContain('could not safely assemble it into a clear answer');
+    expect(result.answer).toBe(answer);
+    expect(result.claims).toHaveLength(1);
   });
-
   it('withholds numeric synthesis that conflicts with cited OCR while allowing equivalent units', () => {
     const result = validateInferenceOutput({
       answer: '',
@@ -1421,6 +699,43 @@ describe('provider-independent inference output validation', () => {
     expect(result.claims).toEqual([]);
     expect(result.answer).toContain('can’t establish a reliable answer');
     expect(result.answer).not.toContain('5.8 g');
+  });
+
+  it('drops an unavailable optional package-fact link when a claim has independently validated evidence', () => {
+    const reconstruction = { ...reconstructionFixture(), ingredients: [] };
+    const answer = 'The OCR line appears to show about 8.8 g of protein.';
+    const decisions: Array<{ stage: string; index: number; decision: string; reason?: string }> = [];
+    const result = validateInferenceOutput({
+      answer,
+      packageReconstruction: reconstruction,
+      claims: [{
+        mode: 'synthesis', text: answer, observationIds: ['ocr-line-1'], sourceIds: [],
+        packageFactIds: ['package-fact:ingredient:0'],
+      }],
+      answerParts: [{ text: answer, claimIndexes: [0] }],
+      limitations: [], inspectImage: null,
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }], diagnostic: event => decisions.push(event) });
+
+    expect(result.answer).toBe(answer);
+    expect(result.claims).toMatchObject([{ observationIds: ['ocr-line-1'], packageFactIds: [] }]);
+    expect(decisions).toContainEqual({ stage: 'claim', index: 0, decision: 'accepted', reason: 'unavailable-package-fact-link-dropped' });
+  });
+
+  it('does not accept a dangling package-fact link as evidence by itself', () => {
+    const reconstruction = { ...reconstructionFixture(), ingredients: [] };
+    const answer = 'The ingredient list places refined wheat flour first.';
+    const decisions: Array<{ stage: string; index: number; decision: string; reason?: string }> = [];
+    const result = validateInferenceOutput({
+      answer,
+      packageReconstruction: reconstruction,
+      claims: [{ mode: 'synthesis', text: answer, observationIds: [], sourceIds: [], packageFactIds: ['package-fact:ingredient:0'] }],
+      answerParts: [{ text: answer, claimIndexes: [0] }],
+      limitations: [], inspectImage: null,
+    }, { package: fixturePackage, images: [{ handle: 'synthetic-image' }], diagnostic: event => decisions.push(event) });
+
+    expect(result.claims).toEqual([]);
+    expect(result.answer).not.toContain(answer);
+    expect(decisions).toContainEqual({ stage: 'claim', index: 0, decision: 'rejected', reason: 'unknown-evidence-id' });
   });
 
   it('returns typed errors for malformed output while withholding only a claim with unknown evidence', () => {

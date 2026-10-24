@@ -2,28 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { packageReconstructionContentSchema, packageSchema } from '../contracts';
 import { validateInferenceOutput } from '../../modules/inference/core';
 import { evidenceSources } from '../../modules/knowledge';
-import { attachGoogleGrounding, buildStructureRepairContents, compactSavedPackageFacts, compactSavedReconstruction, focusedIngredientRecoverySchema, focusedLabelRecoverySchema, getAgentSystemInstruction, getAgentToolDeclarations, googleGroundingEvidence, mergeFocusedLabelRecovery, needsConversationalAnswerRepair, needsPackageAnswerSynthesis, normalizeModelImageRegions, normalizeProviderAssistOutput, packageAnswerCoverage, packageAnswerSynthesisCompletesMissingFacets, parseAgentProviderOutput, requestedIngredientIdentityCoverageFacts, requiresExplicitNutritionGuidanceLookup, sanitizeAssistantEvidenceLabels, selectIngredientRecoveryRegion, selectNutritionRecoveryRegion, shouldRetrieveContextualNutritionGuidance, supplementRequestedCompositionCoverage, supplementRequestedIngredientIdentityCoverage, supplementRequestedNutritionGuidanceCoverage, toolResultForModel, type RetrievedCompositionFact } from './gemini';
+import { attachGoogleGrounding, buildStructureRepairContents, compactSavedPackageFacts, compactSavedReconstruction, focusedIngredientRecoverySchema, focusedLabelRecoverySchema, getAgentSystemInstruction, getAgentToolDeclarations, googleGroundingEvidence, mergeFocusedLabelRecovery, normalizeModelImageRegions, normalizeProviderAssistOutput, parseAgentProviderOutput, sanitizeAssistantEvidenceLabels, selectIngredientRecoveryRegion, selectNutritionRecoveryRegion, toolResultForModel } from './gemini';
 import { executeGeminiTool } from './gemini-tools';
-import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutrition-guidance';
+import { getNutritionGuidance } from './nutrition-guidance';
 
-describe('nutrition-guidance tool routing', () => {
-  it('forces a local lookup when the user explicitly asks for guideline guidance', () => {
-    expect(requiresExplicitNutritionGuidanceLookup('According to WHO, what does the guideline say about added sugars?')).toBe(true);
-  });
-
-  it('does not force a diabetes-specific lookup merely because suitability mentions diabetes', () => {
-    expect(requiresExplicitNutritionGuidanceLookup('Is this good to have for diabetic patients daily for snacking?')).toBe(false);
-    expect(requiresExplicitNutritionGuidanceLookup('Is this a reasonable daily snack?')).toBe(false);
-    expect(requiresExplicitNutritionGuidanceLookup('How much carbohydrate is printed?')).toBe(false);
-  });
-
-  it('preloads applicable local guidance for a condition-linked food-choice question, not every condition mention', () => {
-    expect(shouldRetrieveContextualNutritionGuidance('Is this good to have for diabetic patients daily for snacking?')).toBe(true);
-    expect(shouldRetrieveContextualNutritionGuidance('How much carbohydrate is printed for someone with diabetes?')).toBe(false);
-    expect(shouldRetrieveContextualNutritionGuidance('Is this a reasonable daily snack?')).toBe(false);
-  });
-
-  it('can retrieve global diabetes education for an India-market snack question without selecting US-only guidance', () => {
+describe('nutrition guidance retrieval', () => {
+  it('returns global guidance for an India-market question without treating US guidance as local', () => {
     const matches = getNutritionGuidance({
       query: 'Is this good to have for diabetic patients daily for snacking?',
       condition: 'diabetes',
@@ -39,104 +23,55 @@ describe('nutrition-guidance tool routing', () => {
     });
   });
 
-  it('adds global carbohydrate-quality guidance only when package context makes it specifically relevant', () => {
-    const generalQuestion = 'Is this a good daily snack for someone with diabetes?';
-    const general = getNutritionGuidance({ query: generalQuestion, jurisdiction: 'India', maxResults: 3 });
-    expect(general.map(source => source.id)).toContain('idf-healthy-nutrition-diabetes-2024');
-    expect(general.map(source => source.id)).not.toContain('who-carbohydrate-2023');
-    const singleTopic = getNutritionGuidance({ query: `${generalQuestion} carbohydrate quality`, jurisdiction: 'India', maxResults: 3 });
-    expect(singleTopic.map(source => source.id)).not.toContain('who-carbohydrate-2023');
-
-    const packageContext = `${generalQuestion} Refined wheat flour (maida), carbohydrate quality`;
-    const contextual = getNutritionGuidance({ query: packageContext, jurisdiction: 'India', maxResults: 3 });
-    expect(contextual.map(source => source.id)).toContain('who-carbohydrate-2023');
-    expect(contextual.find(source => source.id === 'who-carbohydrate-2023')).toMatchObject({
+  it('retrieves carbohydrate-quality guidance when package context makes it relevant', () => {
+    const matches = getNutritionGuidance({
+      query: 'Refined wheat flour (maida), carbohydrate quality',
+      jurisdiction: 'India',
+      maxResults: 3,
+    });
+    expect(matches.map(source => source.id)).toContain('who-carbohydrate-2023');
+    expect(matches.find(source => source.id === 'who-carbohydrate-2023')).toMatchObject({
       publisher: 'World Health Organization',
       jurisdiction: expect.stringMatching(/^Global/),
-      summary: expect.stringContaining('whole grains, vegetables, fruits and pulses'),
       limitations: expect.stringContaining('not a package-specific threshold'),
     });
-    expect(contextual.map(source => source.id)).not.toContain('ada-standards-diabetes-2026-nutrition');
   });
 });
 
-describe('saved-package follow-up context',()=>{
-  it('uses a shorter saved-package instruction set on photo-free follow-ups',()=>{
-    const initial=getAgentSystemInstruction(true,true);
-    const followup=getAgentSystemInstruction(false,false);
-    expect(followup.length).toBeLessThan(initial.length*0.7);
-    expect(followup).toContain('saved reconstruction');
-    expect(followup).toContain('calculate_nutrition');
-    expect(followup).toContain('packageFactIds');
-    expect(followup).not.toContain('interpret the entire package from all attached photos');
-    expect(followup).not.toContain('The visualImages metadata is aligned');
-  });
-
-  it('adds visual recovery guidance and image inspection only when image bytes are attached',()=>{
-    expect(getAgentSystemInstruction(false,true)).toContain('The visualImages metadata is aligned');
-    expect(getAgentToolDeclarations(false).some(tool=>tool.name==='inspect_package_image')).toBe(false);
-    expect(getAgentToolDeclarations(true).some(tool=>tool.name==='inspect_package_image')).toBe(true);
-  });
-
-  it('keeps portion-relevant saved rows and a short ingredient context without replaying OCR regions',()=>{
-    const saved=packageReconstructionContentSchema.parse({
-      identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional',evidence:{observationIds:[],imageRegions:[]}},
-      serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:[],imageRegions:[]}},
-      nutritionRows:[
-        {rowId:'carbs-100g',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[]}},
-        {rowId:'carbs-serving',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g',columnLabel:'Quantity per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[]}},
-        {rowId:'protein-serving',nutrient:'Protein',printedLabel:'Protein',printedValue:'1.53 g',value:1.53,unit:'g',columnLabel:'Quantity per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[]}},
-        {rowId:'fat-serving',nutrient:'Total Fat',printedLabel:'Total Fat',printedValue:'2.38 g',value:2.38,unit:'g',columnLabel:'Quantity per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[]}},
+describe('saved-package follow-up context', () => {
+  it('retains the complete saved reconstruction independent of follow-up wording', () => {
+    const saved = packageReconstructionContentSchema.parse({
+      identity: { brand: 'Example', name: 'Crackers', variant: 'Original', status: 'provisional', evidence: { observationIds: ['identity-line'], imageRegions: [] } },
+      serving: { printedText: '2 crackers (13 g)', quantity: 13, unit: 'g', pieceCount: 2, pieceDescription: 'crackers', status: 'provisional', evidence: { observationIds: ['serving-line'], imageRegions: [] } },
+      nutritionRows: [{ rowId: 'carb-serving', nutrient: 'Carbohydrates', printedLabel: 'Carbohydrates', printedValue: '8 g', value: 8, unit: 'g', columnLabel: 'Per serving', basisText: 'per serving', basisAmount: 13, basisUnit: 'g', qualifier: null, status: 'provisional', evidence: { observationIds: ['nutrition-line'], imageRegions: [] } }],
+      ingredients: [
+        { position: 0, name: 'Wheat flour', printedText: 'WHEAT FLOUR', printedPercentage: null, normalizedName: 'wheat flour', status: 'provisional', evidence: { observationIds: ['ingredient-line'], imageRegions: [] } },
+        { position: 1, name: 'Salt', printedText: 'SALT', printedPercentage: null, normalizedName: 'salt', status: 'provisional', evidence: { observationIds: ['ingredient-line'], imageRegions: [] } },
       ],
-      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:[],imageRegions:[]}},{position:1,name:'Vegetable oil',printedText:'vegetable oil',printedPercentage:null,normalizedName:'vegetable oil',status:'provisional',evidence:{observationIds:[],imageRegions:[]}},{position:2,name:'Sugar substitute',printedText:'sweetener',printedPercentage:null,normalizedName:null,status:'ambiguous',evidence:{observationIds:[],imageRegions:[]}},{position:3,name:'Salt',printedText:'salt',printedPercentage:null,normalizedName:'salt',status:'provisional',evidence:{observationIds:[],imageRegions:[]}}],
-      additives:[],statements:[],regions:[{imageId:'back',role:'nutrition-table',region:{x:0,y:0,width:.4,height:1},observationIds:[]}],unresolved:[],interpretationNote:'Saved provisional package interpretation.',
+      additives: [{ printedName: 'Raising agent', code: '500(i)', normalizedName: 'sodium carbonate', status: 'provisional', evidence: { observationIds: ['ingredient-line'], imageRegions: [] } }],
+      statements: [{ kind: 'may-contain', label: null, text: 'May contain peanuts', status: 'provisional', evidence: { observationIds: ['allergen-line'], imageRegions: [] } }],
+      regions: [{ imageId: 'back', role: 'nutrition-table', region: { x: 0.1, y: 0.2, width: 0.4, height: 0.5 }, observationIds: ['nutrition-line'] }],
+      unresolved: [{ field: 'sodium', reason: 'The printed value is not legible.', evidence: { observationIds: ['nutrition-line'], imageRegions: [] } }],
+      interpretationNote: 'Saved provisional package interpretation.',
     });
-    const context=compactSavedReconstruction(saved,'What about just two biscuits? Previous question: Is this a good daily diabetic snack?');
-    expect(context.nutritionRows.map(row=>row.nutrient)).toContain('Carbohydrates');
-    expect(context.nutritionRows.length).toBe(4);
-    expect(context.ingredients.map(item=>item.name)).toEqual(['Refined wheat flour','Vegetable oil','Sugar substitute']);
-    expect(context.regions).toEqual([]);
-    expect(context.unresolved).toEqual([]);
+    expect(compactSavedReconstruction(saved)).toEqual(saved);
   });
 
-  it('sends all ingredient facts only when the follow-up asks to inspect the ingredient list',()=>{
-    const facts=[
-      {id:'package-fact:identity',text:'Bisk Farm Sugar Free Cream Cracker'},
-      {id:'package-fact:serving',text:'Two biscuits, approximately 13.4 g'},
-      ...Array.from({length:8},(_,index)=>({id:`package-fact:ingredient:${index}`,text:index===7?'Ingredient 8: Palm oil':'Ingredient '+(index+1)})),
-      {id:'package-fact:additive:0',text:'INS 319'},
-      {id:'package-fact:statement:0',text:'Package claim: No added sugar'},
-      {id:'package-fact:statement:1',text:'Package may-contain statement: peanuts'},
+  it('passes stable package fact identifiers without duplicating their text in follow-up context', () => {
+    const facts = [
+      { id: 'package-fact:identity', text: 'Example crackers' },
+      { id: 'package-fact:serving', text: 'Two crackers, 13 g' },
+      { id: 'package-fact:ingredient:0', text: 'Wheat flour' },
+      { id: 'package-fact:additive:0', text: 'INS 500(i)' },
+      { id: 'package-fact:statement:0', text: 'May contain peanuts' },
     ];
-    const portionFacts=compactSavedPackageFacts(facts,'What about just two biscuits? Previous question: Is this a suitable daily snack?');
-    expect(portionFacts.map(fact=>fact.id)).toContain('package-fact:serving');
-    expect(portionFacts.map(fact=>fact.id)).toContain('package-fact:ingredient:0');
-    expect(portionFacts.map(fact=>fact.id)).not.toContain('package-fact:ingredient:7');
-    expect(portionFacts.map(fact=>fact.id)).not.toContain('package-fact:additive:0');
-    expect(portionFacts.map(fact=>fact.id)).toContain('package-fact:statement:0');
-    expect(compactSavedPackageFacts(facts,'List the ingredients and additives').map(fact=>fact.id)).toContain('package-fact:ingredient:7');
-    expect(compactSavedPackageFacts(facts,'List the ingredients and additives').map(fact=>fact.id)).toContain('package-fact:additive:0');
-    expect(compactSavedPackageFacts(facts,'Is palm oil okay?').map(fact=>fact.id)).toContain('package-fact:ingredient:7');
-    expect(compactSavedPackageFacts(facts,'Does this contain nuts?').map(fact=>fact.id)).toContain('package-fact:statement:1');
+    expect(compactSavedPackageFacts(facts)).toEqual(facts.map(({ id }) => ({ id })));
   });
 });
-
 describe('model answer-part recovery', () => {
-  it('uses answer repair only when no conversational wording survived validation', () => {
-    expect(needsConversationalAnswerRepair(1, 2, true, false)).toBe(false);
-    // The citation-repair stage may already have run; only a prior
-    // conversational answer repair consumes this independent one-shot budget.
-    expect(needsConversationalAnswerRepair(0, 4, true, false)).toBe(true);
-    expect(needsConversationalAnswerRepair(1, 0, true, false)).toBe(false);
-    expect(needsConversationalAnswerRepair(0, 4, true, false, true)).toBe(false);
-    expect(needsConversationalAnswerRepair(0, 0, true, false, true, 1)).toBe(false);
-    expect(needsConversationalAnswerRepair(0, 0, true, true, true, 1)).toBe(false);
-    expect(needsConversationalAnswerRepair(0, 4, true, true)).toBe(false);
-    expect(needsConversationalAnswerRepair(0, 0, false, false)).toBe(false);
-  });
-
   it('maps evidenceClaims and claimIds into the shared response contract', () => {
     const output = normalizeProviderAssistOutput({
+      answer: 'The label names refined wheat flour.',
       answerParts: [{ body: 'The label names refined wheat flour.', claimIds: ['ingredient-claim'] }],
       evidenceClaims: [{
         claimId: 'ingredient-claim', statement: 'The ingredient list names refined wheat flour.', category: 'package-ingredient',
@@ -155,6 +90,7 @@ describe('model answer-part recovery', () => {
     const answer='Protein 8 g per 25 g.';
     const parsed=parseAgentProviderOutput(JSON.stringify({
       answer,
+      claims:[],answerParts:[],limitations:[],inspectImage:null,
       package:{reconstruction:{
         current:true,
         packageFacts:[],
@@ -162,15 +98,16 @@ describe('model answer-part recovery', () => {
       }},
       uiComponents:[],
     }),true);
-    expect(parsed.schemaMode).toBe('adapted-provider-schema');
-    expect(parsed.modelOutputStatus).toBe('adapter-derived-package-claims');
+    expect(parsed.schemaMode).toBe('provider-schema');
+    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
     expect(parsed.output.packageReconstruction?.nutritionRows).toMatchObject([{
       nutrient:'Protein',value:8,unit:'g',basisText:'Per 25 g',basisAmount:25,basisUnit:'g',
     }]);
-    expect(parsed.output.claims).toMatchObject([{text:expect.stringContaining('8 g'),interpretationRowIds:['protein-25g']}]);
+    expect(parsed.output.claims).toEqual([]);
+    expect(parsed.output.answer).toBe(answer);
   });
 
-  it('repairs a missing answer link only when the answer part exactly repeats one grounded claim', () => {
+  it('does not infer answer-part evidence links from matching wording', () => {
     const answer = 'The label names refined wheat flour.';
     const normalized = normalizeProviderAssistOutput({
       answer,
@@ -185,70 +122,52 @@ describe('model answer-part recovery', () => {
       limitations: [], inspectImage: null,
     });
 
-    expect(normalized?.answerParts).toEqual([{ text: answer, claimIndexes: [0] }]);
-    expect(paraphrase?.claims).toHaveLength(1);
-    expect(paraphrase?.answerParts).toBeUndefined();
+    expect(normalized).toBeNull();
+    expect(paraphrase).toBeNull();
   });
 
-  it('preserves evidence-linked follow-up claims when answer prose has no valid links, for bounded conversational repair', () => {
-    const claim = 'The package lists refined wheat flour as an ingredient.';
-    const answer = 'The ingredient list is led by refined wheat flour.';
-    const output = normalizeProviderAssistOutput({
-      answer,
-      answerParts: [{ text: answer, claimIndexes: [] }],
-      claims: [{ text: claim, observationIds: ['ocr-ingredients'], sourceIds: [] }],
-      limitations: [], inspectImage: null,
-    });
-
-    expect(output?.claims).toHaveLength(1);
-    expect(output?.claims[0].text).toBe(claim);
-    expect(output?.answerParts).toBeUndefined();
-    expect(needsConversationalAnswerRepair(0, 1, true, false)).toBe(true);
-  });
-
-  it('links an alternate answer body only to its explicitly supplied calculation and interpretation references', () => {
+  it('does not turn answer-part references into a synthetic claim', () => {
     const answer='For two biscuits (approximately 13.4 g), provisional carbohydrate is about 9.28 g.';
     const output=normalizeProviderAssistOutput({
       answerParts:[{body:answer,calculationIds:['CALC_1'],interpretationRowIds:['ROW_1']}],
       uiComponents:[],
     });
 
-    expect(output?.answer).toBe(answer);
-    expect(output?.claims).toEqual([{
-      mode:'synthesis',text:answer,observationIds:[],sourceIds:[],calculationIds:['CALC_1'],
-      interpretationRowIds:['ROW_1'],packageFactIds:[],profileFieldIds:[],
-    }]);
-    expect(output?.answerParts).toEqual([{text:answer,claimIndexes:[0]}]);
+    expect(output).toBeNull();
+    expect(parseAgentProviderOutput(JSON.stringify({answer,claims:[],answerParts:[],limitations:[],inspectImage:null})).modelOutputStatus).toBe('no-grounded-claims');
   });
 
-  it('normalizes package-fact citations on alternate answer-part shapes',()=>{
+  it('does not synthesize a claim from a package-fact citation on an answer part',()=>{
     const answer='The package appears to list refined wheat flour first.';
     const output=normalizeProviderAssistOutput({
+      answer,
       answerParts:[{body:answer,package_fact_ids:['package-fact:ingredient:0']}],
       limitations:[],inspectImage:null,
     });
 
-    expect(output?.claims).toMatchObject([{text:answer,packageFactIds:['package-fact:ingredient:0']}]);
-    expect(output?.answerParts).toEqual([{text:answer,claimIndexes:[0]}]);
+    expect(output).toBeNull();
   });
 
-  it('keeps an answer part citation set separate from overlapping sibling claims',()=>{
+  it('does not manufacture an answer claim beside an unrelated model claim',()=>{
     const answer='For two biscuits (approximately 13.4 g), provisional carbohydrate is about 9.3 g.';
     const output=normalizeProviderAssistOutput({
-      answerParts:[{text:answer,observationIds:['OBS_I'],calculationIds:['CALC_1'],interpretationRowIds:['ROW_1']}],
+      answer,
+      answerParts:[],
       claims:[{mode:'synthesis',text:'An unrelated serving statement.',observationIds:['OBS_I'],sourceIds:[],calculationIds:[],interpretationRowIds:[],profileFieldIds:[]}],
+      limitations:[],inspectImage:null,
     });
 
-    expect(output?.claims).toHaveLength(2);
-    expect(output?.claims[1]).toMatchObject({text:answer,observationIds:['OBS_I'],calculationIds:['CALC_1'],interpretationRowIds:['ROW_1']});
-    expect(output?.answerParts).toEqual([{text:answer,claimIndexes:[1]}]);
+    expect(output?.claims).toHaveLength(1);
+    expect(output?.claims[0]).toMatchObject({text:'An unrelated serving statement.',observationIds:['OBS_I']});
+    expect(output?.answerParts).toEqual([]);
+    expect(output?.answer).toBe(answer);
   });
 
   it('resolves alternate claimIds that actually name cited evidence aliases',()=>{
     const answer='Two biscuits (about 13.4 g) provide 9.28 g carbohydrate and 0 g added sugars.';
     const output=normalizeProviderAssistOutput({
       answer,
-      answerParts:[{text:answer,claimIds:['CALC_1','CALC_2']}],
+      answerParts:[{text:answer,claimIds:['CL_1','CL_2']}],
       claims:[
         {claimId:'CL_1',category:'nutrition',text:'Two biscuits provide about 9.28 g carbohydrate.',observationIds:['OBS_K'],sourceIds:[],calculationIds:['CALC_1'],interpretationRowIds:['ROW_1']},
         {claimId:'CL_2',category:'nutrition',text:'Two biscuits provide 0 g added sugars.',observationIds:['OBS_M'],sourceIds:[],calculationIds:['CALC_2'],interpretationRowIds:['ROW_2']},
@@ -261,6 +180,7 @@ describe('model answer-part recovery', () => {
   it('normalizes the provider fact/type response dialect without a repair call',()=>{
     const answer='Two biscuits provide approximately 9.3 g of carbohydrates.';
     const output=normalizeProviderAssistOutput({
+      answer,
       answerParts:[{text:answer,type:'conclusion',claimIds:['CLM_1']}],
       claims:[{id:'CLM_1',type:'calculated',fact:'Two biscuits provide approximately 9.28 g of carbohydrates.',observationIds:['OBS_K'],sourceIds:[],calculationIds:['CALC_1'],interpretationRowIds:['ROW_1'],profileFieldIds:[],supportingSpans:[]}],
       ocrWordEvidence:[{region:'nutrition',wordIndexes:[1,2,3]}],
@@ -274,7 +194,7 @@ describe('model answer-part recovery', () => {
     expect(output).not.toHaveProperty('packageReconstruction');
   });
 
-  it('drops malformed optional answer-part links while preserving the natural answer and claims', () => {
+  it('preserves invalid answer-part indexes for claim-reference validation', () => {
     const output=normalizeProviderAssistOutput({
       answer:'A supported label statement.',
       answerParts:[{text:'A supported label statement.',claimIndexes:[20]}],
@@ -288,207 +208,14 @@ describe('model answer-part recovery', () => {
     });
 
     expect(output?.answer).toBe('A supported label statement.');
-    expect(output?.answerParts).toBeUndefined();
+    expect(output?.answerParts).toEqual([{text:'A supported label statement.',claimIndexes:[20]}]);
     expect(output?.claims).toHaveLength(1);
   });
 
   it('retains schema-valid empty evidence output for the caller to classify as unsupported quality', () => {
-    const output = normalizeProviderAssistOutput({ answer: 'Unsupported prose.', claims: [], limitations: [], inspectImage: null });
+    const output = normalizeProviderAssistOutput({ answer: 'Unsupported prose.', answerParts:[], claims: [], limitations: [], inspectImage: null });
     expect(output?.claims).toEqual([]);
-    expect(output?.answerParts).toBeUndefined();
-  });
-});
-
-describe('package-answer synthesis coverage gate',()=>{
-  const reconstruction=packageReconstructionContentSchema.parse({
-    identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional',evidence:{observationIds:[],imageRegions:[]}},
-    serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['serving-line'],imageRegions:[]}},
-    nutritionRows:[
-      {rowId:'carbs-100g',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carb-line'],imageRegions:[]}},
-      {rowId:'carbs-serving',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g',columnLabel:'Quantity per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carb-line'],imageRegions:[]}},
-      {rowId:'added-sugars-100g',nutrient:'Added Sugars',printedLabel:'Added Sugars',printedValue:'0 g',value:0,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['sugar-line'],imageRegions:[]}},
-    ],
-    ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['ingredient-line'],imageRegions:[]}}],
-    additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction for coverage-gate tests.',
-  });
-  const guidance=getNutritionGuidance({query:'Is this good to have for diabetic patients daily for snacking?',condition:'diabetes',jurisdiction:'India',maxResults:1});
-  const question='Is this good to have for diabetic patients daily for snacking?';
-
-  it('requests one synthesis pass when a food-choice answer omits package facts needed for the decision',()=>{
-    const ingredientOnly=[{mode:'synthesis' as const,text:'The first listed ingredient is refined wheat flour.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']}];
-    expect(packageAnswerCoverage(question,reconstruction,ingredientOnly,guidance)).toMatchObject({available:4,covered:1,missing:['nutrition','serving','local-guidance']});
-    expect(needsPackageAnswerSynthesis(question,reconstruction,ingredientOnly,guidance)).toBe(true);
-  });
-
-  it('does not mistake an evidence question that mentions a snack for a suitability question',()=>{
-    const linkedFacts=[
-      {mode:'synthesis' as const,text:'The package lists refined wheat flour first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis' as const,text:'A review reports a measured outcome.',observationIds:[],sourceIds:['review-source'],packageFactIds:[]},
-    ];
-    const evidenceQuestion='This snack lists rolled oats. What does evidence say about cholesterol, and what cannot be concluded from its ingredient list alone?';
-    const answer='Clinical evidence reports a measured outcome, but an ingredient list alone cannot establish the dose in this snack.';
-    expect(needsPackageAnswerSynthesis(evidenceQuestion,reconstruction,linkedFacts,[],answer)).toBe(false);
-    expect(needsPackageAnswerSynthesis('Could someone with diabetes have this as a daily snack?',reconstruction,linkedFacts,[],answer)).toBe(true);
-    expect(needsPackageAnswerSynthesis('Does this fit as a regular snack?',reconstruction,linkedFacts,[],answer)).toBe(true);
-  });
-
-  it('synthesizes a grounded saved-package answer for an ungrounded quantity follow-up, but not a covered answer',()=>{
-    const complete=[
-      {mode:'synthesis' as const,text:'The provisional carbohydrate amount is 9.28 g per serving.',observationIds:[],sourceIds:[],interpretationRowIds:['carbs-serving']},
-      {mode:'synthesis' as const,text:'The package lists refined wheat flour first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis' as const,text:'The printed serving is two biscuits, approximately 13.4 g.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:serving']},
-      {mode:'synthesis' as const,text:'The cited guidance discusses individualized food choices.',observationIds:[],sourceIds:guidance.map(source=>source.id)},
-    ];
-    expect(needsPackageAnswerSynthesis('What about just two biscuits?',reconstruction,[],guidance)).toBe(true);
-    expect(needsPackageAnswerSynthesis(question,reconstruction,complete,guidance,'These may fit occasionally, but I would not choose them as a default daily snack. The label provisionally lists 9.28 g carbohydrates per serving. Refined wheat flour is listed first. One serving is two biscuits, approximately 13.4 g. IDF guidance discusses individualized carbohydrate portions.')).toBe(false);
-  });
-
-  it('requests a direct practical position when a food-choice answer only lists supported facts',()=>{
-    const incompleteReconstruction=packageReconstructionContentSchema.parse({
-      ...reconstruction,
-      serving:null,
-      nutritionRows:[],
-      statements:[],
-    });
-    const claims=[
-      {mode:'synthesis' as const,text:'Refined wheat flour is listed first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis' as const,text:'IDF guidance discusses carbohydrate portions and higher-fibre snacks.',observationIds:[],sourceIds:guidance.map(source=>source.id)},
-    ];
-    const factsOnly='The package lists refined wheat flour first. IDF guidance discusses carbohydrate portions and higher-fibre snacks.';
-    expect(packageAnswerCoverage(question,incompleteReconstruction,claims,guidance,factsOnly)).toMatchObject({missing:[]});
-    expect(needsPackageAnswerSynthesis(question,incompleteReconstruction,claims,guidance,factsOnly)).toBe(true);
-    expect(needsPackageAnswerSynthesis(question,incompleteReconstruction,claims,guidance,'This is not a strong everyday default; the label lists refined wheat flour first. IDF guidance discusses carbohydrate portions and higher-fibre snacks.')).toBe(false);
-  });
-
-  it('requires a relevant supplied source only when local guidance was actually selected',()=>{
-    const packageClaims=[
-      {mode:'synthesis' as const,text:'The label appears to list 9.28 g carbohydrates per serving.',observationIds:[],sourceIds:[],interpretationRowIds:['carbs-serving']},
-      {mode:'synthesis' as const,text:'Refined wheat flour is listed first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis' as const,text:'One serving is two biscuits, approximately 13.4 g.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:serving']},
-    ];
-    const packageAnswer='The label appears to list 9.28 g carbohydrates per serving. One serving is two biscuits, approximately 13.4 g, and refined wheat flour is listed first.';
-    expect(packageAnswerCoverage(question,reconstruction,packageClaims,[],packageAnswer)).toMatchObject({missing:[]});
-    expect(packageAnswerCoverage(question,reconstruction,packageClaims,guidance,packageAnswer)).toMatchObject({missing:['local-guidance']});
-    expect(needsPackageAnswerSynthesis(question,reconstruction,packageClaims,guidance,packageAnswer)).toBe(true);
-
-    const sourceClaim={mode:'synthesis' as const,text:'IDF education notes refined carbohydrates can affect blood glucose.',observationIds:[],sourceIds:guidance.map(source=>source.id)};
-    const sourcedAnswer=`This is not a strong everyday default based on the available label. ${packageAnswer} IDF education notes that refined carbohydrates can affect blood glucose.`;
-    expect(packageAnswerCoverage(question,reconstruction,[...packageClaims,sourceClaim],guidance,sourcedAnswer)).toMatchObject({missing:[]});
-    expect(needsPackageAnswerSynthesis(question,reconstruction,[...packageClaims,sourceClaim],guidance,sourcedAnswer)).toBe(false);
-  });
-
-  it('does not synthesize a package answer when the saved reconstruction has no evidence-backed details',()=>{
-    const empty=packageReconstructionContentSchema.parse({
-      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
-      serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'',
-    });
-    expect(needsPackageAnswerSynthesis('What about two biscuits?',empty,[])).toBe(false);
-    expect(needsPackageAnswerSynthesis('What about two biscuits?',null,[])).toBe(false);
-  });
-
-  it('does not count hidden claim coverage when the visible answer omits nutrition and serving details',()=>{
-    const completeClaims=[
-      {mode:'synthesis' as const,text:'The provisional carbohydrate amount is 9.28 g per serving.',observationIds:[],sourceIds:[],interpretationRowIds:['carbs-serving']},
-      {mode:'synthesis' as const,text:'The package lists refined wheat flour first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis' as const,text:'The printed serving is two biscuits, approximately 13.4 g.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:serving']},
-      {mode:'synthesis' as const,text:'The cited guidance discusses individualized food choices.',observationIds:[],sourceIds:guidance.map(source=>source.id)},
-    ];
-    const genericAnswer='These crackers may not be ideal for daily snacking because their primary ingredient is refined wheat flour.';
-    expect(packageAnswerCoverage(question,reconstruction,completeClaims,guidance,genericAnswer)).toMatchObject({
-      available:4,covered:1,missing:['nutrition','serving','local-guidance'],
-    });
-    expect(needsPackageAnswerSynthesis(question,reconstruction,completeClaims,guidance,genericAnswer)).toBe(true);
-
-    const completeAnswer='The label provisionally shows 9.28 g carbohydrates for that serving; two biscuits weigh approximately 13.4 g. Refined wheat flour is listed first.';
-    expect(packageAnswerCoverage(question,reconstruction,completeClaims,guidance,completeAnswer)).toMatchObject({
-      available:4,missing:[],
-    });
-  });
-
-  it('does not let a zero-added-sugar reading substitute for the relevant per-serving carbohydrate row',()=>{
-    const claims=[
-      {mode:'synthesis' as const,text:'The label lists 0 g added sugars per 100 g.',observationIds:[],sourceIds:[],interpretationRowIds:['added-sugars-100g']},
-      {mode:'synthesis' as const,text:'The package lists refined wheat flour first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis' as const,text:'A serving is two biscuits, about 13.4 g.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:serving']},
-    ];
-    const answer='The label lists 0 g added sugars per 100 g. A serving is two biscuits, about 13.4 g, and refined wheat flour is listed first.';
-    expect(packageAnswerCoverage(question,reconstruction,claims,guidance,answer)).toMatchObject({
-      available:4,covered:2,missing:['nutrition','local-guidance'],
-    });
-  });
-
-  it('contextualizes a relevant nutrition claim instead of letting it replace the numeric reading',()=>{
-    const withSugarClaim={...reconstruction,statements:[{
-      kind:'claim' as const,label:null,text:'Sugar Free',status:'provisional' as const,
-      evidence:{observationIds:['sugar-claim-line'],imageRegions:[]},
-    }]};
-    const baseClaims=[
-      {mode:'synthesis' as const,text:'The label appears to list 9.28 g carbohydrates per serving.',observationIds:[],sourceIds:[],interpretationRowIds:['carbs-serving']},
-      {mode:'synthesis' as const,text:'Refined wheat flour is listed first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis' as const,text:'One serving is two biscuits, approximately 13.4 g.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:serving']},
-    ];
-    const answer='The label appears to list 9.28 g carbohydrates per serving. One serving is two biscuits, approximately 13.4 g, and refined wheat flour is listed first.';
-    expect(packageAnswerCoverage(question,withSugarClaim,baseClaims,guidance,answer)).toMatchObject({
-      available:5,covered:3,missing:['nutrition-claim','local-guidance'],
-    });
-    expect(needsPackageAnswerSynthesis(question,withSugarClaim,baseClaims,guidance,answer)).toBe(true);
-
-    const contextualized=[...baseClaims,{
-      mode:'synthesis' as const,text:'The packet also carries a sugar-free claim; that does not replace the carbohydrate reading.',
-      observationIds:[],sourceIds:[],packageFactIds:['package-fact:statement:0'],
-    },{
-      mode:'synthesis' as const,text:'IDF patient education notes that refined carbohydrate choices can affect blood glucose and should be individualized.',
-      observationIds:[],sourceIds:guidance.map(source=>source.id),
-    }];
-    const completeAnswer=`This is not a strong everyday default. ${answer} It also carries a sugar-free claim; the carbohydrate figure remains the more relevant amount. IDF patient education notes that refined carbohydrate choices can affect blood glucose and should be individualized.`;
-    expect(packageAnswerCoverage(question,withSugarClaim,contextualized,guidance,completeAnswer)).toMatchObject({
-      available:5,missing:[],
-    });
-    expect(needsPackageAnswerSynthesis(question,withSugarClaim,contextualized,guidance,completeAnswer)).toBe(false);
-  });
-
-  it('does not call a synthesis complete while a supplied nutrition row or serving facet is still omitted',()=>{
-    const before=packageAnswerCoverage(question,reconstruction,[{mode:'synthesis',text:'Refined wheat flour is listed first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']}],guidance);
-    const partial=packageAnswerCoverage(question,reconstruction,[
-      {mode:'synthesis',text:'Refined wheat flour is listed first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis',text:'IDF guidance says snack choices should be individualized.',observationIds:[],sourceIds:guidance.map(source=>source.id)},
-    ],guidance);
-    expect(packageAnswerSynthesisCompletesMissingFacets(before,partial)).toBe(false);
-    expect(packageAnswerSynthesisCompletesMissingFacets(before,before)).toBe(false);
-  });
-
-  it('rejects a synthesis that still omits the declared serving and accepts one that covers all package facets',()=>{
-    const before=packageAnswerCoverage(question,reconstruction,[
-      {mode:'synthesis' as const,text:'The package lists refined wheat flour first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis' as const,text:'The provisional carbohydrate amount is 9.28 g per serving.',observationIds:[],sourceIds:[],interpretationRowIds:['carbs-serving']},
-    ],guidance);
-    const swapped=packageAnswerCoverage(question,reconstruction,[
-      {mode:'synthesis' as const,text:'The package lists refined wheat flour first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis' as const,text:'The provisional carbohydrate amount is 9.28 g per serving.',observationIds:[],sourceIds:[],interpretationRowIds:['carbs-serving']},
-      {mode:'synthesis' as const,text:'The cited guidance discusses individualized food choices.',observationIds:[],sourceIds:guidance.map(source=>source.id)},
-    ],guidance);
-    const complete=[
-      {mode:'synthesis' as const,text:'The provisional carbohydrate amount is 9.28 g per serving.',observationIds:[],sourceIds:[],interpretationRowIds:['carbs-serving']},
-      {mode:'synthesis' as const,text:'The package lists refined wheat flour first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis' as const,text:'The printed serving is two biscuits, approximately 13.4 g.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:serving']},
-      {mode:'synthesis' as const,text:'The cited guidance discusses individualized food choices.',observationIds:[],sourceIds:guidance.map(source=>source.id)},
-    ];
-    const after=packageAnswerCoverage(question,reconstruction,complete,guidance);
-    expect(before).toMatchObject({available:4,covered:2,missing:['serving','local-guidance']});
-    expect(swapped).toMatchObject({available:4,covered:3,missing:['serving']});
-    expect(packageAnswerSynthesisCompletesMissingFacets(before,swapped)).toBe(false);
-    expect(packageAnswerSynthesisCompletesMissingFacets(before,after)).toBe(true);
-  });
-
-  it('removes model-emitted internal reference handles from consumer prose without altering evidence IDs',()=>{
-    const sanitized=sanitizeAssistantEvidenceLabels({
-      answer:'Two biscuits are a serving [package-fact:serving]; the carb amount is 69.29 g per 100 g [ROW_1] [priorityNutritionRows] [nutritionRows] [RDA] [refined wheat flour].',
-      answerParts:[{text:'The label lists refined flour [OBS_1].',claimIndexes:[0]}],
-      claims:[{text:'The label lists refined flour [OBS_1].',observationIds:['actual-observation-id'],sourceIds:[],interpretationRowIds:['actual-row-id']}],
-    }) as {answer:string;answerParts:Array<{text:string}>;claims:Array<{observationIds:string[];interpretationRowIds:string[]}>};
-    expect(sanitized.answer).toBe('Two biscuits are a serving; the carb amount is 69.29 g per 100 g [RDA] [refined wheat flour].');
-    expect(sanitized.answerParts[0].text).toBe('The label lists refined flour.');
-    expect(sanitized.claims[0]).toMatchObject({observationIds:['actual-observation-id'],interpretationRowIds:['actual-row-id']});
+    expect(output?.answerParts).toEqual([]);
   });
 });
 
@@ -499,21 +226,29 @@ describe('provider package-reconstruction normalization',()=>{
       serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'',
     };
     const parsed=parseAgentProviderOutput(JSON.stringify({
-      output:{answer:'The label reading is provisional.',claims:[],packageReconstruction:reconstruction,limitations:[],inspectImage:null},
+      output:{answer:'The label reading is provisional.',answerParts:[],claims:[],packageReconstruction:reconstruction,limitations:[],inspectImage:null},
       transportMetadata:{attempt:1},
     }),true);
-    expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
+    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
     expect(parsed.output.packageReconstruction?.identity.brand).toBe('Bisk Farm');
-    expect(parsed.output.claims).toMatchObject([{text:'The label reading is provisional.',observationIds:[],sourceIds:[]}]);
+    expect(parsed.output.claims).toEqual([]);
+    expect(parsed.output.answer).toBe('The label reading is provisional.');
     expect(JSON.stringify(parsed.output)).not.toContain('transportMetadata');
   });
 
-  it('classifies an omitted claim list as no grounded claims instead of a provider schema failure',()=>{
+  it('classifies a provider answer with global evidence but no claim links as an ungrounded answer, not a schema failure',()=>{
     const parsed=parseAgentProviderOutput(JSON.stringify({
-      answer:'The package interpretation remains unresolved.',limitations:[],inspectImage:null,providerMetadata:{finish:'stop'},
+      answer:'A study reports an effect, but the package does not show a dose.',
+      answerParts:[],claims:[],
+      evidence:[{sourceId:'SRC_1',title:'A study',summary:'A scoped finding.',limitations:'Not package-specific.'}],
+      packageFacts:[{id:'package-fact:ingredient:0',text:'Ingredient 1: oats.'}],
+      limitations:[],inspectImage:null,providerMetadata:{finish:'stop'},
     }));
-    expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
-    expect(parsed.output.claims).toMatchObject([{text:'The package interpretation remains unresolved.',observationIds:[],sourceIds:[]}]);
+    expect(parsed.schemaMode).toBe('provider-schema');
+    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
+    expect(parsed.output.claims).toEqual([]);
+    expect(parsed.output.answer).toBe('A study reports an effect, but the package does not show a dose.');
+    expect(parsed.output.answerParts).toEqual([]);
   });
 
   it('continues rejecting malformed claim data instead of converting it into an empty claim set',()=>{
@@ -552,6 +287,7 @@ describe('provider package-reconstruction normalization',()=>{
     const parsed=parseAgentProviderOutput(JSON.stringify({
       answer:'The package reading is provisional.',
       answerParts:[],
+      claims:[],
       uiComponents:[],
       package:{
         current:true,
@@ -564,8 +300,9 @@ describe('provider package-reconstruction normalization',()=>{
       },
     }),true);
 
-    expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
-    expect(parsed.output.claims).toMatchObject([{text:'The package reading is provisional.',observationIds:[],sourceIds:[]}]);
+    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
+    expect(parsed.output.claims).toEqual([]);
+    expect(parsed.output.answer).toBe('The package reading is provisional.');
     expect(parsed.output.packageReconstruction).toMatchObject({
       identity:{brand:'Bisk Farm',name:'Cream Cracker Sugar Free'},
       serving:{printedText:'2 biscuits (approx. 13.4 g)',quantity:13.4,unit:'g'},
@@ -575,10 +312,11 @@ describe('provider package-reconstruction normalization',()=>{
     });
   });
 
-  it('keeps categorized packageFacts in their semantic fields and canonicalizes string claims without granting evidence',()=>{
+  it('keeps categorized packageFacts separate from explicitly linked conversational claims',()=>{
     const parsed=parseAgentProviderOutput(JSON.stringify({
       answer:'The label lists the product and serving declaration.',
-      claims:['The product name is shown on the package [OBS_IDENTITY].'],
+      answerParts:[{text:'The label lists the product and serving declaration.',claimIndexes:[0]}],
+      claims:[{mode:'synthesis',text:'The product name is shown on the package.',observationIds:['OBS_IDENTITY'],sourceIds:[]}],
       packageReconstruction:{
         current:true,
         packageFacts:[
@@ -605,11 +343,12 @@ describe('provider package-reconstruction normalization',()=>{
     });
   });
 
-  it('validates a claimless provider table summary field-by-field and withholds an unsupported numeric sentence',()=>{
+  it('withholds an unlinked provider table summary instead of manufacturing row claims',()=>{
     const answer='The nutrition table lists energy and protein per 100 g. It reports sodium 999 mg per 100 g.';
     const parsed=parseAgentProviderOutput(JSON.stringify({
       answer,
       answerParts:[],
+      claims:[],
       packageReconstruction:{
         current:true,
         nutritionRows:[
@@ -625,16 +364,17 @@ describe('provider package-reconstruction normalization',()=>{
       images:[{handle:'synthetic-image'}],question:'Summarize the readable nutrition table.',diagnostic:event=>decisions.push(event),
     });
 
-    expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
-    expect(result.answer).toBe('The nutrition table lists energy and protein per 100 g.');
-    expect(result.claims.flatMap(claim=>claim.interpretationRowIds??[])).toEqual(['energy-100g','protein-100g']);
-    expect(decisions).toContainEqual(expect.objectContaining({stage:'claim',index:1,decision:'rejected',reason:'no-evidence-reference'}));
+    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
+    expect(result.answer).toContain('can’t establish a reliable answer');
+    expect(result.claims).toEqual([]);
+    expect(decisions).not.toContainEqual(expect.objectContaining({stage:'claim',reason:'no-evidence-reference'}));
   });
 
-  it('adapts a valid claimless provider response into independently linked row statements and withholds one bad numeric item',()=>{
+  it('classifies an explicit claimless table response without inventing row statements',()=>{
     const answer='The label declares a serving size of 35 g and lists amounts per serving: Energy 139 kcal, Protein 5 g, Sodium 999 mg.';
     const parsed=parseAgentProviderOutput(JSON.stringify({
       answer,
+      answerParts:[],claims:[],
       packageReconstruction:{
         current:true,
         serving:{printedText:'Serving size 35 g',quantity:35,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
@@ -646,23 +386,20 @@ describe('provider package-reconstruction normalization',()=>{
       },
       limitations:[],inspectImage:null,
     }),true);
-    expect(parsed.schemaMode).toBe('adapted-provider-schema');
-    expect(parsed.modelOutputStatus).toBe('adapter-derived-package-claims');
-    expect(parsed.output.claims.map(claim=>claim.interpretationRowIds)).toEqual([['energy-35g'],['protein-35g']]);
-    expect(parsed.output.answerParts?.[0]).toMatchObject({claimIndexes:[0,1],text:expect.stringContaining('Energy 139 kcal')});
-    expect(parsed.output.answerParts?.[0].text).not.toContain('999');
+    expect(parsed.schemaMode).toBe('provider-schema');
+    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
+    expect(parsed.output.claims).toEqual([]);
+    expect(parsed.output.answer).toBe(answer);
 
     const question='Show the nutrition values for the serving.';
     const result=validateInferenceOutput(parsed.output,{
       package:packageSchema.parse({id:'atomic-row-adapter',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:'2026-10-24T00:00:00.000Z'}),
       images:[{handle:'synthetic-image'}],question,
     });
-    expect(result.claims.flatMap(claim=>claim.interpretationRowIds??[])).toEqual(['energy-35g','protein-35g','sodium-35g']);
-    expect(result.answer).toContain('Energy 139 kcal');
-    expect(result.answer).toContain('Protein 5 g');
-    expect(result.answer).toContain('Sodium 170 mg');
+    expect(result.claims).toEqual([]);
+    expect(result.answer).toContain('can’t establish a reliable answer');
+    expect(result.answer).not.toContain('Energy 139 kcal');
     expect(result.answer).not.toContain('999');
-    expect(needsPackageAnswerSynthesis(question,parsed.output.packageReconstruction??null,result.claims,[],result.answer)).toBe(false);
   });
 
   it('does not manufacture evidence links or confidence for a numeric row with no provenance',()=>{
@@ -690,29 +427,16 @@ describe('Gemini final-response failure classification', () => {
     expect(JSON.stringify(contents)).not.toContain('inlineData');
   });
 
-  it('keeps valid grounded claims parseable when answer prose has no usable links, so the bounded repair stage can run', () => {
-    const parsed = parseAgentProviderOutput(JSON.stringify({
-      answer: 'The ingredient list is led by refined wheat flour.',
-      answerParts: [{ text: 'This package lists refined wheat flour.', claimIndexes: [] }],
-      claims: [{ text: 'The label lists refined wheat flour.', observationIds: ['ocr-ingredients'], sourceIds: [] }],
-      limitations: [], inspectImage: null,
-    }));
-
-    expect(parsed.modelOutputStatus).toBe('claims-present');
-    expect(parsed.output.claims).toHaveLength(1);
-    expect(parsed.output.answerParts).toBeUndefined();
-    expect(needsConversationalAnswerRepair(0, 1, true, false)).toBe(true);
-  });
-
   it('keeps no grounded claims, invalid JSON and schema failure as distinct outcomes', () => {
-    const noClaims = parseAgentProviderOutput(JSON.stringify({ answer: 'Text without linked claims.', claims: [], limitations: [], inspectImage: null }));
+    const noClaims = parseAgentProviderOutput(JSON.stringify({ answer: 'Text without linked claims.', answerParts:[], claims: [], limitations: [], inspectImage: null }));
     let malformedJsonError: unknown;
     try { parseAgentProviderOutput('{not json'); } catch (error) { malformedJsonError = error; }
     let schemaError: unknown;
     try { parseAgentProviderOutput(JSON.stringify({ answer: 'bad schema', claims: 'not an array', limitations: [], inspectImage: null })); } catch (error) { schemaError = error; }
 
-    expect(noClaims.modelOutputStatus).toBe('unlinked-answer-candidate');
-    expect(noClaims.output.claims).toMatchObject([{text:'Text without linked claims.',observationIds:[],sourceIds:[]}]);
+    expect(noClaims.modelOutputStatus).toBe('no-grounded-claims');
+    expect(noClaims.output.claims).toEqual([]);
+    expect(noClaims.output.answer).toBe('Text without linked claims.');
     expect(malformedJsonError).toMatchObject({ code: 'provider_invalid_json', status: 502 });
     expect(schemaError).toMatchObject({ code: 'provider_schema_invalid', status: 502 });
   });
@@ -722,207 +446,6 @@ describe('Gemini final-response failure classification', () => {
     try { parseAgentProviderOutput(JSON.stringify({ answer: 'PRIVATE LABEL NUMBER', claims: 'bad', limitations: [], inspectImage: null })); } catch (error) { failure = error; }
     expect(failure).toMatchObject({ code: 'provider_schema_invalid', issuePaths: expect.arrayContaining(['claims']) });
     expect(JSON.stringify(failure)).not.toContain('PRIVATE LABEL NUMBER');
-  });
-});
-
-describe('explicit composition-answer coverage', () => {
-  const facts:RetrievedCompositionFact[]=[
-    {batchId:'call-1',sourceId:'fdc-idli',description:'Idli',dataType:'Survey (FNDDS)',nutrientId:1003,name:'Protein',reportedValue:'6.36 g',sourceSummary:'Idli. Values are per 100 g edible portion. Protein (nutrient ID 1003): 6.36 g per 100 g edible portion.'},
-    {batchId:'call-1',sourceId:'fdc-idli',description:'Idli',dataType:'Survey (FNDDS)',nutrientId:1005,name:'Carbohydrate, by difference',reportedValue:'25 g',sourceSummary:'Idli. Values are per 100 g edible portion. Carbohydrate, by difference (nutrient ID 1005): 25 g per 100 g edible portion.'},
-  ];
-  const output={answer:'A retrieved reference is available.',claims:[],limitations:[],inspectImage:null};
-
-  it('fills a missing explicitly requested nutrient only from the unique retrieved food record', () => {
-    const result=supplementRequestedCompositionCoverage(output,'Report protein and total carbohydrate per 100 g for idli.',facts);
-    expect(result.added).toBe(2);
-    expect((result.output as {claims:Array<{text:string;sourceIds:string[];supportingSpans:Array<{quote:string}>}>}).claims.map(claim=>claim.text)).toEqual([
-      'The USDA FNDDS survey reference entry “Idli” reports protein at 6.36 g per 100 g edible portion.',
-      'The USDA FNDDS survey reference entry “Idli” reports carbohydrate at 25 g per 100 g edible portion.',
-    ]);
-  });
-
-  it('does not duplicate a supported value or choose among competing foods returned by one search', () => {
-    const complete=supplementRequestedCompositionCoverage(output,'Report protein and total carbohydrate for idli.',facts);
-    const repeated=supplementRequestedCompositionCoverage(complete.output,'Report protein and total carbohydrate for idli.',facts);
-    expect(repeated.added).toBe(0);
-    const competing=[...facts,{...facts[0],sourceId:'fdc-rice',description:'Rice'}];
-    expect(supplementRequestedCompositionCoverage(output,'Report protein for idli.',competing).added).toBe(0);
-  });
-});
-
-describe('explicit nutrition-guidance answer coverage', () => {
-  const question = 'Summarize what KDIGO 2024 says about sodium in chronic kidney disease.';
-  const evidence = getNutritionGuidance({ query: question, condition: 'CKD', jurisdiction: 'India' });
-  const facts = getNutritionGuidanceCoverageFacts(question, evidence.map(source => source.id));
-  const output = { answer: '', claims: [], limitations: [], inspectImage: null };
-
-  it('adds the source-backed numeric recommendation when Gemini only reports its caveat', () => {
-    const result = supplementRequestedNutritionGuidanceCoverage(output, facts);
-    expect(result.added).toBe(1);
-    expect((result.output as { claims: Array<{ text: string; sourceIds: string[]; supportingSpans: Array<{ quote: string }> }> }).claims).toEqual([
-      expect.objectContaining({
-        text: evidence[0].summary,
-        sourceIds: ['kdigo-ckd-2024-sodium'],
-        supportingSpans: [{ kind: 'source', id: 'kdigo-ckd-2024-sodium', quote: evidence[0].summary }],
-      }),
-    ]);
-  });
-
-  it('does not add a duplicate when the model already states every required amount', () => {
-    const complete = {
-      ...output,
-      claims: [{
-        mode: 'synthesis' as const,
-        text: 'KDIGO suggests sodium below 2 g/day for people with CKD.',
-        observationIds: [], sourceIds: ['kdigo-ckd-2024-sodium'], calculationIds: [], profileFieldIds: [],
-        supportingSpans: [{ kind: 'source' as const, id: 'kdigo-ckd-2024-sodium', quote: evidence[0].summary }], visualEvidence: [],
-      }],
-    };
-    expect(supplementRequestedNutritionGuidanceCoverage(complete, facts).added).toBe(0);
-  });
-
-  it('does not treat an unsupported numeric answer as coverage when its cited span omits the amount', () => {
-    const unsupported = {
-      ...output,
-      claims: [{
-        mode: 'synthesis' as const,
-        text: 'KDIGO recommends sodium below 2 g/day as a personal target.',
-        observationIds: [], sourceIds: ['kdigo-ckd-2024-sodium'], calculationIds: [], profileFieldIds: [],
-        supportingSpans: [{ kind: 'source' as const, id: 'kdigo-ckd-2024-sodium', quote: 'the guideline notes that this restriction is usually inappropriate in sodium-wasting nephropathy.' }],
-        visualEvidence: [],
-      }],
-    };
-    const packageData = packageSchema.parse({
-        id: 'unsupported-guidance-coverage-test', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [],
-        observations: [], rawText: '', warnings: [], synthetic: true, createdAt: '2026-10-23T00:00:00.000Z',
-    });
-    const validatedModelOutput = validateInferenceOutput(unsupported, {
-      package: packageData,
-      evidence,
-    });
-    const result = supplementRequestedNutritionGuidanceCoverage(validatedModelOutput, facts);
-    const validated = validateInferenceOutput(result.output, { package: packageData, evidence });
-
-    expect(validatedModelOutput.claims).toHaveLength(0);
-    expect(result.added).toBe(1);
-    expect((result.output as { claims: Array<{ text: string }> }).claims.at(-1)?.text).toBe(evidence[0].summary);
-    expect(validated.claims).toHaveLength(1);
-    expect(validated.claims[0].text).toContain('sodium below 2 g/day');
-    expect(validated.answer).toContain('could not safely assemble it into a clear answer');
-  });
-
-  it('does not create coverage facts for an ordinary package question', () => {
-    expect(getNutritionGuidanceCoverageFacts('How much sodium is in this package?', evidence.map(source => source.id))).toEqual([]);
-  });
-
-  it('keeps the recovered recommendation usable through final inference validation', () => {
-    const question = 'For a general CKD question with unknown country, summarize what NutriScan guidance establishes about sodium and whether it establishes a potassium target. Do not personalize.';
-    const sources = getNutritionGuidance({ query: question, condition: 'CKD' });
-    const facts = getNutritionGuidanceCoverageFacts(question, sources.map(source => source.id));
-    const supplemented = supplementRequestedNutritionGuidanceCoverage({ answer: '', claims: [], limitations: [], inspectImage: null }, facts);
-    const validated = validateInferenceOutput(supplemented.output, {
-      package: packageSchema.parse({
-        id: 'guidance-coverage-test', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [],
-        observations: [], rawText: '', warnings: [], synthetic: true, createdAt: '2026-10-23T00:00:00.000Z',
-      }),
-      evidence: sources,
-    });
-
-    expect(supplemented.added).toBe(1);
-    expect(validated.claims).toHaveLength(1);
-    expect(validated.claims[0].text).toContain('sodium below 2 g/day');
-    expect(validated.answer).toContain('could not safely assemble it into a clear answer');
-    expect(validated.claims[0].sourceIds).toEqual(['kdigo-ckd-2024-sodium']);
-  });
-});
-
-describe('explicit additive-identity answer coverage', () => {
-  const question = 'What does printed antioxidant code (319) mean? Please resolve it.';
-  const packageData = packageSchema.parse({
-    id: 'tbhq-identity-coverage-test', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [],
-    observations: [{ id: 'ocr-additive-319', field: 'ocr-line', text: 'INGREDIENTS: antioxidant (319), raising agents [500(i), 503(ii)]', side: 'back', confidence: 78, origin: 'ocr', imageId: 'back-photo' }],
-    rawText: '', warnings: [], synthetic: true, createdAt: '2026-10-23T00:00:00.000Z',
-  });
-
-  it('keeps a specifically requested local identity result usable with the OCR declaration and amount/authorization limits', async () => {
-    const lookup = await executeGeminiTool('resolve_ingredient', { query: 'INS 319' }, {
-      question, package: packageData, visualImages: [], searchTerms: new Set(), prepareImage: async () => '',
-    });
-    const facts = requestedIngredientIdentityCoverageFacts(question, packageData.observations, lookup);
-    const supplemented = supplementRequestedIngredientIdentityCoverage({ answer: '', claims: [], limitations: [], inspectImage: null }, facts);
-    const validated = validateInferenceOutput(supplemented.output, { package: packageData, evidence: lookup.evidence ?? [] });
-
-    expect(lookup.status).toBe('ok');
-    expect(facts).toHaveLength(1);
-    expect(supplemented.added).toBe(1);
-    expect(validated.claims).toHaveLength(1);
-    expect(validated.claims[0].sourceIds).toContain('who-jecfa-tbhq-319');
-    expect(validated.claims[0].observationIds).toEqual(['ocr-additive-319']);
-    expect(validated.claims[0].text).toMatch(/INS 319.*Tertiary butylhydroquinone/i);
-    expect(validated.claims[0].text).toMatch(/not the product.s additive amount or authorization/i);
-    expect(validated.answer).toContain('could not safely assemble it into a clear answer');
-  });
-
-  it('does not promote an identity result without an explicit identity question and matching OCR declaration', async () => {
-    const lookup = await executeGeminiTool('resolve_ingredient', { query: 'INS 319' }, {
-      question: 'What nutrients are printed?', package: packageData, visualImages: [], searchTerms: new Set(), prepareImage: async () => '',
-    });
-    expect(requestedIngredientIdentityCoverageFacts('What nutrients are printed?', packageData.observations, lookup)).toEqual([]);
-    expect(requestedIngredientIdentityCoverageFacts(question, [], lookup)).toEqual([]);
-  });
-
-  it('adapts an exact Codex subtype result into source-linked package identity coverage', () => {
-    const codexEvidence={
-      id:'codex-gsfa-ins-450-i',title:'Disodium diphosphate (INS 450(i)) — Codex GSFA',publisher:'Codex Alimentarius Commission (FAO/WHO)',
-      url:'https://www.fao.org/gsfaonline/',category:'registry' as const,jurisdiction:'International identity reference',publishedAt:null,effectiveAt:null,
-      retrievedAt:'2026-10-24T00:00:00.000Z',summary:'The Codex GSFA search returned Disodium diphosphate (INS 450(i)) as an INS identity. Match type: INS Exact.',
-      limitations:'Identity lookup only. This does not establish product presence, amount, exposure, Indian authorization or personal safety.',
-    };
-    const lookup={
-      status:'ok' as const,resultCount:1,evidence:[codexEvidence],
-      output:{status:'codex_identity_match',requestedCode:'450(i)',candidates:[{name:'Disodium diphosphate',insNumber:'450(i)',matchType:'INS Exact',sourceId:codexEvidence.id}]},
-    };
-    const observations=[{id:'ocr-additive-450-i',field:'ocr-line',text:'INGREDIENTS: refined wheat flour; raising agent (INS 450(i))',side:'back',confidence:80,origin:'ocr',imageId:'back-photo'}];
-    const question='What is INS 450(i) on this ingredients list?';
-    const pkg=packageSchema.parse({
-      id:'codex-identity-coverage-test',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],
-      observations,rawText:'',warnings:[],synthetic:true,createdAt:'2026-10-24T00:00:00.000Z',
-    });
-    const facts=requestedIngredientIdentityCoverageFacts(question,pkg.observations,lookup);
-    const supplemented=supplementRequestedIngredientIdentityCoverage({answer:'',claims:[],limitations:[],inspectImage:null},facts);
-    const validated=validateInferenceOutput(supplemented.output,{package:pkg,evidence:[codexEvidence]});
-
-    expect(facts).toHaveLength(1);
-    expect(facts[0]).toMatchObject({code:'450(i)',name:'Disodium diphosphate',sourceId:codexEvidence.id,observationId:'ocr-additive-450-i'});
-    expect(supplemented.added).toBe(1);
-    expect(validated.claims).toHaveLength(1);
-    expect(validated.claims[0].sourceIds).toEqual([codexEvidence.id]);
-    expect(validated.claims[0].observationIds).toEqual(['ocr-additive-450-i']);
-  });
-
-  it('withholds ambiguous, subtype-mismatched, unlinked and unobserved Codex identities', () => {
-    const source={
-      id:'codex-gsfa-ins-450-i',title:'Disodium diphosphate (INS 450(i)) — Codex GSFA',publisher:'Codex Alimentarius Commission (FAO/WHO)',
-      url:'https://www.fao.org/gsfaonline/',category:'registry' as const,jurisdiction:'International identity reference',publishedAt:null,effectiveAt:null,
-      retrievedAt:'2026-10-24T00:00:00.000Z',summary:'The Codex GSFA search returned Disodium diphosphate (INS 450(i)) as an INS identity.',limitations:'Identity only; no authorization or exposure conclusion.',
-    };
-    const makeResult=(output:Record<string,unknown>,evidence=[source])=>({status:'ok' as const,resultCount:evidence.length,evidence,output});
-    const candidate={name:'Disodium diphosphate',insNumber:'450(i)',matchType:'INS Exact',sourceId:source.id};
-    const makePackage=(text:string)=>packageSchema.parse({
-      id:'codex-identity-negative-test',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],
-      observations:[{id:'ocr-additive',field:'ocr-line',text,side:'back',confidence:80,origin:'ocr',imageId:'back-photo'}],
-      rawText:'',warnings:[],synthetic:true,createdAt:'2026-10-24T00:00:00.000Z',
-    });
-    const wrongSubtype=makePackage('INGREDIENTS: raising agent INS 450(ii)');
-    const question='What does INS 450(i) mean?';
-
-    expect(requestedIngredientIdentityCoverageFacts(question,wrongSubtype.observations,makeResult({status:'codex_identity_candidates',requestedCode:'450(i)',candidates:[candidate]}))).toEqual([]);
-    expect(requestedIngredientIdentityCoverageFacts(question,wrongSubtype.observations,makeResult({status:'codex_identity_match',requestedCode:'450(ii)',candidates:[{...candidate,insNumber:'450(ii)'}]}))).toEqual([]);
-    expect(requestedIngredientIdentityCoverageFacts(question,wrongSubtype.observations,makeResult({status:'codex_identity_match',requestedCode:'450(i)',candidates:[candidate]}))).toEqual([]);
-    const unlabelledNumber=makePackage('NUTRITION: 450(i)');
-    expect(requestedIngredientIdentityCoverageFacts(question,unlabelledNumber.observations,makeResult({status:'codex_identity_match',requestedCode:'450(i)',candidates:[candidate]}))).toEqual([]);
-    const unlinked=makePackage('INGREDIENTS: raising agent INS 450(i)');
-    expect(requestedIngredientIdentityCoverageFacts(question,unlinked.observations,makeResult({status:'codex_identity_match',requestedCode:'450(i)',candidates:[{...candidate,sourceId:'unlinked-source'}]}))).toEqual([]);
   });
 });
 

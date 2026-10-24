@@ -29,6 +29,7 @@ type ModelRouteAttempt = { model: string; outcome: 'used' | 'failed' | 'skipped'
 type GenerateDiagnosticContext = { analysisId?: string; stage?: string; round?: number; profileIncluded?: boolean; deadlineAt?: number };
 const cooldownPath = path.join(process.cwd(), '.data', 'gemini-routing-cooldowns.json');
 const modelCooldowns = new Map<string, ModelCooldown>();
+const capabilityCooldowns = new Map<string, ModelCooldown>();
 let cooldownsLoaded = false;
 
 function loadCooldowns() {
@@ -38,9 +39,22 @@ function loadCooldowns() {
     const raw = readFileSync(cooldownPath, 'utf8');
     if (Buffer.byteLength(raw) > 32_000) return;
     const parsed = JSON.parse(raw) as Record<string, ModelCooldown>;
-    for (const [model, state] of Object.entries(parsed)) {
-      if (validModel(model) && state && Number.isFinite(state.until) && state.until > Date.now()
-        && ['short-quota', 'daily-quota', 'model-unavailable', 'unsupported-feature', 'service-unavailable'].includes(state.kind)) modelCooldowns.set(model, state);
+    for (const [key, state] of Object.entries(parsed)) {
+      if (!state || !Number.isFinite(state.until) || state.until <= Date.now()
+        || !['short-quota', 'daily-quota', 'model-unavailable', 'unsupported-feature', 'service-unavailable'].includes(state.kind)) continue;
+      if (validModel(key)) {
+        // Older builds stored unsupported-feature as a model-wide ban. That
+        // may have described only one configuration (for example tools plus
+        // JSON schema), so never carry that overly broad cooldown forward.
+        if (state.kind !== 'unsupported-feature') modelCooldowns.set(key, state);
+        continue;
+      }
+      if (key.startsWith('capability:')) {
+        const separator = key.indexOf(':', 'capability:'.length);
+        const model = key.slice('capability:'.length, separator);
+        const capability = key.slice(separator + 1);
+        if (separator > 0 && validModel(model) && /^[a-z0-9+_-]{1,80}$/.test(capability)) capabilityCooldowns.set(key, state);
+      }
     }
   } catch { /* A missing or unreadable local cooldown file does not prevent free use. */ }
 }
@@ -50,13 +64,18 @@ function saveCooldowns() {
   try {
     mkdirSync(path.dirname(cooldownPath), { recursive: true });
     const temporaryPath = `${cooldownPath}.${process.pid}.tmp`;
-    writeFileSync(temporaryPath, JSON.stringify(Object.fromEntries(modelCooldowns)), { encoding: 'utf8', mode: 0o600 });
+    const persisted = Object.fromEntries([
+      ...modelCooldowns,
+      ...capabilityCooldowns,
+    ]);
+    writeFileSync(temporaryPath, JSON.stringify(persisted), { encoding: 'utf8', mode: 0o600 });
     renameSync(temporaryPath, cooldownPath);
   } catch { /* Routing remains bounded in memory if local persistence is unavailable. */ }
 }
 
 export function resetGeminiRoutingForTests() {
   modelCooldowns.clear();
+  capabilityCooldowns.clear();
   cooldownsLoaded = true;
 }
 
@@ -83,7 +102,24 @@ function quotaDetails(body: string) {
   } catch { return 'short-quota' as const; }
 }
 
-function recordModelCooldown(model: string, kind: ModelCooldown['kind'], retryAfterMs: number | null) {
+function containsInlineImage(value: unknown, depth = 0): boolean {
+  if (depth > 8 || !value || typeof value !== 'object') return false;
+  if (Array.isArray(value)) return value.some(item => containsInlineImage(item, depth + 1));
+  const record = value as Record<string, unknown>;
+  if ('inlineData' in record) return true;
+  return Object.values(record).some(item => containsInlineImage(item, depth + 1));
+}
+
+function providerCapabilityKey(model: string, params: GenerateContentParameters) {
+  const capabilities = [
+    ...(params.config?.tools?.length ? ['tools'] : []),
+    ...(params.config?.responseJsonSchema || params.config?.responseMimeType ? ['structured-output'] : []),
+    ...(containsInlineImage(params.contents) ? ['image-input'] : []),
+  ].sort();
+  return `capability:${model}:${capabilities.join('+') || 'unspecified'}`;
+}
+
+function recordModelCooldown(model: string, kind: ModelCooldown['kind'], retryAfterMs: number | null, params?: GenerateContentParameters) {
   loadCooldowns();
   const defaultDuration = kind === 'daily-quota' ? 24 * 60 * 60 * 1000
     : kind === 'model-unavailable' || kind === 'unsupported-feature' ? 24 * 60 * 60 * 1000
@@ -91,16 +127,22 @@ function recordModelCooldown(model: string, kind: ModelCooldown['kind'], retryAf
         : 60_000;
   const duration = retryAfterMs === null ? defaultDuration : Math.max(retryAfterMs, kind === 'service-unavailable' ? 15_000 : 0);
   const cooldown = { until: Date.now() + duration, kind, retryAfterMs } satisfies ModelCooldown;
-  modelCooldowns.set(model, cooldown);
+  if (kind === 'unsupported-feature') capabilityCooldowns.set(providerCapabilityKey(model, params ?? { model, contents: '' }), cooldown);
+  else modelCooldowns.set(model, cooldown);
   saveCooldowns();
   return cooldown;
 }
 
-function cooldownFor(model: string) {
+function cooldownFor(model: string, params?: GenerateContentParameters) {
   loadCooldowns();
   const state = modelCooldowns.get(model);
   if (state && state.until <= Date.now()) { modelCooldowns.delete(model); saveCooldowns(); return null; }
-  return state ?? null;
+  if (state) return state;
+  if (!params) return null;
+  const key = providerCapabilityKey(model, params);
+  const capabilityState = capabilityCooldowns.get(key);
+  if (capabilityState && capabilityState.until <= Date.now()) { capabilityCooldowns.delete(key); saveCooldowns(); return null; }
+  return capabilityState ?? null;
 }
 
 /**
@@ -743,7 +785,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
   let lastRetryableError: unknown = null;
 
   for (const model of models) {
-    const cooldown = requestedTier === 'free' ? cooldownFor(model) : null;
+    const cooldown = requestedTier === 'free' ? cooldownFor(model, params) : null;
     if (cooldown) {
       attempts.push({ model, outcome: 'skipped', reason: cooldown.kind, retryAfterMs: cooldown.retryAfterMs, cooldownUntil: cooldown.until });
       continue;
@@ -792,7 +834,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
         throw error;
       }
       const retryAfterMs = errorRetryAfterMs(error) ?? cooldownFor(model)?.retryAfterMs ?? null;
-      const cooldownState = recordModelCooldown(model, category, retryAfterMs);
+      const cooldownState = recordModelCooldown(model, category, retryAfterMs, params);
       attempts.push({ model, outcome: 'failed', reason: category, retryAfterMs, cooldownUntil: cooldownState.until });
       lastRetryableError = error;
 
@@ -815,7 +857,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
           const retryCategory = fallbackCategory(retryError, routeAttemptSignal, diagnosticContext.deadlineAt, routeUsesOwnTimeout);
           if (!retryCategory) throw retryError;
           const retryWait = errorRetryAfterMs(retryError) ?? null;
-          const retryCooldown = recordModelCooldown(model, retryCategory, retryWait);
+          const retryCooldown = recordModelCooldown(model, retryCategory, retryWait, params);
           attempts[attempts.length - 1] = { model, outcome: 'failed', reason: retryCategory, retryAfterMs: retryWait, cooldownUntil: retryCooldown.until };
           lastRetryableError = retryError;
         }

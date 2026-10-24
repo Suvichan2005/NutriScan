@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fixedFetch, input, localGate, readBounded, route } from './http';
 import { lookupProducts, normalizeProduct, productInput } from './products';
-import { assist, assistInput, assistOutput, assistPromptPayload, canAcceptPackageAnswerSynthesis, focusedLabelRecoverySchema, geminiResponseJsonSchema, linkVisionResponseToCapture, mergeFocusedLabelRecovery, needsPackageAnswerSynthesis, packageAnswerCoverage, packageAnswerSynthesisImprovesCoverage, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, sanitizePackageReconstruction, selectNutritionRecoveryRegion, shouldRetrieveContextualNutritionGuidance, validateClaims, validateImage, vision, visionInput } from './gemini';
+import { assist, assistInput, assistOutput, assistPromptPayload, focusedLabelRecoverySchema, geminiResponseJsonSchema, linkVisionResponseToCapture, mergeFocusedLabelRecovery, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, sanitizePackageReconstruction, selectNutritionRecoveryRegion, validateClaims, validateImage, vision, visionInput } from './gemini';
 import { applicationGeminiContext, committedPaidSpendUsd, countGoogleSearchQueries, freeTierSyntheticSmokeContext, resetGeminiUsageLedgerForTests, safeProviderFailure } from './gemini-provider';
 import { research, researchInput, researchRecalls } from './research';
 import { getNutritionGuidance } from './nutrition-guidance';
@@ -15,6 +15,8 @@ beforeEach(() => { resetGeminiUsageLedgerForTests(); });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 const request = (body: unknown, origin = 'http://127.0.0.1:3400') => new Request('http://127.0.0.1:3400/api/test', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const visionTestImage={imageId:'package-photo-1',mimeType:'image/png' as const,base64:'a'.repeat(20),side:'back' as const,sourceImage:{width:1600,height:2400},preprocessing:{rotation:90 as const,contrast:true,invert:false,crop:{x:0.1,y:0.15,width:0.8,height:0.7}}};
+const modelResponse=(parts:unknown[],usageMetadata={promptTokenCount:120,candidatesTokenCount:80,totalTokenCount:200})=>JSON.stringify({candidates:[{content:{parts,role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata});
+const toolCallPart=(id:string,name:string,args:unknown)=>({functionCall:{id,name,args}});
 
 describe('bounded server boundary', () => {
   it('rejects other origins before executing work', async () => {
@@ -409,9 +411,22 @@ describe('provider validation, independent of provider invocation', () => {
     expect(keys.has('maxItems')).toBe(false);
     expect(keys.has('exclusiveMinimum')).toBe(false);
     expect(((schema.required as string[]) ?? [])).toContain('answerParts');
-    expect(providerAssistOutput.safeParse({ answer: '', claims: [], limitations: [], inspectImage: null }).success).toBe(true);
+    expect(((schema.required as string[]) ?? [])).toContain('claims');
+    expect(((schema.required as string[]) ?? [])).not.toContain('packageReconstruction');
+    expect(providerAssistOutput.safeParse({ answer: '', answerParts: [], claims: [], limitations: [], inspectImage: null }).success).toBe(true);
     expect((schema as { required?: string[] }).required).toContain('answer');
     expect((schema as { properties?: Record<string, unknown> }).properties).toHaveProperty('tentativeCandidates');
+  });
+  it('keeps required and optional members aligned in nested provider objects',()=>{
+    const schema=geminiResponseJsonSchema(z.object({
+      requiredField:z.string(),
+      optionalField:z.string().optional(),
+      nested:z.object({requiredNested:z.number(),optionalNested:z.boolean().optional()}),
+    })) as {required:string[];properties:Record<string,{required?:string[];properties?:Record<string,unknown>}>};
+    expect(schema.required).toEqual(['requiredField','nested']);
+    expect(schema.properties).toHaveProperty('optionalField');
+    expect(schema.properties.nested.required).toEqual(['requiredNested']);
+    expect(schema.properties.nested.properties).toHaveProperty('optionalNested');
   });
   it('keeps complete OCR text and compact normalized geometry without replaying parser diagnostics',()=>{
     const data=assistInput.parse({consent:true,question:'Reconstruct this label',package:{id:'compact-label',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[{id:'line-1',field:'ocr-line',text:'CARBOHYDRATES 6329g 928g',side:'back',confidence:91,origin:'ocr',imageId:'back-1',readingOrder:{runId:'ocr-run',blockIndex:0,paragraphIndex:0,lineIndex:1},bbox:{x0:10,y0:20,x1:300,y1:60},ocrWords:[{wordIndex:0,text:'CARBOHYDRATES',confidence:94,bbox:{x0:10,y0:22,x1:120,y1:58}},{wordIndex:1,text:'6329g',confidence:68,bbox:{x0:180,y0:20,x1:220,y1:60}}]}],ocrCaptures:[{runId:'ocr-run',imageId:'back-1',side:'back',sourceImage:{width:900,height:363},preparedImage:{width:900,height:363},bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'Tesseract',version:'7.0',language:'eng',confidenceScale:'0-100',segmentationMode:'auto'},processing:{rotation:0,contrast:false,invert:false,cropPercent:null}}],parserDiagnostics:[{field:'carbohydrate',decision:'conflict',reasonCodes:['cross-reading-conflict'],sourceObservationIds:['line-1'],numericCandidates:[],basisCandidates:[]}],rawText:'CARBOHYDRATES 6329g 928g',warnings:['A parser warning that belongs in local diagnostics.'],synthetic:false,createdAt:new Date().toISOString()}});
@@ -425,7 +440,7 @@ describe('provider validation, independent of provider invocation', () => {
     expect(JSON.stringify(data).length).toBeGreaterThan(encoded.length*2);
     expect(prompt.visualImages).toBeUndefined();
   });
-  it('compacts a saved-package follow-up while preserving the full stored object and an ingredient-list path',()=>{
+  it('reuses the complete saved package while omitting raw OCR from ordinary follow-ups',()=>{
     const imageEvidence={observationIds:[],imageRegions:[{imageId:'back-1',region:null}]};
     const rows=[
       ['carb-100','Carbohydrates','69.29 g',69.29,'Per 100 g',100],
@@ -449,16 +464,17 @@ describe('provider validation, independent of provider invocation', () => {
     const prompt=assistPromptPayload(followup) as {package:Record<string,unknown>;packageFacts:{id:string}[]};
     const serialized=JSON.stringify(prompt);
     const compactPackage=prompt.package as {reconstruction:{nutritionRows:unknown[];ingredients:unknown[];regions:unknown[]};observations:unknown[]};
-    expect(compactPackage.reconstruction.nutritionRows.length).toBeLessThan(rows.length);
-    expect(compactPackage.reconstruction.ingredients).toHaveLength(3);
-    expect(compactPackage.reconstruction.regions).toEqual([]);
+    expect(compactPackage.reconstruction.nutritionRows).toHaveLength(rows.length);
+    expect(compactPackage.reconstruction.ingredients).toHaveLength(13);
+    expect(compactPackage.reconstruction.regions).toHaveLength(1);
     expect(compactPackage.observations).toEqual([]);
     expect(prompt.packageFacts.map(fact=>fact.id)).toContain('package-fact:serving');
     expect(prompt.packageFacts.map(fact=>fact.id)).toContain('package-fact:ingredient:0');
-    expect(prompt.packageFacts.map(fact=>fact.id)).not.toContain('package-fact:additive:0');
-    expect(serialized.length).toBeLessThan(JSON.stringify(followup).length*0.5);
-    // Compaction affects only provider context: the exact saved object still
-    // retains every ingredient, additive, OCR observation, and image region.
+    expect(prompt.packageFacts.map(fact=>fact.id)).toContain('package-fact:additive:0');
+    expect(serialized).not.toContain('Full raw package text');
+    expect(serialized).not.toContain('Unrelated manufacturer address');
+    // Follow-ups reuse the full interpreted package while avoiding a replay
+    // of raw OCR lines and token geometry.
     expect(followup.package.reconstruction?.ingredients).toHaveLength(13);
     expect(followup.package.reconstruction?.additives).toHaveLength(9);
     expect(followup.package.observations).toHaveLength(18);
@@ -493,22 +509,34 @@ describe('provider validation, independent of provider invocation', () => {
     await expect(context.client.models.generateContent({ model: context.model, contents: 'offline retry probe' })).rejects.toMatchObject({ status: 503 });
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
-  it('sends Gemini structured output through the supported generateContent config and validates the returned answer', async () => {
+  it('reconstructs a scanned package with a native tool call, then accepts a plain conversational answer', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
-    const resultText = JSON.stringify({ answer: 'BISK FARM CREAM CRACKER', answerParts: [{ text: 'BISK FARM CREAM CRACKER', claimIndexes: [0] }], claims: [{ mode: 'direct-quote', text: 'BISK FARM CREAM CRACKER', observationIds: ['input-1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'input-1', quote: 'BISK FARM CREAM CRACKER' }] }], packageReconstruction:{identity:{brand:'BISK FARM',name:'Cream Cracker',variant:null,status:'provisional',evidence:{observationIds:['input-1'],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'An initial package reconstruction from supplied label evidence.'},limitations:[],inspectImage:null });
-    const payload = JSON.stringify({ candidates: [{ content: { parts: [{ text: resultText }], role: 'model' }, finishReason: 'STOP', index: 0 }], modelVersion: 'gemini-3.8-flash-test', usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 20, totalTokenCount: 32 } });
-    const fetcher = vi.fn().mockImplementation(() => new Response(payload, { status: 200, headers: { 'content-type': 'application/json' } }));
+    const image=await sharp({create:{width:8,height:8,channels:3,background:'#f2f1eb'}}).png().toBuffer();
+    const imageId='package-front';
+    const reconstruction={identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'A provisional interpretation linked to the package image and OCR.'};
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('reconstruct-1','submit_package_reconstruction',reconstruction)]), { status: 200, headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(modelResponse([{text:'This appears to be a Bisk Farm Cream Cracker marked sugar free.'}]), { status: 200, headers: { 'content-type': 'application/json' } }));
     vi.stubGlobal('fetch', fetcher);
-    const data = assistInput.parse({ consent: true, question: 'What product is this?', package: { id: 'package-1', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'input-1', field: 'user-description', text: 'BISK FARM CREAM CRACKER', side: 'text', confidence: null, origin: 'user' }], rawText: 'BISK FARM CREAM CRACKER', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
+    const data = assistInput.parse({ consent: true, question: 'What product is this?', package: { id: 'package-1', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'input-1', field: 'ocr-line', text: 'BISK FARM CREAM CRACKER', side: 'front', confidence: 91, origin: 'ocr', imageId, readingOrder:{runId:'ocr-run',blockIndex:0,paragraphIndex:0,lineIndex:0} }],ocrCaptures:[{runId:'ocr-run',imageId,side:'front',sourceImage:{width:8,height:8},preparedImage:{width:8,height:8},bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'fixture-reader',version:'1',language:'eng',confidenceScale:'0-100',segmentationMode:'auto'},processing:{rotation:0,contrast:false,invert:false,cropPercent:null}}], rawText: 'BISK FARM CREAM CRACKER', warnings: [], synthetic: false, createdAt: new Date().toISOString() }, images:[{handle:imageId,side:'front',width:8,height:8,role:'front'}],visualImages:[{imageId,mimeType:'image/png',base64:image.toString('base64'),side:'front',sourceImage:{width:8,height:8},preprocessing:{rotation:0,contrast:false,invert:false,crop:null}}] });
 
-    await expect(assist(data)).resolves.toMatchObject({ status: 'ok', answer: 'BISK FARM CREAM CRACKER' });
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    const investigationRequest = JSON.parse(String(fetcher.mock.calls[0][1]?.body));
-    expect(investigationRequest.generationConfig).toMatchObject({ responseMimeType: 'application/json' });
-    expect(investigationRequest.generationConfig).not.toHaveProperty('responseJsonSchema');
-    expect(investigationRequest.generationConfig).not.toHaveProperty('responseFormat');
-    expect(JSON.stringify(investigationRequest)).toContain('each printed numeric cell as its own nutritionRows entry');
-    expect(JSON.stringify(investigationRequest)).toContain('never combine labels such as “per 100 g and per serving” into one row');
+    const result=await assist(data);
+    expect(result).toMatchObject({status:'ok',answer:'This appears to be a Bisk Farm Cream Cracker marked sugar free.',packageReconstruction:{identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free'}}});
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    const reconstructionRequest=JSON.parse(String(fetcher.mock.calls[0][1]?.body));
+    const answerRequest=JSON.parse(String(fetcher.mock.calls[1][1]?.body));
+    expect(reconstructionRequest.tools[0].functionDeclarations.map((tool:{name:string})=>tool.name)).toEqual(['submit_package_reconstruction']);
+    expect(reconstructionRequest.toolConfig.functionCallingConfig.allowedFunctionNames).toEqual(['submit_package_reconstruction']);
+    expect(reconstructionRequest.generationConfig).not.toHaveProperty('responseMimeType');
+    expect(reconstructionRequest.generationConfig).not.toHaveProperty('responseJsonSchema');
+    expect(JSON.stringify(reconstructionRequest.contents)).toContain('BISK FARM CREAM CRACKER');
+    expect(JSON.stringify(reconstructionRequest.contents)).toContain('inlineData');
+    expect(answerRequest.tools).toBeDefined();
+    expect(answerRequest.generationConfig).not.toHaveProperty('responseMimeType');
+    expect(answerRequest.generationConfig).not.toHaveProperty('responseJsonSchema');
+    expect(JSON.stringify(answerRequest.contents)).not.toContain('inlineData');
+    expect(JSON.stringify(answerRequest.systemInstruction)).toContain('Answer naturally and directly in plain text');
+    expect(JSON.stringify(answerRequest.systemInstruction)).not.toContain('questionCoverageInstruction');
   });
   it('carries an exact Codex identity tool result through the agent loop into a validated answer claim', async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
@@ -533,8 +561,8 @@ describe('provider validation, independent of provider invocation', () => {
       if(url.includes('generativelanguage.googleapis.com')){
         providerCalls+=1;
         const body=providerCalls===1
-          ?{functionCall:{id:'resolve-call-1',name:'resolve_ingredient',args:{query:'INS 450(i)'}}}
-          :{text:JSON.stringify({answer,claims:[],limitations:[],inspectImage:null})};
+          ?{...toolCallPart('resolve-call-1','resolve_ingredient',{query:'INS 450(i)'}),thoughtSignature:'protocol-signature-for-test'}
+          :{text:answer};
         return new Response(providerResponse(body),{status:200,headers:{'content-type':'application/json'}});
       }
       if(url.includes('SearchAdditivesByInsNumber'))return new Response(JSON.stringify({
@@ -549,16 +577,23 @@ describe('provider validation, independent of provider invocation', () => {
     expect(providerCalls).toBe(2);
     expect(result.status).toBe('ok');
     expect(result.answer).toBe(answer);
-    expect(result.agentDiagnostics).toMatchObject({acceptedNaturalAnswer:true,answerStatus:'model-answer',acceptedClaims:1});
-    expect(result.claims).toContainEqual(expect.objectContaining({
-      sourceIds:['codex-gsfa-ins-450-i'],observationIds:['ingredient-line'],
-      text:expect.stringContaining('Disodium diphosphate'),
-    }));
+    expect(result.agentDiagnostics).toMatchObject({contract:'native-tools-and-natural-text',answerStatus:'answer-ready',generationCount:2,toolCallCount:1});
+    expect(result.agentDiagnostics.retrievedSourceCount).toBeGreaterThan(0);
+    expect(result.agentEvidence).toContainEqual(expect.objectContaining({id:'codex-gsfa-ins-450-i',publisher:'Codex Alimentarius Commission (FAO/WHO)'}));
     expect(result.agentTrace).toContainEqual(expect.objectContaining({name:'resolve_ingredient',status:'ok'}));
-    expect(result.agentTrace).toContainEqual(expect.objectContaining({name:'requested_ingredient_identity_coverage',status:'ok'}));
-    expect(result.agentTrace.some(step=>step.name==='answer_repair'||step.name==='evidence_answer_repair')).toBe(false);
+    expect(result.agentTrace.some(step=>/repair|final_structure/.test(step.name))).toBe(false);
     expect(fetcher).toHaveBeenCalledTimes(3);
     expect(new URLSearchParams(String(outbound.find(request=>request.url.includes('SearchAdditivesByInsNumber'))?.body)).get('insNumber')).toBe('450(i)');
+    const providerRequests=outbound.filter(request=>request.url.includes('generativelanguage.googleapis.com'));
+    expect(providerRequests).toHaveLength(2);
+    const toolRoundBodies=providerRequests.map(request=>JSON.parse(String(request.body)));
+    for(const body of toolRoundBodies){
+      expect(body.tools).toBeDefined();
+      expect(body.generationConfig).not.toHaveProperty('responseMimeType');
+      expect(body.generationConfig).not.toHaveProperty('responseJsonSchema');
+    }
+    expect(JSON.stringify(JSON.parse(String(providerRequests[1].body)).contents)).toContain('protocol-signature-for-test');
+    expect(JSON.stringify(JSON.parse(String(providerRequests[1].body)).contents)).not.toContain('inlineData');
   });
   it('validates an image-linked ingredient and nutrition row from one reconstruction without heuristic parser acceptance',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
@@ -572,40 +607,16 @@ describe('provider validation, independent of provider invocation', () => {
       ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['stale-ingredient-id'],imageRegions:[]}}],
       additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'A provisional visual interpretation of the attached package photo.',
     };
-    const output={answer:ingredient,answerParts:[{text:ingredient,claimIndexes:[0]}],claims:[{mode:'synthesis',text:ingredient,observationIds:[],sourceIds:[],interpretationRowIds:['carbohydrate-per-100g'],packageFactIds:['package-fact:ingredient:0']}],packageReconstruction,limitations:[],inspectImage:null};
-    const payload=JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(output)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:40,candidatesTokenCount:90,totalTokenCount:130}});
-    const fetcher=vi.fn().mockResolvedValue(new Response(payload,{status:200,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
+    const fetcher=vi.fn()
+      .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('reconstruct-1','submit_package_reconstruction',packageReconstruction)]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(modelResponse([{text:ingredient}]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
     const data=assistInput.parse({consent:true,question:'What does this packet show?',package:{id:'reconstruction-contract-test',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:false,createdAt:new Date().toISOString()},images:[{handle:imageId,side:'back',width:8,height:8,role:'unknown'}],visualImages:[{imageId,mimeType:'image/png',base64:image.toString('base64'),side:'back',sourceImage:{width:8,height:8},preprocessing:{rotation:0,contrast:false,invert:false,crop:null}}]});
 
     const result=await assist(data);
     expect(result.answer).toBe(ingredient);
-    expect(result.claims).toMatchObject([{packageFactIds:['package-fact:ingredient:0'],interpretationRowIds:['carbohydrate-per-100g']}]);
-    expect((result as unknown as {packageReconstruction:unknown}).packageReconstruction).toMatchObject({ingredients:[{name:'Refined wheat flour',status:'provisional',evidence:{imageRegions:[{imageId,region:null}]}}],nutritionRows:[{rowId:'carbohydrate-per-100g',status:'provisional',evidence:{imageRegions:[{imageId,region:null}]}}]});
-  });
-  it('reuses validated structured nutrition-summary claims instead of regenerating an already grounded factual answer',async()=>{
-    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const observation={id:'carbohydrate-label-line',field:'carbohydrate',text:'Carbohydrate 23.1 g per serving',side:'text',confidence:100,origin:'user'} as const;
-    const evidence={observationIds:[observation.id],imageRegions:[]};
-    const packageReconstruction={
-      identity:{brand:null,name:'Unidentified package',variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
-      serving:{printedText:'Serving size 35 g',quantity:35,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence},
-      nutritionRows:[{rowId:'carbohydrate-per-serving',nutrient:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'23.1 g',value:23.1,unit:'g',columnLabel:'Per serving',basisText:'Per serving',basisAmount:35,basisUnit:'g',qualifier:null,status:'provisional',evidence}],
-      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional package reading.',
-    };
-    const answer='The label lists carbohydrate 23.1 g per serving and cholesterol 0 mg per serving.';
-    const claims=[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[],calculationIds:[],interpretationRowIds:['carbohydrate-per-serving'],packageFactIds:[],profileFieldIds:[],supportingSpans:[]}];
-    const payload=JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({answer,claims,packageReconstruction,limitations:[],inspectImage:null})}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:80,candidatesTokenCount:100,totalTokenCount:180}});
-    const fetcher=vi.fn().mockResolvedValue(new Response(payload,{status:200,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
-    const data=assistInput.parse({consent:true,question:'What carbohydrate amount does the label show per serving?',package:{id:'structured-nutrition-answer',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[observation],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
-
-    const result=await assist(data);
-    expect(result.agentDiagnostics).toMatchObject({answerStatus:'structured-package-summary',structuredPackageSummaryAccepted:true,acceptedClaims:1,acceptedModelClaims:0,acceptedStructuredNutritionClaims:1});
-    expect(result.answer).toContain('23.1 g');
-    expect(result.answer).not.toContain('Cholesterol 0 mg');
-    expect(result.claims.some(claim=>claim.interpretationRowIds?.includes('carbohydrate-per-serving'))).toBe(true);
-    expect(result.agentTrace.some(step=>step.name==='package_answer_synthesis')).toBe(false);
-    expect(result.agentTrace.some(step=>step.name==='answer_repair')).toBe(false);
-    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result.packageReconstruction).toMatchObject({ingredients:[{name:'Refined wheat flour',status:'provisional',evidence:{imageRegions:[{imageId,region:null}]}}],nutritionRows:[{nutrient:'Carbohydrate',value:69.29,status:'provisional',evidence:{imageRegions:[{imageId,region:null}]}}]});
   });
   it('returns cited local guidance evidence to the conversation UI', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
@@ -613,199 +624,15 @@ describe('provider validation, independent of provider invocation', () => {
     const source = getNutritionGuidance({ query: question, jurisdiction: 'India', maxResults: 3 }).find(item => item.id === 'idf-healthy-nutrition-diabetes-2024');
     expect(source).toBeDefined();
     const answer = 'IDF patient education says refined carbohydrates can raise blood glucose more quickly than high-fibre choices, and that snack choices should be individualized.';
-    const reconstruction = { identity: { brand: null, name: 'Unidentified package', variant: null, status: 'unreadable', evidence: { observationIds: [], imageRegions: [] } }, serving: null, nutritionRows: [], ingredients: [], additives: [], statements: [], regions: [], unresolved: [], interpretationNote: '' };
-    const output = { answer, answerParts: [{ text: answer, claimIndexes: [0] }], claims: [{ mode: 'synthesis', text: answer, observationIds: [], sourceIds: [source!.id], calculationIds: [], interpretationRowIds: [], profileFieldIds: [], supportingSpans: [{ kind: 'source', id: source!.id, quote: source!.summary.slice(0, 90) }], visualEvidence: [] }], uiComponents: [{ type: 'source-reference-cards', observationIds: [], sourceIds: [source!.id], calculationIds: [] }], limitations: [], inspectImage: null, packageReconstruction: reconstruction };
-    const payload = JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(output) }], role: 'model' }, finishReason: 'STOP', index: 0 }], modelVersion: 'gemini-3.8-flash-test', usageMetadata: { promptTokenCount: 40, candidatesTokenCount: 90, totalTokenCount: 130 } });
-    const fetcher = vi.fn().mockResolvedValue(new Response(payload, { status: 200, headers: { 'content-type': 'application/json' } })); vi.stubGlobal('fetch', fetcher);
-    const data = assistInput.parse({ consent: true, question, package: { id: 'guidance-ui-test', name: 'Unidentified food package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [], rawText: '', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
+    const fetcher = vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]), { status: 200, headers: { 'content-type': 'application/json' } })); vi.stubGlobal('fetch', fetcher);
+    const data = assistInput.parse({ consent: true, question, evidence:[source!], package: { id: 'guidance-ui-test', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [], rawText: '', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
 
     const result = await assist(data);
     expect(String(JSON.parse(String(fetcher.mock.calls[0][1]?.body)).contents[0].parts[0].text)).toContain(source!.title);
     expect(result.agentEvidence).toMatchObject([{ id: source!.id, publisher: 'International Diabetes Federation', jurisdiction: 'Global' }]);
     expect(result.uiComponents).toContainEqual({ type: 'source-reference-cards', observationIds: [], sourceIds: [source!.id], calculationIds: [] });
   });
-  it('uses a declared profile and structured package context for local guidance without inferring it from an unrelated query', async () => {
-    vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
-    const question = 'Would this fit my goals as a regular snack?';
-    const profile = { dietaryPattern:'', avoidedIngredients:'', allergies:'', intolerances:'', healthConsiderations:'Type 2 diabetes', goals:'Manage blood glucose and carbohydrate quality with my care team', portionPreferences:'', ageGroup:'', sexOrReferenceGroup:'', country:'India', locality:'' };
-    const packageData = { id:'profile-context-rag', name:'Unidentified package', ingredients:['Refined wheat flour (maida)'], additives:[], allergens:[], claims:['Sugar free'], nutrients:[], observations:[], rawText:'', warnings:[], synthetic:false, createdAt:new Date().toISOString() };
-    expect(shouldRetrieveContextualNutritionGuidance(question,'India','Type 2 diabetes Refined wheat flour')).toBe(true);
-    expect(shouldRetrieveContextualNutritionGuidance('How much protein is printed per 100 g?','India','Type 2 diabetes')).toBe(false);
-    const searchText = `${question} ${profile.healthConsiderations} ${profile.goals} ${packageData.ingredients.join(' ')}`;
-    const sources = getNutritionGuidance({ query:searchText, jurisdiction:'India', maxResults:3 });
-    const source = sources.find(item => item.id === 'idf-healthy-nutrition-diabetes-2024');
-    const qualitySource = sources.find(item => item.id === 'who-carbohydrate-2023');
-    expect(source).toBeDefined();
-    expect(qualitySource).toBeDefined();
-    const idfClaim = 'IDF patient education says refined carbohydrate choices can raise blood glucose more quickly than high-fibre choices, and that snack choices should be individualized.';
-    const whoClaim = 'WHO population guidance recommends that carbohydrate come primarily from whole grains, vegetables, fruits and pulses.';
-    const answer = `${idfClaim} ${whoClaim}`;
-    const output = {
-      answer,
-      answerParts:[{text:idfClaim,claimIndexes:[0]},{text:whoClaim,claimIndexes:[1]}],
-      claims:[
-        {mode:'synthesis',text:idfClaim,observationIds:[],sourceIds:[source!.id],calculationIds:[],interpretationRowIds:[],profileFieldIds:[],supportingSpans:[{kind:'source',id:source!.id,quote:source!.summary}],visualEvidence:[]},
-        {mode:'synthesis',text:whoClaim,observationIds:[],sourceIds:[qualitySource!.id],calculationIds:[],interpretationRowIds:[],profileFieldIds:[],supportingSpans:[{kind:'source',id:qualitySource!.id,quote:qualitySource!.summary}],visualEvidence:[]},
-      ],
-      uiComponents:[{type:'source-reference-cards',observationIds:[],sourceIds:[source!.id,qualitySource!.id],calculationIds:[]}],
-      limitations:[],inspectImage:null,
-      packageReconstruction:{identity:{brand:null,name:'Unidentified package',variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:''},
-    };
-    const payload=JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(output)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:50,candidatesTokenCount:100,totalTokenCount:150}});
-    const fetcher=vi.fn().mockResolvedValue(new Response(payload,{status:200,headers:{'content-type':'application/json'}})); vi.stubGlobal('fetch',fetcher);
-    const result=await assist(assistInput.parse({consent:true,question,profile,package:packageData}));
-    const requestBody=JSON.stringify(JSON.parse(String(fetcher.mock.calls[0][1]?.body)));
-    expect(requestBody).toContain(source!.title);
-    expect(requestBody).toContain(qualitySource!.title);
-    expect(result.agentEvidence).toEqual(expect.arrayContaining([
-      expect.objectContaining({id:source!.id,publisher:'International Diabetes Federation',jurisdiction:'Global'}),
-      expect.objectContaining({id:qualitySource!.id,publisher:'World Health Organization',jurisdiction:expect.stringMatching(/^Global/)}),
-    ]));
-    expect(result.answer).toContain('WHO population guidance recommends');
-    expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[source!.id,qualitySource!.id],calculationIds:[]});
-  });
-  it('repairs incomplete photo-free package synthesis once to cover available nutrition and serving details',async()=>{
-    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const question='Is this good to have for diabetic patients daily for snacking?';
-    const source=getNutritionGuidance({query:question,condition:'diabetes',jurisdiction:'India',maxResults:3}).find(item=>item.id==='idf-healthy-nutrition-diabetes-2024')!;
-    const observations=[
-      {id:'serving-line',field:'label-note',text:'SERVING SIZE: 2 BISCUITS (APPROX. 13.4 g)',side:'back',confidence:80,origin:'user'},
-      {id:'carb-line',field:'label-note',text:'CARBOHYDRATES 69.29 g per 100 g; 9.28 g per serving',side:'back',confidence:74,origin:'user'},
-      {id:'ingredient-line',field:'label-note',text:'INGREDIENTS: REFINED WHEAT FLOUR (MAIDA) (89.98%)',side:'back',confidence:86,origin:'user'},
-    ];
-    const packageReconstruction:PackageReconstructionContent={
-      identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional',evidence:{observationIds:['ingredient-line'],imageRegions:[]}},
-      serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['serving-line'],imageRegions:[]}},
-      nutritionRows:[
-        {rowId:'carbohydrates-per-100g',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carb-line'],imageRegions:[]}},
-        {rowId:'carbohydrates-per-serving',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g',columnLabel:'Per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carb-line'],imageRegions:[]}},
-      ],
-      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['ingredient-line'],imageRegions:[]}}],
-      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction from the supplied package photos.',
-    };
-    const partiallyCovered=[
-      {mode:'synthesis' as const,text:'Refined wheat flour is listed first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis' as const,text:'The provisional table reads 69.29 g carbohydrates per 100 g.',observationIds:[],sourceIds:[],interpretationRowIds:['carbohydrates-per-100g']},
-      {mode:'synthesis' as const,text:'IDF guidance says snack choices should be individualized.',observationIds:[],sourceIds:[source!.id]},
-    ] as z.infer<typeof assistOutput>['claims'];
-    expect(needsPackageAnswerSynthesis(question,packageReconstruction,partiallyCovered,[source!])).toBe(true);
-    const initialText='The package lists refined wheat flour first.';
-    const initialNutritionClaim='The provisional table reads 69.29 g carbohydrates per 100 g and 9.28 g per serving.';
-    const initialOutput={answer:initialText,answerParts:[{text:initialText,claimIndexes:[0]}],claims:[
-      {mode:'synthesis',text:initialText,observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis',text:initialNutritionClaim,observationIds:['carb-line'],sourceIds:[],interpretationRowIds:['carbohydrates-per-100g','carbohydrates-per-serving'],packageFactIds:['package-fact:serving']},
-    ],packageReconstruction,limitations:[],inspectImage:null};
-    const ingredientClaim='Refined wheat flour is listed first at 89.98% of the ingredients.';
-    const nutritionClaim='The provisional table reads 69.29 g carbohydrates per 100 g and 9.28 g for a 2-biscuit (13.4 g) serving.';
-    const guidanceClaim='IDF patient education says carbohydrate portions affect blood glucose, refined carbohydrates can raise it more quickly than high-fibre choices, and snack choices should be individualized.';
-    const judgmentClaim='I would not treat this as an obvious default daily snack for someone managing diabetes: refined wheat flour leads the ingredient list and the carbohydrate amount depends on portion; snack choices should be individualized.';
-    const answer='I would not treat this as an obvious default daily snack for someone managing diabetes: refined wheat flour leads the ingredient list and the carbohydrate amount depends on portion. The package appears to define 2 biscuits (about 13.4 g) as one serving; the provisional table reads 69.29 g carbohydrates per 100 g and 9.28 g for that serving. The exact values should be checked against the photo. IDF patient education says snack choices should be individualized; it does not establish this product as safe or unsafe.';
-    const synthesisOutput={
-      answer,answerParts:[
-        {text:'I would not treat this as an obvious default daily snack for someone managing diabetes: refined wheat flour leads the ingredient list and the carbohydrate amount depends on portion; snack choices should be individualized.',claimIndexes:[3]},
-        {text:'The package appears to define 2 biscuits (about 13.4 g) as one serving; the provisional table reads 69.29 g carbohydrates per 100 g and 9.28 g for that serving. The exact values should be checked against the photo.',claimIndexes:[0,1]},
-        {text:'IDF patient education says snack choices should be individualized; it does not establish this product as safe or unsafe.',claimIndexes:[2]},
-      ],
-      claims:[
-        {mode:'synthesis',text:ingredientClaim,observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-        {mode:'synthesis',text:nutritionClaim,observationIds:[],sourceIds:[],interpretationRowIds:['carbohydrates-per-100g','carbohydrates-per-serving'],packageFactIds:['package-fact:serving']},
-        {mode:'synthesis',text:guidanceClaim,observationIds:[],sourceIds:[source.id]},
-        {mode:'synthesis',text:judgmentClaim,observationIds:[],sourceIds:[source.id],packageFactIds:['package-fact:ingredient:0','package-fact:serving'],interpretationRowIds:['carbohydrates-per-serving']},
-      ],
-      uiComponents:[{type:'source-reference-cards',observationIds:[],sourceIds:[source.id],calculationIds:[]}],limitations:[],inspectImage:null,
-    };
-    const partialSynthesisOutput={
-      answer:'The package lists refined wheat flour first.',
-      answerParts:[{text:'The package lists refined wheat flour first.',claimIndexes:[0]}],
-      claims:[{mode:'synthesis',text:'The package lists refined wheat flour first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']}],
-      packageReconstruction,limitations:[],inspectImage:null,
-    };
-    const makeResponse=(output:unknown)=>JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(output)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:500,candidatesTokenCount:250,totalTokenCount:750}});
-    const image=await sharp({create:{width:8,height:8,channels:3,background:'#f2f1eb'}}).png().toBuffer();
-    const fetcher=vi.fn()
-      .mockResolvedValueOnce(new Response(makeResponse(initialOutput),{status:200,headers:{'content-type':'application/json'}}))
-      .mockResolvedValueOnce(new Response(makeResponse(partialSynthesisOutput),{status:200,headers:{'content-type':'application/json'}}))
-      .mockResolvedValueOnce(new Response(makeResponse(synthesisOutput),{status:200,headers:{'content-type':'application/json'}}));
-    vi.stubGlobal('fetch',fetcher);
-    const imageHandle={handle:'bisk-back',side:'back',width:8,height:8,role:'nutrition'};
-    const data=assistInput.parse({consent:true,question,package:{id:'bisk-answer-synthesis',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:false,createdAt:new Date().toISOString()},images:[imageHandle],visualImages:[{imageId:'bisk-back',mimeType:'image/png',base64:image.toString('base64'),side:'back',sourceImage:{width:8,height:8},preprocessing:{rotation:0,contrast:false,invert:false,crop:null}}]});
-
-    const result=await assist(data);
-    expect(fetcher).toHaveBeenCalledTimes(3);
-    const initialRequest=JSON.parse(String(fetcher.mock.calls[0][1]?.body));
-    const synthesisRequest=JSON.parse(String(fetcher.mock.calls[1][1]?.body));
-    const repairRequest=JSON.parse(String(fetcher.mock.calls[2][1]?.body));
-    expect(initialRequest.contents[0].parts.some((part:{inlineData?:unknown})=>part.inlineData)).toBe(true);
-    expect(synthesisRequest.contents[0].parts.some((part:{inlineData?:unknown})=>part.inlineData)).toBe(false);
-    expect(repairRequest.contents[0].parts.some((part:{inlineData?:unknown})=>part.inlineData)).toBe(false);
-    expect(JSON.stringify(synthesisRequest.systemInstruction)).toContain('text-only answer-synthesis');
-    const synthesisSchema=JSON.stringify(synthesisRequest.generationConfig.responseJsonSchema);
-    expect(synthesisSchema).not.toContain('answerParts');
-    expect(synthesisSchema).not.toContain('tentativeCandidates');
-    expect(synthesisSchema).not.toContain('visualEvidence');
-    expect(synthesisSchema).not.toContain('supportingSpans');
-    expect(String(synthesisRequest.contents[0].parts[0].text)).toContain('69.29');
-    expect(String(synthesisRequest.contents[0].parts[0].text)).toContain(source.id);
-    expect(JSON.parse(String(synthesisRequest.contents[0].parts[0].text)).priorAnswer.acceptedClaims).toHaveLength(2);
-    expect(JSON.parse(String(synthesisRequest.contents[0].parts[0].text)).calculations).toEqual(expect.arrayContaining([
-      expect.objectContaining({portion:13.4,portionUnit:'g',result:expect.closeTo(69.29*13.4/100,6),interpretationIds:['carbohydrates-per-100g']}),
-    ]));
-    const repairPrompt=JSON.parse(String(repairRequest.contents[0].parts[0].text));
-    expect(repairPrompt.validationRepair.coverageGaps).toEqual(expect.arrayContaining(['nutrition','serving']));
-    expect(result.answer).toContain('default daily snack');
-    expect(result.answer).toContain('9.28 g');
-    expect(result.claims).toHaveLength(4);
-    expect((result as unknown as {packageReconstruction?:{identity:unknown;nutritionRows:unknown[]}}).packageReconstruction).toMatchObject({identity:{brand:'Bisk Farm',name:'Cream Cracker'}});
-    expect((result as unknown as {packageReconstruction:{nutritionRows:unknown[]}}).packageReconstruction.nutritionRows).toEqual(expect.arrayContaining([expect.objectContaining({rowId:'carbohydrates-per-100g'})]));
-    expect(result.agentEvidence).toMatchObject([{id:source.id,publisher:'International Diabetes Federation'}]);
-    expect(result.agentTrace.some(step=>step.name==='package_answer_synthesis'&&step.status==='ok')).toBe(true);
-  });
-  it('repairs a claimless package answer once and keeps a validated partial answer instead of withholding the turn',async()=>{
-    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const observations=[
-      {id:'serving-line',field:'label-note',text:'SERVING SIZE: 2 BISCUITS (APPROX. 13.4 g)',side:'back' as const,confidence:80,origin:'ocr' as const},
-      {id:'ingredient-line',field:'label-note',text:'INGREDIENTS: REFINED WHEAT FLOUR (MAIDA) (89.98%)',side:'back' as const,confidence:86,origin:'ocr' as const},
-      {id:'protein-line',field:'label-note',text:'PROTEIN 5 g per 100 g',side:'back' as const,confidence:70,origin:'ocr' as const},
-    ];
-    const reconstruction:PackageReconstructionContent={
-      identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional',evidence:{observationIds:['ingredient-line'],imageRegions:[]}},
-      serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['serving-line'],imageRegions:[]}},
-      nutritionRows:[{rowId:'protein-per-100g',nutrient:'Protein',printedLabel:'Protein',printedValue:'5 g',value:5,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['protein-line'],imageRegions:[]}}],
-      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['ingredient-line'],imageRegions:[]}}],
-      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction from package evidence.',
-    };
-    const noAnswer={answer:'',claims:[],packageReconstruction:reconstruction,limitations:[],inspectImage:null};
-    const ungroundedSynthesis={answer:'I could not establish enough evidence for this question.',claims:[],limitations:[],inspectImage:null};
-    const answer='There is not enough evidence to recommend this as a daily snack from the current label reading. The label appears to list refined wheat flour first and defines two biscuits (about 13.4 g) as a serving, but the reconstruction does not establish the carbohydrate amount.';
-    const repaired={answer,claims:[
-      {mode:'synthesis',text:'There is not enough package evidence to recommend this as a daily snack.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0','package-fact:serving']},
-      {mode:'synthesis',text:'The reconstructed ingredient list places refined wheat flour first.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis',text:'The serving declaration appears to define two biscuits, approximately 13.4 g.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:serving']},
-    ],limitations:[],inspectImage:null};
-    const payload=(value:unknown)=>JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(value)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:100,candidatesTokenCount:90,totalTokenCount:190}});
-    const fetcher=vi.fn()
-      .mockResolvedValueOnce(new Response(payload(noAnswer),{status:200,headers:{'content-type':'application/json'}}))
-      .mockResolvedValueOnce(new Response(payload(ungroundedSynthesis),{status:200,headers:{'content-type':'application/json'}}))
-      .mockResolvedValueOnce(new Response(payload(repaired),{status:200,headers:{'content-type':'application/json'}}));
-    vi.stubGlobal('fetch',fetcher);
-    const data=assistInput.parse({consent:true,question:'Is this a good daily snack?',package:{id:'partial-answer-repair',name:'Unidentified food package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
-
-    const result=await assist(data);
-    expect(fetcher).toHaveBeenCalledTimes(3);
-    const repairRequest=JSON.parse(String(fetcher.mock.calls[2][1]?.body));
-    const repairPrompt=JSON.parse(String(repairRequest.contents[0].parts[0].text));
-    expect(repairPrompt.validationRepair.rejectionCategoriesByStage).toHaveProperty('natural-answer.no-validated-claims',1);
-    expect(repairRequest.contents[0].parts.some((part:{inlineData?:unknown})=>part.inlineData)).toBe(false);
-    expect(result.answer).toBe(answer);
-    expect(result.claims).toHaveLength(3);
-    expect((result as unknown as {packageReconstruction?:unknown}).packageReconstruction).toMatchObject({identity:{brand:'Bisk Farm',name:'Cream Cracker'},serving:{quantity:13.4,unit:'g'}});
-    const coverage=packageAnswerCoverage(data.question,reconstruction,result.claims,[],result.answer);
-    expect(coverage.covered).toBe(2);
-    expect(coverage.missing).toContain('nutrition');
-    expect(canAcceptPackageAnswerSynthesis(coverage,coverage,true,result.claims)).toBe(true);
-    expect(canAcceptPackageAnswerSynthesis(coverage,{...coverage,missing:[...coverage.missing,'ingredients'],covered:coverage.covered-1},true,result.claims)).toBe(false);
-  });
-  it('uses one bounded formatting repair when Gemini ends with non-JSON text',async()=>{
+  it('accepts ordinary prose without a structured-answer repair generation',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const observation={id:'ingredient-line',field:'ingredients',text:'INGREDIENTS: REFINED WHEAT FLOUR (MAIDA)',side:'back' as const,confidence:82,origin:'user' as const};
     const reconstruction={
@@ -815,124 +642,89 @@ describe('provider validation, independent of provider invocation', () => {
       additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'A provisional interpretation linked to the package text.',
     };
     const answer='The package text lists refined wheat flour (maida) as an ingredient.';
-    const output={answer,answerParts:[{text:answer,claimIndexes:[0]}],claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']}],packageReconstruction:reconstruction,limitations:[],inspectImage:null};
-    const makeResponse=(text:string)=>JSON.stringify({candidates:[{content:{parts:[{text}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:80,candidatesTokenCount:70,totalTokenCount:150}});
-    const fetcher=vi.fn()
-      .mockResolvedValueOnce(new Response(makeResponse('The package appears to list flour, but this is not a JSON object.'),{status:200,headers:{'content-type':'application/json'}}))
-      .mockResolvedValueOnce(new Response(makeResponse(JSON.stringify(output)),{status:200,headers:{'content-type':'application/json'}}));
+    const savedReconstruction={...reconstruction,revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};
+    const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
     vi.stubGlobal('fetch',fetcher);
-    const data=assistInput.parse({consent:true,question:'What ingredients are listed?',package:{id:'invalid-json-repair',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[observation],rawText:observation.text,warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
+    const data=assistInput.parse({consent:true,question:'What ingredients are listed?',package:{id:'invalid-json-repair',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction:savedReconstruction,observations:[observation],rawText:observation.text,warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
 
     const result=await assist(data);
-    expect(fetcher).toHaveBeenCalledTimes(2);
-    const repairRequest=JSON.parse(String(fetcher.mock.calls[1][1]?.body));
-    expect(JSON.stringify(repairRequest.contents)).toContain('invalid-json');
+    expect(fetcher).toHaveBeenCalledTimes(1);
     expect(result.answer).toBe(answer);
-    expect(result.agentTrace.some(step=>step.name==='package-structure-repair'&&step.status==='ok')).toBe(true);
+    const requestBody=JSON.parse(String(fetcher.mock.calls[0][1]?.body));
+    expect(requestBody.generationConfig).not.toHaveProperty('responseJsonSchema');
+    expect(requestBody.generationConfig).not.toHaveProperty('responseMimeType');
+    expect(result.agentTrace.some(step=>/repair|final_structure/.test(step.name))).toBe(false);
   });
   it('returns only deterministic calculations referenced by validated claims or generative UI', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
     const calculation = { id: 'calc-carbohydrate-30g', label: 'Carbohydrate in 30 g', nutrient: 'carbohydrate', input: 60, inputUnit: 'g', basisAmount: 100, portion: 30, portionUnit: 'g', result: 18, unit: 'g', formula: '60 g × 30 g ÷ 100 g', observationIds: ['input-1'], assumptions: ['Provisional package reading.'] } as const;
-    const reconstruction = { identity: { brand: null, name: 'Unidentified package', variant: null, status: 'provisional', evidence: { observationIds: ['input-1'], imageRegions: [] } }, serving: null, nutritionRows: [], ingredients: [], additives: [], statements: [], regions: [], unresolved: [], interpretationNote: 'Saved interpretation.' };
-    const answer = 'The label-based calculation is 18 g carbohydrate in 30 g.';
-    const output = { answer, answerParts: [{ text: answer, claimIndexes: [0] }], claims: [{ mode: 'synthesis', text: answer, observationIds: ['input-1'], sourceIds: [], calculationIds: [calculation.id], profileFieldIds: [], supportingSpans: [], visualEvidence: [] }], uiComponents: [{ type: 'portion-calculator', observationIds: [], sourceIds: [], calculationIds: [calculation.id] }], limitations: [], inspectImage: null, packageReconstruction: reconstruction };
-    const payload = JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(output) }], role: 'model' }, finishReason: 'STOP', index: 0 }], modelVersion: 'gemini-3.8-flash-test', usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 20, totalTokenCount: 32 } });
-    const fetcher = vi.fn().mockResolvedValue(new Response(payload, { status: 200, headers: { 'content-type': 'application/json' } }));
+    const reconstruction = { identity: { brand: null, name: 'Unidentified package', variant: null, status: 'provisional', evidence: { observationIds: ['input-1'], imageRegions: [] } }, serving: null, nutritionRows: [{rowId:'carbohydrate-100g',nutrient:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'60 g',value:60,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['input-1'],imageRegions:[]}}], ingredients: [], additives: [], statements: [], regions: [], unresolved: [], interpretationNote: 'Saved interpretation.' };
+    const answer = 'That works out to 18 g of carbohydrate in 30 g.';
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('calculate-1','calculate_nutrition',{nutrient:'carbohydrate',amount:30,unit:'g',candidateId:'carbohydrate-100g'})]), { status: 200, headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(modelResponse([{text:answer}]), { status: 200, headers: { 'content-type': 'application/json' } }));
     vi.stubGlobal('fetch', fetcher);
     const data = assistInput.parse({ consent: true, question: 'How much carbohydrate in 30 g?', calculations: [calculation], package: { id: 'package-calculation-ui', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'input-1', field: 'label-note', text: 'Carbohydrate 60 g per 100 g', side: 'text', confidence: null, origin: 'user' }], rawText: 'Carbohydrate 60 g per 100 g', warnings: [], synthetic: false, createdAt: new Date().toISOString(), reconstruction: { ...reconstruction, revision: 1, updatedAt: new Date().toISOString(), model: 'Gemini', current: true } } });
 
     const result = await assist(data);
-    expect(result.calculations).toEqual([calculation]);
-    expect(result.uiComponents).toContainEqual({ type: 'portion-calculator', observationIds: [], sourceIds: [], calculationIds: [calculation.id] });
+    expect(result.answer).toBe(answer);
+    expect(result.calculations).toHaveLength(1);
+    expect(result.calculations[0]).toMatchObject({nutrient:'carbohydrate',portion:30,result:18,unit:'g'});
+    expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculationIds:[result.calculations[0].id]}));
   });
-  it('retries an invalid initial package object with the original OCR and attached photo', async () => {
+  it('rejects malformed package reconstruction once and does not run schema repair', async () => {
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const packageReconstruction={identity:{brand:'BISK FARM',name:'Cream Cracker',variant:null,status:'provisional',evidence:{observationIds:['input-1'],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'A provisional reconstruction from linked package text.'};
-    const validOutput={answer:'The label identifies a Bisk Farm Cream Cracker.',answerParts:[{text:'The label identifies a Bisk Farm Cream Cracker.',claimIndexes:[0]}],claims:[{mode:'direct-quote',text:'BISK FARM CREAM CRACKER',observationIds:['input-1'],sourceIds:[],calculationIds:[],profileFieldIds:[],supportingSpans:[{kind:'observation',id:'input-1',quote:'BISK FARM CREAM CRACKER'}],visualEvidence:[]}],limitations:[],inspectImage:null,packageReconstruction};
-    const invalidOutput={...validOutput};delete (invalidOutput as Record<string,unknown>).packageReconstruction;
-    const makeResponse=(output:unknown)=>JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(output)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:24,candidatesTokenCount:80,totalTokenCount:104}});
-    const fetcher=vi.fn()
-      .mockResolvedValueOnce(new Response(makeResponse(invalidOutput),{status:200,headers:{'content-type':'application/json'}}))
-      .mockResolvedValueOnce(new Response(makeResponse(validOutput),{status:200,headers:{'content-type':'application/json'}}));
+    const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([toolCallPart('bad-reconstruct','submit_package_reconstruction',{identity:{brand:'BISK FARM'}})]),{status:200,headers:{'content-type':'application/json'}}));
     vi.stubGlobal('fetch',fetcher);
     const image=await sharp({create:{width:8,height:8,channels:3,background:'#f2f1eb'}}).png().toBuffer();
     const data=assistInput.parse({consent:true,question:'What package is this?',package:{id:'package-repair-test',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[{id:'input-1',field:'product-name',text:'BISK FARM CREAM CRACKER',side:'text',confidence:100,origin:'ocr'}],rawText:'BISK FARM CREAM CRACKER',warnings:[],synthetic:true,createdAt:new Date().toISOString()},images:[{handle:'back-image',side:'back',width:8,height:8,role:'nutrition'}],visualImages:[{imageId:'back-image',mimeType:'image/png',base64:image.toString('base64'),side:'back',sourceImage:{width:8,height:8},preprocessing:{rotation:0,contrast:false,invert:false,crop:null}}]});
 
-    const result=await assist(data);
-    expect((result as unknown as {packageReconstruction:unknown}).packageReconstruction).toMatchObject({identity:{brand:'BISK FARM',name:'Cream Cracker'},nutritionRows:[]});
-    expect(result.agentTrace.some(step=>step.name==='package-structure-repair'&&step.status==='ok')).toBe(true);
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    await expect(assist(data)).rejects.toMatchObject({code:'package_reconstruction_invalid'});
+    expect(fetcher).toHaveBeenCalledTimes(1);
     const initialRequest=JSON.parse(String(fetcher.mock.calls[0][1]?.body));
-    const repairRequest=JSON.parse(String(fetcher.mock.calls[1][1]?.body));
-    expect(initialRequest.generationConfig).not.toHaveProperty('responseJsonSchema');
-    expect(repairRequest.generationConfig).not.toHaveProperty('tools');
-    expect(repairRequest.generationConfig.responseJsonSchema).toBeDefined();
-    expect(repairRequest.contents[0].parts.some((part:{inlineData?:unknown})=>part.inlineData)).toBe(false);
-    expect(JSON.stringify(repairRequest.contents)).toContain('validationIssuePaths');
-    expect(String(repairRequest.contents[0].parts[0].text)).toContain('BISK FARM CREAM CRACKER');
+    expect(initialRequest.tools[0].functionDeclarations.map((tool:{name:string})=>tool.name)).toEqual(['submit_package_reconstruction']);
+    expect(JSON.stringify(initialRequest.contents)).toContain('inlineData');
   });
-  it('keeps valid reconstruction when only supplemental answer links are malformed',async()=>{
+  it('reconstructs from supplied text when no photograph is attached',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const initialOutput={
-      answer:'The package lists refined wheat flour and carbohydrates.',
-      answerParts:[{heading:'Package findings'}],
-      claims:[{mode:'synthesis',text:'The ingredient list names refined wheat flour.',observation_ids:['OBS_3'],source_ids:[]}],
-      package_reconstruction:{
-        product_identity:{brand_name:'Bisk Farm',product_name:'Cream Cracker',source_evidence:{observation_ids:['OBS_1']}},
-        serving_size:{text:'2 biscuits, approximately 13.4 g',amount:'13.4',unit:'g',count:2,observation_ids:['OBS_2']},
-        nutrition_table:[{name:'Carbohydrates',printed_value:'69.29',value:'69.29',unit:'g',column:'Per 100 g',basis_amount:'100',basis_unit:'g',observation_ids:['OBS_2']}],
-        ingredients:[{name:'Refined wheat flour',printed_text:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printed_percentage:'89.98',observation_ids:['OBS_3']}],
-        additives:[],statements:[],regions:[],unresolved:[],note:'Provisional reconstruction from the attached package evidence.',
-      },
-      limitations:[],inspectImage:null,
-    };
-    const repairOutput={
-      answer:'The label lists refined wheat flour.',
-      answerParts:[{text:'The label lists refined wheat flour.',claimIndexes:[0]}],
-      claims:[{mode:'synthesis',text:'The ingredient list names refined wheat flour.',observationIds:['OBS_3'],sourceIds:[]}],
-      packageReconstruction:{
-        identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:null,status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[]}},
-        serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['OBS_2'],imageRegions:[]}},
-        nutritionRows:[{rowId:'carbohydrate-per-100g',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['OBS_2'],imageRegions:[]}}],
-        ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['OBS_3'],imageRegions:[]}}],
-        additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction from original package evidence.',
-      },
-      limitations:[],inspectImage:null,
-    };
-    const makeResponse=(output:unknown)=>JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(output)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:24,candidatesTokenCount:80,totalTokenCount:104}});
+    const observations=[
+      {id:'input-1',field:'label-note',text:'BISK FARM CREAM CRACKER',side:'text' as const,confidence:null,origin:'user' as const},
+      {id:'input-2',field:'label-note',text:'2 biscuits approximately 13.4 g; carbohydrates 69.29 g per 100 g',side:'text' as const,confidence:null,origin:'user' as const},
+      {id:'input-3',field:'label-note',text:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',side:'text' as const,confidence:null,origin:'user' as const},
+    ];
+    const reconstruction={identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:null,status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[]}},serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['OBS_2'],imageRegions:[]}},nutritionRows:[{rowId:'carbs-100',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['OBS_2'],imageRegions:[]}}],ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['OBS_3'],imageRegions:[]}}],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction from supplied text.'};
+    const answer='The text describes Bisk Farm Cream Cracker, with a two-biscuit serving and a provisional carbohydrate reading.';
     const fetcher=vi.fn()
-      .mockResolvedValueOnce(new Response(makeResponse(initialOutput),{status:200,headers:{'content-type':'application/json'}}))
-      .mockResolvedValueOnce(new Response(makeResponse(repairOutput),{status:200,headers:{'content-type':'application/json'}}));
+      .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('reconstruct-text','submit_package_reconstruction',reconstruction)]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
     vi.stubGlobal('fetch',fetcher);
-    const data=assistInput.parse({consent:true,question:'What does this package contain?',package:{id:'package-preserve-reconstruction',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[
-      {id:'input-1',field:'label-note',text:'BISK FARM CREAM CRACKER',side:'text',confidence:null,origin:'user'},
-      {id:'input-2',field:'label-note',text:'2 biscuits approximately 13.4 g; carbohydrates 69.29 g per 100 g',side:'text',confidence:null,origin:'user'},
-      {id:'input-3',field:'label-note',text:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',side:'text',confidence:null,origin:'user'},
-    ],rawText:'Package evidence',warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
+    const data=assistInput.parse({consent:true,question:'What does this package contain?',package:{id:'package-text-reconstruction',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
 
     const result=await assist(data);
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(result.agentTrace.some(step=>step.name==='package-structure-repair')).toBe(false);
-    expect((result as unknown as {packageReconstruction:unknown}).packageReconstruction).toMatchObject({
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result.answer).toBe(answer);
+    expect(result.agentTrace.some(step=>/repair|final_structure/.test(step.name))).toBe(false);
+    expect(result.packageReconstruction).toMatchObject({
       identity:{brand:'Bisk Farm',name:'Cream Cracker'},
       serving:{quantity:13.4,pieceCount:2},
       nutritionRows:[{nutrient:'Carbohydrates',value:69.29,unit:'g',basisAmount:100,basisUnit:'g',evidence:{observationIds:['input-2']}}],
       ingredients:[{position:0,name:'Refined wheat flour',printedPercentage:89.98,evidence:{observationIds:['input-3']}}],
     });
+    const reconstructionRequest=JSON.parse(String(fetcher.mock.calls[0][1]?.body));
+    expect(JSON.stringify(reconstructionRequest.contents)).not.toContain('inlineData');
+    expect(reconstructionRequest.generationConfig).not.toHaveProperty('responseJsonSchema');
   });
   it('grounds a claimless follow-up sentence against the compact saved reconstruction without replaying photos or tools', async () => {
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const reconstruction={identity:{brand:'BISK FARM',name:'Cream Cracker Sugar Free',variant:null,status:'clear',evidence:{observationIds:['input-1'],imageRegions:[]}},serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'clear',evidence:{observationIds:['input-2'],imageRegions:[]}},nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'A saved, provisional interpretation from the package photos.'};
     const currentReconstruction={...reconstruction,revision:1,updatedAt:new Date().toISOString(),model:'gemini-3.6-flash',current:true};
-    const invalidOutput={answer:'Two biscuits are one serving.',answerParts:[{heading:'Serving',content:'Two biscuits are the serving.'}],uiComponents:[],packageReconstruction:{identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:''}};
-    const validOutput={answer:'Two biscuits are the package serving, listed at approximately 13.4 g.',answerParts:[{text:'Two biscuits are the package serving, listed at approximately 13.4 g.',claimIndexes:[0]}],claims:[{mode:'direct-quote',text:'2 biscuits, approximately 13.4 g',observationIds:['input-2'],sourceIds:[],calculationIds:[],interpretationRowIds:[],profileFieldIds:[],supportingSpans:[{kind:'observation',id:'input-2',quote:'2 biscuits, approximately 13.4 g'}],visualEvidence:[]}],limitations:[],inspectImage:null};
-    const makeResponse=(output:unknown)=>JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(output)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:24,candidatesTokenCount:80,totalTokenCount:104}});
-    const fetcher=vi.fn().mockResolvedValueOnce(new Response(makeResponse(invalidOutput),{status:200,headers:{'content-type':'application/json'}}));
+    const validAnswer='Two biscuits are the package serving, listed at approximately 13.4 g.';
+    const fetcher=vi.fn().mockResolvedValueOnce(new Response(modelResponse([{text:validAnswer}]),{status:200,headers:{'content-type':'application/json'}}));
     vi.stubGlobal('fetch',fetcher);
     const data=assistInput.parse({consent:true,question:'What about just two biscuits?',package:{id:'package-followup-repair',name:'Cream Cracker Sugar Free',brand:'BISK FARM',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction:currentReconstruction,observations:[{id:'input-1',field:'product-name',text:'BISK FARM CREAM CRACKER',side:'text',confidence:100,origin:'ocr'},{id:'input-2',field:'serving-size',text:'2 biscuits, approximately 13.4 g',side:'text',confidence:null,origin:'vision'}],rawText:'BISK FARM CREAM CRACKER\n2 biscuits, approximately 13.4 g',warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
 
     const result=await assist(data);
-    expect(result).toMatchObject({status:'ok',answer:invalidOutput.answer});
+    expect(result).toMatchObject({status:'ok',answer:validAnswer});
     expect(result).not.toHaveProperty('packageReconstruction');
     expect(result.agentTrace.some(step=>step.name==='package_answer_synthesis')).toBe(false);
     expect(result.agentTrace.some(step=>step.name==='structured_output_repair')).toBe(false);
@@ -941,13 +733,15 @@ describe('provider validation, independent of provider invocation', () => {
     expect(initialRequest.contents[0].parts.some((part:{inlineData?:unknown})=>part.inlineData)).toBe(false);
     expect(initialRequest.contents[0].parts[0].text).toContain('Cream Cracker Sugar Free');
     expect(initialRequest.contents[0].parts[0].text).not.toContain('BISK FARM CREAM CRACKER');
-    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('immediately preceding user intent');
-    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('assess the specified portion against that same question');
+    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Understand the user’s intent across the current question, saved package and recent conversation.');
+    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Answer naturally and directly in plain text.');
   });
-  it('normalizes package-native reconstruction fields and ignores malformed supplemental answer links', () => {
+  it('normalizes package-native reconstruction fields while preserving explicit claim links', () => {
+    const answer='The package appears to list a two-biscuit serving and a nutrition table.';
     const providerOutput={
-      answer:'The package appears to list a two-biscuit serving and a nutrition table.',
-      answerParts:[{heading:'An optional provider-only panel'}],
+      answer,
+      answerParts:[{text:answer,claimIds:['package-summary']}],
+      claims:[{id:'package-summary',mode:'synthesis',text:answer,evidenceIds:['OBS_1']}],
       package:{
         identity:{brand:'Example Foods',productName:'Oat Biscuits',variant:'Original',observationIds:['OBS_1']},
         serving:{statement:'2 biscuits (approx. 13.4 g)',size:13.4,unit:'g',observationIds:['OBS_1']},
@@ -966,7 +760,7 @@ describe('provider validation, independent of provider invocation', () => {
     const parsed=parseAgentProviderOutput(JSON.stringify(providerOutput),true);
     expect(parsed.schemaMode).toBe('adapted-provider-schema');
     expect(parsed.output.answerParts).toEqual([{text:providerOutput.answer,claimIndexes:[0]}]);
-    expect(parsed.output.claims).toMatchObject([{text:providerOutput.answer,observationIds:[],sourceIds:[]}]);
+    expect(parsed.output.claims).toMatchObject([{text:providerOutput.answer,observationIds:['OBS_1'],sourceIds:[]}]);
     expect(parsed.output.packageReconstruction).toMatchObject({
       identity:{brand:'Example Foods',name:'Oat Biscuits',variant:'Original'},
       serving:{printedText:'2 biscuits (approx. 13.4 g)',quantity:13.4,unit:'g'},
@@ -979,7 +773,7 @@ describe('provider validation, independent of provider invocation', () => {
   it('accepts a nested package.reconstruction envelope without a structure-repair call', () => {
     const providerOutput={
       answer:'The photographed panel appears to list 23.1 g of carbohydrate per 35 g.',
-      answerParts:[],
+      answerParts:[],claims:[],
       uiComponents:[],
       package:{reconstruction:{
         current:true,
@@ -992,8 +786,8 @@ describe('provider validation, independent of provider invocation', () => {
 
     const parsed=parseAgentProviderOutput(JSON.stringify(providerOutput),true);
 
-    expect(parsed.schemaMode).toBe('adapted-provider-schema');
-    expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
+    expect(parsed.schemaMode).toBe('provider-schema');
+    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
     expect(parsed.discardedRegionCount).toBe(1);
     expect(parsed.output.packageReconstruction).toMatchObject({
       identity:{brand:'Example Foods',name:'Oat Biscuits'},
@@ -1002,47 +796,20 @@ describe('provider validation, independent of provider invocation', () => {
     });
     expect(parsed.output.answer).toBe(providerOutput.answer);
   });
-  it('uses one provider request when the initial package response uses package.reconstruction', async()=>{
-    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const providerOutput={
-      answer:'The photographed panel appears to list 8 g of carbohydrates per 100 g.',
-      answerParts:[],uiComponents:[],
-      package:{reconstruction:{
-        current:true,
-        identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
-        serving:null,
-        nutritionRows:[{rowId:'ROW_1',nutrient:'carbohydrate',printedLabel:'Carbohydrates',printedValue:'8',value:8,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[]}}],
-        ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional label reading.',
-      }},
-    };
-    const payload=JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(providerOutput)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:24,candidatesTokenCount:80,totalTokenCount:104}});
-    const fetcher=vi.fn().mockResolvedValue(new Response(payload,{status:200,headers:{'content-type':'application/json'}}));
-    vi.stubGlobal('fetch',fetcher);
-    const observation={id:'ocr-carbohydrate',field:'ocr-line',text:'CARBOHYDRATES 8 g per 100 g',side:'back' as const,confidence:86,origin:'ocr' as const,imageId:'back-photo',readingOrder:{runId:'ocr-run',blockIndex:0,paragraphIndex:0,lineIndex:0}};
-    const data=assistInput.parse({consent:true,question:'What carbohydrate amount is printed per 100 g?',package:{id:'nested-package-envelope',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[observation],ocrCaptures:[{runId:'ocr-run',imageId:'back-photo',side:'back',sourceImage:{width:100,height:100},preparedImage:{width:100,height:100},bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'fixture-reader',version:'1',language:'en',confidenceScale:'0-100',segmentationMode:'auto'},processing:{rotation:0,contrast:false,invert:false,cropPercent:null}}],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
-
-    const result=await assist(data);
-
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(result.status).toBe('ok');
-    expect(result.answer).toContain('8 g');
-    expect((result as unknown as {packageReconstruction:{nutritionRows:Array<{value:number|null;evidence:{observationIds:string[]}} >}}).packageReconstruction.nutritionRows).toMatchObject([{value:8,evidence:{observationIds:['ocr-carbohydrate']}}]);
-    expect(result.agentTrace.some(step=>step.name==='package-structure-repair'||step.name==='structured_output_repair')).toBe(false);
-  });
-  it('turns claimless but schema-valid package prose into untrusted candidates that exact evidence can link',()=>{
+  it('does not manufacture grounded claims from package prose when the provider omitted evidence links',()=>{
     const observation={id:'flour-observation',field:'label-note',text:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',side:'back' as const,confidence:86,origin:'user' as const};
     const reconstruction={identity:{brand:null,name:'Example biscuits',variant:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional' as const,evidence:{observationIds:['flour-observation'],imageRegions:[]}}],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'A provisional saved package interpretation.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};
     const data=assistInput.parse({consent:true,question:'What is the main ingredient?',package:{id:'claimless-package-answer',name:'Example biscuits',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,observations:[observation],rawText:observation.text,warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
     const answer='The label lists refined wheat flour (maida) at 89.98%.';
     const parsed=parseAgentProviderOutput(JSON.stringify({answer,answerParts:[],claims:[],limitations:[],inspectImage:null}));
     expect(parsed.schemaMode).toBe('provider-schema');
-    expect(parsed.output.claims).toMatchObject([{text:answer,observationIds:[],packageFactIds:[]}]);
-    expect(parsed.output.answerParts).toEqual([{text:answer,claimIndexes:[0]}]);
+    expect(parsed.output.claims).toEqual([]);
+    expect(parsed.output.answerParts).toEqual([]);
     const result=validateClaims(parsed.output,data);
-    expect(result.claims).toMatchObject([{text:answer,packageFactIds:['package-fact:ingredient:0']}]);
-    expect(result.answer).toBe(answer);
+    expect(result.claims).toEqual([]);
+    expect(result.answer).not.toContain('89.98%');
   });
-  it('recovers unlinked answer parts from a provider package alias only through matching reconstructed evidence',()=>{
+  it('keeps package reconstruction while withholding uncited provider prose',()=>{
     const observations=[
       {id:'nutrition-line',field:'label-note',text:'CARBOHYDRATES 8 g per 100 g',side:'back' as const,confidence:86,origin:'ocr' as const},
       {id:'ingredient-line',field:'label-note',text:'INGREDIENTS: WHOLE WHEAT FLOUR',side:'back' as const,confidence:86,origin:'ocr' as const},
@@ -1052,11 +819,8 @@ describe('provider validation, independent of provider invocation', () => {
     const answer='The ingredient list starts with whole wheat flour. The table lists 8 g of carbohydrates per 100 g. The pack says no added sugars.';
     const rawProviderOutput={
       answer,
-      answerParts:[
-        {text:'The ingredient list starts with whole wheat flour.'},
-        {text:'The table lists 8 g of carbohydrates per 100 g.'},
-        {text:'The pack says no added sugars.'},
-      ],
+      answerParts:[],
+      claims:[],
       uiComponents:[],
       package:{current:true,identity:{brand:'Example',productName:'Whole Wheat Crackers',variant:null},serving:null,
         nutritionRows:[{rowId:'carbohydrates-100g',nutrient:'Carbohydrates',printedValue:'8 g',value:8,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',status:'provisional',observationIds:['nutrition-line']}],
@@ -1065,22 +829,19 @@ describe('provider validation, independent of provider invocation', () => {
     };
     const parsed=parseAgentProviderOutput(JSON.stringify(rawProviderOutput),true);
     expect(parsed.schemaMode).toBe('adapted-provider-schema');
-    expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
-    expect(parsed.output.claims).toHaveLength(3);
+    expect(parsed.modelOutputStatus).toBe('no-grounded-claims');
+    expect(parsed.output.claims).toEqual([]);
+    expect(parsed.output.answerParts).toEqual([]);
     const sanitized=sanitizePackageReconstruction(parsed.output.packageReconstruction,data);
     expect(sanitized).not.toBeNull();
     const result=validateClaims({...parsed.output,packageReconstruction:sanitized!.content},data);
-    expect(result.claims.map(claim=>claim.text)).toEqual([
-      'The ingredient list starts with whole wheat flour.',
-      'The table lists 8 g of carbohydrates per 100 g.',
-      'The pack says no added sugars.',
-    ]);
-    expect(result.claims[0].packageFactIds).toContain('package-fact:ingredient:0');
-    expect(result.claims[1].interpretationRowIds).toContain('carbohydrates-100g');
-    expect(result.claims[2].packageFactIds).toContain('package-fact:statement:0');
-    expect(result.answer).toBe(answer);
+    expect(result.claims).toEqual([]);
+    expect(result.answer).not.toContain('8 g of carbohydrates');
+    expect(result.answer).toContain('can’t establish a reliable answer');
+    expect(sanitized!.content.ingredients[0].name).toBe('whole wheat flour');
+    expect(sanitized!.content.nutritionRows[0].value).toBe(8);
   });
-  it('keeps OCR-label and OCR-value disagreements ambiguous without discarding either reading',()=>{
+  it('keeps image interpretation and OCR observations separate when columns are merged',()=>{
     const imageId='recovery-evidence-photo';
     const observations=[
       {id:'sugar-line',field:'ocr-line',text:'Sugar 10.2g 3.6g',side:'back' as const,confidence:98,origin:'ocr' as const,imageId,readingOrder:{runId:'ocr-run',blockIndex:0,paragraphIndex:0,lineIndex:0}},
@@ -1104,24 +865,29 @@ describe('provider validation, independent of provider invocation', () => {
       ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional visual reconstruction.',
     } satisfies PackageReconstructionContent;
     const sanitized=sanitizePackageReconstruction(raw,data)!;
-    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='sugar-100')?.status).toBe('ambiguous');
-    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='fiber-100')?.status).toBe('ambiguous');
-    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='protein-35')?.status).toBe('ambiguous');
+    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='sugar-100')?.status).toBe('provisional');
+    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='fiber-100')?.status).toBe('provisional');
+    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='protein-35')?.status).toBe('provisional');
     expect(sanitized.content.nutritionRows.find(item=>item.rowId==='sugar-35')?.status).toBe('provisional');
     expect(sanitized.content.nutritionRows.find(item=>item.rowId==='fiber-35')?.status).toBe('provisional');
     expect(sanitized.content.nutritionRows.find(item=>item.rowId==='protein-100')?.status).toBe('provisional');
-    expect(sanitized.content.unresolved.map(item=>item.field)).toEqual(expect.arrayContaining([
-      'nutrition-evidence:sugar-100','nutrition-evidence:fiber-100','nutrition-evidence:protein-35',
-    ]));
+    expect(sanitized.content.nutritionRows.map(item=>[item.rowId,item.value,item.basisAmount])).toEqual([
+      ['sugar-100',0,100],['sugar-35',3.6,35],['fiber-100',10.2,100],['fiber-35',1.5,35],['protein-35',5.7,35],['protein-100',14.2,100],
+    ]);
     const fibreAnswer='The label appears to show 1.5 g of dietary fibre for a 35 g serving.';
-    const fibreOutput=parseAgentProviderOutput(JSON.stringify({answer:fibreAnswer,limitations:[],inspectImage:null})).output;
+    const fibreOutput=parseAgentProviderOutput(JSON.stringify({
+      answer:fibreAnswer,
+      answerParts:[{text:fibreAnswer,claimIndexes:[0]}],
+      claims:[{mode:'synthesis',text:fibreAnswer,observationIds:['fibre-line'],sourceIds:[],interpretationRowIds:['fiber-35'],supportingSpans:[{kind:'observation',id:'fibre-line',quote:'Dietary Fibre 4.4g 1.5g'}]}],
+      limitations:[],inspectImage:null,
+    })).output;
     const fibreResult=validateClaims({...fibreOutput,packageReconstruction:sanitized.content},data);
     expect(fibreResult.answer).toBe(fibreAnswer);
     expect(fibreResult.claims.flatMap(claim=>claim.interpretationRowIds??[])).toContain('fiber-35');
     expect(fibreResult.claims.flatMap(claim=>claim.interpretationRowIds??[])).not.toContain('fiber-100');
     expect(observations.map(item=>item.text)).toEqual(['Sugar 10.2g 3.6g','Dietary Fibre 4.4g 1.5g','Protein 14.2g 5.79g']);
   });
-  it('maps compact provider evidenceIds into typed references, avoids a duplicate synthesis, and still rejects changed values', async() => {
+  it('validates explicit claim links, preserves only supported answer parts, and rejects changed numeric values', async() => {
     const observation={id:'label-line',field:'label-note',text:'SERVING SIZE 2 biscuits approximately 13.4 g; carbohydrates 9.28 g per serving',side:'back' as const,confidence:82,origin:'user' as const};
     const reconstruction={
       identity:{brand:'Example Foods',name:'Biscuits',variant:null,status:'provisional' as const,evidence:{observationIds:['label-line'],imageRegions:[]}},
@@ -1133,10 +899,16 @@ describe('provider validation, independent of provider invocation', () => {
     const data=assistInput.parse({consent:true,question:'What about two biscuits?',package:{id:'evidence-id-contract',name:'Biscuits',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction:reconstruction as PackageReconstructionContent&{revision:number;updatedAt:string;model:string;current:boolean},observations:[observation],rawText:observation.text,warnings:[],synthetic:false,createdAt:new Date().toISOString()},calculations:[calculation]});
     const answer='Two biscuits (about 13.4 g) are one serving, and the reconstructed label lists 9.28 g of carbohydrates per 13.4 g serving.';
     const evidenceIds=['package-fact:serving','ROW_1','CALC_1'];
-    const parse=(text:string)=>parseAgentProviderOutput(JSON.stringify({answer:text,evidenceIds,limitations:[],inspectImage:null})).output;
+    const claimId='portion';
+    const parse=(text:string)=>parseAgentProviderOutput(JSON.stringify({
+      answer:text,
+      answerParts:[{text,claimIds:[claimId]}],
+      claims:[{claimId,mode:'synthesis',text,observationIds:[],sourceIds:[],calculationIds:[],interpretationRowIds:[],packageFactIds:[],evidenceIds,supportingSpans:[{kind:'observation',id:'label-line',quote:observation.text}]}],
+      limitations:[],inspectImage:null,
+    })).output;
     const aliases=new Map([['ROW_1','carbohydrates-per-serving'],['CALC_1','carbohydrate-serving']]);
     const output=replaceReferenceIds(parse(answer),aliases);
-    expect(output.claims).toMatchObject([{text:answer,interpretationRowIds:[],calculationIds:[],packageFactIds:[]}]);
+    expect(output.claims).toMatchObject([{text:answer,interpretationRowIds:['carbohydrates-per-serving'],calculationIds:['carbohydrate-serving'],packageFactIds:['package-fact:serving']}]);
     expect(output.answerParts).toEqual([{text:answer,claimIndexes:[0]}]);
     const accepted=validateClaims(output,data);
     expect(accepted.claims).toHaveLength(1);
@@ -1148,6 +920,7 @@ describe('provider validation, independent of provider invocation', () => {
     // both instead of allowing [] to erase the valid aliases.
     const compactWithEmptyTypedArrays=parseAgentProviderOutput(JSON.stringify({
       answer,
+      answerParts:[{text:answer,claimIndexes:[0]}],
       claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[],calculationIds:[],interpretationRowIds:[],packageFactIds:[],profileFieldIds:[],evidenceIds}],
       limitations:[],inspectImage:null,
     })).output;
@@ -1164,39 +937,54 @@ describe('provider validation, independent of provider invocation', () => {
     expect(rejected.answer).not.toContain('19.28 g');
     expect(decisions).toContainEqual(expect.objectContaining({stage:'claim',decision:'rejected',reason:'unsupported-numeric-value'}));
 
-    const mixedAnswer='The label appears to list 9.28 g of carbohydrates per serving [ROW_1, CALC_1]. Official diabetes guidance from the International Diabetes Federation (IDF) emphasizes whole grains and limited refined carbohydrates.';
+    const supportedPart='The label appears to list 9.28 g of carbohydrates per serving.';
+    const unsupportedPart='WHO recommends an individualized carbohydrate limit for this snack.';
+    const mixedAnswer=`${supportedPart} ${unsupportedPart}`;
     const segmented=replaceReferenceIds(parseAgentProviderOutput(JSON.stringify({
-      answer:mixedAnswer,evidenceIds:['package-fact:serving','ROW_1','CALC_1'],limitations:[],inspectImage:null,
+      answer:mixedAnswer,
+      answerParts:[{text:supportedPart,claimIndexes:[0]},{text:unsupportedPart,claimIndexes:[1]}],
+      claims:[
+        {mode:'synthesis',text:supportedPart,observationIds:[],sourceIds:[],calculationIds:[],interpretationRowIds:[],packageFactIds:[],evidenceIds:['package-fact:serving','ROW_1','CALC_1'],supportingSpans:[{kind:'observation',id:'label-line',quote:observation.text}]},
+        {mode:'synthesis',text:unsupportedPart,observationIds:[],sourceIds:[],calculationIds:[],interpretationRowIds:[],packageFactIds:[],supportingSpans:[]},
+      ],limitations:[],inspectImage:null,
     })).output,aliases);
-    expect(segmented.claims).toHaveLength(1);
-    expect(segmented.claims[0]).toMatchObject({text:'The label appears to list 9.28 g of carbohydrates per serving.',interpretationRowIds:['carbohydrates-per-serving'],calculationIds:['carbohydrate-serving'],packageFactIds:[]});
-    expect(segmented.answerParts).toEqual([{text:'The label appears to list 9.28 g of carbohydrates per serving.',claimIndexes:[0]}]);
+    expect(segmented.claims).toHaveLength(2);
     const segmentedResult=validateClaims(segmented,data);
-    expect(segmentedResult.answer).toBe('The label appears to list 9.28 g of carbohydrates per serving.');
-    expect(segmentedResult.answer).not.toContain('International Diabetes Federation');
+    expect(segmentedResult.answer).toBe(supportedPart);
+    expect(segmentedResult.answer).not.toContain('WHO recommends');
 
-    const evidenceLinkedAnswer='Official diabetes guidance from the International Diabetes Federation (IDF) says to limit refined carbohydrates. The package displays Sugar Free [package-fact:statement:0]. The primary ingredient is refined wheat flour at nearly 90% [package-fact:ingredient:0]. The nutrition table lists 9.28 g of carbohydrates per 13.4 g serving [ROW_1, CALC_1].';
+    const packageAnswerParts=[
+      'The package displays Sugar Free.',
+      'The first ingredient is refined wheat flour, with a printed percentage of 89.98%.',
+      'The table lists 9.28 g of carbohydrates per 13.4 g serving.',
+    ];
+    const evidenceLinkedAnswer=packageAnswerParts.join(' ');
     const packageWithFlour={...reconstruction,ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional' as const,evidence:{observationIds:['label-line'],imageRegions:[]}}],statements:[{kind:'claim' as const,label:'Sugar Free',text:'SUGAR FREE - FREE OF SUGAR, FULL OF TASTE',status:'provisional' as const,evidence:{observationIds:['label-line'],imageRegions:[]}}]};
     const reconstructedData=assistInput.parse({...data,package:{...data.package,reconstruction:packageWithFlour as PackageReconstructionContent&{revision:number;updatedAt:string;model:string;current:boolean}}});
-    const compactParsed=replaceReferenceIds(parseAgentProviderOutput(JSON.stringify({answer:evidenceLinkedAnswer,evidenceIds:['SRC_1','package-fact:statement:0','package-fact:ingredient:0','ROW_1','CALC_1'],limitations:[],inspectImage:null})).output,new Map([['ROW_1','carbohydrates-per-serving'],['CALC_1','carbohydrate-serving'],['SRC_1','who-healthy-diet-guidance']]));
+    const compactParsed=replaceReferenceIds(parseAgentProviderOutput(JSON.stringify({
+      answer:evidenceLinkedAnswer,
+      answerParts:packageAnswerParts.map((text,index)=>({text,claimIndexes:[index]})),
+      claims:[
+        {mode:'synthesis',text:packageAnswerParts[0],observationIds:[],sourceIds:[],evidenceIds:['package-fact:statement:0'],supportingSpans:[]},
+        {mode:'synthesis',text:packageAnswerParts[1],observationIds:[],sourceIds:[],evidenceIds:['package-fact:ingredient:0'],supportingSpans:[]},
+        {mode:'synthesis',text:packageAnswerParts[2],observationIds:[],sourceIds:[],evidenceIds:['ROW_1','CALC_1','package-fact:serving'],supportingSpans:[{kind:'observation',id:'label-line',quote:observation.text}]},
+      ],limitations:[],inspectImage:null,
+    })).output,new Map([['ROW_1','carbohydrates-per-serving'],['CALC_1','carbohydrate-serving']]));
     const compactResult=validateClaims(compactParsed,reconstructedData);
     expect(compactParsed.claims).toHaveLength(3);
     expect(compactResult.claims.map(claim=>claim.text)).toEqual([
-      'The package displays Sugar Free.',
-      'The primary ingredient is refined wheat flour at nearly 90%.',
-      'The nutrition table lists 9.28 g of carbohydrates per 13.4 g serving.',
+      ...packageAnswerParts,
     ]);
-    expect(compactResult.answer).not.toContain('International Diabetes Federation');
-    expect(compactResult.answer).toContain('nearly 90%');
+    expect(compactResult.answer).toBe(evidenceLinkedAnswer);
+    expect(compactResult.answer).toContain('89.98%');
     expect(compactResult.answer).toContain('9.28 g');
 
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const providerPayload=JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({answer,evidenceIds,limitations:[],inspectImage:null})}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:120,candidatesTokenCount:90,totalTokenCount:210}});
-    const fetcher=vi.fn().mockResolvedValue(new Response(providerPayload,{status:200,headers:{'content-type':'application/json'}}));
+    const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:evidenceLinkedAnswer}]),{status:200,headers:{'content-type':'application/json'}}));
     vi.stubGlobal('fetch',fetcher);
-    const livePath=await assist(data);
+    const livePath=await assist(reconstructedData);
     expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(livePath).toMatchObject({status:'ok',answer,agentDiagnostics:{acceptedClaims:1,answerStatus:'model-answer',acceptedConversationalAnswers:1}});
+    expect(livePath).toMatchObject({status:'ok',answer:evidenceLinkedAnswer,agentDiagnostics:{answerStatus:'answer-ready',acceptedSentences:3}});
   });
   it('links natural serving-basis wording to exact rows and preserves the answer over an unrelated table fallback',()=>{
     const who=getNutritionGuidance({query:'naturally occurring dietary fibre carbohydrate quality WHO',jurisdiction:'India',maxResults:8}).find(item=>item.id==='who-carbohydrate-2023')!;
@@ -1218,8 +1006,21 @@ describe('provider validation, independent of provider invocation', () => {
       ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional package reconstruction.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true,
     } satisfies PackageReconstructionContent&{revision:number;updatedAt:string;model:string;current:boolean};
     const data=assistInput.parse({consent:true,question:'What does the 35 g serving provide for carbohydrate and dietary fibre, and what does WHO say about dietary fibre?',evidence:[who],package:{id:'serving-wording-adapter',name:'Unidentified food package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
-    const answer='For the 35 g serving, the label appears to provide 23.1 g of carbohydrate and 1.5 g of dietary fibre. WHO guidance recommends adults consume at least 25 g of naturally occurring dietary fibre each day.';
-    const parsed=parseAgentProviderOutput(JSON.stringify({answer,limitations:[],inspectImage:null}));
+    const labelFinding='For the 35 g serving, the label appears to provide 23.1 g of carbohydrate and 1.5 g of dietary fibre.';
+    const guidanceFinding='WHO guidance provides reference intake information for dietary fibre.';
+    const answer=`${labelFinding} ${guidanceFinding}`;
+    const parsed=parseAgentProviderOutput(JSON.stringify({
+      answer,
+      answerParts:[{text:labelFinding,claimIndexes:[0]},{text:guidanceFinding,claimIndexes:[1]}],
+      claims:[
+        {mode:'synthesis',text:labelFinding,observationIds:['serving-line','carbohydrate-line','fibre-line'],sourceIds:[],interpretationRowIds:['carbohydrate-35g','fibre-35g'],supportingSpans:[
+          {kind:'observation',id:'serving-line',quote:'Serving size 35 g'},
+          {kind:'observation',id:'carbohydrate-line',quote:'Carbohydrate 23.1 g'},
+          {kind:'observation',id:'fibre-line',quote:'Dietary Fibre 1.5 g'},
+        ]},
+        {mode:'synthesis',text:guidanceFinding,observationIds:[],sourceIds:[who.id],supportingSpans:[{kind:'source',id:who.id,quote:who.summary.slice(0,120)}]},
+      ],limitations:[],inspectImage:null,
+    }));
     const decisions:Array<{stage:string;decision:string;reason?:string}>=[];
     const result=validateClaims(parsed.output,data,event=>decisions.push(event));
     expect(result.answer).toBe(answer);
@@ -1230,133 +1031,25 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.answer).not.toContain('Protein 5.7 g');
     expect(decisions).not.toContainEqual(expect.objectContaining({stage:'structured-answer',decision:'accepted'}));
   });
-  it('avoids a second answer generation when a valid synthesis adds useful package coverage', async()=>{
-    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const observations=[
-      {id:'serving-line',field:'label-note',text:'SERVING SIZE 2 biscuits approximately 13.4 g',side:'back' as const,confidence:80,origin:'ocr' as const},
-      {id:'carbs-line',field:'label-note',text:'CARBOHYDRATES 9.28 g per serving',side:'back' as const,confidence:82,origin:'ocr' as const},
-      {id:'ingredient-line',field:'label-note',text:'INGREDIENTS: REFINED WHEAT FLOUR (MAIDA)',side:'back' as const,confidence:84,origin:'ocr' as const},
-      {id:'claim-line',field:'label-note',text:'NO ADDED SUGARS',side:'front' as const,confidence:88,origin:'ocr' as const},
-    ];
-    const reconstruction:PackageReconstructionContent={
-      identity:{brand:'Example Foods',name:'Biscuits',variant:null,status:'provisional',evidence:{observationIds:['ingredient-line'],imageRegions:[]}},
-      serving:{printedText:'2 biscuits approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['serving-line'],imageRegions:[]}},
-      nutritionRows:[{rowId:'carbohydrates-per-serving',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g',columnLabel:'Per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carbs-line'],imageRegions:[]}}],
-      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:null,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['ingredient-line'],imageRegions:[]}}],
-      additives:[],statements:[{kind:'claim',label:'No added sugars',text:'NO ADDED SUGARS',status:'provisional',evidence:{observationIds:['claim-line'],imageRegions:[]}}],regions:[],unresolved:[],interpretationNote:'Provisional package interpretation.',
-    };
-    const initial={answer:'',claims:[],packageReconstruction:reconstruction,limitations:[],inspectImage:null};
-    const answer='This is not a strong everyday snack default: the ingredient list starts with refined wheat flour, and the label lists 9.28 g of carbohydrates for one serving of two biscuits (about 13.4 g). The label also states that no sugars are added.';
-    const synthesis={answer,claims:[
-      {mode:'synthesis',text:'The ingredient list starts with refined wheat flour.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:ingredient:0']},
-      {mode:'synthesis',text:'The serving is two biscuits (about 13.4 g) and the table lists 9.28 g carbohydrates.',observationIds:[],sourceIds:[],interpretationRowIds:['carbohydrates-per-serving'],packageFactIds:['package-fact:serving']},
-      {mode:'synthesis',text:'The packet states that no sugars are added.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:statement:0']},
-    ],limitations:[],inspectImage:null};
-    const payload=(value:unknown)=>JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(value)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:120,candidatesTokenCount:90,totalTokenCount:210}});
-    const fetcher=vi.fn()
-      .mockResolvedValueOnce(new Response(payload(initial),{status:200,headers:{'content-type':'application/json'}}))
-      .mockResolvedValueOnce(new Response(payload(synthesis),{status:200,headers:{'content-type':'application/json'}}));
-    vi.stubGlobal('fetch',fetcher);
-    const data=assistInput.parse({consent:true,question:'Is this a good daily snack?',package:{id:'coverage-improvement',name:'Biscuits',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction:{...reconstruction,revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true},observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
-
-    const result=await assist(data);
-    expect(fetcher).toHaveBeenCalledTimes(2);
-    expect(result.answer).toBe(answer);
-    const coverage=packageAnswerCoverage(data.question,reconstruction,result.claims,[],result.answer);
-    expect(coverage.covered).toBe(4);
-    expect(coverage.missing).toEqual([]);
-  });
-  it('keeps a valid synthesis when it improves the judgment but coverage is unchanged, without a repair generation',async()=>{
-    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const observations=[
-      {id:'serving-line',field:'label-note',text:'SERVING SIZE 2 biscuits approximately 13.4 g',side:'back' as const,confidence:80,origin:'ocr' as const},
-      {id:'carbs-line',field:'label-note',text:'CARBOHYDRATES 9.28 g per serving',side:'back' as const,confidence:82,origin:'ocr' as const},
-      {id:'ingredient-line',field:'label-note',text:'INGREDIENTS: REFINED WHEAT FLOUR (MAIDA)',side:'back' as const,confidence:84,origin:'ocr' as const},
-    ];
-    const reconstruction:PackageReconstructionContent={
-      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
-      serving:{printedText:'2 biscuits approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['serving-line'],imageRegions:[]}},
-      nutritionRows:[{rowId:'carbohydrates-per-serving',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g',columnLabel:'Per serving',basisText:'per serving (13.4 g)',basisAmount:13.4,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carbs-line'],imageRegions:[]}}],
-      ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA)',printedPercentage:null,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['ingredient-line'],imageRegions:[]}}],
-      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional package interpretation.',
-    };
-    const initialAnswer='The label lists 9.28 g of carbohydrates for one serving of two biscuits (about 13.4 g).';
-    const synthesisAnswer='This is not enough to call it a good daily snack from the package alone: the label lists 9.28 g of carbohydrates for the declared two-biscuit serving (about 13.4 g).';
-    const rowAndServingClaims=[
-      {mode:'synthesis' as const,text:'The label lists 9.28 g of carbohydrates for one serving of two biscuits (about 13.4 g).',observationIds:[],sourceIds:[],interpretationRowIds:['carbohydrates-per-serving'],packageFactIds:['package-fact:serving']},
-    ];
-    const initial={answer:initialAnswer,claims:rowAndServingClaims,limitations:[],inspectImage:null};
-    const synthesis={answer:synthesisAnswer,claims:rowAndServingClaims,limitations:[],inspectImage:null};
-    const payload=(value:unknown)=>JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(value)}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.5-flash-lite-test',usageMetadata:{promptTokenCount:420,candidatesTokenCount:120,totalTokenCount:540}});
-    const fetcher=vi.fn()
-      .mockResolvedValueOnce(new Response(payload(initial),{status:200,headers:{'content-type':'application/json'}}))
-      .mockResolvedValueOnce(new Response(payload(synthesis),{status:200,headers:{'content-type':'application/json'}}));
-    vi.stubGlobal('fetch',fetcher);
-    const data=assistInput.parse({consent:true,question:'Is this a good daily snack?',package:{id:'valid-partial-synthesis',name:'Biscuits',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction:{...reconstruction,revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true},observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
-
-    const result=await assist(data);
-    expect(fetcher).toHaveBeenCalledTimes(2);
-    expect(result.answer).toBe(synthesisAnswer);
-    expect(result.agentTrace).toContainEqual(expect.objectContaining({name:'package_answer_synthesis',status:'ok'}));
-  });
-  it('recognizes a concise paraphrase of a linked package claim without requiring an OCR quotation',()=>{
-    const reconstruction:PackageReconstructionContent={
-      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
-      serving:null,nutritionRows:[],ingredients:[],additives:[],
-      statements:[{kind:'claim',label:'No Added Sugars',text:'NO ADDED SUGARS',status:'provisional',evidence:{observationIds:['claim-line'],imageRegions:[]}}],
-      regions:[],unresolved:[],interpretationNote:'A provisional package claim.',
-    };
-    const claims=[{mode:'synthesis' as const,text:'The packet carries a no added sugars claim.',observationIds:[],sourceIds:[],packageFactIds:['package-fact:statement:0']}];
-    const covered=packageAnswerCoverage('Is this suitable as a regular snack?',reconstruction,claims,[],"It is labeled as having no added sugar.");
-    const omitted=packageAnswerCoverage('Is this suitable as a regular snack?',reconstruction,claims,[],"The snack may fit your preferences.");
-    expect(covered).toMatchObject({available:1,covered:1,availableFacets:['nutrition-claim'],missing:[]});
-    expect(omitted).toMatchObject({available:1,covered:0,missing:['nutrition-claim']});
-  });
-  it('counts a printed serving basis when a response names the matching declared serving mass',()=>{
-    const reconstruction:PackageReconstructionContent={
-      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
-      serving:{printedText:'Serving size: 35 g',quantity:35,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence:{observationIds:['serving-observation'],imageRegions:[]}},
-      nutritionRows:[{rowId:'carb-35g',nutrient:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'23.1',value:23.1,unit:'g',columnLabel:'Per 35g#',basisText:'Per 35g#',basisAmount:35,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carb-observation'],imageRegions:[]}}],
-      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction.',
-    };
-    const claims=[{mode:'synthesis' as const,text:'The label lists 23.1 g of carbohydrate for the 35 g serving.',observationIds:[],sourceIds:[],calculationIds:['carb-35g-calculation'],interpretationRowIds:['carb-35g'],packageFactIds:['package-fact:serving']}];
-    const coverage=packageAnswerCoverage('Is this a good daily snack?',reconstruction,claims,[],'The label lists 23.1 g of carbohydrate for the 35 g serving.');
-    expect(coverage).toMatchObject({available:2,covered:2,availableFacets:['nutrition','serving'],missing:[]});
-  });
-  it('does not misclassify “how should I think about this amount” as a food-choice request',()=>{
-    const reconstruction:PackageReconstructionContent={
-      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
-      serving:{printedText:'Serving size: 35 g',quantity:35,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence:{observationIds:['serving-observation'],imageRegions:[]}},
-      nutritionRows:[{rowId:'carb-35g',nutrient:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'23.1',value:23.1,unit:'g',columnLabel:'Per 35g#',basisText:'Per 35g#',basisAmount:35,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carb-observation'],imageRegions:[]}}],
-      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction.',
-    };
-    const claims=[{mode:'synthesis' as const,text:'The label lists 23.1 g of carbohydrate for the 35 g serving.',observationIds:['carb-observation'],sourceIds:[],interpretationRowIds:['carb-35g'],packageFactIds:['package-fact:serving']}];
-    const question='For my goal of tracking carbohydrate portions, how should I think about 23.1 g for a 35 g serving?';
-    expect(needsPackageAnswerSynthesis(question,reconstruction,claims,[],'The label lists 23.1 g of carbohydrate for the 35 g serving.')).toBe(false);
-    expect(needsPackageAnswerSynthesis('Should I eat this every day?',reconstruction,claims,[],'The label lists 23.1 g of carbohydrate for the 35 g serving.')).toBe(true);
-  });
   it('classifies a Gemini rejection without retaining provider error text', () => {
     const error = Object.assign(new Error('got status: INVALID_ARGUMENT. {"error":{"code":400,"status":"INVALID_ARGUMENT","message":"Invalid value at \'generationConfig.responseJsonSchema.properties.secret\': PRIVATE PACKAGE TEXT"}}'), { status: 400 });
     const safe = safeProviderFailure(error);
     expect(safe).toMatchObject({ status: 400, failureClass: 'request-rejected', providerStatus: 'INVALID_ARGUMENT', providerReasonClass: 'response-schema', providerFieldPath: 'generationConfig.responseJsonSchema.properties.secret' });
     expect(JSON.stringify(safe)).not.toContain('PRIVATE PACKAGE TEXT');
   });
-  it('keeps a supported answer and withholds sibling claims with unknown citations', async () => {
+  it('keeps supported natural prose and withholds only the unsupported numeric sentence', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
-    const invalid = JSON.stringify({ answer: 'Protein 3 g', answerParts: [{ text: 'Protein 3 g', claimIndexes: [0] }], packageReconstruction:{identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:['protein-observation'],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'The product identity and table remain unresolved.'},claims: [
-      { mode: 'direct-quote', text: 'Protein 3 g', observationIds: ['protein-observation'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'protein-observation', quote: 'Protein 3 g' }] },
-      { mode: 'direct-quote', text: 'invented citation', observationIds: ['unknown-observation'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'unknown-observation', quote: 'invented citation' }] },
-      { mode: 'synthesis', text: 'An unsupported uncited claim.', observationIds: [], sourceIds: [], supportingSpans: [] },
-    ], limitations: [], inspectImage: null });
-    const payload = JSON.stringify({ candidates: [{ content: { parts: [{ text: invalid }], role: 'model' }, finishReason: 'STOP', index: 0 }], modelVersion: 'gemini-3.8-flash-test', usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 20, totalTokenCount: 32 } });
-    const fetcher = vi.fn().mockImplementation(() => new Response(payload, { status: 200, headers: { 'content-type': 'application/json' } }));
+    const answer='The package lists 3 g of protein per 100 g. Sodium is 900 mg per 100 g.';
+    const reconstruction={identity:{brand:null,name:'Example food',variant:null,status:'provisional' as const,evidence:{observationIds:['protein-observation'],imageRegions:[]}},serving:null,nutritionRows:[{rowId:'protein-100g',nutrient:'protein',printedLabel:'Protein',printedValue:'3 g',value:3,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['protein-observation'],imageRegions:[]}}],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Saved image-linked reading.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};
+    const fetcher = vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]), { status: 200, headers: { 'content-type': 'application/json' } }));
     vi.stubGlobal('fetch', fetcher);
-    const data = assistInput.parse({ consent: true, question: 'What does this package show?', package: { id: 'package-1', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'protein-observation', field: 'protein', text: 'Protein 3 g', side: 'text', confidence: 100, origin: 'ocr' }], rawText: 'Protein 3 g', warnings: [], synthetic: true, createdAt: new Date().toISOString() } });
+    const data = assistInput.parse({ consent: true, question: 'What does this package show?', package: { id: 'package-1', name: 'Example food', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], reconstruction, observations: [{ id: 'protein-observation', field: 'protein', text: 'Protein 3 g per 100 g', side: 'text', confidence: 100, origin: 'ocr' }], rawText: 'Protein 3 g per 100 g', warnings: [], synthetic: true, createdAt: new Date().toISOString() } });
 
     const result = await assist(data);
     expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(result).toMatchObject({ status: 'ok', answer: 'Protein 3 g', agentDiagnostics: { acceptedClaims: 1, rejectedClaims: 2, answerStatus: 'model-answer' } });
-    expect(result.claims.map(claim => claim.text)).toEqual(['Protein 3 g']);
+    expect(result).toMatchObject({status:'ok',answerStatus:'answer-with-quantity-withheld',agentDiagnostics:{acceptedSentences:1,withheldQuantitySentences:1}});
+    expect(result.answer).toContain('3 g of protein per 100 g');
+    expect(result.answer).not.toContain('900 mg');
   });
   it('keeps paid application and free synthetic-smoke calls single-attempt', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'paid'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('GEMINI_API_KEY', 'offline-paid-test-key'); vi.stubEnv('ENABLE_PAID_GEMINI', 'true'); vi.stubEnv('GEMINI_FREE_PROJECT_ID', 'free-project'); vi.stubEnv('GEMINI_PAID_PROJECT_ID', 'paid-project');
@@ -1375,13 +1068,12 @@ describe('provider validation, independent of provider invocation', () => {
   it('withholds forged claims and unknown browser image handles without fabricating an answer from claim records', () => {
     const data = assistInput.parse({ consent: true, question: 'What is visible?', package: { id: 'test', name: 'Test', userDescription: 'User says it is a cereal snack.', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'o1', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'user' }, { id: 'o2', field: 'user-description', text: 'User says it is a cereal snack.', side: 'text', confidence: null, origin: 'user' }], rawText: '', warnings: [], synthetic: true, createdAt: new Date().toISOString() } });
     expect(data.package.userDescription).toBe('User says it is a cereal snack.');
-    const valid = { answer: 'Unsupported extra medical assertion', claims: [{ mode:'direct-quote',text: 'sugar 3g', observationIds: ['o1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'o1', quote: 'sugar 3g' }] }], limitations: ['Take this amount to manage diabetes.'], inspectImage: null };
+    const valid = { answer: 'Unsupported extra medical assertion', answerParts:[], claims: [{ mode:'direct-quote',text: 'sugar 3g', observationIds: ['o1'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'o1', quote: 'sugar 3g' }] }], limitations: [], inspectImage: null };
     expect(validateClaims(valid, data).claims).toHaveLength(1);
     expect(validateClaims(valid, data).answer).toContain('could not safely assemble it into a clear answer');
     expect(validateClaims(valid, data).answer).not.toContain('medical assertion');
     expect(validateClaims(valid, data).answer).not.toContain('diabetes');
-    expect(validateClaims(valid, data).limitations.join(' ')).not.toContain('manage diabetes');
-    expect(validateClaims(valid, data).limitations).toEqual(['Generated explanations are not independently verified. Tentative candidates never alter original package observations. The application may use a complete OCR-linked candidate only for explicitly labeled arithmetic after checking its evidence and layout; that reading remains unverified. Image-only text and region references stay outside calculations. No diagnosis, medication advice, or safety assessment is provided.']);
+    expect(validateClaims(valid, data).limitations).toEqual([]);
     const forgedOnly = validateClaims({ ...valid, claims: [{ mode:'direct-quote',text: 'Claim', observationIds: ['missing'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'missing', quote: 'Claim' }] }] }, data);
     expect(forgedOnly.claims).toEqual([]);
     expect(forgedOnly.answer).toContain('can’t establish a reliable answer');
@@ -1396,14 +1088,14 @@ describe('provider validation, independent of provider invocation', () => {
     const nonnumericVisualClaim = { ...visualClaim, claims: [{ ...visualClaim.claims[0], text: 'The image may show a nutrition panel.', visualEvidence: [{ imageId: 'package-photo', visibleText: 'NUTRITIONAL INFORMATION', region: null }] }] };
     expect(validateClaims(nonnumericVisualClaim, imageAttached).claims).toHaveLength(1);
   });
-  it('withholds unsupported diabetes safety advice even when it cites a real sugar observation', () => {
+  it('withholds an unsupported numeric value even when a related package field is cited', () => {
     const data = assistInput.parse({ consent: true, question: 'Is this safe for diabetes?', package: { id: 'test', name: 'Test', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'sugar-observation', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'ocr' }], rawText: '', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
-    const output = { answer: 'It is suitable for diabetes.', claims: [{ mode:'synthesis',text: 'Sugar 3g is safe for diabetes.', observationIds: ['sugar-observation'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'sugar-observation', quote: 'sugar 3g' }] }], limitations: [], inspectImage: null };
+    const answer='This package lists 30 g of sugar.';
+    const output = { answer, answerParts:[{text:answer,claimIndexes:[0]}], claims: [{ mode:'synthesis',text: answer, observationIds: ['sugar-observation'], sourceIds: [], supportingSpans: [{ kind: 'observation', id: 'sugar-observation', quote: 'sugar 3g' }] }], limitations: [], inspectImage: null };
     const result = validateClaims(output, data);
     expect(result.claims).toEqual([]);
-    expect(result.answer).not.toMatch(/safe for diabetes|suitable for diabetes/i);
+    expect(result.answer).not.toContain('30 g');
     expect(result.answer).toContain('can’t establish a reliable answer');
-    expect(result.answer).not.toMatch(/personal health effects or product safety/);
   });
   it('withholds a claim when its quoted span does not occur in the cited item', () => {
     const data = assistInput.parse({ consent: true, question: 'What does it say?', package: { id: 'test', name: 'Test', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'o1', field: 'sugar', text: 'sugar 3g', side: 'text', confidence: null, origin: 'ocr' }], rawText: '', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });

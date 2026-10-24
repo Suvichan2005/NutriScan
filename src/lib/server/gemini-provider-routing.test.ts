@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Type } from '@google/genai';
 import { applicationGeminiContext, generateTracked, providerStatus, resetGeminiRoutingForTests, resetGeminiUsageLedgerForTests, safeProviderFailure } from './gemini-provider';
 
 const success = (model: string) => JSON.stringify({
@@ -103,14 +104,32 @@ describe('free-tier Gemini model routing', () => {
     expect(String(fetcher.mock.calls[2][0])).toContain('gemini-3.7-flash');
   });
 
-  it('skips a model with an explicit unsupported tool/schema capability but not malformed requests', async () => {
+  it('scopes an unsupported tool-plus-schema combination to that capability and does not blacklist the model', async () => {
     const unsupportedFetch = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { code: 400, status: 'INVALID_ARGUMENT', message: 'Tool use is not supported for model gemini-3.8-flash.' } }), { status: 400, headers: { 'content-type': 'application/json' } }))
-      .mockResolvedValueOnce(new Response(success('gemini-3.7-flash'), { status: 200, headers: { 'content-type': 'application/json' } }));
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { code: 400, status: 'INVALID_ARGUMENT', message: 'Tool use with response schema is not supported for model gemini-3.8-flash.' } }), { status: 400, headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(success('gemini-3.7-flash'), { status: 200, headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(success('gemini-3.8-flash'), { status: 200, headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(success('gemini-3.8-flash'), { status: 200, headers: { 'content-type': 'application/json' } }));
     vi.stubGlobal('fetch', unsupportedFetch);
     const context = applicationGeminiContext();
-    const result = await generateTracked(context, { model: context.model, contents: 'tool capability test', config: { maxOutputTokens: 40 } });
+    const responseSchema = { type: Type.OBJECT, properties: { ok: { type: Type.BOOLEAN } }, required: ['ok'] } as const;
+    const functionTools = [{ functionDeclarations: [{ name: 'lookup', description: 'Look up evidence', parameters: { type: Type.OBJECT, properties: {} } }] }];
+    const result = await generateTracked(context, {
+      model: context.model,
+      contents: 'combined capability test',
+      config: { maxOutputTokens: 40, tools: functionTools, responseMimeType: 'application/json', responseJsonSchema: responseSchema },
+    });
     expect(result.modelVersion).toBe('gemini-3.7-flash-test');
+
+    const toolOnly = applicationGeminiContext();
+    expect(toolOnly.model).toBe('gemini-3.8-flash');
+    await generateTracked(toolOnly, { model: toolOnly.model, contents: 'tool-only capability test', config: { maxOutputTokens: 40, tools: functionTools } });
+    const schemaOnly = applicationGeminiContext();
+    expect(schemaOnly.model).toBe('gemini-3.8-flash');
+    await generateTracked(schemaOnly, { model: schemaOnly.model, contents: 'schema-only capability test', config: { maxOutputTokens: 40, responseMimeType: 'application/json', responseJsonSchema: responseSchema } });
+    expect(unsupportedFetch).toHaveBeenCalledTimes(4);
+    expect(String(unsupportedFetch.mock.calls[2][0])).toContain('gemini-3.8-flash');
+    expect(String(unsupportedFetch.mock.calls[3][0])).toContain('gemini-3.8-flash');
 
     resetGeminiRoutingForTests();
     const malformedFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: 400, status: 'INVALID_ARGUMENT', message: 'Invalid JSON schema field' } }), { status: 400, headers: { 'content-type': 'application/json' } }));

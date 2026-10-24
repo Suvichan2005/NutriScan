@@ -23,28 +23,40 @@ const claimSchema = z.object({
 
 const answerPartSchema = z.object({
   text: z.string().trim().min(1).max(1200),
-  claimIndexes: z.array(z.number().int().min(0).max(14)).min(1).max(6),
+  // Referential integrity is checked against the accepted claim list in core.
+  // Keeping an out-of-range model reference parseable lets validation withhold
+  // only that optional segment while retaining independently supported parts.
+  claimIndexes: z.array(z.number().int()).min(1).max(6),
 }).strict();
 
 /** Structured provider response contract for evidence-bounded assist. */
 export const assistOutput = z.object({
   answer: z.string().max(7000),
   answerParts: z.array(answerPartSchema).max(6).optional(),
-  claims: z.array(claimSchema).max(15),
+  // No grounded claims is a valid model outcome; the caller classifies the
+  // answer as unsupported rather than treating an empty set as malformed JSON.
+  claims: z.array(claimSchema).max(15).default([]),
   tentativeCandidates: z.array(tentativeStructuredCandidateSchema).max(20).optional(),
   packageReconstruction: packageReconstructionContentSchema.optional(),
   uiComponents: z.array(assistantUiComponentSchema).max(6).optional(),
-  limitations: z.array(z.string().max(500)).max(15),
+  limitations: z.array(z.string().max(500)).max(15).default([]),
   inspectImage: z.object({
     handle: z.string().max(100),
     reason: z.string().min(1).max(300),
     crop: normalizedCropSchema.optional(),
-  }).strict().nullable(),
+  }).strict().nullable().default(null),
 }).strict();
 
-/** Provider output may include linked answer fragments, but the natural answer is primary. */
+/** Optional model-authored evidence map; when present it must cover the answer exactly. */
 export const providerAssistOutput = assistOutput.extend({
-  answerParts: z.array(answerPartSchema).max(3).optional(),
+  // This map is the only permitted bridge from model prose to validated
+  // findings. Require the field, while allowing an empty array when the model
+  // has no answer it can support. That is an evidence outcome, not a schema
+  // failure.
+  answerParts: z.array(answerPartSchema).max(6),
+  // An explicit empty claim set is valid; an omitted claim set is a malformed
+  // provider response and should be repaired/classified separately.
+  claims: z.array(claimSchema).max(15),
 });
 
 /** First package analysis must return a reusable reconstruction alongside its answer. */

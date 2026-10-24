@@ -5,7 +5,7 @@ import { BookOpen, ChevronDown, CircleHelp, Eye, PackageSearch, ScanLine, Sparkl
 import { compareProductNutrition, type ProductComparisonRow } from '@/lib/product-comparison';
 import { productEvidenceSource } from '@/lib/product-evidence';
 import { isSafeEvidenceUrl, safeConversationEvidence } from '@/lib/followup-evidence';
-import { scaleCalculationToPortion, shouldShowLabelExplorer, shouldShowNutritionTable } from '@/lib/thread-presentation';
+import { scaleCalculationToPortion } from '@/lib/thread-presentation';
 import type { AssistantUiComponent, Audit, EvidenceSource, Observation, PackageData, ProductRecord, TentativeStructuredCandidate, NutrientKey } from '@/lib/contracts';
 import type { NutrientCorrection } from '@/lib/correction';
 import type { InterpretedNutrientReading } from '@/lib/interpreted-nutrients';
@@ -44,23 +44,8 @@ type Props = {
   onOpenInspector?: () => void;
 };
 
-function reconstructedNutrientKey(value: string): NutrientKey | null {
-  const label = value.toLocaleLowerCase();
-  if (/added\s+sugars?/.test(label)) return 'addedSugars';
-  if (/saturat(?:ed)?\s+fat/.test(label)) return 'saturatedFat';
-  if (/carbohydrat|\bcarbs?\b/.test(label)) return 'carbohydrate';
-  if (/total\s+sugars?|\bsugars?\b/.test(label)) return 'sugars';
-  if (/\bprotein\b/.test(label)) return 'protein';
-  if (/\bfat\b/.test(label)) return 'fat';
-  if (/fibre|fiber/.test(label)) return 'fiber';
-  if (/\bsodium\b/.test(label)) return 'sodium';
-  if (/\bsalt\b/.test(label)) return 'salt';
-  if (/energy|calor(?:y|ies)/.test(label)) return 'energy';
-  return null;
-}
-
 export function ThreadGenerativeUI(props: Props) {
-  const { components, pkg, audit, candidates, interpretedReadings, sources, selectedProduct, question = '' } = props;
+  const { components, pkg, audit, candidates, interpretedReadings, sources, selectedProduct } = props;
   const [calculatorPortion, setCalculatorPortion] = useState(props.portion);
   const [calculatorUnit, setCalculatorUnit] = useState(props.portionUnit);
   const reconstructedRows = pkg.reconstruction?.current
@@ -69,21 +54,9 @@ export function ThreadGenerativeUI(props: Props) {
   const conflictingReconstructionRows = pkg.reconstruction?.current
     ? pkg.reconstruction.nutritionRows.filter(row => row.status === 'conflict')
     : [];
-  // Keep evidence references in the on-demand inspector; reserve the thread for
-  // interactive tools that help answer the current question.
-  const completeNutrients = new Set(pkg.nutrients.filter(item => item.status !== 'conflict' && item.basis).map(item => item.key));
-  for (const row of reconstructedRows) {
-    const key = reconstructedNutrientKey(`${row.nutrient} ${row.printedLabel}`);
-    if (key && row.basisAmount !== null && row.basisUnit) completeNutrients.add(key);
-  }
-  for (const reading of interpretedReadings) {
-    if (audit.calculations.some(item => item.nutrient === reading.key && reading.candidateIds.some(id => item.interpretationIds?.includes(id)))) completeNutrients.add(reading.key);
-  }
-  const showNutrition = shouldShowNutritionTable(question, completeNutrients.size, conflictingReconstructionRows.length);
-  const conversationComponents = components.filter(component => component.type !== 'package-evidence' && component.type !== 'package-details' && component.type !== 'source-reference-cards'
-    && (component.type !== 'nutrition-table' || showNutrition)
-    && (component.type !== 'ingredient-explorer' || shouldShowLabelExplorer(question, 'ingredient'))
-    && (component.type !== 'allergen-explanation' || shouldShowLabelExplorer(question, 'allergen')));
+  // Components are rendered because a trusted app operation returned them.
+  // The user's wording does not control visibility through keyword rules.
+  const conversationComponents = components.filter(component => component.type !== 'package-evidence' && component.type !== 'package-details' && component.type !== 'source-reference-cards');
   if (!conversationComponents.length) return null;
 
   const observations = new Map(pkg.observations.map(observation => [observation.id, observation]));

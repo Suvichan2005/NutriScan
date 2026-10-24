@@ -220,7 +220,7 @@ it('keeps raw package-evidence OCR out of the assistant conversation cards', () 
   expect(markup).toBe('');
 });
 
-it('keeps ingredient review out of a general answer and collapses OCR detail when requested', () => {
+it('renders only the trusted UI components selected for the assistant turn and keeps OCR detail collapsed', () => {
   const observation: Observation = { id: 'ingredient-line', field: 'ocr-line', text: 'INGREDIENTS: refined wheat flour (maida), edible vegetable oil', side: 'back', confidence: 90, origin: 'ocr', imageId };
   const pkg = packageSchema.parse({ ...parseLabel('Package label', { origin: 'user' }), name: 'Unidentified package', observations: [observation], rawText: observation.text });
   const candidate: TentativeStructuredCandidate = {
@@ -240,7 +240,10 @@ it('keeps ingredient review out of a general answer and collapses OCR detail whe
   expect(suitabilityMarkup).toContain('Ingredient and additive readings');
   expect(suitabilityMarkup).toContain('Possible · unverified');
   expect(suitabilityMarkup).toContain('View supporting label text');
-  expect(render('What is the package weight?')).toBe('');
+  // Question semantics are handled by the assistant/tool path. The renderer
+  // consumes only the validated component instructions supplied for this turn;
+  // it must not independently classify the question with keyword heuristics.
+  expect(render('What is the package weight?')).toContain('Ingredient and additive readings');
   const markup = render('What ingredients are listed?');
   expect(markup).toContain('Refined wheat flour (maida)');
   expect(markup).toContain('Possible · unverified');

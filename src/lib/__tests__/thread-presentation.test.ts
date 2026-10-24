@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addContextualServingCalculator, geminiFailureMessage, hasVisibleProvisionalPackageAmounts, includeTraceableServingCalculation, mergeRecheckedPackageCandidates, packageDisplayIdentity, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, scaleCalculationToPortion, shouldShowLabelExplorer, shouldShowNutritionTable, type ThreadMessage } from '../thread-presentation';
+import { geminiFailureMessage, hasVisibleProvisionalPackageAmounts, mergeRecheckedPackageCandidates, packageDisplayIdentity, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, scaleCalculationToPortion, type ThreadMessage } from '../thread-presentation';
 import { packageSchema, type AssistantUiComponent, type Calculation, type TentativeStructuredCandidate } from '../contracts';
 
 const identityCandidate = (proposedValue: string): TentativeStructuredCandidate => ({
@@ -165,7 +165,7 @@ describe('deterministic portion display', () => {
   });
 });
 
-describe('contextual nutrition UI', () => {
+describe('operation-bound nutrition UI', () => {
   const reconstructionPackage = (corrected = false) => packageSchema.parse({
     id: 'package-1', name: 'Bisk Farm Cream Cracker', ingredients: [], additives: [], allergens: [], claims: [],
     nutrients: corrected ? [{ key: 'carbohydrate', value: 60, unit: 'g', basis: { amount: 100, unit: 'g', description: 'per 100 g' }, observationIds: ['correction-line'], status: 'corrected' }] : [],
@@ -184,37 +184,38 @@ describe('contextual nutrition UI', () => {
     }
   });
 
-  it('combines saved reconstruction with a serving calculation and inserts it contextually', () => {
-    const result = prepareAssistantTurnPresentation('Is this good for daily snacking?', [{ type: 'nutrition-table', observationIds: [], sourceIds: [], calculationIds: [] }], [], reconstructionPackage());
+  it('combines saved reconstruction with deterministic calculations without inventing widgets', () => {
+    const table:AssistantUiComponent={ type: 'nutrition-table', observationIds: [], sourceIds: [], calculationIds: [] };
+    const result = prepareAssistantTurnPresentation([table], [], reconstructionPackage());
     expect(result.calculations).toHaveLength(1);
     expect(result.calculations[0]).toMatchObject({ nutrient: 'carbohydrate', portion: 13.4, interpretationIds: ['carbohydrate-row'] });
     expect(result.calculations[0]?.result).toBeCloseTo(9.28486, 8);
-    expect(result.components.map(component => component.type)).toEqual(['nutrition-table', 'portion-calculator']);
-    expect(result.components[1]?.calculationIds).toEqual([result.calculations[0]?.id]);
+    expect(result.components).toEqual([table]);
   });
 
   it('does not use a reconstructed amount after a user correction or a conflicting row', () => {
-    const corrected = prepareAssistantTurnPresentation('Is this good for daily snacking?', [], [], reconstructionPackage(true));
+    const corrected = prepareAssistantTurnPresentation([], [], reconstructionPackage(true));
     expect(corrected.calculations).toEqual([]);
     expect(corrected.components).toEqual([]);
   });
 
-  it('adds a compact serving calculator when a food-choice answer has a linked carbohydrate calculation', () => {
+  it('does not infer a calculator from wording or a saved calculation alone', () => {
     const servingCalculation: Calculation = {
       id: 'serving-carbohydrate', label: 'Carbohydrate per serving', nutrient: 'carbohydrate', input: 69.29, inputUnit: 'g', basisAmount: 100,
       portion: 13.4, portionUnit: 'g', result: 9.28486, unit: 'g', formula: '69.29 g × 13.4 g ÷ 100 g',
       observationIds: ['ocr-carbohydrate'], imageIds: ['package-back'], interpretationIds: ['carbohydrate-row'], assumptions: ['Unverified package interpretation.'],
     };
-    const result = addContextualServingCalculator('Is this good for daily snacking?', [], [servingCalculation], { quantity: 13.4, unit: 'g', status: 'provisional' });
-    expect(result).toEqual([{ type: 'portion-calculator', observationIds: ['ocr-carbohydrate'], sourceIds: [], calculationIds: ['serving-carbohydrate'] }]);
+    const result = prepareAssistantTurnPresentation([], [servingCalculation], reconstructionPackage());
+    expect(result.calculations).toContainEqual(servingCalculation);
+    expect(result.components).toEqual([]);
   });
 
   it('shows the saved serving calculation for an exact piece-count follow-up', () => {
-    const result = prepareAssistantTurnPresentation('What about just two biscuits?', [], [], reconstructionPackage());
+    const result = prepareAssistantTurnPresentation([], [], reconstructionPackage());
     expect(result.calculations).toHaveLength(1);
     expect(result.calculations[0]).toMatchObject({ nutrient: 'carbohydrate', portion: 13.4 });
     expect(result.calculations[0]?.result).toBeCloseTo(9.28486, 8);
-    expect(result.components).toEqual([{ type: 'portion-calculator', observationIds: ['carbohydrate-line'], sourceIds: [], calculationIds: [result.calculations[0]!.id] }]);
+    expect(result.components).toEqual([]);
   });
 
   it('recovers an explicitly printed serving from text when Gemini left its subfields unresolved', () => {
@@ -223,12 +224,10 @@ describe('contextual nutrition UI', () => {
       printedText:'2 biscuits (approx. 13.4 g)',quantity:null,unit:null,pieceCount:null,pieceDescription:null,
       status:'provisional',evidence:{observationIds:['serving-line'],imageRegions:[]},
     };
-    const result=prepareAssistantTurnPresentation('What about just two biscuits?',[],[],pkg);
+    const result=prepareAssistantTurnPresentation([],[],pkg);
     expect(result.calculations[0]).toMatchObject({nutrient:'carbohydrate',portion:13.4});
     expect(result.calculations[0]?.result).toBeCloseTo(9.28486,8);
-    expect(result.components).toEqual([{type:'portion-calculator',observationIds:['carbohydrate-line'],sourceIds:[],calculationIds:[result.calculations[0]!.id]}]);
-    expect(includeTraceableServingCalculation('The serving size is 2 biscuits (approximately 13.4 g).','What about just two biscuits?',result.calculations,pkg.reconstruction!.serving))
-      .toBe('The serving size is 2 biscuits (approximately 13.4 g). With the current unverified label reading, that serving works out to about 9.28 g of carbohydrate.');
+    expect(result.components).toEqual([]);
   });
 
   it('keeps a traceable serving tool when the model proposes only inspector components', () => {
@@ -236,55 +235,19 @@ describe('contextual nutrition UI', () => {
       'package-evidence', 'package-details', 'source-reference-cards',
       'package-evidence', 'package-details', 'source-reference-cards',
     ].map(type => ({ type: type as AssistantUiComponent['type'], observationIds: [], sourceIds: [], calculationIds: [] }));
-    const result = prepareAssistantTurnPresentation('What about just two biscuits?', components, [], reconstructionPackage());
-    expect(result.components).toEqual([{ type: 'portion-calculator', observationIds: ['carbohydrate-line'], sourceIds: [], calculationIds: [result.calculations[0]!.id] }]);
+    const result = prepareAssistantTurnPresentation(components, [], reconstructionPackage());
+    expect(result.components).toEqual([]);
   });
 
-  it('fills a missing numeric carbohydrate answer from the traceable serving calculation', () => {
-    const result = prepareAssistantTurnPresentation('What about just two biscuits?', [], [], reconstructionPackage());
-    expect(includeTraceableServingCalculation(
-      'The printed serving is 2 biscuits, approximately 13.4 g.',
-      'What about just two biscuits?', result.calculations, reconstructionPackage().reconstruction!.serving,
-    )).toBe('The printed serving is 2 biscuits, approximately 13.4 g. With the current unverified label reading, that serving works out to about 9.28 g of carbohydrate.');
-    expect(includeTraceableServingCalculation(
-      'The serving has about 9.28 g carbohydrate.',
-      'What about just two biscuits?', result.calculations, reconstructionPackage().reconstruction!.serving,
-    )).toBe('The serving has about 9.28 g carbohydrate.');
-  });
-
-  it('does not add a serving calculator for unrelated questions, unsupported calculations, or conflicted servings', () => {
+  it('keeps the thread component list controlled by returned operations', () => {
     const servingCalculation: Calculation = {
       id: 'serving-carbohydrate', label: 'Carbohydrate per serving', nutrient: 'carbohydrate', input: 69.29, inputUnit: 'g', basisAmount: 100,
       portion: 13.4, portionUnit: 'g', result: 9.28486, unit: 'g', formula: '69.29 g × 13.4 g ÷ 100 g',
       observationIds: ['ocr-carbohydrate'], interpretationIds: ['carbohydrate-row'], assumptions: ['Unverified package interpretation.'],
     };
-    const serving = { quantity: 13.4, unit: 'g' as const, status: 'provisional', pieceCount: null, pieceDescription: null };
-    expect(addContextualServingCalculator('What is INS 319?', [], [servingCalculation], serving)).toEqual([]);
-    expect(addContextualServingCalculator('Is this a good daily snack?', [], [{ ...servingCalculation, interpretationIds: [] }], serving)).toEqual([]);
-    expect(addContextualServingCalculator('Is this a good daily snack?', [], [servingCalculation], { ...serving, status: 'conflict' })).toEqual([]);
-  });
-
-  it('keeps the full nutrition table out of normal suitability and portion answers', () => {
-    expect(shouldShowNutritionTable('Is this good to have daily for snacking?', 1)).toBe(false);
-    expect(shouldShowNutritionTable('Is this good to have daily for snacking?', 10)).toBe(false);
-    expect(shouldShowNutritionTable('What about just two biscuits?', 10)).toBe(false);
-    expect(shouldShowNutritionTable('What is this package?', 2)).toBe(false);
-  });
-
-  it('keeps the full table available when the user asks to inspect nutrition', () => {
-    expect(shouldShowNutritionTable('Can you show the nutrition table?', 1)).toBe(true);
-    expect(shouldShowNutritionTable('Can you show the nutrition table?', 0)).toBe(false);
-    expect(shouldShowNutritionTable('Can you show the nutrition table?', 0, 2)).toBe(true);
-    expect(shouldShowNutritionTable('How much carbohydrate is in two biscuits?', 1)).toBe(false);
-  });
-
-  it('shows ingredient context for suitability questions and explicit ingredient requests', () => {
-    expect(shouldShowLabelExplorer('Is this good for daily snacking?', 'ingredient')).toBe(true);
-    expect(shouldShowLabelExplorer('What ingredients and additives are listed?', 'ingredient')).toBe(true);
-    expect(shouldShowLabelExplorer('What ingredients are in this?', 'ingredient')).toBe(true);
-    expect(shouldShowLabelExplorer('What is the package weight?', 'ingredient')).toBe(false);
-    expect(shouldShowLabelExplorer('Does this contain an allergen?', 'allergen')).toBe(true);
-    expect(shouldShowLabelExplorer('Show me the nutrition table.', 'allergen')).toBe(false);
+    expect(prepareAssistantTurnPresentation([], [servingCalculation], reconstructionPackage()).components).toEqual([]);
+    const returned:AssistantUiComponent={type:'portion-calculator',observationIds:['ocr-carbohydrate'],sourceIds:[],calculationIds:['serving-carbohydrate']};
+    expect(prepareAssistantTurnPresentation([returned],[servingCalculation],reconstructionPackage()).components).toEqual([returned]);
   });
 });
 
