@@ -308,6 +308,92 @@ function hasRelevantSourceForComparativeAnswer(answer:string,claims:Array<{
   return hasPackageEvidence&&claims.some(claim=>!!claim&&claim.sourceIds.length>0&&[...terms(claim.text)].some(term=>answerTerms.has(term)));
 }
 
+const physiologicalOutcomePatterns = [
+  /\b(?:blood\s+)?(?:glucose|sugar)\b|\bglyc(?:a|e)emi\w*/i,
+  /\binsulin\b|\bdiabet(?:es|ic)\b/i,
+  /\b(?:blood\s+pressure|hypertension)\b/i,
+  /\b(?:cholesterol|lipids?|ldl|hdl|triglycerides?)\b/i,
+  /\b(?:kidneys?|renal|ckd|egfr)\b/i,
+  /\b(?:allerg\w*|anaphylaxis|celiac|coeliac|gluten)\b/i,
+  /\b(?:cardiovascular|heart\s+(?:disease|health)|inflammation)\b/i,
+];
+const physiologicalRelationshipPattern = /\b(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*\s+with|link\w*\s+to|lead\s+to|control\w*|regulat\w*|protect\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)\b/i;
+const physiologicalTopicTerms = new Set([
+  'blood', 'glucose', 'glycemia', 'glycaemia', 'glycemic', 'glycaemic', 'insulin', 'diabetes', 'diabetic',
+  'pressure', 'hypertension', 'cholesterol', 'lipid', 'ldl', 'hdl', 'triglyceride', 'kidney', 'renal', 'ckd',
+  'egfr', 'allergy', 'allergies', 'allergic', 'allergen', 'anaphylaxis', 'celiac', 'coeliac', 'gluten',
+  'cardiovascular', 'heart', 'inflammation',
+]);
+const relationshipTerms = /^(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*|link\w*|lead|control\w*|regulat\w*|protect\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)$/i;
+
+function hasPhysiologicalOutcome(text: string): boolean {
+  return physiologicalOutcomePatterns.some(pattern => pattern.test(text));
+}
+
+function requiresPhysiologicalSource(text: string): boolean {
+  return hasPhysiologicalOutcome(text) && physiologicalRelationshipPattern.test(text);
+}
+
+function negatesPhysiologicalRelationship(text: string): boolean {
+  return /\b(?:no|not|never|cannot|can't|doesn't|don't|didn't|isn't|aren't|wasn't|weren't)\b.{0,48}\b(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*|link\w*|lead|control\w*|regulat\w*|protect\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)\b/i.test(text)
+    || /\b(?:affect\w*|impact\w*|rais\w*|lower\w*|increas\w*|decreas\w*|reduc\w*|improv\w*|worsen\w*|contribut\w*|caus\w*|trigger\w*|spik\w*|chang\w*|influenc\w*|correlat\w*|associat\w*|link\w*|lead|control\w*|regulat\w*|protect\w*|harm\w*|risk\w*|benefit\w*|help\w*|response|effect)\b.{0,32}\b(?:not|no|never)\b/i.test(text);
+}
+
+function healthSupportTerms(text: string): Set<string> {
+  const result = new Set<string>();
+  for (const raw of text.toLocaleLowerCase().match(/[\p{L}]{3,}/gu) ?? []) {
+    let term = raw;
+    if (term === 'carb' || term === 'carbs' || term === 'carbohydrates') term = 'carbohydrate';
+    else if (term === 'glycemia' || term === 'glycaemia' || term === 'glycemic' || term === 'glycaemic') term = 'glucose';
+    else if (term.endsWith('ies') && term.length > 5) term = `${term.slice(0, -3)}y`;
+    else if (term.endsWith('s') && term.length > 5) term = term.slice(0, -1);
+    if (genericAnswerTerms.has(term) || physiologicalTopicTerms.has(term) || relationshipTerms.test(term)
+      || /^(?:can|people|person|persons|individual|individuals|some|when|then|like|faster|quickly|slowly)$/i.test(term)) continue;
+    result.add(term);
+  }
+  return result;
+}
+
+/** A physiological food-effect statement needs a linked source whose summary covers the same outcome and food concept. */
+function relevantSourcesForPhysiologicalEffect(
+  statement: string,
+  evidence: readonly Pick<EvidenceSource, 'id' | 'category' | 'summary'>[],
+): Array<Pick<EvidenceSource, 'id' | 'category' | 'summary'>> {
+  if (!requiresPhysiologicalSource(statement)) return [];
+  const outcomes = physiologicalOutcomePatterns.filter(pattern => pattern.test(statement));
+  const statementTerms = healthSupportTerms(statement);
+  return evidence.filter(source => {
+    if (!['guideline', 'assessment', 'literature', 'regulation', 'web-search'].includes(source.category)) return false;
+    return answerSentences(source.summary).some(sourceStatement => {
+      if (!physiologicalRelationshipPattern.test(sourceStatement)
+        || !outcomes.some(pattern => pattern.test(sourceStatement))
+        || negatesPhysiologicalRelationship(statement) !== negatesPhysiologicalRelationship(sourceStatement)) return false;
+      const sourceTerms = healthSupportTerms(sourceStatement);
+      return [...statementTerms].some(term => sourceTerms.has(term));
+    });
+  });
+}
+
+function hasRelevantSourceForPhysiologicalEffect(
+  statement: string,
+  claims: Array<{ text: string; sourceIds: string[] } | undefined>,
+  evidence: readonly Pick<EvidenceSource, 'id' | 'category' | 'summary'>[],
+): boolean {
+  if (!requiresPhysiologicalSource(statement)) return true;
+  const outcomes = physiologicalOutcomePatterns.filter(pattern => pattern.test(statement));
+  const matchedSources = new Map(relevantSourcesForPhysiologicalEffect(statement, evidence).map(source => [source.id, source]));
+  return claims.some(claim => !!claim && requiresPhysiologicalSource(claim.text)
+    && claimsHaveOverlappingOutcome(statement, claim.text, outcomes)
+    && claim.sourceIds.some(id => {
+      const source = matchedSources.get(id);
+      return !!source && [...healthSupportTerms(claim.text)].some(term => healthSupportTerms(source.summary).has(term));
+    }));
+}
+
+function claimsHaveOverlappingOutcome(statement: string, claimText: string, outcomes: RegExp[]): boolean {
+  return outcomes.some(pattern => pattern.test(claimText) && pattern.test(statement));
+}
+
 /** Validate and safely render model output without invoking a provider. */
 export function validateInferenceOutput(output: unknown, data: AssistValidationContext) {
   const result = assistOutput.safeParse(output);
@@ -379,7 +465,25 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
   );
   const supportedByIndex = new Map<number, (typeof result.data.claims)[number] & {supportingSpans:NonNullable<(typeof result.data.claims)[number]['supportingSpans']>}>();
   const supported = result.data.claims.flatMap((originalClaim, claimIndex) => {
-    const claim = linkRowToClaim(originalClaim);
+    let claim = linkRowToClaim(originalClaim);
+    const hasLinkedPackageContext = claim.observationIds.length > 0 || (claim.calculationIds?.length ?? 0) > 0
+      || (claim.interpretationRowIds?.length ?? 0) > 0 || (claim.packageFactIds?.length ?? 0) > 0
+      || (claim.visualEvidence?.length ?? 0) > 0;
+    if (claim.mode === 'synthesis' && hasLinkedPackageContext && requiresPhysiologicalSource(claim.text)
+      && !hasRelevantSourceForPhysiologicalEffect(claim.text, [claim], data.evidence ?? [])) {
+      const matches = relevantSourcesForPhysiologicalEffect(claim.text, data.evidence ?? []);
+      // Reuse a single unambiguous source already selected for this request.
+      // If several records match, leave source choice to the agent and keep the
+      // unsupported sentence out of the accepted claim until it cites one.
+      if (matches.length === 1) {
+        const source = matches[0];
+        claim = {
+          ...claim,
+          sourceIds: [...new Set([...claim.sourceIds, source.id])],
+          supportingSpans: [...(claim.supportingSpans ?? []), { kind: 'source' as const, id: source.id, quote: source.summary }],
+        };
+      }
+    }
     const reject = (reason: string) => {
       data.diagnostic?.({ stage: 'claim', index: claimIndex, decision: 'rejected', reason });
       return [];
@@ -420,6 +524,17 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     const evidenceTexts=validSpans.length
       ?[...validSpans.map(span=>span.quote),...citedPackageFacts]
       :refs.map(ref=>ref.text);
+    if (mode === 'synthesis') {
+      const sentences = answerSentences(claim.text);
+      const retainedSentences = sentences.filter(sentence => {
+        if (!requiresPhysiologicalSource(sentence)
+          || hasRelevantSourceForPhysiologicalEffect(sentence, [claim], data.evidence ?? [])) return true;
+        data.diagnostic?.({ stage: 'claim', index: claimIndex, decision: 'rejected', reason: 'health-effect-needs-relevant-source' });
+        return false;
+      });
+      if (!retainedSentences.length) return reject('health-effect-needs-relevant-source');
+      if (retainedSentences.length !== sentences.length) claim = { ...claim, text: retainedSentences.join(' ') };
+    }
     // Structured label interpretations are usable, traceable candidates, not
     // independently verified package facts. Numeric wording must match the
     // exact interpreted row, including its printed unit and basis.
@@ -607,6 +722,8 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     // does not need to repeat corrupted OCR as a literal quotation.
     if (!numericMentionsAreSupported(answerText, linkedEvidence,linkedCalculationResults)) return reject('unsupported-numeric-value');
     if (!basisMentionsAreSupported(answerText, linkedEvidence)) return reject('unsupported-basis');
+    if (requiresPhysiologicalSource(answerText)
+      && !hasRelevantSourceForPhysiologicalEffect(answerText, linkedClaims, data.evidence ?? [])) return reject('health-effect-needs-relevant-source');
     if (needsComparativeReference(answerText) && !hasRelevantSourceForComparativeAnswer(answerText, linkedClaims)
       &&!isQuestionBoundPackageAssessment(answerText,data.question,linkedClaims)) return reject('comparative-judgment-needs-reference');
     if (isUnsafeMedicalConclusion(answerText)) return reject('unsafe-medical-conclusion');
@@ -638,6 +755,8 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
       if(!numericMentionsAreSupported(segment,answerEvidence,answerCalculations)){reject('unsupported-numeric-value');continue;}
       if(!basisMentionsAreSupported(segment,answerEvidence)){reject('unsupported-basis');continue;}
       if(isUnsafeMedicalConclusion(segment)){reject('unsafe-medical-conclusion');continue;}
+      if(requiresPhysiologicalSource(segment)
+        && !hasRelevantSourceForPhysiologicalEffect(segment, displayedClaims, data.evidence ?? [])){reject('health-effect-needs-relevant-source');continue;}
       if(needsComparativeReference(segment)&&!hasRelevantSourceForComparativeAnswer(segment,displayedClaims)
         &&!isQuestionBoundPackageAssessment(segment,data.question,displayedClaims)){reject('comparative-judgment-needs-reference');continue;}
       supportedSegments.push(segment);

@@ -715,7 +715,122 @@ describe('provider-independent inference output validation', () => {
     },{package:pkg,question:'Is this good as a daily snack for diabetes?',diagnostic:event=>events.push(event)});
 
     expect(result.answer).toBe('The label lists refined wheat flour, so I would treat this as an occasional rather than a daily snack.');
-    expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'comparative-judgment-needs-reference'});
+    expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'health-effect-needs-relevant-source'});
+  });
+
+  it('preserves a supported serving answer while removing an unsourced physiological sentence from a mixed claim',()=>{
+    const observation={
+      id:'package-summary-line',field:'ocr-line',
+      text:'Carbohydrates 9.28 g; total sugars 0.067 g; serving size 2 biscuits (13.4 g); ingredients: refined wheat flour',
+      side:'back' as const,confidence:82,origin:'ocr' as const,imageId:'synthetic-image',
+    };
+    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
+    const answer="Two biscuits of the package provide 9.28 g of carbohydrates and 0.067 g of sugars based on the label's serving declaration of 13.4 g. Even though it is sugar-free, its primary ingredient is refined wheat flour, which can still affect blood glucose.";
+    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
+    const result=validateInferenceOutput({
+      answer,
+      claims:[{mode:'synthesis',text:answer,observationIds:[observation.id],sourceIds:[],calculationIds:[],interpretationRowIds:[],packageFactIds:[],profileFieldIds:[]}],
+      limitations:[],inspectImage:null,
+    },{package:pkg,diagnostic:event=>events.push(event)});
+
+    expect(result.answer).toBe("Two biscuits of the package provide 9.28 g of carbohydrates and 0.067 g of sugars based on the label's serving declaration of 13.4 g.");
+    expect(result.claims).toHaveLength(1);
+    expect(result.claims[0].text).toBe(result.answer);
+    expect(events).toContainEqual({stage:'claim',index:0,decision:'rejected',reason:'health-effect-needs-relevant-source'});
+    expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'health-effect-needs-relevant-source'});
+    expect(events).toContainEqual({stage:'natural-answer',index:0,decision:'accepted'});
+  });
+
+  it('accepts a food-related physiological statement when the linked guideline covers the same effect and food concept',()=>{
+    const observation={id:'refined-flour-line',field:'ocr-line',text:'Ingredients: refined wheat flour (maida)',side:'back' as const,confidence:84,origin:'ocr' as const,imageId:'synthetic-image'};
+    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
+    const guidance={
+      id:'refined-carb-glucose-guidance',title:'Carbohydrate and glucose guidance',publisher:'Public health authority',
+      url:'https://example.org/refined-carb-glucose',category:'guideline' as const,jurisdiction:'Global',
+      publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',
+      summary:'Refined carbohydrates may raise blood glucose more quickly than higher-fibre choices.',
+      limitations:'General guidance, not a personal target or a product-specific clinical judgment.',
+    };
+    const answer='The ingredient list names refined wheat flour. Refined carbohydrates may raise blood glucose more quickly than higher-fibre choices.';
+    const result=validateInferenceOutput({
+      answer,
+      claims:[
+        {mode:'synthesis',text:'The ingredient list names refined wheat flour.',observationIds:[observation.id],sourceIds:[]},
+        {mode:'synthesis',text:guidance.summary,observationIds:[],sourceIds:[guidance.id],supportingSpans:[{kind:'source',id:guidance.id,quote:guidance.summary}]},
+      ],
+      limitations:[],inspectImage:null,
+    },{package:pkg,evidence:[guidance]});
+
+    expect(result.answer).toBe(answer);
+    expect(result.claims).toHaveLength(2);
+  });
+
+  it('links a uniquely relevant retrieved source when the model omitted its source ID',()=>{
+    const observation={id:'refined-flour-line',field:'ocr-line',text:'Ingredients: refined wheat flour (maida)',side:'back' as const,confidence:84,origin:'ocr' as const,imageId:'synthetic-image'};
+    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
+    const guidance={
+      id:'refined-carb-glucose-guidance',title:'Carbohydrate and glucose guidance',publisher:'Public health authority',
+      url:'https://example.org/refined-carb-glucose',category:'guideline' as const,jurisdiction:'Global',
+      publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',
+      summary:'Refined carbohydrates may raise blood glucose more quickly than higher-fibre choices.',
+      limitations:'General guidance, not a personal target or a product-specific clinical judgment.',
+    };
+    const answer='The ingredient list names refined wheat flour. Refined wheat flour is a refined carbohydrate and may raise blood glucose more quickly than higher-fibre choices.';
+    const result=validateInferenceOutput({
+      answer,
+      claims:[{mode:'synthesis',text:answer,observationIds:[observation.id],sourceIds:[]}],
+      limitations:[],inspectImage:null,
+    },{package:pkg,evidence:[guidance]});
+
+    expect(result.answer).toBe(answer);
+    expect(result.claims[0].sourceIds).toContain(guidance.id);
+    expect(result.claims[0].supportingSpans).toContainEqual({kind:'source',id:guidance.id,quote:guidance.summary});
+  });
+
+  it('does not accept a physiological claim merely because an unrelated source covers the same health outcome',()=>{
+    const observation={id:'refined-flour-line',field:'ocr-line',text:'Ingredients: refined wheat flour (maida)',side:'back' as const,confidence:84,origin:'ocr' as const,imageId:'synthetic-image'};
+    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
+    const unrelated={
+      id:'insulin-glucose-guidance',title:'Insulin and glucose',publisher:'Public health authority',
+      url:'https://example.org/insulin-glucose',category:'guideline' as const,jurisdiction:'Global',
+      publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',
+      summary:'Insulin can lower blood glucose in some people with diabetes.',
+      limitations:'This does not assess foods or carbohydrate choices.',
+    };
+    const answer='The ingredient list names refined wheat flour. Refined carbohydrates can raise blood glucose.';
+    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
+    const result=validateInferenceOutput({
+      answer,
+      claims:[
+        {mode:'synthesis',text:'The ingredient list names refined wheat flour.',observationIds:[observation.id],sourceIds:[]},
+        {mode:'synthesis',text:unrelated.summary,observationIds:[],sourceIds:[unrelated.id],supportingSpans:[{kind:'source',id:unrelated.id,quote:unrelated.summary}]},
+      ],
+      limitations:[],inspectImage:null,
+    },{package:pkg,evidence:[unrelated],diagnostic:event=>events.push(event)});
+
+    expect(result.answer).toBe('The ingredient list names refined wheat flour.');
+    expect(events).toContainEqual({stage:'natural-answer',index:2,decision:'rejected',reason:'health-effect-needs-relevant-source'});
+  });
+
+  it('does not link a source whose physiological direction contradicts the answer',()=>{
+    const observation={id:'refined-flour-line',field:'ocr-line',text:'Ingredients: refined wheat flour (maida)',side:'back' as const,confidence:84,origin:'ocr' as const,imageId:'synthetic-image'};
+    const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,observation],rawText:`${fixturePackage.rawText}\n${observation.text}`});
+    const contradictory={
+      id:'contradictory-refined-carb-guidance',title:'Refined carbohydrate study',publisher:'Research source',
+      url:'https://example.org/refined-carb-study',category:'literature' as const,jurisdiction:'Global',
+      publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',
+      summary:'Refined carbohydrates do not raise blood glucose in the studied context.',
+      limitations:'The finding is limited to the study conditions.',
+    };
+    const answer='The ingredient list names refined wheat flour. Refined carbohydrates can raise blood glucose.';
+    const result=validateInferenceOutput({
+      answer,
+      claims:[{mode:'synthesis',text:answer,observationIds:[observation.id],sourceIds:[]}],
+      limitations:[],inspectImage:null,
+    },{package:pkg,evidence:[contradictory]});
+
+    expect(result.answer).toBe('The ingredient list names refined wheat flour.');
+    expect(result.claims[0].sourceIds).not.toContain(contradictory.id);
   });
 
   it('accepts exact citations to a source record limitation', () => {
