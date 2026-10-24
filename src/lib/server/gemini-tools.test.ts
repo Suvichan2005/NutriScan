@@ -440,12 +440,21 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it('distinguishes an absent local ontology term from an unavailable index without querying the network', async () => {
+  it('uses the attributed Indian label crosswalk before FoodOn for maida without querying the network', async () => {
     const fetcher = vi.fn();
     vi.stubGlobal('fetch', fetcher);
     const result = await executeGeminiTool('resolve_ingredient', { query: 'maida' }, context('What is maida?', 'INGREDIENTS: refined wheat flour (maida)'));
-    expect(result.status).toBe('empty');
-    expect(result.output).toMatchObject({ status: 'no_identity_match' });
+    expect(result.status).toBe('ok');
+    expect(result.output).toMatchObject({
+      status: 'regional_label_identity_candidate',
+      identity: { canonicalName: 'Refined wheat flour (maida)', sourceId: 'fssai-atta-maida-nomenclature-2019' },
+      sourceId: 'fssai-atta-maida-nomenclature-2019',
+    });
+    expect(result.evidence?.[0]).toMatchObject({
+      publisher: 'Food Safety and Standards Authority of India',
+      category: 'regulation',
+      limitations: expect.stringContaining('does not establish that a package contains'),
+    });
     expect(fetcher).not.toHaveBeenCalled();
   });
 

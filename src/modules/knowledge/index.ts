@@ -34,6 +34,94 @@ export const evidenceSources: EvidenceSource[] = [
   source({id:'codex-gsfa-tbhq-319',title:'Codex GSFA identity: Tertiary butylhydroquinone (TBHQ, INS 319)',publisher:'FAO/WHO Codex Alimentarius Commission',url:'https://www.fao.org/gsfaonline/additives/details.html?id=190',category:'registry',jurisdiction:'International Codex GSFA; not Indian authorization',publishedAt:'2025',retrievedAt:'2026-10-23',summary:'The Codex GSFA additive index identifies TBHQ as INS 319 and lists its functional class as antioxidant. The database notes that provisions are category-specific and must be read with the GSFA preamble and applicable notes.',limitations:'Codex provisions do not establish Indian law or permission for this product. Category, food type, conditions, notes, amendments and national regulations must be checked before drawing any use or compliance conclusion. Label presence does not establish the amount used.',license:'Official FAO/WHO Codex GSFA database; downstream reuse terms were not independently verified. NutriScan stores an original brief identity summary and source link only.'}),
 ];
 
+/**
+ * Small exact-name crosswalk for Indian cereal labels that are absent from the
+ * upstream ontology snapshot. These sources resolve terminology only; the
+ * result remains a candidate and never establishes that a package contains it.
+ * Kept outside `evidenceSources` so this identity-only layer does not silently
+ * invalidate the separately versioned MiniLM evidence index.
+ */
+export const indianStapleIdentitySources: EvidenceSource[] = [
+  {
+    id: 'fssai-atta-maida-nomenclature-2019',
+    title: 'FSSAI direction on English nomenclature for Atta and Maida',
+    publisher: 'Food Safety and Standards Authority of India',
+    url: 'https://www.fssai.gov.in/upload/advisories/2019/02/5c543cf53c2ebOrder_Wheat_Flour_01_02_2019.pdf',
+    category: 'regulation',
+    jurisdiction: 'India; dated ingredient-label nomenclature direction',
+    publishedAt: '2019-02-01',
+    effectiveAt: null,
+    retrievedAt: '2026-10-24',
+    summary: 'FSSAI directed that atta be named “Whole Wheat Flour (Atta)” and maida be named “Refined Wheat Flour (Maida)” when used as an ingredient or sold singly. NutriScan uses this as a terminology crosswalk only.',
+    limitations: 'Dated nomenclature evidence only. It does not establish that a package contains an ingredient, its percentage, nutrient composition, health effects, current legal status or product compliance.',
+    license: 'Official FSSAI direction. Redistribution terms were not independently reviewed; NutriScan stores an original short summary and source link only.',
+  },
+  {
+    id: 'fssai-semolina-suji-rawa-standard-2023',
+    title: 'FSSAI cereal standard: Semolina (Suji or Rawa)',
+    publisher: 'Food Safety and Standards Authority of India',
+    url: 'https://fssai.gov.in/upload/uploadfiles/files/compendium.pdf',
+    category: 'regulation',
+    jurisdiction: 'India; dated cereal-product standard reference',
+    publishedAt: '2023-02-20',
+    effectiveAt: null,
+    retrievedAt: '2026-10-24',
+    summary: 'FSSAI cereal-product standard 2.4.3 identifies semolina as “Suji or Rawa”. NutriScan uses these names as exact terminology aliases only.',
+    limitations: 'Dated identity/nomenclature evidence only. The mutable compendium link is not a current-law determination and does not establish package presence, processing details for a specific product, nutrition, health effects or compliance.',
+    license: 'Official FSSAI compendium. Redistribution terms were not independently reviewed; NutriScan stores an original short summary and source link only.',
+  },
+];
+
+export type IndianStapleIdentity = {
+  id: 'atta' | 'maida' | 'semolina';
+  canonicalName: string;
+  aliases: string[];
+  sourceId: string;
+};
+
+export type IndianStapleIdentityCandidate = {
+  status: 'tentative';
+  kind: 'regional-ingredient-identity-candidate';
+  observedText: string;
+  canonicalName: string;
+  matchedAlias: string;
+  sourceId: string;
+  interpretation: 'terminology-only; package-presence-not-established';
+};
+
+export const indianStapleIdentities: IndianStapleIdentity[] = [
+  { id: 'maida', canonicalName: 'Refined wheat flour (maida)', aliases: ['maida', 'refined wheat flour'], sourceId: 'fssai-atta-maida-nomenclature-2019' },
+  { id: 'atta', canonicalName: 'Whole wheat flour (atta)', aliases: ['atta', 'whole wheat flour'], sourceId: 'fssai-atta-maida-nomenclature-2019' },
+  { id: 'semolina', canonicalName: 'Semolina (suji or rawa)', aliases: ['semolina', 'suji', 'rawa'], sourceId: 'fssai-semolina-suji-rawa-standard-2023' },
+];
+
+const normalizeIndianStapleTerm = (value: string) => value.normalize('NFKC').toLocaleLowerCase('en-IN')
+  .replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
+
+/** Exact FSSAI-backed label-name crosswalk; ambiguous/multi-ingredient queries abstain. */
+export function lookupIndianStapleIngredientIdentity(query: string): IndianStapleIdentityCandidate | undefined {
+  if (typeof query !== 'string' || query.trim().length < 2 || query.length > 240) return undefined;
+  const normalizedQuery = normalizeIndianStapleTerm(query);
+  const matches = indianStapleIdentities.flatMap(identity => identity.aliases
+    .filter(alias => {
+      const normalizedAlias = normalizeIndianStapleTerm(alias);
+      return normalizedQuery === normalizedAlias || ` ${normalizedQuery} `.includes(` ${normalizedAlias} `);
+    })
+    .map(matchedAlias => ({ identity, matchedAlias })));
+  const uniqueIdentities = new Set(matches.map(match => match.identity.id));
+  if (uniqueIdentities.size !== 1) return undefined;
+  const match = matches.sort((a, b) => b.matchedAlias.length - a.matchedAlias.length)[0];
+  return {
+    status: 'tentative',
+    kind: 'regional-ingredient-identity-candidate',
+    observedText: query,
+    canonicalName: match.identity.canonicalName,
+    matchedAlias: match.matchedAlias,
+    sourceId: match.identity.sourceId,
+    interpretation: 'terminology-only; package-presence-not-established',
+  };
+}
+
 export const nutrientContentClaimSourceIds=['fssai-advertising-claims-compendium-2022','fssai-advertising-claims-amendment-index'] as const;
 export type NutrientContentClaimGuidance = {key:'high-protein'|'high-fibre'|'low-sugars';label:string;criteria:string;pattern:RegExp};
 export const nutrientContentClaimGuidance:NutrientContentClaimGuidance[]=[

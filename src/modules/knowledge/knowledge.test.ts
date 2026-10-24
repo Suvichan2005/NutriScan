@@ -6,8 +6,11 @@ import {
   detectAdditives,
   evidenceSources,
   findNutrientContentClaimGuidance,
+  indianStapleIdentities,
+  indianStapleIdentitySources,
   lookupAdditive,
   lookupExplicitAdditiveMention,
+  lookupIndianStapleIngredientIdentity,
   resolveTentativeAdditiveIdentity,
   retrieveEvidence,
 } from './index';
@@ -18,6 +21,23 @@ describe('knowledge module offline contract', () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(evidenceSources.length).toBeGreaterThan(0);
     for (const source of evidenceSources) expect(sourceSchema.safeParse(source).success).toBe(true);
+    for (const source of indianStapleIdentitySources) expect(sourceSchema.safeParse(source).success).toBe(true);
+    const allIds = [...ids, ...indianStapleIdentitySources.map(source => source.id)];
+    expect(new Set(allIds).size).toBe(allIds.length);
+  });
+
+  it('normalizes exact Indian staple label aliases with FSSAI provenance and abstains on ambiguous terms', () => {
+    expect(indianStapleIdentities).toHaveLength(3);
+    expect(lookupIndianStapleIngredientIdentity('Refined wheat flour (Maida) 89.98%')).toMatchObject({
+      status: 'tentative', kind: 'regional-ingredient-identity-candidate', canonicalName: 'Refined wheat flour (maida)',
+      matchedAlias: 'refined wheat flour', sourceId: 'fssai-atta-maida-nomenclature-2019',
+      interpretation: 'terminology-only; package-presence-not-established',
+    });
+    expect(lookupIndianStapleIngredientIdentity('atta')?.canonicalName).toBe('Whole wheat flour (atta)');
+    expect(lookupIndianStapleIngredientIdentity('RAWa')).toMatchObject({ canonicalName: 'Semolina (suji or rawa)', sourceId: 'fssai-semolina-suji-rawa-standard-2023' });
+    expect(lookupIndianStapleIngredientIdentity('wheat flour')).toBeUndefined();
+    expect(lookupIndianStapleIngredientIdentity('maida and atta')).toBeUndefined();
+    expect(lookupIndianStapleIngredientIdentity('x'.repeat(241))).toBeUndefined();
   });
 
   it('resolves exact additive identifiers while keeping fuzzy OCR interpretation tentative', () => {
