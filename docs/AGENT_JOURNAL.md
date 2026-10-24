@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-25 — make count-based portions traceable without new repair calls
+
+- Published the preceding browser/research checkpoint at `04e717eb62bd39a5b76e94a41d42b0d32fb1cf65`. Then tested the saved biscuit package through isolated Chrome: practical first answer and two-biscuit follow-up worked, but Flash-Lite did not invoke the new count tool and produced an incorrect qualitative fraction. Recorded this as partial quality, not acceptance.
+- Added pieces/servings to the existing calculator, then identified a separate provenance loss using one bounded paid Flash run on `4ab1570`: four successful count calculations and two guidance calls, three generations, 20,850 input/891 output tokens, 14.923 s application time, configured estimate ₹1.71. Canonical evidence omitted the original piece count, so valid comparison lines were withheld. Added typed counted-portion metadata, arithmetic validation and saved-serving linkage checks. Exact paid-output replay now retains 5-biscuit values (33.5 g; 23.21 g carbs, 5.96 g fat, 3.83 g protein), accepted sentences 27→32, withheld 9→4; zero extra provider calls. Forged serving conversion rejected. Remaining guidance scope/qualitative quality failures documented in STATUS.
+- Readable exports and replay/browser artifacts remain local under ignored `.data/`; no keys, image bytes or hidden reasoning in shareable exports. Source runtime suite 633 passed/1 skipped, TypeScript passed; focused request-boundary tests passed after supplying their required OCR-capture fixture lineage. Existing user scans, server and unrelated generated changes preserved.
+
 ## 2026-10-25 — close research-answer and calculator presentation boundaries
 
 - Preserved quantity time bases/comparators and excluded question amounts as independent scientific evidence. Replayed the earlier actual research response: 12 sentences retained, unsupported 3 g/day sentence withheld. Kept retrieved source URLs in numerical metadata after a real PubMed identifier caused a valid review sentence to disappear; replay now retains that answer without another provider call.

@@ -96,6 +96,14 @@ function calculationHasPackageEvidence(calculation:Calculation,data:{package:z.i
   const imageIds=new Set(calculation.imageIds??[]);
   const provenanceMatches=(sourceObservations:string[],sourceImages:string[])=>
     sourceObservations.some(id=>observationIds.has(id))||sourceImages.some(id=>imageIds.has(id));
+  if(calculation.countedPortion){
+    const count=calculation.countedPortion;
+    const serving=data.package.reconstruction?.current?data.package.reconstruction.serving:null;
+    if(!serving||!['clear','provisional'].includes(serving.status)||!numericFieldMatches(count.servingQuantity,serving.quantity??Number.NaN)
+      ||count.servingUnit!==serving.unit||(count.unit==='pieces'&&!numericFieldMatches(count.piecesPerServing!,serving.pieceCount??Number.NaN))
+      ||!provenanceMatches(serving.evidence.observationIds,serving.evidence.imageRegions.map(region=>region.imageId))
+      ||(data.package.serving&&(!numericFieldMatches(data.package.serving.value,count.servingQuantity)||data.package.serving.unit!==count.servingUnit)))return false;
+  }
   const hasMatchingInterpretation=(data.package.reconstruction?.current?data.package.reconstruction.nutritionRows:[]).some(row=>
     (!(calculation.interpretationIds?.length)||calculation.interpretationIds.includes(row.rowId))
     &&['clear','provisional'].includes(row.status)

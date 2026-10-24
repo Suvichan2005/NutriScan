@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { evidenceSources } from '../../modules/knowledge';
-import { defaultProfile, sourceSchema, type PackageData, type Profile, type TentativeStructuredCandidate } from '../contracts';
+import { calculationSchema, defaultProfile, sourceSchema, type PackageData, type Profile, type TentativeStructuredCandidate } from '../contracts';
+import { validateNaturalAnswerText } from '../../modules/inference';
+import { assistInput } from './gemini';
 import { calculateSavedServing, executeGeminiTool, type GeminiToolContext } from './gemini-tools';
 
 const mocks = vi.hoisted(() => ({ semanticRetrieve: vi.fn(), searchOpenFoodTox: vi.fn(), research: vi.fn() }));
@@ -28,6 +30,8 @@ function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019
 describe('Gemini tool retrieval boundaries', () => {
   function countedContext(){
     const toolContext=context('Compare five pieces with one serving.');
+    toolContext.package.observations.push({...toolContext.package.observations[0],id:'serving-ocr',readingOrder:{runId:'run-1',blockIndex:0,paragraphIndex:0,lineIndex:1}});
+    toolContext.package.ocrCaptures=[{runId:'run-1',imageId:'image-1',side:'back',sourceImage:{width:900,height:600},preparedImage:{width:900,height:600},bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'fixture',version:'1',language:'eng',confidenceScale:'0-100',segmentationMode:'auto'},processing:{rotation:0,contrast:false,invert:false,cropPercent:null}}];
     toolContext.package.reconstruction={revision:2,updatedAt:new Date().toISOString(),model:'fixture',current:true,
       identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
       serving:{printedText:'3 crackers (45 g)',quantity:45,unit:'g',pieceCount:3,pieceDescription:'crackers',status:'provisional',evidence:{observationIds:['serving-ocr'],imageRegions:[]}},
@@ -43,6 +47,18 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(pieces.calculations?.[0]).toMatchObject({portion:75,portionUnit:'g',result:15,observationIds:['ocr-1','serving-ocr']});
     expect(pieces.output).toMatchObject({portionConversion:{requestedAmount:5,requestedUnit:'pieces',normalizedAmount:75,normalizedUnit:'g',revision:2}});
     expect(pieces.calculations?.[0].assumptions.join(' ')).toContain('remain unverified');
+    expect(pieces.calculations?.[0].countedPortion).toEqual({amount:5,unit:'pieces',servingQuantity:45,servingUnit:'g',piecesPerServing:3});
+    expect(validateNaturalAnswerText('5 pieces contain 15 g carbohydrate.',{package:toolContext.package,calculations:pieces.calculations}).withheldUnsupportedQuantitySentenceCount).toBe(0);
+    expect(calculationSchema.safeParse({...pieces.calculations![0],countedPortion:{...pieces.calculations![0].countedPortion,amount:6}}).success).toBe(false);
+    const payload={consent:true,question:toolContext.question,package:toolContext.package,calculations:pieces.calculations};
+    const accepted=assistInput.safeParse(payload);
+    expect(accepted.success,JSON.stringify(accepted.error?.issues)).toBe(true);
+    const forged=structuredClone(payload);
+    const forgedCalculation=forged.calculations![0];
+    forgedCalculation.countedPortion!.servingQuantity*=2;
+    forgedCalculation.portion*=2;forgedCalculation.result*=2;
+    expect(calculationSchema.safeParse(forgedCalculation).success).toBe(true);
+    expect(assistInput.safeParse(forged).success).toBe(false);
     const servings=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:1.5,unit:'servings',candidateId:'count-carb'},toolContext);
     expect(servings.calculations?.[0]).toMatchObject({portion:67.5,result:13.5});
     expect(toolContext.package).toEqual(original);

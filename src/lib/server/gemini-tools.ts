@@ -683,11 +683,12 @@ function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, 
     const result=calculateNutrition({...args,amount,unit:serving.unit},context);
     if(result.status!=='ok')return result;
     const calculations=(result.calculations??[]).map(calculation=>{
-      const updated={...calculation,label:`${calculation.label}; ${args.amount} ${args.unit}`,
+      const updated=calculationSchema.parse({...calculation,label:`${calculation.label}; ${args.amount} ${args.unit}`,
+        countedPortion:{amount:args.amount,unit:args.unit,servingQuantity:serving.quantity,servingUnit:serving.unit,...(args.unit==='pieces'?{piecesPerServing:serving.pieceCount!}:{})},
         observationIds:[...new Set([...calculation.observationIds,...serving.evidence.observationIds])],
         imageIds:[...new Set([...(calculation.imageIds??[]),...serving.evidence.imageRegions.map(region=>region.imageId)])],
         formula:`${args.amount} ${args.unit} × ${serving.quantity} ${serving.unit}${args.unit==='pieces'?` ÷ ${serving.pieceCount} pieces`:''} = ${amount} ${serving.unit}; ${calculation.formula}`,
-        assumptions:[...calculation.assumptions,'Count conversion uses the saved printed serving interpretation; the serving and nutrient readings remain unverified.']};
+        assumptions:[...calculation.assumptions,'Count conversion uses the saved printed serving interpretation; the serving and nutrient readings remain unverified.']});
       return{...updated,evidenceText:calculationEvidenceText(updated)};
     });
     return{...result,calculations,output:{...result.output,calculation:calculations[0],portionConversion:{requestedAmount:args.amount,requestedUnit:args.unit,normalizedAmount:amount,normalizedUnit:serving.unit,printedServing:serving.printedText,revision:reconstruction.revision}}};

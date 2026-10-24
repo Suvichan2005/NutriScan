@@ -1,5 +1,11 @@
 # Chronological decisions
 
+## 25 October 2026 — preserve food counts as typed calculation inputs
+
+- Extend the existing native calculator rather than interpreting food counts through question regexes or model arithmetic. Convert pieces/servings only through a current, complete, source-linked serving definition; keep the result provisional and do not mutate package facts.
+- Persist optional count-conversion fields with each calculation. Canonical numerical evidence must include validated conversion inputs; a user-facing label or formula string alone is not authority. Enforce both conversion arithmetic and correspondence with the current saved serving when accepting browser-supplied calculations.
+- A paid model correctly used the tool, but the answer gate discarded its count-based results because the previous calculation contract lost their piece input. Exact-output replay demonstrates the correction without buying another generation. Free Flash-Lite's wrong fraction and the clinical lookup's scope defect remain visible failures; do not patch them with product-specific prose rules or claim full acceptance.
+
 ## 25 October 2026 — keep quantities scoped and candidate sources separate from citations
 
 - A matching number is insufficient when its comparator or time denominator differs. Do not use a question's proposed clinical dose as independent numerical evidence. Keep source URL identifiers alongside title/date metadata to avoid rejecting legitimate bibliographic references; this does not establish outcome or population applicability.
