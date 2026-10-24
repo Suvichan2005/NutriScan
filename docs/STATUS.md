@@ -2,6 +2,13 @@
 
 Updated: 2026-10-24. This is a local development application and research workspace. Feature levels below describe evidence available in this checkout; they do not imply clinical or production acceptance.
 
+## Current checkpoint — 24 October 2026: filter knowledge scope before limiting candidates
+
+- Gemini's local `search_knowledge` tool now retrieves up to five ranked candidates, applies topical and jurisdiction checks, then returns at most three eligible records. This prevents the first three out-of-scope hits from suppressing a relevant later candidate without increasing the tool's maximum evidence count.
+- The retrieval receipt was refreshed against the current 26-record corpus: 21 developer-authored queries, hybrid top-1 1.00 / recall@3 1.00 / MRR@5 1.00. This is a small developer-authored regression set, not independent or population-level relevance evidence.
+- An offline runtime probe for a diabetes snack question ranked US NIDDK, a WHO non-sugar-sweetener recommendation that explicitly excludes people with existing diabetes, WHO sugar guidance and ICMR-NIN. The existing topic/scope checks returned only the applicable WHO sugar source. A beta-glucan/oats cholesterol query returned no applicable local source, exposing a real ingredient-science coverage gap; live research retrieval remains available, but was not invoked in this probe.
+- A focused tool-boundary test verifies a relevant global source survives below three higher-ranked US-only candidates. `gemini-tools.test.ts` passes 33 tests with 1 skipped; TypeScript passes. No Gemini call, remote request, browser acceptance or billing event occurred.
+
 ## Current checkpoint — 24 October 2026: flag OCR-backed row misassociation before use
 
 - Inspection of the same unfamiliar oats reconstruction trace found a separate extraction defect: the region-recovery output linked `Sugar 10.2g 3.6g` to a `Dietary Fibre 10.2 g/100 g` row, and returned per-100 g sugar as zero. The original OCR also contains `Dietary Fibre 4.4g 1.5g` and `Protein 14.2g 5.79g`; the saved reconstruction represented serving protein as 5.7 g. These are transcript observations, not independently adjudicated package ground truth.

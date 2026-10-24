@@ -75,6 +75,29 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.resultCount).toBe(0);
   });
 
+  it('filters the wider retrieval window before limiting applicable evidence for Gemini', async () => {
+    const globalSodium = evidenceSources.find(source => source.id === 'who-sodium')!;
+    const outOfScopeCandidates = [1, 2, 3].map(index => ({
+      ...globalSodium,
+      id: `us-sodium-guidance-${index}`,
+      jurisdiction: 'United States; general population guidance',
+    }));
+    mocks.semanticRetrieve.mockResolvedValue({
+      status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
+      results: [
+        ...outOfScopeCandidates.map(source => ({ source, score: 0.95, exactIdentity: false })),
+        { source: globalSodium, score: 0.72, exactIdentity: false },
+      ],
+    });
+
+    const result = await executeGeminiTool('search_knowledge', { query: 'sodium advice for adults in India' }, context('What sodium advice applies to adults in India?'));
+
+    expect(mocks.semanticRetrieve).toHaveBeenCalledWith('sodium advice for adults in India', 5);
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.map(source => source.id)).toEqual(['who-sodium']);
+    expect(result.output).toMatchObject({ status: 'ok' });
+  });
+
   it('abstains when semantically ranked candidates lack topical evidence for an ingredient-effect question', async () => {
     const unrelated = evidenceSources.find(source => source.id === 'fssai-labelling-allergen-faq-2023')!;
     mocks.semanticRetrieve.mockResolvedValue({

@@ -1001,3 +1001,7 @@ Treat provider-schema validity and evidence-link completeness as separate outcom
 ## 24 October 2026 — flag OCR-incompatible nutrition rows without deleting evidence
 
 During package reconstruction sanitization, compare each image-linked numeric row with OCR lines from the same image. If its cited OCR line explicitly names another nutrient, or same-nutrient OCR contains numeric candidates incompatible with the image reading at the printed precision, keep the original candidate and OCR evidence but mark the row ambiguous and create a linked unresolved item. Do not choose the OCR or visual digit from this check. Preserve rows whose candidate value is present in a matching OCR line, and preserve image-only readings when no comparable OCR line exists. Ambiguous rows remain excluded by the existing calculation and claim eligibility checks.
+
+## 24 October 2026 — apply evidence scope checks before limiting local retrieval
+
+Ask the existing local hybrid retriever for up to five ranked evidence candidates, then apply topical relevance and user-jurisdiction scope checks, and cap the records passed to Gemini at three. This lets an applicable later-ranked source survive when higher-ranked records are excluded, while keeping the model context bounded. Similarity remains candidate ranking only; it does not establish evidence quality or applicability.

@@ -271,10 +271,14 @@ async function inspectImage(args: z.infer<typeof toolArgs.inspect_package_image>
 
 async function searchKnowledge(args: z.infer<typeof toolArgs.search_knowledge>, context: GeminiToolContext): Promise<GeminiToolResult> {
   try {
-    const response = await semanticRetrieve(args.query, 3);
+    // Rank a wider local candidate window before scope checks. Inapplicable or
+    // topically weak hits must not crowd a useful source out of the three
+    // records returned to the model.
+    const response = await semanticRetrieve(args.query, 5);
     const hits = response.results
       .filter(item => isLocalEvidenceTopicallyRelevant(item.source, args.query, item.exactIdentity))
       .filter(item => isGuidanceEvidenceInScope(item.source, context.question, context.profile?.country ?? ''))
+      .slice(0, 3)
       .map(item => ({ source: item.source, score: item.score, exactIdentity: item.exactIdentity }));
     const evidence = hits.map(hit => asEvidenceSource(hit.source)).filter((item): item is EvidenceSource => item !== null);
     return { status: evidence.length ? 'ok' : 'empty', resultCount: evidence.length, evidence, output: { status: evidence.length ? 'ok' : 'empty', mode: response.mode, corpusVersion: response.corpusVersion, results: hits.filter(hit => evidence.some(item => item.id === hit.source.id)), limitations: response.limitations.slice(0, 4), message: evidence.length ? response.message ?? 'Relevant local source candidates are available.' : 'No candidate passed the topical relevance and applicability checks. This does not establish that no relevant evidence exists.' } };
