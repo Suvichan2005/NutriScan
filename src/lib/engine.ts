@@ -1,5 +1,5 @@
 import { packageSchema, profileSchema, nutrientKeys, type Audit, type Calculation, type Finding, type Nutrient, type NutrientKey, type PackageData, type Profile, type TentativeStructuredCandidate } from './contracts';
-import { detectAdditives, evidenceSources, findNutrientContentClaimGuidance, lookupAdditive, nutrientContentClaimSourceIds, resolveTentativeAdditiveIdentity, retrieveEvidence } from './knowledge';
+import { detectAdditives, evidenceSources, findNutrientContentClaimGuidance, indianStapleIdentitySources, lookupAdditive, nutrientContentClaimSourceIds, resolveTentativeAdditiveIdentity, retrieveEvidence } from './knowledge';
 import { findDeclaredFoodMentions } from './ingredient-context';
 import { matchesPackageRows, reconcileInterpretedNutrition } from './interpreted-nutrients';
 
@@ -138,15 +138,21 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       'precautionary-cross-contact':'May-contain precautionary wording',
       'other-allergen-statement':'other allergen-statement wording',
     } as const;
-    const matchingEvidence=mention.evidence.map(item=>`${evidenceLabels[item.type]}: ${JSON.stringify(item.text)}`);
+    const matchingEvidence=mention.evidence.map(item=>`${evidenceLabels[item.type]}: ${JSON.stringify(item.text)}${item.matchBasis==='source-backed-alias'?` (label term “${item.matchedLabelTerm}” matches by a source-backed vocabulary relation)`:''}`);
     const categories=unique(mention.evidence.map(item=>evidenceLabels[item.type]));
     const hasPrecautionaryWording=mention.evidence.some(item=>item.type==='precautionary-cross-contact');
+    const matchDescription=mention.matchBasis==='literal'
+      ?`A direct text match for “${mention.term}” appears in ${categories.join(' and ')}.`
+      :mention.matchBasis==='source-backed-alias'
+        ?`A recorded label term is related to “${mention.term}” through a source-backed food-label vocabulary crosswalk.`
+        :'';
     const detail=mention.matched
-      ?`A literal match for “${mention.term}” appears in ${categories.join(' and ')}. Exact recorded line${matchingEvidence.length===1?'':'s'}: ${matchingEvidence.join('; ')}. ${hasPrecautionaryWording?'The “May contain” category describes precautionary cross-contact wording only; it does not confirm that an allergen is present.':'No matching “May contain” line for this term appears among these retained observations, which does not rule out cross-contact.'} These are unverified package-reading observations, not verified composition. This is not a medical determination or individual-safety assessment and does not establish actual allergen presence, amount or exposure, individual risk or safety; inspect the original label.`
+      ?`${matchDescription} Recorded line${matchingEvidence.length===1?'':'s'}: ${matchingEvidence.join('; ')}. ${hasPrecautionaryWording?'The “May contain” category describes precautionary cross-contact wording only; it does not confirm that an allergen is present.':'No matching “May contain” line for this term appears among these retained observations, which does not rule out cross-contact.'} These are unverified package-reading observations, not verified composition. This is not a medical determination or individual-safety assessment and does not establish actual allergen presence, amount or exposure, individual risk or safety; inspect the original label.`
       :labelTextPresent
-        ?`No direct text match for “${mention.term}” was found in the extracted ingredient/allergen wording. Synonyms, derivatives, OCR omissions and cross-contact are not checked; this is not a safety clearance.`
+        ?`No direct or supported label-term match for “${mention.term}” was found in the extracted ingredient/allergen wording. OCR omissions, unlisted derivatives and cross-contact remain possible; this is not a safety clearance.`
         :'No readable ingredient/allergen wording is available to compare with “'+mention.term+'”. Its absence from the extraction is not evidence that it is absent from the product.';
-    finding({title:`${kind}: ${mention.matched?'literal mention':'not established'}`,detail,status:'uncertain',observationIds:mention.observationIds.length?mention.observationIds:ingredientEvidence,sourceIds:[],calculationIds:[]});
+    const matchLabel=mention.matchBasis==='literal'?'literal mention':mention.matchBasis==='source-backed-alias'?'possible label-term relation':'not established';
+    finding({title:`${kind}: ${matchLabel}`,detail,status:'uncertain',observationIds:mention.observationIds.length?mention.observationIds:ingredientEvidence,sourceIds:mention.sourceIds,calculationIds:[]});
   }
   const candidates=new Map<NutrientKey,Usable>();
   for(const key of nutrientKeys){const candidate=usable(pkg,key,portionUnit);if(candidate)candidates.set(key,candidate);}
@@ -448,5 +454,5 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   trace.push({tool:'local_rule_answer',reason:`Select a transparent template for ${answerIntent}.`,status:'deterministic local response; no language model invoked'});
   if(conflict&&!asksUncertainty)answer+=' Some readings conflict and need checking before a dietary decision.';
   if(personalSuitability)answer+=userContext?' I considered the context you chose to share, but this label review cannot establish individual suitability.':' No personal context was provided, so this is a label reading rather than an assessment of individual suitability.';
-  return {answer,findings,calculations,sources:evidenceSources.filter(s=>sourceIds.has(s.id)),limitations:unique(limitations),nextQuestions:unique(nextQuestions),trace};
+  return {answer,findings,calculations,sources:[...evidenceSources,...indianStapleIdentitySources].filter(s=>sourceIds.has(s.id)),limitations:unique(limitations),nextQuestions:unique(nextQuestions),trace};
 }

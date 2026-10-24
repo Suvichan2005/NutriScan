@@ -1,5 +1,13 @@
 # Chronological decisions
 
+## 24 October 2026 — make profile/label vocabulary links source-backed and non-diagnostic
+
+- Extend literal-only dietary-restriction matching with a small, explicit crosswalk for common Indian packaged-food terms. Return the matched label phrase, source-backed-alias status and source IDs alongside the exact OCR observation; show the result as a possible relation and keep it uncertain.
+- Restrict the links to appropriate profile kinds: wheat/gluten vocabulary can match allergy, intolerance or avoidance; milk-derived whey/casein links apply to milk allergy/avoidance but never lactose intolerance; nut species stay distinct and peanut is not treated as a tree nut. Do not infer gluten exposure from oats alone. Keep the source's oil-declaration exception visible and do not turn a groundnut-oil match into a safety conclusion.
+- Keep the vocabulary rules in the knowledge module behind `lookupDeclaredFoodLabelAlias`; the application owns only observation matching, provenance attachment and user-facing uncertainty.
+- Add dated FSSAI source summaries and regenerate the local semantic index so the same evidence is available to local retrieval. These are terminology and label-category references, not a current-law determination. Store concise original summaries and source links; reuse rights were not independently verified.
+- Evidence: local MiniLM retrieval ranked the FSSAI allergen-label record first for an Indian allergen-label vocabulary query and the whey/casein record first for a focused derivative query. Unit/integration coverage checks observation and source lineage and keeps absent matches from implying safety. Full tests: 659 passed, 1 skipped; TypeScript passed. No live Gemini call, browser acceptance or independent clinical validation.
+
 ## 24 October 2026 — preserve evidence-linked row summaries after aggregate numeric rejection
 
 - Keep the atomic numeric validator strict. When a compound model claim is rejected because one value or basis is unsupported, allow the existing nutrition summary to emit only individually linked reconstructed rows for a nutrition question.

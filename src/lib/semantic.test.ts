@@ -31,6 +31,13 @@ describe('embedding retrieval integrity', () => {
     expect(isCurrentLawOrRegulatoryQuery('Is INS 955 allowed in this product category?')).toBe(true);
     expect(isCurrentLawOrRegulatoryQuery('What is the current FSSAI labelling rule?')).toBe(true);
   });
+  it('retrieves the new India-relevant allergen and milk-derivative references locally', async () => {
+    const labelTerms = await semanticRetrieve('Indian packaged food allergen label terms peanut soy gluten', 4);
+    expect(labelTerms.results[0]?.source.id).toBe('fssai-label-allergens-compendium-2025');
+    const milkTerms = await semanticRetrieve('whey powder casein milk-derived products', 4);
+    expect(milkTerms.results[0]?.source.id).toBe('fssai-whey-casein-milk-products-2022');
+    expect(milkTerms.results[0]?.source.summary).toMatch(/whey powders as milk products/i);
+  });
   it('uses a finite, conservative local candidate floor without treating it as a probability', () => {
     expect(localEvidenceScoreFloor).toBe(0.4);
     expect(clearsLocalEvidenceFloor(0.39999)).toBe(false);

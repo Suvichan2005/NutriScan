@@ -2,6 +2,13 @@
 
 Updated: 2026-10-24. This is a local development application and research workspace. Feature levels below describe evidence available in this checkout; they do not imply clinical or production acceptance.
 
+## Current checkpoint — 24 October 2026: source-backed Indian label vocabulary for declared restrictions
+
+- Literal-only profile matching missed common Indian label terms when users declared a broader allergen or intolerance concept. The ingredient audit now links supported label terms such as groundnut to peanut, soya protein to soy, whey/casein terms to milk-protein allergy, and maida/refined wheat flour or atta to wheat/gluten declarations. Each match preserves the exact OCR observation and source IDs and remains explicitly uncertain; it does not establish composition, exposure, individual risk or safety. Lactose intolerance is not mapped to whey/casein, peanut is not conflated with tree nuts, and oats alone are not treated as proof of gluten exposure.
+- The curated alias rules are owned by the knowledge module and exposed through `lookupDeclaredFoodLabelAlias`; the application remains responsible for linking returned candidates to specific label observations and displaying uncertainty.
+- Added concise dated FSSAI label-category and dairy-identity references; the shared evidence schema remains unchanged. The local semantic index was regenerated to 26 attributed source records. Direct MiniLM checks ranked the FSSAI allergen-label record first for an Indian label vocabulary query (0.530) and the whey/casein terminology record first for its focused query (0.793). These scores describe this local retrieval output, not calibrated relevance or legal applicability.
+- Verification: focused knowledge/core/semantic tests passed; full suite passed (660 passed, 1 skipped across 48 files); TypeScript passed. A production build and browser acceptance were not run because three existing local Next servers are active on ports 3418–3420 in this checkout and may share its `.next` build directory. No Gemini call or billing activity occurred.
+
 ## Current checkpoint — 24 October 2026: keep supported nutrition rows when an aggregate claim fails
 
 - Readable transcript `07c7a867-bede-42cb-9b84-d96b7ee9cb58` showed valid provider JSON, not a schema parse failure: Gemini returned one claim combining supported row values with an unsupported cholesterol value. Numeric validation correctly rejected the whole compound claim. The row-level reconstruction remained usable, but the provider adapter did not carry its accepted structured nutrition summary into answer coverage, so the route made a redundant synthesis request.

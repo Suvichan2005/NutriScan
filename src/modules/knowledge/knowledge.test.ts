@@ -10,6 +10,7 @@ import {
   indianStapleIdentitySources,
   lookupAdditive,
   lookupExplicitAdditiveMention,
+  lookupDeclaredFoodLabelAlias,
   lookupIndianStapleIngredientIdentity,
   resolveTentativeAdditiveIdentity,
   retrieveEvidence,
@@ -38,6 +39,21 @@ describe('knowledge module offline contract', () => {
     expect(lookupIndianStapleIngredientIdentity('wheat flour')).toBeUndefined();
     expect(lookupIndianStapleIngredientIdentity('maida and atta')).toBeUndefined();
     expect(lookupIndianStapleIngredientIdentity('x'.repeat(241))).toBeUndefined();
+  });
+
+  it('matches declared restriction concepts to source-backed Indian label terms without a safety verdict', () => {
+    expect(lookupDeclaredFoodLabelAlias('allergy', 'peanuts', 'Ingredients: groundnut oil')).toEqual({
+      labelTerm: 'groundnut oil', sourceIds: ['fssai-label-allergens-compendium-2025'],
+    });
+    expect(lookupDeclaredFoodLabelAlias('allergy', 'milk', 'Ingredients: whey powder')).toEqual({
+      labelTerm: 'whey powder', sourceIds: ['fssai-label-allergens-compendium-2025', 'fssai-whey-casein-milk-products-2022'],
+    });
+    expect(lookupDeclaredFoodLabelAlias('intolerance', 'lactose', 'Ingredients: whey powder')).toBeUndefined();
+    expect(lookupDeclaredFoodLabelAlias('intolerance', 'gluten', 'Ingredients: refined wheat flour (maida)')).toMatchObject({
+      labelTerm: 'refined wheat flour', sourceIds: expect.arrayContaining(['fssai-atta-maida-nomenclature-2019']),
+    });
+    expect(lookupDeclaredFoodLabelAlias('allergy', 'cashew', 'Ingredients: almond flour')).toBeUndefined();
+    expect(lookupDeclaredFoodLabelAlias('intolerance', 'gluten', 'Ingredients: oats')).toBeUndefined();
   });
 
   it('resolves exact additive identifiers while keeping fuzzy OCR interpretation tentative', () => {

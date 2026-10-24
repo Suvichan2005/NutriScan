@@ -312,8 +312,25 @@ describe('nutrition numerical invariants',()=>{
     expect(allergy?.status).toBe('uncertain');
     expect(allergy?.observationIds.length).toBeGreaterThan(0);
     expect(allergy?.detail).toMatch(/not a medical determination|not an individual-safety assessment/i);
-    expect(intolerance?.detail).toMatch(/No direct text match/);
+    expect(intolerance?.detail).toMatch(/No direct or supported label-term match/);
     expect(intolerance?.detail).toMatch(/not a safety clearance/);
+  });
+  it('surfaces source-linked Indian label vocabulary without promoting it to confirmed composition',()=>{
+    const pkg=label('Ingredients: whey powder, refined wheat flour (maida)');
+    const profile={...defaultProfile,allergies:'milk',intolerances:'gluten'};
+    const audit=buildAudit(pkg,30,'g',profile,'Does the ingredient list match my declared restrictions?');
+    const milk=audit.findings.find(finding=>finding.title==='Food allergy: possible label-term relation');
+    const gluten=audit.findings.find(finding=>finding.title==='Food intolerance: possible label-term relation');
+    expect(milk?.status).toBe('uncertain');
+    expect(milk?.detail).toMatch(/whey powder|source-backed vocabulary/i);
+    expect(milk?.sourceIds).toContain('fssai-whey-casein-milk-products-2022');
+    expect(gluten?.status).toBe('uncertain');
+    expect(gluten?.sourceIds).toContain('fssai-atta-maida-nomenclature-2019');
+    for(const finding of [milk,gluten]){
+      expect(finding?.observationIds.every(id=>pkg.observations.some(observation=>observation.id===id))).toBe(true);
+      expect(finding?.sourceIds.every(id=>audit.sources.some(source=>source.id===id))).toBe(true);
+      expect(finding?.detail).toMatch(/not a medical determination|does not establish actual allergen presence/i);
+    }
   });
   it('describes a matched May-contain line as precautionary wording without implying cross-contact is absent',()=>{
     const pkg=label('Ingredients: oats\nMay contain traces of peanuts');
