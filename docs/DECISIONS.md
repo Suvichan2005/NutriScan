@@ -903,6 +903,10 @@ The current Bisk run demonstrates package reconstruction and saved-context reuse
 
 A visible serving calculation that references a model interpretation must carry a concise status cue alongside the assistant turn. Keep this generic and linked to the exact calculation, not to a food, condition, or phrase. This improves trust presentation but does not make the underlying package reading verified. The latest live Bisk run still leaves identity unresolved and omits the sugar-free claim from the first answer; both remain higher-priority completeness gaps.
 
+## 24 October 2026 — free-first development with bounded paid fallback
+
+Keep free Gemini as the normal development and consumer route. Paid fallback is owner-authorized only when free routes block meaningful work, remains behind its explicit server setting and local cost guard, and must be disclosed to the user. Do not route a test to paid while free succeeds merely to compare models. For controlled tests that do not need paid service, disable the fallback temporarily and restore the owner's configured setting afterward. Local estimates and the owner's reported project spend are not billing receipts.
+
 ## 24 October 2026 — checkpoint owner work before broadening evaluation
 
 Use a pushed, clearly marked development branch as the recovery point for the current integration rather than leaving the accumulated owner diff uncommitted. Readable Gemini transcripts remain explicit local-development opt-in and separate from sanitized operational telemetry. Capture request/response content and usage needed for evaluation, but omit image bytes, credentials, hidden reasoning and real profile content by default. A transcript/export from an actual free-tier run proves observability, not answer quality or independent package accuracy. Paid fallback remains configured separately and must be accounted for explicitly; local token-cost estimates are not Google billing data.
