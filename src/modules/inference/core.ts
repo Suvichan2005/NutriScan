@@ -751,7 +751,7 @@ export function validateNaturalAnswerText(
     ] : []),
     ...reconstructedBasisEvidence,
     ...(context.evidence ?? []).flatMap(source => [
-      source.title, source.publisher, source.summary, source.limitations,
+      source.title, source.publisher, source.url, source.summary, source.limitations,
       // A publication year is bibliographic evidence, not a package quantity.
       // Preserve it only when it comes from a retrieved source's dated metadata.
       ...(source.publishedAt?.match(/^\d{4}(?:-|$)/) ? [source.publishedAt.slice(0, 4)] : []),

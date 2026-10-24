@@ -98,7 +98,7 @@ describe('provider-independent inference output validation', () => {
   });
 
   it('preserves list numbering and retrieved publication years without accepting invented quantities or dates',()=>{
-    const source={id:'dated-review',title:'Example intervention review',publisher:'Example scientific journal',url:'https://example.org/review',category:'literature' as const,jurisdiction:'Study population',publishedAt:'2022-11-01',effectiveAt:null,retrievedAt:'2026-10-25T00:00:00Z',summary:'An intervention review with population and exposure limitations.',limitations:'No package-specific dose is established.'};
+    const source={id:'dated-review',title:'Example intervention review',publisher:'Example scientific journal',url:'https://example.org/article/35631184/',category:'literature' as const,jurisdiction:'Study population',publishedAt:'2022-11-01',effectiveAt:null,retrievedAt:'2026-10-25T00:00:00Z',summary:'An intervention review with population and exposure limitations.',limitations:'No package-specific dose is established.'};
     const checked=validateNaturalAnswerText([
       '1. What the review found',
       '* Source: Example intervention review (2022).',
@@ -114,6 +114,10 @@ describe('provider-independent inference output validation', () => {
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(2);
     const withoutDate=validateNaturalAnswerText('Source: Example intervention review (2022).',{package:fixturePackage,evidence:[{...source,publishedAt:null}]});
     expect(withoutDate.answer).toBe('');
+    const identifier=validateNaturalAnswerText('The review record is 35631184.',{package:fixturePackage,evidence:[source]});
+    expect(identifier.withheldUnsupportedQuantitySentenceCount).toBe(0);
+    const inventedIdentifier=validateNaturalAnswerText('The review record is 35631185.',{package:fixturePackage,question:'Is record 35631185 relevant?',evidence:[source]});
+    expect(inventedIdentifier.answer).toBe('');
   });
 
   it('keeps dose time bases with quantities instead of borrowing package amounts or requested doses',()=>{
