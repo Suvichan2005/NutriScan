@@ -392,7 +392,10 @@ function retrieveNutritionGuidance(args: z.infer<typeof toolArgs.get_nutrition_g
     ? args.jurisdiction
     : context.profile?.country.trim() || undefined;
   const evidence = getNutritionGuidance({
-    query: authorizedContext,
+    // Once its condition is explicitly authorized, honor the agent's focused
+    // retrieval query rather than ranking every condition in the conversation.
+    // Unrecognized/invented condition arguments still cannot create context.
+    query: condition ? args.query : authorizedContext,
     ...(condition ? { condition } : {}),
     ...(goal ? { goal } : {}),
     ...(jurisdiction ? { jurisdiction } : {}),

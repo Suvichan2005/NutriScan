@@ -285,6 +285,16 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.status).toBe('empty');
     expect(result.evidence?.some(source => source.id === 'kdigo-ckd-2024-sodium')).toBe(false);
   });
+  it('honors each authorized condition in a multi-condition investigation instead of replaying the dominant topic',async()=>{
+    const toolContext=context('For this fictional scenario, my dad has diabetes, hypertension and CKD in India. Is this snack suitable?');
+    const bloodPressure=await executeGeminiTool('get_nutrition_guidance',{query:'hypertension sodium salt intake',condition:'hypertension',jurisdiction:'India'},toolContext);
+    expect(bloodPressure.evidence?.map(source=>source.id)).toEqual(['who-healthy-diet-guidance']);
+    expect(bloodPressure.evidence?.[0].limitations).toContain('General population');
+    const kidney=await executeGeminiTool('get_nutrition_guidance',{query:'CKD sodium restriction',condition:'CKD',jurisdiction:'India'},toolContext);
+    expect(kidney.evidence?.map(source=>source.id)).toEqual(['kdigo-ckd-2024-sodium']);
+    const diabetes=await executeGeminiTool('get_nutrition_guidance',{query:'diabetes carbohydrate portions',condition:'diabetes',jurisdiction:'India'},toolContext);
+    expect(diabetes.evidence?.map(source=>source.id)).toEqual(['idf-healthy-nutrition-diabetes-2024']);
+  });
 
   it('defaults to international guidance when no user jurisdiction is available, but honors an explicit source request', async () => {
     const general = await executeGeminiTool('get_nutrition_guidance', {

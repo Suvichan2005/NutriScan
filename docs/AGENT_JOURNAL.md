@@ -1,5 +1,9 @@
 # Sanitized engineering journal
 
+## 2026-10-25 — preserve the agent's focused clinical lookup
+
+- The paid trace contained separate diabetes and hypertension operations, but both received IDF diabetes material because the application replaced each tool query with the full mixed-condition question. Preserve a focused query only after its condition is explicitly authorized and scope condition-specific records to that condition. Exact actual-call replay now returns IDF for diabetes and WHO general-population diet guidance for hypertension; no new provider call, target or clinical applicability claim. Multi-condition and existing unauthorized-context/jurisdiction tests pass. Full suite 634 passed/1 skipped; TypeScript passed. Model wording quality remains partial and needs later acceptance with the corrected source results.
+
 ## 2026-10-25 — make count-based portions traceable without new repair calls
 
 - Published the preceding browser/research checkpoint at `04e717eb62bd39a5b76e94a41d42b0d32fb1cf65`. Then tested the saved biscuit package through isolated Chrome: practical first answer and two-biscuit follow-up worked, but Flash-Lite did not invoke the new count tool and produced an incorrect qualitative fraction. Recorded this as partial quality, not acceptance.

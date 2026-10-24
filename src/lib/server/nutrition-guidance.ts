@@ -220,6 +220,7 @@ export function getNutritionGuidance(input: {
     .map(entry => {
       const explicitSource = explicitlyNamesSource(query, entry.source);
       const matchedTerms = entry.terms.filter(term => mentions(contextualText, term));
+      if(input.condition&&entry.conditions.length&&!entry.conditions.some(condition=>mentions(input.condition!,condition)))return {entry,score:0,matchedTerms};
       if (!jurisdictionCompatible(entry.source, input.jurisdiction, explicitSource)) return { entry, score: 0, matchedTerms };
       const matchedCondition = entry.conditions.some(condition => mentions(contextualText, condition));
       if (entry.conditions.length > 0 && !matchedCondition && !explicitSource) return { entry, score: 0, matchedTerms };

@@ -1,5 +1,10 @@
 # Chronological decisions
 
+## 25 October 2026 — honor scoped clinical retrieval operations
+
+- The authorized user context establishes which condition may be used, but must not overwrite the agent's focused lookup query. When a condition is explicitly authorized, rank the supplied topic and exclude records for other conditions; keep applicable general-population records labelled as such. Do not invent a diagnosis or cross-apply kidney-specific or foreign-jurisdiction targets.
+- Actual saved tool-call replay demonstrates the prior failure and corrected source selection with zero provider requests: diabetes still gets IDF, while the separate sodium/hypertension operation gets WHO general-population guidance instead of IDF. This establishes retrieval behavior, not the quality of a regenerated clinical answer.
+
 ## 25 October 2026 — preserve food counts as typed calculation inputs
 
 - Extend the existing native calculator rather than interpreting food counts through question regexes or model arithmetic. Convert pieces/servings only through a current, complete, source-linked serving definition; keep the result provisional and do not mutate package facts.
