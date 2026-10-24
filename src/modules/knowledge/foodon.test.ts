@@ -20,16 +20,22 @@ describe('pinned local FoodOn ingredient index', () => {
     expect(result.results[0].parents.some(parent => /wheat flour/i.test(parent.label))).toBe(true);
   });
 
-  it('finds different food categories from the broad pinned vocabulary without a false regional alias', async () => {
-    const [rice, oil, absentAlias] = await Promise.all([
+  it('finds Indian-market flour terms and other food categories without inventing the absent maida alias', async () => {
+    const [rice, oil, atta, besan, absentAlias] = await Promise.all([
       searchFoodOn('rice flour'),
       searchFoodOn('palm oil'),
+      searchFoodOn('atta'),
+      searchFoodOn('besan'),
       searchFoodOn('maida'),
     ]);
     expect(rice.status).toBe('ok');
     if (rice.status === 'ok') expect(rice.results.some(hit => /rice flour/i.test(hit.term.label))).toBe(true);
     expect(oil.status).toBe('ok');
     if (oil.status === 'ok') expect(oil.results.some(hit => hit.term.id === 'FOODON_03310232')).toBe(true);
+    expect(atta.status).toBe('ok');
+    if (atta.status === 'ok') expect(atta.results[0]).toMatchObject({ term: { id: 'FOODON_03540094' }, matchedBy: 'exact-synonym', matchedText: 'atta' });
+    expect(besan.status).toBe('ok');
+    if (besan.status === 'ok') expect(besan.results[0]).toMatchObject({ term: { id: 'FOODON_03601071', label: 'gram flour' }, matchedBy: 'exact-synonym', matchedText: 'besan' });
     expect(absentAlias.status).toBe('no_match');
   });
 

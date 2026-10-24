@@ -417,6 +417,17 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it('returns an attributed Indian ingredient identity candidate from the local index', async () => {
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    const result = await executeGeminiTool('resolve_ingredient', { query: 'besan' }, context('What does besan mean?', 'INGREDIENTS: besan; salt'));
+
+    expect(result.status).toBe('ok');
+    expect(result.output).toMatchObject({ status: 'ontology_identity_candidates', candidates: [{ title: 'gram flour (FOODON_03601071)', matchedBy: 'exact-synonym', matchedText: 'besan' }] });
+    expect(result.evidence?.[0]).toMatchObject({ publisher: 'FoodOn Food Ontology', license: expect.stringContaining('CC BY 4.0') });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it('offers exact EFSA assessment records to Gemini with source and exposure limits', async () => {
     const source = {
       version: '3.0' as const, sourceSha256: 'a'.repeat(64), sourceUrl: 'https://doi.org/10.5281/zenodo.19388272',
