@@ -817,6 +817,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
         && !hasRelevantSourceForPhysiologicalEffect(segment, segmentClaims, data.evidence ?? [])) return reject('health-effect-needs-relevant-source');
        if(!sourceAttributionHasMatchingReference(segment,segmentClaims.flatMap(claim=>claim.sourceIds),data.evidence??[]))return reject('source-attribution-needs-linked-source');
       if (needsComparativeReference(segment) && !hasRelevantSourceForComparativeAnswer(segment, segmentClaims)
+        && !(requiresPhysiologicalSource(segment) && hasRelevantSourceForPhysiologicalEffect(segment, segmentClaims, data.evidence ?? []))
         &&!isQuestionBoundPackageAssessment(segment,data.question,segmentClaims)) return reject('comparative-judgment-needs-reference');
       if (isUnsafeMedicalConclusion(segment)) return reject('unsafe-medical-conclusion');
       const family=nutrientFamily(segment);
@@ -868,6 +869,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
         && !hasRelevantSourceForPhysiologicalEffect(segment, segmentClaims, data.evidence ?? [])){reject('health-effect-needs-relevant-source');continue;}
       if(!sourceAttributionHasMatchingReference(segment,segmentClaims.flatMap(claim=>claim.sourceIds),data.evidence??[])){reject('source-attribution-needs-linked-source');continue;}
       if(needsComparativeReference(segment)&&!hasRelevantSourceForComparativeAnswer(segment,segmentClaims)
+        &&!(requiresPhysiologicalSource(segment)&&hasRelevantSourceForPhysiologicalEffect(segment,segmentClaims,data.evidence??[]))
         &&!isQuestionBoundPackageAssessment(segment,data.question,segmentClaims)){reject('comparative-judgment-needs-reference');continue;}
       const family=nutrientFamily(segment);
       const quantitativeAnchor=numericOccurrences(segment).length>0

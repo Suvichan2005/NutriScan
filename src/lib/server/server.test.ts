@@ -1128,6 +1128,29 @@ describe('provider validation, independent of provider invocation', () => {
     expect(covered).toMatchObject({available:1,covered:1,availableFacets:['nutrition-claim'],missing:[]});
     expect(omitted).toMatchObject({available:1,covered:0,missing:['nutrition-claim']});
   });
+  it('counts a printed serving basis when a response names the matching declared serving mass',()=>{
+    const reconstruction:PackageReconstructionContent={
+      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
+      serving:{printedText:'Serving size: 35 g',quantity:35,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence:{observationIds:['serving-observation'],imageRegions:[]}},
+      nutritionRows:[{rowId:'carb-35g',nutrient:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'23.1',value:23.1,unit:'g',columnLabel:'Per 35g#',basisText:'Per 35g#',basisAmount:35,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carb-observation'],imageRegions:[]}}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction.',
+    };
+    const claims=[{mode:'synthesis' as const,text:'The label lists 23.1 g of carbohydrate for the 35 g serving.',observationIds:[],sourceIds:[],calculationIds:['carb-35g-calculation'],interpretationRowIds:['carb-35g'],packageFactIds:['package-fact:serving']}];
+    const coverage=packageAnswerCoverage('Is this a good daily snack?',reconstruction,claims,[],'The label lists 23.1 g of carbohydrate for the 35 g serving.');
+    expect(coverage).toMatchObject({available:2,covered:2,availableFacets:['nutrition','serving'],missing:[]});
+  });
+  it('does not misclassify “how should I think about this amount” as a food-choice request',()=>{
+    const reconstruction:PackageReconstructionContent={
+      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
+      serving:{printedText:'Serving size: 35 g',quantity:35,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence:{observationIds:['serving-observation'],imageRegions:[]}},
+      nutritionRows:[{rowId:'carb-35g',nutrient:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'23.1',value:23.1,unit:'g',columnLabel:'Per 35g#',basisText:'Per 35g#',basisAmount:35,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['carb-observation'],imageRegions:[]}}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction.',
+    };
+    const claims=[{mode:'synthesis' as const,text:'The label lists 23.1 g of carbohydrate for the 35 g serving.',observationIds:['carb-observation'],sourceIds:[],interpretationRowIds:['carb-35g'],packageFactIds:['package-fact:serving']}];
+    const question='For my goal of tracking carbohydrate portions, how should I think about 23.1 g for a 35 g serving?';
+    expect(needsPackageAnswerSynthesis(question,reconstruction,claims,[],'The label lists 23.1 g of carbohydrate for the 35 g serving.')).toBe(false);
+    expect(needsPackageAnswerSynthesis('Should I eat this every day?',reconstruction,claims,[],'The label lists 23.1 g of carbohydrate for the 35 g serving.')).toBe(true);
+  });
   it('classifies a Gemini rejection without retaining provider error text', () => {
     const error = Object.assign(new Error('got status: INVALID_ARGUMENT. {"error":{"code":400,"status":"INVALID_ARGUMENT","message":"Invalid value at \'generationConfig.responseJsonSchema.properties.secret\': PRIVATE PACKAGE TEXT"}}'), { status: 400 });
     const safe = safeProviderFailure(error);

@@ -714,6 +714,29 @@ describe('provider-independent inference output validation', () => {
     expect(events).toContainEqual({stage:'natural-answer',index:1,decision:'rejected',reason:'comparative-judgment-needs-reference'});
   });
 
+  it('accepts a source-backed general nutrient comparison without requiring an unrelated package fact link',()=>{
+    const guidance={
+      id:'global-diabetes-food-guidance',title:'Food choices and glucose',publisher:'International Diabetes Federation',
+      url:'https://example.org/diabetes-food-guidance',category:'guideline' as const,jurisdiction:'Global',
+      publishedAt:'2026-01-01',effectiveAt:null,retrievedAt:'2026-01-02',
+      summary:'Refined carbohydrates may raise blood glucose more quickly than higher-fibre choices.',
+      limitations:'General education, not a conclusion about a specific product.',
+    };
+    const answer='According to the International Diabetes Federation (IDF) guidance, refined carbohydrates may raise blood glucose more quickly than higher-fibre choices.';
+    const events:{stage:string;index:number;decision:string;reason?:string}[]=[];
+    const result=validateInferenceOutput({
+      answer,
+      claims:[{mode:'synthesis',text:guidance.summary,observationIds:[],sourceIds:[guidance.id],supportingSpans:[{kind:'source',id:guidance.id,quote:guidance.summary}]}],
+      answerParts:[{text:answer,claimIndexes:[0]}],limitations:[],inspectImage:null,
+    },{package:fixturePackage,evidence:[guidance],diagnostic:event=>events.push(event)});
+
+    expect(result.answer).toBe(answer);
+    expect(result.claims).toHaveLength(1);
+    expect(events).toContainEqual({stage:'natural-answer',index:0,decision:'accepted'});
+    expect(events).toContainEqual({stage:'answer-part',index:0,decision:'accepted'});
+    expect(events).not.toContainEqual(expect.objectContaining({decision:'rejected',reason:'comparative-judgment-needs-reference'}));
+  });
+
   it('rejects named clinical guidance when its authority is not linked or disagrees with the linked source',()=>{
     const text='Official diabetes guidance from the International Diabetes Federation (IDF) emphasizes whole grains and limited refined carbohydrates rather than focusing on one snack.';
     const events:{stage:string;index:number;decision:string;reason?:string}[]=[];

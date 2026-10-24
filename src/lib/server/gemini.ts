@@ -1603,6 +1603,10 @@ function answerNumberSet(answer:string){
   return new Set((answer.match(/(?<![\p{L}\p{N}])(?:\d+(?:[.,]\d+)?|[.,]\d+)(?![\p{L}\p{N}])/gu)??[])
     .map(value=>Number(value.replace(',','.'))).filter(Number.isFinite));
 }
+
+function isFoodChoiceQuestion(question:string){
+  return /\b(?:good|bad|healthy|unhealthy|suitable|unsuitable|appropriate|daily|every\s+day|regular(?:ly)?|snack(?:ing)?|recommend(?:ed|ation)?|can\s+i\s+(?:eat|have|include)|should\s+(?:i|this|it)\s+(?:eat|have|include|choose|consume|avoid|make|use|take))\b/i.test(question);
+}
 function normalizedAnswerTerm(value:string){
   const term=value.replace(/([a-z])([A-Z])/g,'$1 $2').toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
   return term.split(/\s+/).map(word=>word.endsWith('s')&&word.length>5?word.slice(0,-1):word).join(' ');
@@ -1616,7 +1620,7 @@ function answerMentionsPackageStatement(answer:string,statement:PackageReconstru
   // falsely classifies ordinary natural-language summaries as missing.
   return statementTerms.some(term=>answerTerms.has(term));
 }
-function answerMentionsNutritionRow(answer:string,row:PackageReconstructionContent['nutritionRows'][number],numbers:Set<number>){
+function answerMentionsNutritionRow(answer:string,row:PackageReconstructionContent['nutritionRows'][number],numbers:Set<number>,reconstruction:PackageReconstructionContent){
   if(row.value===null||!row.unit||row.basisAmount===null||!row.basisUnit||!numbers.has(row.value))return false;
   const normalizedAnswer=normalizedAnswerTerm(answer);
   const terms=[row.nutrient,row.printedLabel].flatMap(value=>normalizedAnswerTerm(value).split(' ')).filter(term=>term.length>=4);
@@ -1626,10 +1630,15 @@ function answerMentionsNutritionRow(answer:string,row:PackageReconstructionConte
   const basis=`per ${row.basisAmount} ${row.basisUnit}`.toLocaleLowerCase();
   const compactBasis=basis.replace(/\s+/g,'');
   const normalizedText=answer.toLocaleLowerCase().replace(/\s+/g,'');
+  const serving=reconstruction.serving;
+  const basisMatchesDeclaredServing=!!serving&&serving.quantity===row.basisAmount
+    &&serving.unit?.toLocaleLowerCase()===row.basisUnit.toLocaleLowerCase()
+    &&answerMentionsServing(answer,reconstruction,numbers);
   return normalizedText.includes(compactBasis)||normalizedText.includes(basis.replace(/\s/g,''))
     ||Boolean(row.basisText&&normalizedText.includes(row.basisText.toLocaleLowerCase().replace(/\s+/g,'')))
     ||Boolean(row.columnLabel&&normalizedText.includes(row.columnLabel.toLocaleLowerCase().replace(/\s+/g,'')))
-    ||(/\bservings?\b/i.test(`${row.basisText??''} ${row.columnLabel??''}`)&&/\b(?:for|in|within)\s+(?:(?:the|that|a|one)\s+)?servings?\b/i.test(answer));
+    ||(/\bservings?\b/i.test(`${row.basisText??''} ${row.columnLabel??''}`)&&/\b(?:for|in|within)\s+(?:(?:the|that|a|one)\s+)?servings?\b/i.test(answer))
+    ||basisMatchesDeclaredServing;
 }
 function answerMentionsServing(answer:string,reconstruction:PackageReconstructionContent,numbers:Set<number>){
   const serving=reconstruction.serving;
@@ -1679,7 +1688,7 @@ function packageAnswerNutritionRows(question:string,reconstruction:PackageRecons
 }
 
 export function packageAnswerCoverage(question:string,reconstruction:PackageReconstructionContent|null,claims:z.infer<typeof assistOutput>['claims'],evidence:z.infer<typeof sourceSchema>[]=[],answer?:string,jurisdiction='India') {
-  const asksForFoodJudgment=/\b(?:good|bad|healthy|unhealthy|suitable|unsuitable|appropriate|daily|every\s+day|regular(?:ly)?|snack(?:ing)?|recommend(?:ed|ation)?|should\s+i|can\s+i\s+(?:eat|have|include))\b/i.test(question);
+  const asksForFoodJudgment=isFoodChoiceQuestion(question);
   if(!asksForFoodJudgment||!reconstruction)return{available:0,covered:0,availableFacets:[] as string[],missing:[] as string[]};
   const rows=packageAnswerNutritionRows(question,reconstruction);
   const ingredientCount=reconstruction.ingredients.length;
@@ -1700,7 +1709,7 @@ export function packageAnswerCoverage(question:string,reconstruction:PackageReco
   const answerTerms=new Set(answer?normalizedAnswerTerm(answer).split(' ').filter(term=>term.length>=5):[]);
   const hasRelevantGuidanceClaim=guidanceSources.some(source=>claims.some(claim=>claim.sourceIds.includes(source.id))
     &&(!answer||new Set(normalizedAnswerTerm(source.summary).split(' ').filter(term=>term.length>=5&&answerTerms.has(term))).size>=2));
-  if(hasNutritionClaim&&(!answer||rows.some(row=>answerMentionsNutritionRow(answer,row,answerNumberSet(answer)))))covered.add('nutrition');
+  if(hasNutritionClaim&&(!answer||rows.some(row=>answerMentionsNutritionRow(answer,row,answerNumberSet(answer),reconstruction))))covered.add('nutrition');
   if(hasIngredientClaim&&(!answer||reconstruction.ingredients.some(item=>item.name.split(/[^\p{L}\p{N}]+/u).filter(term=>term.length>=4).some(term=>normalizedAnswerTerm(answer).split(' ').includes(normalizedAnswerTerm(term))))))covered.add('ingredients');
   if(hasServingClaim&&(!answer||answerMentionsServing(answer,reconstruction,answerNumberSet(answer))))covered.add('serving');
   if(hasRelevantNutritionClaim&&(!answer||linkedNutritionClaims.some(({statement})=>answerMentionsPackageStatement(answer,statement))))covered.add('nutrition-claim');
@@ -1745,7 +1754,7 @@ function hasUsableReconstructedPackageDetails(reconstruction:PackageReconstructi
 
 export function needsPackageAnswerSynthesis(question:string,reconstruction:PackageReconstructionContent|null,claims:z.infer<typeof assistOutput>['claims'],evidence:z.infer<typeof sourceSchema>[]=[],answer?:string) {
   const coverage=packageAnswerCoverage(question,reconstruction,claims,evidence,answer);
-  const asksForFoodJudgment=/\b(?:good|bad|healthy|unhealthy|suitable|unsuitable|appropriate|daily|every\s+day|regular(?:ly)?|snack(?:ing)?|recommend(?:ed|ation)?|should\s+i|can\s+i\s+(?:eat|have|include))\b/i.test(question);
+  const asksForFoodJudgment=isFoodChoiceQuestion(question);
   const firstSentence=(answer??'').trim().split(/(?<=[.!?])\s+/u,1)[0]??'';
   const hasDirectJudgment=asksForFoodJudgment&&/\b(?:good|bad|healthy|unhealthy|suitable|unsuitable|appropriate|reasonable|recommend|choice|option|default|occasional|portion-aware|fit|prefer|better|worse|unclear|cannot\s+(?:judge|recommend)|can't\s+(?:judge|recommend)|not\s+enough\s+(?:evidence|information)|not\s+(?:a\s+)?(?:strong|ideal|good|great|suitable|everyday))\b/i.test(firstSentence);
   // A complete list of facts is not itself an answer to a suitability or
