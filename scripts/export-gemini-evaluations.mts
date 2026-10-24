@@ -14,8 +14,9 @@ const analysisId = value('--analysis');
 const followupId = value('--followup');
 const format = value('--format') ?? 'markdown';
 const name = value('--name') ?? `analysis-${analysisId ?? 'missing'}-followup-${followupId ?? 'missing'}`;
+const comparisonMode = args.includes('--comparison');
 if (!analysisId || !followupId || !/^[0-9a-f-]{36}$/i.test(analysisId) || !/^[0-9a-f-]{36}$/i.test(followupId)) {
-  throw new Error('Usage: npm run gemini:evaluations:export -- --analysis <UUID> --followup <UUID> [--format markdown|json] [--name safe-file-name]');
+  throw new Error('Usage: npm run gemini:evaluations:export -- --analysis <UUID> --followup <UUID> [--comparison] [--format markdown|json] [--name safe-file-name]');
 }
 if (format !== 'markdown' && format !== 'json') throw new Error('Format must be markdown or json.');
 if (!/^[A-Za-z0-9_-]{1,80}$/.test(name)) throw new Error('Export name must contain only letters, digits, underscores or hyphens.');
@@ -39,7 +40,7 @@ const body = format === 'json'
       'Image bytes are omitted; local image references are represented by hashes and sizes. Hidden model reasoning is omitted. Profile content follows the capture mode recorded in each manifest.',
       ...analyses.flatMap((analysis, index) => [
         '',
-        `## ${index === 0 ? 'Initial analysis' : 'Follow-up'}`,
+        `## ${comparisonMode ? `Comparison run ${index === 0 ? 'A' : 'B'}` : index === 0 ? 'Initial analysis' : 'Follow-up'}`,
         '',
         '```json',
         JSON.stringify(analysis.manifest, null, 2),
