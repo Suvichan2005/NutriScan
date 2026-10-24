@@ -544,6 +544,96 @@ describe('provider package-reconstruction normalization',()=>{
     });
   });
 
+  it('keeps categorized packageFacts in their semantic fields and canonicalizes string claims without granting evidence',()=>{
+    const parsed=parseAgentProviderOutput(JSON.stringify({
+      answer:'The label lists the product and serving declaration.',
+      claims:['The product name is shown on the package [OBS_IDENTITY].'],
+      packageReconstruction:{
+        current:true,
+        packageFacts:[
+          {factId:'package-fact:identity',category:'identity',printedLabel:'Product name',printedValue:'Millet Noodles',normalizedName:'Millet noodles',status:'provisional',observationIds:['OBS_IDENTITY']},
+          {factId:'package-fact:serving',category:'serving',printedLabel:'Serving Size',printedValue:'2 biscuits (approximately 70 g)',status:'clear',observationIds:['OBS_SERVING']},
+          {factId:'package-fact:nutrition',category:'nutrition-row',printedLabel:'Protein',printedValue:'10 g',basisText:'Per 100 g',status:'provisional',observationIds:['OBS_NUTRITION']},
+          {factId:'package-fact:ingredient-1',category:'ingredient',printedLabel:'Ingredient',printedValue:'Whole wheat flour',normalizedName:'whole wheat flour',status:'provisional',observationIds:['OBS_INGREDIENT']},
+          {factId:'package-fact:additive-1',category:'additive',printedLabel:'INS 330',printedValue:'Citric acid',code:'330',normalizedName:'citric acid',status:'provisional',observationIds:['OBS_ADDITIVE']},
+          {factId:'package-fact:allergen',category:'allergen',printedLabel:'Allergen note',printedValue:'Contains Milk',status:'provisional',observationIds:['OBS_ALLERGEN']},
+        ],
+        nutritionRows:[],
+      },
+      limitations:[],inspectImage:null,
+    }),true);
+
+    expect(parsed.output.claims).toMatchObject([{text:'The product name is shown on the package.',observationIds:['OBS_IDENTITY']}]);
+    expect(parsed.output.packageReconstruction).toMatchObject({
+      identity:{name:'Millet noodles',status:'provisional',evidence:{observationIds:['OBS_IDENTITY']}},
+      serving:{printedText:'2 biscuits (approximately 70 g)',quantity:70,unit:'g',status:'clear',evidence:{observationIds:['OBS_SERVING']}},
+      nutritionRows:[{nutrient:'Protein',printedValue:'10 g',value:10,unit:'g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g',evidence:{observationIds:['OBS_NUTRITION']}}],
+      ingredients:[{name:'whole wheat flour',printedText:'Whole wheat flour',evidence:{observationIds:['OBS_INGREDIENT']}}],
+      additives:[{printedName:'Citric acid',code:'330',normalizedName:'citric acid',evidence:{observationIds:['OBS_ADDITIVE']} }],
+      statements:[{kind:'contains',label:'Allergen note',text:'Contains Milk',evidence:{observationIds:['OBS_ALLERGEN']}}],
+    });
+  });
+
+  it('validates a claimless provider table summary field-by-field and withholds an unsupported numeric sentence',()=>{
+    const answer='The nutrition table lists energy and protein per 100 g. It reports sodium 999 mg per 100 g.';
+    const parsed=parseAgentProviderOutput(JSON.stringify({
+      answer,
+      answerParts:[],
+      packageReconstruction:{
+        current:true,
+        nutritionRows:[
+          {rowId:'energy-100g',nutrient:'Energy',printedLabel:'Energy',printedValue:'384 kcal',value:384,unit:'kcal',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g',status:'provisional',evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
+          {rowId:'protein-100g',nutrient:'Protein',printedLabel:'Protein',printedValue:'8.2 g',value:8.2,unit:'g',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g',status:'provisional',evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
+        ],
+        packageFacts:[],
+      },
+    }),true);
+    const decisions:unknown[]=[];
+    const result=validateInferenceOutput(parsed.output,{
+      package:packageSchema.parse({id:'provider-dialect-test',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:'2026-10-24T00:00:00.000Z'}),
+      images:[{handle:'synthetic-image'}],question:'Summarize the readable nutrition table.',diagnostic:event=>decisions.push(event),
+    });
+
+    expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
+    expect(result.answer).toBe('The nutrition table lists energy and protein per 100 g.');
+    expect(result.claims.flatMap(claim=>claim.interpretationRowIds??[])).toEqual(['energy-100g','protein-100g']);
+    expect(decisions).toContainEqual(expect.objectContaining({stage:'claim',index:1,decision:'rejected',reason:'no-evidence-reference'}));
+  });
+
+  it('adapts a valid claimless provider response into independently linked row statements and withholds one bad numeric item',()=>{
+    const answer='The label declares a serving size of 35 g and lists amounts per serving: Energy 139 kcal, Protein 5 g, Sodium 999 mg.';
+    const parsed=parseAgentProviderOutput(JSON.stringify({
+      answer,
+      packageReconstruction:{
+        current:true,
+        serving:{printedText:'Serving size 35 g',quantity:35,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
+        nutritionRows:[
+          {rowId:'energy-35g',nutrient:'Energy',printedLabel:'Energy',printedValue:'139 kcal',value:139,unit:'kcal',basisText:'Per serving',basisAmount:35,basisUnit:'g',status:'provisional',evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
+          {rowId:'protein-35g',nutrient:'Protein',printedLabel:'Protein',printedValue:'5 g',value:5,unit:'g',basisText:'Per serving',basisAmount:35,basisUnit:'g',status:'provisional',evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
+          {rowId:'sodium-35g',nutrient:'Sodium',printedLabel:'Sodium',printedValue:'170 mg',value:170,unit:'mg',basisText:'Per serving',basisAmount:35,basisUnit:'g',status:'provisional',evidence:{observationIds:[],imageRegions:[{imageId:'synthetic-image',region:null}]}},
+        ],
+      },
+      limitations:[],inspectImage:null,
+    }),true);
+    expect(parsed.schemaMode).toBe('adapted-provider-schema');
+    expect(parsed.modelOutputStatus).toBe('adapter-derived-package-claims');
+    expect(parsed.output.claims.map(claim=>claim.interpretationRowIds)).toEqual([['energy-35g'],['protein-35g']]);
+    expect(parsed.output.answerParts?.[0]).toMatchObject({claimIndexes:[0,1],text:expect.stringContaining('Energy 139 kcal')});
+    expect(parsed.output.answerParts?.[0].text).not.toContain('999');
+
+    const question='Show the nutrition values for the serving.';
+    const result=validateInferenceOutput(parsed.output,{
+      package:packageSchema.parse({id:'atomic-row-adapter',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:'2026-10-24T00:00:00.000Z'}),
+      images:[{handle:'synthetic-image'}],question,
+    });
+    expect(result.claims.flatMap(claim=>claim.interpretationRowIds??[])).toEqual(['energy-35g','protein-35g','sodium-35g']);
+    expect(result.answer).toContain('Energy 139 kcal');
+    expect(result.answer).toContain('Protein 5 g');
+    expect(result.answer).toContain('Sodium 170 mg');
+    expect(result.answer).not.toContain('999');
+    expect(needsPackageAnswerSynthesis(question,parsed.output.packageReconstruction??null,result.claims,[],result.answer)).toBe(false);
+  });
+
   it('does not manufacture evidence links or confidence for a numeric row with no provenance',()=>{
     const output=normalizeProviderAssistOutput({
       answer:'The nutrition amount is unresolved.',answerParts:[{text:'The nutrition amount is unresolved.',claimIndexes:[0]}],

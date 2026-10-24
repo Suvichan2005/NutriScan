@@ -914,7 +914,7 @@ describe('provider validation, independent of provider invocation', () => {
     };
 
     const parsed=parseAgentProviderOutput(JSON.stringify(providerOutput),true);
-    expect(parsed.schemaMode).toBe('provider-schema');
+    expect(parsed.schemaMode).toBe('adapted-provider-schema');
     expect(parsed.output.answerParts).toEqual([{text:providerOutput.answer,claimIndexes:[0]}]);
     expect(parsed.output.claims).toMatchObject([{text:providerOutput.answer,observationIds:[],sourceIds:[]}]);
     expect(parsed.output.packageReconstruction).toMatchObject({
@@ -942,7 +942,7 @@ describe('provider validation, independent of provider invocation', () => {
 
     const parsed=parseAgentProviderOutput(JSON.stringify(providerOutput),true);
 
-    expect(parsed.schemaMode).toBe('provider-schema');
+    expect(parsed.schemaMode).toBe('adapted-provider-schema');
     expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
     expect(parsed.discardedRegionCount).toBe(1);
     expect(parsed.output.packageReconstruction).toMatchObject({
@@ -1014,7 +1014,7 @@ describe('provider validation, independent of provider invocation', () => {
         claims:[{claimId:'claim-1',type:'claim',printedText:'NO ADDED SUGARS',observationIds:['claim-line']}],additives:[],allergens:[],warnings:[],certifications:[],packageFacts:[]},
     };
     const parsed=parseAgentProviderOutput(JSON.stringify(rawProviderOutput),true);
-    expect(parsed.schemaMode).toBe('provider-schema');
+    expect(parsed.schemaMode).toBe('adapted-provider-schema');
     expect(parsed.modelOutputStatus).toBe('unlinked-answer-candidate');
     expect(parsed.output.claims).toHaveLength(3);
     const sanitized=sanitizePackageReconstruction(parsed.output.packageReconstruction,data);

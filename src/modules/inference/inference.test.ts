@@ -90,6 +90,35 @@ describe('provider-independent inference output validation', () => {
     expect(result.claims[0].supportingSpans).toEqual([]);
   });
 
+  it('anchors a citation-free table inventory to every named, traceable row and rejects incomplete inventories',()=>{
+    const imageRegion={imageId:'synthetic-image',region:null};
+    const rows=[
+      {rowId:'energy-100g',nutrient:'Energy',printedLabel:'Energy',printedValue:'384 kcal',value:384,unit:'kcal',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+      {rowId:'protein-100g',nutrient:'Protein',printedLabel:'Protein',printedValue:'8.2 g',value:8.2,unit:'g',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+      {rowId:'carbohydrate-100g',nutrient:'Carbohydrate',printedLabel:'Carbohydrates',printedValue:'59.6 g',value:59.6,unit:'g',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+      {rowId:'trans-fat-100g',nutrient:'Trans Fatty Acids',printedLabel:'Trans Fatty Acids',printedValue:'0 g',value:0,unit:'g',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+      {rowId:'iron-100g',nutrient:'Iron',printedLabel:'Iron',printedValue:'1.5 mg',value:1.5,unit:'mg',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[],imageRegions:[imageRegion]}},
+    ];
+    const reconstruction={
+      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},serving:null,
+      nutritionRows:rows,ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'',
+    };
+    const answer='The package displays a nutrition table per 100 g, listing energy, protein, carbohydrates, trans fat and iron.';
+    const result=validateInferenceOutput({
+      answer,packageReconstruction:reconstruction,
+      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[]}],limitations:[],inspectImage:null,
+    },{package:packageSchema.parse({...fixturePackage,observations:[],rawText:''}),images:[{handle:'synthetic-image'}],question:'Summarize the nutrition panel.'});
+    expect(result.answer).toBe(answer);
+    expect(result.claims[0].interpretationRowIds).toEqual(rows.map(row=>row.rowId));
+
+    const incomplete=validateInferenceOutput({
+      answer,packageReconstruction:{...reconstruction,nutritionRows:rows.filter(row=>row.nutrient!=='Iron')},
+      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[]}],limitations:[],inspectImage:null,
+    },{package:packageSchema.parse({...fixturePackage,observations:[],rawText:''}),images:[{handle:'synthetic-image'}],question:'Summarize the nutrition panel.'});
+    expect(incomplete.claims).toEqual([]);
+    expect(incomplete.answer).not.toBe(answer);
+  });
+
   it('keeps evidence-linked nutrition rows usable when an unlinked model list contains extra unsupported values',()=>{
     const imageRegion={imageId:'synthetic-image',region:null};
     const reconstruction={

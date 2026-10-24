@@ -1005,3 +1005,7 @@ During package reconstruction sanitization, compare each image-linked numeric ro
 ## 24 October 2026 — apply evidence scope checks before limiting local retrieval
 
 Ask the existing local hybrid retriever for up to five ranked evidence candidates, then apply topical relevance and user-jurisdiction scope checks, and cap the records passed to Gemini at three. This lets an applicable later-ranked source survive when higher-ranked records are excluded, while keeping the model context bounded. Similarity remains candidate ranking only; it does not establish evidence quality or applicability.
+
+## 24 October 2026 — distinguish adapted Gemini output from provider-schema output
+
+The provider may return valid JSON and a useful natural answer while omitting structured claim links and required optional fields. Report this as `adapted-provider-schema`, not `provider-schema`. When the provider omitted claims, derive row-level candidate claims only from exact nutrient/value/unit matches in the same natural answer and a reconstructed row with an explicitly matching basis and retained image/OCR provenance. Pass those candidates through the existing evidence and numerical validators unchanged. This separates provider shape adaptation from claim validation and prevents one unsupported numeric sentence from causing an otherwise useful multi-row answer to be discarded. Never infer external source links or use a model answer to corroborate its own numerical reading.

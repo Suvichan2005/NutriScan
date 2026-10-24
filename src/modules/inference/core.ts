@@ -144,6 +144,7 @@ function claimNamesReconstructedNutrient(claim: string, row: { nutrient: string;
   const text = normalizeLabelText(claim);
   const families: Array<[RegExp, RegExp]> = [
     [/added sugars?/, /\badded sugars?\b/],
+    [/trans fat(?:ty acids?)?/, /\btrans\s+fat(?:ty\s+acids?)?\b/],
     [/saturated fat/, /\bsaturated fat\b/],
     [/carbohydrates?|carbs?/, /\b(?:carbohydrates?|carbs?)\b/],
     [/total sugars?|sugars?/, /\b(?:total sugars?|sugars?)\b/],
@@ -152,6 +153,10 @@ function claimNamesReconstructedNutrient(claim: string, row: { nutrient: string;
     [/fibre|fiber/, /\b(?:fibre|fiber)\b/],
     [/sodium/, /\bsodium\b/],
     [/salt/, /\bsalt\b/],
+    [/cholesterol/, /\bcholesterol\b/],
+    [/iron/, /\biron\b/],
+    [/calcium/, /\bcalcium\b/],
+    [/potassium/, /\bpotassium\b/],
     [/energy|calories?/, /\b(?:energy|calories?)\b/],
   ];
   const family = families.find(([rowPattern]) => rowPattern.test(label));
@@ -160,8 +165,21 @@ function claimNamesReconstructedNutrient(claim: string, row: { nutrient: string;
   return meaningfulWords.length > 0 && meaningfulWords.every(word => text.split(' ').includes(word));
 }
 
+function namedNutritionFamilies(text:string):string[]{
+  const patterns:Array<[string,RegExp]>=[
+    ['added-sugars',/\badded sugars?\b/i],['saturated-fat',/\bsaturat\w* fat\b/i],
+    ['trans-fat',/\btrans\s+fat(?:ty\s+acids?)?\b/i],
+    ['carbohydrate',/\b(?:carbohydrat\w*|carbs?)\b/i],['sugars',/\btotal sugars?\b|(?<!added )\bsugars?\b/i],
+    ['protein',/\b(?:protein|proten)\b/i],['fat',/\btotal fat\b|(?<!saturated )(?<!trans )\bfat\b/i],['fiber',/\b(?:fibre|fiber)\b/i],
+    ['sodium',/\bsodium\b/i],['salt',/\bsalt\b/i],['cholesterol',/\bcholesterol\b/i],
+    ['iron',/\biron\b/i],['calcium',/\bcalcium\b/i],['potassium',/\bpotassium\b/i],
+    ['energy',/\b(?:energy|calories?|kcal|kilojoules?|kj)\b/i],
+  ];
+  return patterns.filter(([,pattern])=>pattern.test(text)).map(([family])=>family);
+}
+
 function claimNamesAnyNutrient(claim: string): boolean {
-  return /\b(?:carbohydrat\w*|carbs?|protein|proten|fat|saturat\w*\s+fat|sugars?|sodium|salt|fibre|fiber|energy|kcal|kilojoules?)\b/i.test(claim);
+  return /\b(?:carbohydrat\w*|carbs?|protein|proten|trans\s+fat|fat|saturat\w*\s+fat|sugars?|sodium|salt|cholesterol|iron|calcium|potassium|fibre|fiber|energy|kcal|kilojoules?)\b/i.test(claim);
 }
 
 function numericToken(value: number): string {
@@ -186,27 +204,47 @@ function linkExactReconstructedRows<T extends {
   columnLabel?: string | null; basisText?: string | null; basisAmount: number | null; basisUnit: string | null; status: string; evidence: { observationIds: string[] };
 }>, servingBasis?: { quantity: number; unit: string } | null): T {
   const linked = new Set(claim.interpretationRowIds ?? []);
+  const rowBasisNamed=(row:typeof rows[number])=>{
+    const printedBasis=[row.columnLabel??'',row.basisText??''].filter(value=>value.trim()).join('; ');
+    const hasNumericBasis=row.basisAmount!==null&&!!row.basisUnit;
+    const mentionsServing=/\bper\s+(?:the\s+)?serving\b/i.test(claim.text);
+    const sameAsDeclaredServing=!!servingBasis&&row.basisAmount===servingBasis.quantity
+      &&row.basisUnit?.toLocaleLowerCase()===servingBasis.unit.toLocaleLowerCase();
+    const namesDeclaredServingMass=sameAsDeclaredServing
+      &&quantityWithUnitAppears(claim.text,row.basisAmount!,row.basisUnit!)
+      &&/\b(?:servings?|portions?)\b/i.test(claim.text);
+    return(hasNumericBasis&&quantityWithUnitAppears(claim.text,row.basisAmount!,row.basisUnit!,true))
+      ||(mentionsServing&&sameAsDeclaredServing)
+      ||namesDeclaredServingMass
+      ||(/\bper\s+(?:servings?|portions?|packs?|packages?|biscuits?|pieces?)\b/i.test(claim.text)
+        &&basisMentionsAreSupported(claim.text,[printedBasis,...(hasNumericBasis?[`per ${row.basisAmount} ${row.basisUnit}`]:[])]));
+  };
+  const namedFamilies=namedNutritionFamilies(claim.text);
+  const rowsAvailableForNamedBasis=rows.filter(row=>['clear','provisional'].includes(row.status)&&row.value!==null&&!!row.unit
+    &&(row.basisAmount!==null&&!!row.basisUnit||!!row.columnLabel?.trim()||!!row.basisText?.trim())&&rowBasisNamed(row));
+  const availableFamilies=new Set(rowsAvailableForNamedBasis.flatMap(row=>namedNutritionFamilies(`${row.nutrient} ${row.printedLabel}`).slice(0,1)));
+  const completeTableInventory=namedFamilies.length>0&&namedFamilies.every(family=>availableFamilies.has(family));
   const matches = rows.filter(row => {
     const printedBasis=[row.columnLabel??'',row.basisText??''].filter(value=>value.trim()).join('; ');
     const hasNumericBasis=row.basisAmount!==null&&!!row.basisUnit;
     if (!['clear', 'provisional'].includes(row.status) || row.value === null || !row.unit || (!hasNumericBasis&&!printedBasis)) return false;
     if (!claimNamesReconstructedNutrient(claim.text, row)) return false;
-    const mentionsServing = /\bper\s+(?:the\s+)?serving\b/i.test(claim.text);
-    const sameAsDeclaredServing = !!servingBasis && row.basisAmount === servingBasis.quantity
-      && row.basisUnit?.toLocaleLowerCase() === servingBasis.unit.toLocaleLowerCase();
-    // Natural answers commonly say "for the 35 g serving" or "on the 35 g
-    // serving basis". Those are the same explicit basis as "per 35 g" when
-    // the quantity matches the package's declared serving. Keep this link
-    // exact: a different column (for example, per 100 g) cannot inherit it.
-    const namesDeclaredServingMass = sameAsDeclaredServing
-      && quantityWithUnitAppears(claim.text, row.basisAmount!, row.basisUnit!)
-      && /\b(?:servings?|portions?)\b/i.test(claim.text);
-    const hasRowBasis = (hasNumericBasis&&quantityWithUnitAppears(claim.text, row.basisAmount!, row.basisUnit!, true))
-      || (mentionsServing && sameAsDeclaredServing)
-      || namesDeclaredServingMass
-      || (/\bper\s+(?:servings?|portions?|packs?|packages?|biscuits?|pieces?)\b/i.test(claim.text)
-        && basisMentionsAreSupported(claim.text, [printedBasis, ...(hasNumericBasis?[`per ${row.basisAmount} ${row.basisUnit}`]:[])]));
-    return quantityWithUnitAppears(claim.text, row.value, row.unit) && hasRowBasis;
+    const hasRowBasis=rowBasisNamed(row);
+    const exactReading=quantityWithUnitAppears(claim.text,row.value,row.unit);
+    // Gemini sometimes returns a natural, citation-free inventory sentence
+    // ("the table lists energy and protein per 100 g") alongside a complete
+    // linked reconstruction. This is safe to anchor to the named rows only
+    // when it is plainly describing the printed table and names that row's
+    // exact basis; comparative or physiological conclusions still need their
+    // normal independent evidence checks below.
+    const tableInventory=!exactReading
+      &&hasRowBasis
+      &&/\b(?:nutrition(?:al)?\s+)?(?:table|panel|label)\b/i.test(claim.text)
+      &&/\b(?:lists?|shows?|reports?|declares?|includes?|displays?)\b/i.test(claim.text)
+      &&completeTableInventory
+      &&!needsComparativeReference(claim.text)
+      &&!requiresPhysiologicalSource(claim.text);
+    return hasRowBasis&&(exactReading||tableInventory);
   });
   // Exact nutrient, value, unit and basis matches can restore an omitted row
   // link even when Gemini forgot its citation. The caller supplies only rows
@@ -326,10 +364,11 @@ function hasExplicitUncertainty(text:string):boolean{
 
 function nutrientFamily(text:string):string|null{
   const families:Array<[string,RegExp]>=[
-    ['added-sugars',/\badded sugars?\b/i],['carbohydrate',/\b(?:carbohydrat\w*|carbs?)\b/i],
+    ['added-sugars',/\badded sugars?\b/i],['trans-fat',/\btrans\s+fat(?:ty\s+acids?)?\b/i],['carbohydrate',/\b(?:carbohydrat\w*|carbs?)\b/i],
     ['sugars',/\b(?:total )?sugars?\b/i],['protein',/\b(?:protein|proten)\b/i],
     ['saturated-fat',/\bsaturat\w* fat\b/i],['fat',/\b(?:total )?fat\b/i],
     ['fiber',/\b(?:fibre|fiber)\b/i],['sodium',/\bsodium\b/i],['salt',/\bsalt\b/i],
+    ['cholesterol',/\bcholesterol\b/i],['iron',/\biron\b/i],['calcium',/\bcalcium\b/i],['potassium',/\bpotassium\b/i],
     ['energy',/\b(?:energy|calories?|kcal|kilojoules?|kj)\b/i],
   ];
   return families.find(([,pattern])=>pattern.test(text))?.[0]??null;

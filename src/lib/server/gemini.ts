@@ -320,6 +320,20 @@ function safeProviderNumber(value:unknown):number|null{
   return null;
 }
 
+function providerPrintedNumber(value:unknown):number|null{
+  if(typeof value!=='string')return null;
+  const match=/^\s*([+]?(?:\d+(?:\.\d*)?|\.\d+))\s*(?:kcal|kj|mg|mcg|[µμ]g|g|ml)?\s*$/i.exec(value);
+  if(!match)return null;
+  const parsed=Number(match[1]);
+  return Number.isFinite(parsed)?parsed:null;
+}
+
+function providerPrintedUnit(value:unknown):string|null{
+  if(typeof value!=='string')return null;
+  const match=/^\s*[+]?(?:\d+(?:\.\d*)?|\.\d+)\s*(kcal|kj|mg|mcg|[µμ]g|g|ml)\s*$/i.exec(value);
+  return match?.[1]?.toLocaleLowerCase('en')??null;
+}
+
 function safeProviderStatus(value:unknown,hasEvidence:boolean):'clear'|'provisional'|'ambiguous'|'conflict'|'unreadable'{
   if(typeof value==='string'&&reconstructionStatuses.has(value))return value as ReturnType<typeof safeProviderStatus>;
   return hasEvidence?'provisional':'unreadable';
@@ -345,6 +359,31 @@ function normalizeProviderReconstructionEvidence(value:unknown,item:Record<strin
   return {observationIds,imageRegions};
 }
 
+function providerPackageFactCategory(item:Record<string,unknown>){
+  return safeProviderText(firstDefined(item,'category','type','kind'),80)
+    ?.normalize('NFKC').toLocaleLowerCase('en').replace(/[ _]+/g,'-').trim()??'';
+}
+
+function providerPackageFactText(item:Record<string,unknown>){
+  return safeProviderText(firstDefined(item,'printedText','printed_text','text','statement','printedValue','printed_value','value','description','printedLabel','printed_label','label','name','normalizedName','normalized_name'),1000);
+}
+
+function providerPackageFactEvidence(item:Record<string,unknown>){
+  return normalizeProviderReconstructionEvidence(firstDefined(item,'evidence','sourceEvidence','source_evidence'),item);
+}
+
+function providerPackageFactStatus(item:Record<string,unknown>,evidence:ReturnType<typeof providerPackageFactEvidence>){
+  return safeProviderStatus(firstDefined(item,'status','confidenceStatus','confidence_status'),evidence.observationIds.length>0||evidence.imageRegions.length>0);
+}
+
+function printedMass(value:string|null){
+  if(!value)return null;
+  const match=/(?:^|[^\p{L}\p{N}])([+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+))\s*(g|ml)\b/iu.exec(value.normalize('NFKC'));
+  if(!match)return null;
+  const quantity=Number(match[1].replace(',','.'));
+  return Number.isFinite(quantity)&&quantity>0?{quantity,unit:match[2].toLocaleLowerCase('en') as 'g'|'ml'}:null;
+}
+
 /**
  * Gemini occasionally returns semantically useful package fields with extra keys,
  * snake_case names, or omitted structural defaults. Normalize only that shape;
@@ -368,39 +407,69 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
   const reconstruction=declaredReconstruction??nestedPackageReconstruction??(packageLooksLikeReconstruction?packageCandidate:null);
   if(!output||!reconstruction)return value;
 
+  // Some Gemini responses use a compact, categorized packageFacts array in
+  // place of the richer identity/serving/ingredients/statements objects. Keep
+  // each fact in its semantic field instead of flattening the entire array
+  // into miscellaneous statements.
+  const rawPackageFacts=firstDefined(reconstruction,'packageFacts','package_facts','facts');
+  const packageFacts=Array.isArray(rawPackageFacts)
+    ?rawPackageFacts.slice(0,250).flatMap(value=>{const item=objectRecord(value);return item?[item]:[];})
+    :[];
+  const factsFor=(...categories:string[])=>packageFacts.filter(item=>categories.includes(providerPackageFactCategory(item)));
+
   const identityInput=objectRecord(firstDefined(reconstruction,'identity','productIdentity','product_identity'))??{};
   const identityEvidence=normalizeProviderReconstructionEvidence(firstDefined(identityInput,'evidence','sourceEvidence','source_evidence'),identityInput);
-  const identityValues={
+  const explicitIdentity={
     brand:safeProviderText(firstDefined(identityInput,'brand','brandName','brand_name'),160),
     name:safeProviderText(firstDefined(identityInput,'name','productName','product_name'),240),
     variant:safeProviderText(firstDefined(identityInput,'variant','flavour','flavor'),240),
     status:safeProviderStatus(firstDefined(identityInput,'status','confidenceStatus','confidence_status'),identityEvidence.observationIds.length>0||identityEvidence.imageRegions.length>0),
     evidence:identityEvidence,
   };
+  const identityFact=factsFor('identity','product-identity','product')[0];
+  const identityFactEvidence=identityFact?providerPackageFactEvidence(identityFact):null;
+  const identityFactLabel=identityFact?safeProviderText(firstDefined(identityFact,'printedLabel','printed_label','label','name'),180)?.toLocaleLowerCase('en')??'':'';
+  const identityFactText=identityFact?providerPackageFactText(identityFact):null;
+  const identityFactName=identityFact?safeProviderText(firstDefined(identityFact,'normalizedName','normalized_name','productName','product_name'),240):null;
+  const identityHasValues=!!(explicitIdentity.brand||explicitIdentity.name||explicitIdentity.variant);
+  const identityValues=identityHasValues||!identityFact?explicitIdentity:{
+    brand:/\bbrand\b/i.test(identityFactLabel)?identityFactName??identityFactText:null,
+    name:/\b(?:product|name)\b/i.test(identityFactLabel)||!identityFactLabel?identityFactName??identityFactText:null,
+    variant:/\b(?:variant|flavou?r)\b/i.test(identityFactLabel)?identityFactName??identityFactText:null,
+    status:providerPackageFactStatus(identityFact,identityFactEvidence!),
+    evidence:identityFactEvidence!,
+  };
+
   const servingInputValue=firstDefined(reconstruction,'serving','servingDefinition','serving_definition','servingSize','serving_size');
-  const servingInput=objectRecord(servingInputValue);
+  const servingFact=factsFor('serving','serving-size','serving-declaration')[0];
+  const explicitServingInput=objectRecord(servingInputValue);
+  const servingInput=explicitServingInput??(servingFact??(typeof servingInputValue==='string'?{printedText:servingInputValue}:null));
   let serving:Record<string,unknown>|null=null;
   if(servingInput){
-    const evidence=normalizeProviderReconstructionEvidence(firstDefined(servingInput,'evidence','sourceEvidence','source_evidence'),servingInput);
+    const evidence=providerPackageFactEvidence(servingInput);
+    const printedText=safeProviderText(firstDefined(servingInput,'printedText','printed_text','statement','text','printedValue','printed_value','value','printedLabel','printed_label','label'),300);
+    const parsedMass=printedMass(printedText);
+    const quantity=safeProviderNumber(firstDefined(servingInput,'quantity','amount','mass','size'))??parsedMass?.quantity??null;
+    const unitValue=firstDefined(servingInput,'unit','quantityUnit','quantity_unit');
     serving={
-      printedText:safeProviderText(firstDefined(servingInput,'printedText','printed_text','statement','text','label'),300),
-      quantity:safeProviderNumber(firstDefined(servingInput,'quantity','amount','mass','size')),
-      unit:firstDefined(servingInput,'unit','quantityUnit','quantity_unit')==='g'||firstDefined(servingInput,'unit','quantityUnit','quantity_unit')==='ml'?firstDefined(servingInput,'unit','quantityUnit','quantity_unit'):null,
+      printedText,
+      quantity,
+      unit:unitValue==='g'||unitValue==='ml'?unitValue:parsedMass?.unit??null,
       pieceCount:safeProviderNumber(firstDefined(servingInput,'pieceCount','piece_count','count','pieces')),
       pieceDescription:safeProviderText(firstDefined(servingInput,'pieceDescription','piece_description','pieces'),100),
-      status:safeProviderStatus(firstDefined(servingInput,'status','confidenceStatus','confidence_status'),evidence.observationIds.length>0||evidence.imageRegions.length>0),
+      status:providerPackageFactStatus(servingInput,evidence),
       evidence,
     };
-  }else if(typeof servingInputValue==='string'){
-    serving={printedText:servingInputValue.slice(0,300),quantity:null,unit:null,pieceCount:null,pieceDescription:null,status:'provisional',evidence:normalizeProviderReconstructionEvidence(null)};
   }
 
   const nutritionInput=firstDefined(reconstruction,'nutritionRows','nutrition_rows','nutritionTable','nutrition_table','nutrients');
-  const nutritionRows=Array.isArray(nutritionInput)?nutritionInput.slice(0,100).flatMap((value,index)=>{
+  const nutritionFactItems=factsFor('nutrition','nutrient','nutrition-row','nutrient-row');
+  const normalizedNutritionInput=Array.isArray(nutritionInput)&&nutritionInput.length?nutritionInput:nutritionFactItems;
+  const nutritionRows=Array.isArray(normalizedNutritionInput)?normalizedNutritionInput.slice(0,100).flatMap((value,index)=>{
     const item=objectRecord(value);if(!item)return[];
-    const nutrient=safeProviderText(firstDefined(item,'nutrient','name','nutrientName','nutrient_name','label'),120);
+    const nutrient=safeProviderText(firstDefined(item,'nutrient','name','nutrientName','nutrient_name','label','printedLabel','printed_label','normalizedName','normalized_name'),120);
     if(!nutrient)return[];
-    const evidence=normalizeProviderReconstructionEvidence(firstDefined(item,'evidence','sourceEvidence','source_evidence'),item);
+    const evidence=providerPackageFactEvidence(item);
     const printedValue=safeProviderText(firstDefined(item,'printedValue','printed_value','valueText','value_text'),80)
       ??(typeof firstDefined(item,'value','amount')==='string'?String(firstDefined(item,'value','amount')).slice(0,80):null);
     return[{
@@ -408,12 +477,12 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
       nutrient,
       printedLabel:safeProviderText(firstDefined(item,'printedLabel','printed_label','label'),160)??nutrient,
       printedValue,
-      value:safeProviderNumber(firstDefined(item,'value','numericValue','numeric_value','amount'))??safeProviderNumber(printedValue),
-      unit:safeProviderText(firstDefined(item,'unit','unitText','unit_text'),24),
+      value:safeProviderNumber(firstDefined(item,'value','numericValue','numeric_value','amount'))??safeProviderNumber(printedValue)??providerPrintedNumber(printedValue),
+      unit:safeProviderText(firstDefined(item,'unit','unitText','unit_text'),24)??providerPrintedUnit(printedValue),
       columnLabel:safeProviderText(firstDefined(item,'columnLabel','column_label','column','header'),160),
       basisText:safeProviderText(firstDefined(item,'basisText','basis_text','basisLabel','basis_label','basis'),160),
-      basisAmount:safeProviderNumber(firstDefined(item,'basisAmount','basis_amount')),
-      basisUnit:firstDefined(item,'basisUnit','basis_unit')==='g'||firstDefined(item,'basisUnit','basis_unit')==='ml'?firstDefined(item,'basisUnit','basis_unit'):null,
+      basisAmount:safeProviderNumber(firstDefined(item,'basisAmount','basis_amount'))??printedMass(safeProviderText(firstDefined(item,'basisText','basis_text','basisLabel','basis_label','basis','columnLabel','column_label','column','header'),160))?.quantity??null,
+      basisUnit:firstDefined(item,'basisUnit','basis_unit')==='g'||firstDefined(item,'basisUnit','basis_unit')==='ml'?firstDefined(item,'basisUnit','basis_unit'):printedMass(safeProviderText(firstDefined(item,'basisText','basis_text','basisLabel','basis_label','basis','columnLabel','column_label','column','header'),160))?.unit??null,
       qualifier:safeProviderText(firstDefined(item,'qualifier','qualifiers','note'),300),
       status:safeProviderStatus(firstDefined(item,'status','confidenceStatus','confidence_status'),evidence.observationIds.length>0||evidence.imageRegions.length>0),
       evidence,
@@ -421,13 +490,15 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
   }):[];
 
   const ingredientInput=firstDefined(reconstruction,'ingredients','ingredientList','ingredient_list');
-  const ingredients=Array.isArray(ingredientInput)?ingredientInput.slice(0,250).flatMap((value,index)=>{
+  const ingredientFacts=factsFor('ingredient','ingredient-item','ingredient-list-item');
+  const normalizedIngredientInput=Array.isArray(ingredientInput)&&ingredientInput.length?ingredientInput:ingredientFacts;
+  const ingredients=Array.isArray(normalizedIngredientInput)?normalizedIngredientInput.slice(0,250).flatMap((value,index)=>{
     const item=objectRecord(value);if(!item)return[];
-    const printedText=safeProviderText(firstDefined(item,'printedText','printed_text','printedLabel','printed_label','text','label'),600)
+    const printedText=safeProviderText(firstDefined(item,'printedText','printed_text','text','statement','printedValue','printed_value','value','printedLabel','printed_label','label'),600)
       ??safeProviderText(firstDefined(item,'name','ingredient','normalizedName','normalized_name'),600);
     const name=safeProviderText(firstDefined(item,'name','ingredient','normalizedName','normalized_name'),300)??printedText?.slice(0,300)??null;
     if(!name||!printedText)return[];
-    const evidence=normalizeProviderReconstructionEvidence(firstDefined(item,'evidence','sourceEvidence','source_evidence'),item);
+    const evidence=providerPackageFactEvidence(item);
     const position=safeProviderNumber(firstDefined(item,'position','index','order','sequence'));
     return[{
       position:position!==null&&Number.isInteger(position)&&position>=0?position:index,
@@ -440,14 +511,16 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
   }):[];
 
   const additiveInput=firstDefined(reconstruction,'additives','additiveList','additive_list');
-  const additives=Array.isArray(additiveInput)?additiveInput.slice(0,100).flatMap(value=>{
+  const additiveFacts=factsFor('additive','additive-identity');
+  const normalizedAdditiveInput=Array.isArray(additiveInput)&&additiveInput.length?additiveInput:additiveFacts;
+  const additives=Array.isArray(normalizedAdditiveInput)?normalizedAdditiveInput.slice(0,100).flatMap(value=>{
     const item=objectRecord(value);if(!item)return[];
-    const printedName=safeProviderText(firstDefined(item,'printedName','printed_name','printedText','printed_text','printedLabel','printed_label','name','label'),240);if(!printedName)return[];
+    const printedName=safeProviderText(firstDefined(item,'printedName','printed_name','printedText','printed_text','text','printedValue','printed_value','value','printedLabel','printed_label','name','label'),240);if(!printedName)return[];
     return[{
       printedName,code:safeProviderText(firstDefined(item,'code','insCode','ins_code','eNumber','e_number'),40),
       normalizedName:safeProviderText(firstDefined(item,'normalizedName','normalized_name','canonicalName','canonical_name','name'),240),
-      status:safeProviderStatus(firstDefined(item,'status','confidenceStatus','confidence_status'),(()=>{const evidence=normalizeProviderReconstructionEvidence(firstDefined(item,'evidence','sourceEvidence','source_evidence'),item);return evidence.observationIds.length>0||evidence.imageRegions.length>0;})()),
-      evidence:normalizeProviderReconstructionEvidence(firstDefined(item,'evidence','sourceEvidence','source_evidence'),item),
+      status:providerPackageFactStatus(item,providerPackageFactEvidence(item)),
+      evidence:providerPackageFactEvidence(item),
     }];
   }):[];
 
@@ -457,14 +530,14 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
     [firstDefined(reconstruction,'warnings','precautions'),'warning'],
     [firstDefined(reconstruction,'allergens','allergenStatements','allergen_statements'),'contains'],
     [firstDefined(reconstruction,'certifications','regulatoryMarks','regulatory_marks'),'regulatory-mark'],
-    [firstDefined(reconstruction,'packageFacts','package_facts','otherDetails','other_details'),'other'],
+    [firstDefined(reconstruction,'otherDetails','other_details'),'other'],
   ];
   const statements=statementGroups.flatMap(([input,fallbackKind])=>Array.isArray(input)?input.slice(0,100).flatMap(value=>{
     const item=objectRecord(value)??(typeof value==='string'?{text:value}:null);if(!item)return[];
     const text=safeProviderText(firstDefined(item,'text','statement','printedText','printed_text','printedLabel','printed_label','value','description','name','label'),1000);if(!text)return[];
     const rawKind=firstDefined(item,'kind','type','category');
     const kind=typeof rawKind==='string'&&reconstructionStatementKinds.has(rawKind)?rawKind:fallbackKind;
-    const evidence=normalizeProviderReconstructionEvidence(firstDefined(item,'evidence','sourceEvidence','source_evidence'),item);
+    const evidence=providerPackageFactEvidence(item);
     return[{
       kind:kind as 'contains'|'may-contain'|'precaution'|'claim'|'warning'|'manufacturer'|'regulatory-mark'|'instruction'|'other',
       label:safeProviderText(firstDefined(item,'label','heading','claimType','claim_type'),180),text,
@@ -472,8 +545,32 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
       evidence,
     }];
   }):[]);
+  const packageFactStatementKinds:Record<string,PackageReconstructionContent['statements'][number]['kind']>={
+    allergen:'contains','allergen-statement':'contains',contains:'contains','may-contain':'may-contain',
+    precaution:'precaution',claim:'claim',warning:'warning',manufacturer:'manufacturer',
+    'regulatory-mark':'regulatory-mark',certification:'regulatory-mark',instruction:'instruction',other:'other',
+  };
+  const structuralPackageFactCategories=new Set([
+    'identity','product-identity','product','serving','serving-size','serving-declaration',
+    'ingredient','ingredient-item','ingredient-list-item','additive','additive-identity',
+    'nutrition','nutrient','nutrition-row','nutrient-row',
+  ]);
+  const categorizedStatements=packageFacts.flatMap(item=>{
+    const category=providerPackageFactCategory(item);
+    if(structuralPackageFactCategories.has(category))return[];
+    const text=providerPackageFactText(item);if(!text)return[];
+    const evidence=providerPackageFactEvidence(item);
+    const kind=packageFactStatementKinds[category]??'other';
+    return[{
+      kind,
+      label:safeProviderText(firstDefined(item,'printedLabel','printed_label','label','heading'),180),
+      text,
+      status:providerPackageFactStatus(item,evidence),
+      evidence,
+    }];
+  });
   const seenStatements=new Set<string>();
-  const uniqueStatements=statements.filter(statement=>{
+  const uniqueStatements=[...statements,...categorizedStatements].filter(statement=>{
     const key=`${statement.kind}:${statement.text.normalize('NFKC').replace(/\s+/g,' ').trim().toLocaleLowerCase()}`;
     if(seenStatements.has(key))return false;
     seenStatements.add(key);return true;
@@ -536,6 +633,95 @@ function unwrapProviderAssistEnvelope(value:unknown):unknown{
 }
 
 /** Normalize provider transport shape before strict validation; add no facts or evidence. */
+function derivedPackageReadingCandidates(answer:string,reconstructionValue:unknown){
+  const reconstruction=objectRecord(reconstructionValue);
+  const rows=Array.isArray(reconstruction?.nutritionRows)?reconstruction.nutritionRows.flatMap(value=>{const row=objectRecord(value);return row?[row]:[];}):[];
+  const serving=objectRecord(reconstruction?.serving);
+  const normalizeUnit=(value:string)=>value.toLocaleLowerCase('en').replace(/[μµ]/g,'µ').replace(/milligrams?/g,'mg').replace(/kilocalories?/g,'kcal').replace(/kilojoules?/g,'kj').replace(/millilit(?:er|re)s?/g,'ml').replace(/grams?/g,'g');
+  const valueAndUnit=/([+-]?(?:\d+(?:[.,]\d+)?|[.,]\d+))\s*(kcal|kilocalories?|kj|kilojoules?|mg|milligrams?|mcg|[µμ]g|g|grams?|ml|millilit(?:er|re)s?)\b/giu;
+  const esc=(text:string)=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const labelVariants=(row:Record<string,unknown>)=>[row.printedLabel,row.nutrient].flatMap(value=>typeof value==='string'&&value.trim()?[value.trim(),value.trim().replace(/s$/i,'')]:[]);
+  const basisFor=(row:Record<string,unknown>):{key:string;label:string;claimPhrase:string;serving:boolean}|null=>{
+    const amount=safeProviderNumber(row.basisAmount);
+    const unit=typeof row.basisUnit==='string'?normalizeUnit(row.basisUnit):'';
+    const printed=typeof row.basisText==='string'?row.basisText.trim():typeof row.columnLabel==='string'?row.columnLabel.trim():'';
+    if(amount!==null&&unit){
+      const amountPattern=String(amount).replace('.','[.,]?');
+      const pattern=new RegExp(`\\bper\\s+(?:the\\s+)?${amountPattern}\\s*${esc(unit)}\\b`,'i');
+      if(pattern.test(answer))return{key:`${amount}:${unit}`,label:`${amount} ${unit}`,claimPhrase:`per ${amount} ${unit}`,serving:false};
+      const servingAmount=safeProviderNumber(firstDefined(serving??{},'quantity','amount','mass'));
+      const servingUnit=typeof firstDefined(serving??{},'unit','quantityUnit','quantity_unit')==='string'?normalizeUnit(String(firstDefined(serving??{},'unit','quantityUnit','quantity_unit'))):'';
+      const sameServing=servingAmount===amount&&servingUnit===unit;
+      if(sameServing&&/\bper\s+(?:the\s+)?(?:serving|serve|portion)\b/i.test(answer))return{key:`${amount}:${unit}`,label:`the ${amount} ${unit} serving`,claimPhrase:`per ${amount} ${unit}`,serving:true};
+      return null;
+    }
+    if(printed){
+      const phrasePattern=printed.split(/\s+/).map(esc).join('\\s+');
+      if(new RegExp(`\\b${phrasePattern}\\b`,'i').test(answer))return{key:printed.toLocaleLowerCase(),label:'the printed basis',claimPhrase:printed,serving:/\bserv(?:ing|e|ice|ices)\b/i.test(printed)};
+    }
+    return null;
+  };
+  const candidates:Array<{claim:Record<string,unknown>;basisKey:string;basisLabel:string;serving:boolean;displayText:string}> = [];
+  for(const row of rows){
+    const rowId=typeof row.rowId==='string'?row.rowId:'';
+    const status=typeof row.status==='string'?row.status:'';
+    const evidence=objectRecord(row.evidence);
+    const observationIds=Array.isArray(evidence?.observationIds)?evidence.observationIds.filter((id):id is string=>typeof id==='string'):[];
+    const imageRegions=Array.isArray(evidence?.imageRegions)?evidence.imageRegions:[];
+    const value=safeProviderNumber(row.value);
+    const unit=typeof row.unit==='string'?normalizeUnit(row.unit):'';
+    if(!rowId||!['clear','provisional'].includes(status)||value===null||!unit||(!observationIds.length&&!imageRegions.length))continue;
+    const basis=basisFor(row);
+    if(!basis)continue;
+    const numericMatches=[...answer.matchAll(valueAndUnit)].filter(match=>{
+      const parsed=Number(match[1].replace(',','.'));
+      return Number.isFinite(parsed)&&Math.abs(parsed-value)<1e-8&&normalizeUnit(match[2])===unit;
+    });
+    if(!numericMatches.length)continue;
+    const labels=labelVariants(row).sort((a,b)=>b.length-a.length);
+    const rowLabel=labels.find(label=>new RegExp(`(?<![\\p{L}\\p{N}])${esc(label)}(?![\\p{L}\\p{N}])`,'iu').test(answer));
+    if(!rowLabel)continue;
+    // Require the matching value near this row label. The label list and the
+    // measurement must be locally associated in the model's own response;
+    // a matching number elsewhere in the paragraph is not enough.
+    const labelPattern=new RegExp(`(?<![\\p{L}\\p{N}])${esc(rowLabel)}(?![\\p{L}\\p{N}])`,'iu');
+    const labelMatch=labelPattern.exec(answer);
+    if(!labelMatch)continue;
+    const valueStart=labelMatch.index+labelMatch[0].length;
+    const localText=answer.slice(valueStart,Math.min(answer.length,valueStart+100)).split(/;|,(?!\d)/u,1)[0];
+    const localValue=[...localText.matchAll(valueAndUnit)].some(match=>{
+      const parsed=Number(match[1].replace(',','.'));
+      return Number.isFinite(parsed)&&Math.abs(parsed-value)<1e-8&&normalizeUnit(match[2])===unit;
+    });
+    if(!localValue)continue;
+    const rawLabel=typeof row.nutrient==='string'&&row.nutrient.toLocaleLowerCase()!=='other'?row.nutrient:typeof row.printedLabel==='string'?row.printedLabel:'Nutrient';
+    const normalizedLabel=rawLabel.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+    const label=normalizedLabel?normalizedLabel[0].toLocaleUpperCase()+normalizedLabel.slice(1):'Nutrient';
+    const numeric=`${row.value} ${row.unit}`;
+    const displayText=`${label} ${numeric}`;
+    const statement=`The photographed label appears to list ${displayText} ${basis.claimPhrase}.`;
+    candidates.push({
+      claim:{mode:'synthesis',text:statement,observationIds:[],sourceIds:[],calculationIds:[],interpretationRowIds:[rowId],packageFactIds:[],profileFieldIds:[]},
+      basisKey:basis.key,basisLabel:basis.label,serving:basis.serving,displayText,
+    });
+  }
+  const unique=[...new Map(candidates.map(candidate=>[String((candidate.claim.interpretationRowIds as string[])[0]),candidate])).values()].slice(0,15);
+  const answerParts:Array<{text:string;claimIndexes:number[]}> = [];
+  const groups=new Map<string,{label:string;items:typeof unique}>();
+  for(const item of unique){const group=groups.get(item.basisKey)??{label:item.basisLabel,items:[]};group.items.push(item);groups.set(item.basisKey,group);}
+  for(const group of groups.values()){
+    for(let start=0;start<group.items.length;start+=6){
+      const items=group.items.slice(start,start+6);
+      const rowsText=items.map(item=>item.displayText);
+      const prefix=items[0].serving?`For ${group.label}`:group.label==='the printed basis'?`On ${group.label}`:`On the ${group.label} basis`;
+      answerParts.push({text:`${prefix}, the photographed label appears to list ${rowsText.join('; ')}.`,claimIndexes:items.map(item=>unique.indexOf(item))});
+      if(answerParts.length===3)break;
+    }
+    if(answerParts.length===3)break;
+  }
+  return{claims:unique.map(item=>item.claim),answerParts};
+}
+
 function normalizeProviderAnswerShape(value:unknown,allowUnlinkedAnswerCandidates=false):unknown {
   if(!value||typeof value!=='object'||Array.isArray(value))return value;
   const record=value as Record<string,unknown>;
@@ -600,6 +786,15 @@ function normalizeProviderAnswerShape(value:unknown,allowUnlinkedAnswerCandidate
   const rawClaims=Array.isArray(record.claims)&&record.claims.length?record.claims:Array.isArray(record.evidenceClaims)?record.evidenceClaims:Array.isArray(record.evidence_claims)?record.evidence_claims:Array.isArray(record.claims)?record.claims:[];
   const claimIds=new Map<string,number>();
   const claims=rawClaims.map((raw,index)=>{
+    if(typeof raw==='string'){
+      const refs=evidenceReferences(referenceIds(raw));
+      const text=raw.replace(citation,'').replace(/\s+([,.!?;:])/g,'$1').replace(/\s+/g,' ').trim();
+      return{
+        mode:'synthesis',text,
+        observationIds:refs.observationIds,sourceIds:refs.sourceIds,calculationIds:refs.calculationIds,
+        interpretationRowIds:refs.interpretationRowIds,packageFactIds:refs.packageFactIds,profileFieldIds:refs.profileFieldIds,
+      };
+    }
     if(!raw||typeof raw!=='object'||Array.isArray(raw))return raw;
     const claim=raw as Record<string,unknown>;
     const fallbackRefs=providerRefs(claim);
@@ -696,6 +891,15 @@ function normalizeProviderAnswerShape(value:unknown,allowUnlinkedAnswerCandidate
     return {text,claimIndexes:indexes??explicitIndexes??[]};
   });
   let normalizedAnswer=typeof record.answer==='string'?record.answer:answerParts?.map(part=>part&&typeof part==='object'&&!Array.isArray(part)?(part as Record<string,unknown>).text:'').filter((text):text is string=>typeof text==='string'&&text.trim().length>0).join('\n\n');
+  const rawClaimCount=Array.isArray(suppliedClaims)?suppliedClaims.length:0;
+  const rawReconstruction=firstDefined(record,'packageReconstruction','package_reconstruction','reconstruction');
+  if(allowUnlinkedAnswerCandidates&&rawClaimCount===0&&typeof normalizedAnswer==='string'){
+    const derived=derivedPackageReadingCandidates(normalizedAnswer,rawReconstruction);
+    if(derived.claims.length){
+      claims.splice(0,claims.length,...derived.claims);
+      answerParts=derived.answerParts;
+    }
+  }
   if(allowUnlinkedAnswerCandidates&&claims.length===0&&typeof normalizedAnswer==='string'&&normalizedAnswer.trim()&&normalizedAnswer.length<=1800){
     const sentences=splitAnswerSentences(normalizedAnswer);
     // A top-level evidenceIds array is aggregate metadata, not a citation for
@@ -769,10 +973,18 @@ export function parseAgentProviderOutput(text: string,requirePackageReconstructi
   const hasReferencedClaim=output.claims.some(claim=>claim.observationIds.length>0||claim.sourceIds.length>0
     ||(claim.calculationIds?.length??0)>0||(claim.interpretationRowIds?.length??0)>0||(claim.packageFactIds?.length??0)>0
     ||(claim.profileFieldIds?.length??0)>0||(claim.visualEvidence?.length??0)>0);
+  const rawRecord=objectRecord(unwrapProviderAssistEnvelope(normalized.output));
+  const rawClaims=firstDefined(rawRecord??{},'claims','evidenceClaims','evidence_claims');
+  const providerSuppliedClaims=Array.isArray(rawClaims)&&rawClaims.length>0;
+  const hasRawRequiredShape=!!rawRecord&&typeof rawRecord.answer==='string'
+    &&Array.isArray(rawClaims)&&Array.isArray(firstDefined(rawRecord,'limitations'))
+    &&['inspectImage','inspect_image','imageInspection','image_inspection'].some(key=>Object.prototype.hasOwnProperty.call(rawRecord,key))
+    &&(!requirePackageReconstruction||!!objectRecord(firstDefined(rawRecord,'packageReconstruction','package_reconstruction','reconstruction')));
+  const adapterLinkedClaims=!providerSuppliedClaims&&hasReferencedClaim;
   return {
     output,
-    schemaMode: providerOutputSchema(requirePackageReconstruction).safeParse(output).success ? 'provider-schema' as const : 'compatible-schema-without-answer-parts' as const,
-    modelOutputStatus: hasReferencedClaim?'claims-present' as const:output.claims.length?'unlinked-answer-candidate' as const:'no-grounded-claims' as const,
+    schemaMode: !hasRawRequiredShape?'adapted-provider-schema' as const:providerOutputSchema(requirePackageReconstruction).safeParse(output).success ? 'provider-schema' as const : 'compatible-schema-without-answer-parts' as const,
+    modelOutputStatus: adapterLinkedClaims?'adapter-derived-package-claims' as const:hasReferencedClaim?'claims-present' as const:output.claims.length?'unlinked-answer-candidate' as const:'no-grounded-claims' as const,
     discardedRegionCount: normalized.discardedRegionCount,
   };
 }
@@ -3066,7 +3278,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
     let synthesisStatus:'ok'|'withheld'='withheld';
     let repairUsed=false;
     let afterSynthesisCoverage=preSynthesisCoverage;
-    let acceptedSynthesis:{result:ReturnType<typeof validateClaims>;output:unknown;claims:z.infer<typeof assistOutput>['claims'];summary:Record<string,unknown>|undefined;coverage:ReturnType<typeof packageAnswerCoverage>;schemaMode:'compatible-schema-without-answer-parts'|'provider-schema';modelOutputStatus:'claims-present'|'no-grounded-claims'}|null=null;
+    let acceptedSynthesis:{result:ReturnType<typeof validateClaims>;output:unknown;claims:z.infer<typeof assistOutput>['claims'];summary:Record<string,unknown>|undefined;coverage:ReturnType<typeof packageAnswerCoverage>;schemaMode:'adapted-provider-schema'|'compatible-schema-without-answer-parts'|'provider-schema';modelOutputStatus:'adapter-derived-package-claims'|'claims-present'|'no-grounded-claims'}|null=null;
     try{
       const synthesized=await synthesizePackageAnswer(
         extendedData,
