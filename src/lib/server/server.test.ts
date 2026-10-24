@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fixedFetch, input, localGate, readBounded, route } from './http';
 import { lookupProducts, normalizeProduct, productInput } from './products';
-import { assist, assistInput, assistOutput, assistPromptPayload, canAcceptPackageAnswerSynthesis, geminiResponseJsonSchema, linkVisionResponseToCapture, needsPackageAnswerSynthesis, packageAnswerCoverage, packageAnswerSynthesisImprovesCoverage, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, sanitizePackageReconstruction, shouldRetrieveContextualNutritionGuidance, validateClaims, validateImage, vision, visionInput } from './gemini';
+import { assist, assistInput, assistOutput, assistPromptPayload, canAcceptPackageAnswerSynthesis, focusedLabelRecoverySchema, geminiResponseJsonSchema, linkVisionResponseToCapture, mergeFocusedLabelRecovery, needsPackageAnswerSynthesis, packageAnswerCoverage, packageAnswerSynthesisImprovesCoverage, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, sanitizePackageReconstruction, selectNutritionRecoveryRegion, shouldRetrieveContextualNutritionGuidance, validateClaims, validateImage, vision, visionInput } from './gemini';
 import { applicationGeminiContext, committedPaidSpendUsd, countGoogleSearchQueries, freeTierSyntheticSmokeContext, resetGeminiUsageLedgerForTests, safeProviderFailure } from './gemini-provider';
 import { research, researchInput, researchRecalls } from './research';
 import { getNutritionGuidance } from './nutrition-guidance';
-import { packageSchema, type PackageReconstructionContent } from '../contracts';
+import { packageSchema, type Observation, type PackageReconstructionContent } from '../contracts';
+import type { GeminiToolImage } from './gemini-tools';
 import { packageForAssist } from '../../modules/inference';
 import sharp from 'sharp';
 import { z } from 'zod';
@@ -329,6 +330,61 @@ describe('public source normalization', () => {
 });
 
 describe('provider validation, independent of provider invocation', () => {
+  it('requests a focused reread when OCR sees multiple printed bases but the reconstruction omits one whole column',()=>{
+    const imageId='bagrry-layout-regression';
+    const evidence={observationIds:[],imageRegions:[{imageId,region:null}]};
+    const nutrientNames=['energy','protein','carbohydrate','sugars','dietary fibre','fat','saturated fat','sodium'];
+    const serving={printedText:'Serving size = 35 g',quantity:35,unit:'g' as const,pieceCount:null,pieceDescription:null,status:'provisional' as const,evidence};
+    const perServingRows=nutrientNames.map((nutrient,index)=>({
+      rowId:`${nutrient}-${index}-35g`,nutrient,printedLabel:nutrient,printedValue:'1 g',value:1,unit:nutrient==='energy'?'kcal':'g',
+      columnLabel:'Per 35g#',basisText:'Per 35g#',basisAmount:35,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence,
+    }));
+    const reconstruction={
+      nutritionRows:perServingRows,regions:[],serving,
+      ingredients:[{position:0,name:'Oats',printedText:'Oats',printedPercentage:null,normalizedName:'oats',status:'provisional' as const,evidence}],
+    } satisfies Pick<PackageReconstructionContent,'nutritionRows'|'regions'|'serving'|'ingredients'>;
+    const original:GeminiToolImage={imageId,mimeType:'image/jpeg',base64:'a'.repeat(32),side:'extra',sourceImage:{width:1942,height:2639},preprocessing:{rotation:0,contrast:false,invert:false,crop:null},regionRole:'full-image'};
+    const crop:GeminiToolImage={...original,preprocessing:{...original.preprocessing,crop:{x:0,y:.02,width:.98,height:.8}},regionRole:'other'};
+    const header:Observation={id:'printed-basis-header',field:'ocr-line',text:'Nutrients Per 100g# Per 35g#',side:'extra',confidence:94,origin:'ocr',imageId,readingOrder:{runId:'reader-a',blockIndex:0,paragraphIndex:0,lineIndex:1}};
+
+    const selected=selectNutritionRecoveryRegion(reconstruction,[original,crop],new Set(),[header]);
+    expect(selected).toMatchObject({source:'attached-label-detail-crop',trigger:'missing-detected-basis-column',missingBasisColumns:['per 100 g'],image:{imageId},region:{region:{x:0,y:.02,width:.98,height:.8}}});
+
+    const withBothColumns=[...perServingRows,...perServingRows.map(row=>({...row,rowId:`${row.rowId}-100g`,columnLabel:'Per 100g#',basisText:'Per 100g#',basisAmount:100}))];
+    expect(selectNutritionRecoveryRegion({...reconstruction,nutritionRows:withBothColumns},[original,crop],new Set(),[header])).toBeNull();
+
+    const servingLabeledRows=perServingRows.map(row=>({...row,columnLabel:'Per serving',basisText:'Per serving'}));
+    const servingLabeledReconstruction={...reconstruction,serving:null,nutritionRows:servingLabeledRows};
+    expect(selectNutritionRecoveryRegion(servingLabeledReconstruction,[original,crop],new Set(),[header])).toMatchObject({missingBasisColumns:['per 100 g']});
+  });
+  it('fills missing serving fields from a focused photo reread while retaining both evidence links',()=>{
+    const crop={x:0.1,y:0.2,width:0.7,height:0.4};
+    const existing:PackageReconstructionContent={
+      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
+      serving:{printedText:'SERVING SIZE: 2 biscuits (approx. 13.4)',quantity:null,unit:null,pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['serving-line'],imageRegions:[]}},
+      nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Partial package reading.',
+    };
+    const recovered=focusedLabelRecoverySchema.parse({nutritionRows:[],serving:{printedText:'SERVING SIZE: 2 biscuits (approx. 13.4 g)',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['serving-line']}},ingredients:[],additives:[],statements:[]});
+    const merged=mergeFocusedLabelRecovery(existing,recovered,'photo-back',crop,new Set(['serving-line']));
+    expect(merged.serving).toMatchObject({quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional'});
+    expect(merged.serving?.evidence.observationIds).toContain('serving-line');
+    expect(merged.serving?.evidence.imageRegions).toContainEqual({imageId:'photo-back',region:crop});
+    expect(merged.unresolved).toEqual([]);
+  });
+  it('preserves genuinely conflicting serving readings instead of merging them',()=>{
+    const crop={x:0.1,y:0.2,width:0.7,height:0.4};
+    const existing:PackageReconstructionContent={
+      identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
+      serving:{printedText:'1 serving = 30 g',quantity:30,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence:{observationIds:['serving-line'],imageRegions:[]}},
+      nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Saved package reading.',
+    };
+    const recovered=focusedLabelRecoverySchema.parse({nutritionRows:[],serving:{printedText:'Serving size 35 g',quantity:35,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence:{observationIds:[]}},ingredients:[],additives:[],statements:[]});
+    const merged=mergeFocusedLabelRecovery(existing,recovered,'photo-back',crop,new Set());
+    expect(merged.serving?.quantity).toBe(30);
+    expect(merged.unresolved).toHaveLength(1);
+    expect(merged.unresolved[0].field).toBe('serving');
+    expect(merged.unresolved[0].reason).toContain('mass 30 g vs 35 g');
+  });
   it('keeps optional quote spans available as audit aids in the structured provider response schema', () => {
     const providerSchema = z.toJSONSchema(assistOutput);
     expect(JSON.stringify(providerSchema)).toContain('supportingSpans');
@@ -475,6 +531,31 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.answer).toBe(ingredient);
     expect(result.claims).toMatchObject([{packageFactIds:['package-fact:ingredient:0'],interpretationRowIds:['carbohydrate-per-100g']}]);
     expect((result as unknown as {packageReconstruction:unknown}).packageReconstruction).toMatchObject({ingredients:[{name:'Refined wheat flour',status:'provisional',evidence:{imageRegions:[{imageId,region:null}]}}],nutritionRows:[{rowId:'carbohydrate-per-100g',status:'provisional',evidence:{imageRegions:[{imageId,region:null}]}}]});
+  });
+  it('reuses validated structured nutrition-summary claims instead of regenerating an already grounded factual answer',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const observation={id:'carbohydrate-label-line',field:'carbohydrate',text:'Carbohydrate 23.1 g per serving',side:'text',confidence:100,origin:'user'} as const;
+    const evidence={observationIds:[observation.id],imageRegions:[]};
+    const packageReconstruction={
+      identity:{brand:null,name:'Unidentified package',variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
+      serving:{printedText:'Serving size 35 g',quantity:35,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence},
+      nutritionRows:[{rowId:'carbohydrate-per-serving',nutrient:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'23.1 g',value:23.1,unit:'g',columnLabel:'Per serving',basisText:'Per serving',basisAmount:35,basisUnit:'g',qualifier:null,status:'provisional',evidence}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional package reading.',
+    };
+    const answer='The label lists carbohydrate 23.1 g per serving and cholesterol 0 mg per serving.';
+    const claims=[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[],calculationIds:[],interpretationRowIds:['carbohydrate-per-serving'],packageFactIds:[],profileFieldIds:[],supportingSpans:[]}];
+    const payload=JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({answer,claims,packageReconstruction,limitations:[],inspectImage:null})}],role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:80,candidatesTokenCount:100,totalTokenCount:180}});
+    const fetcher=vi.fn().mockResolvedValue(new Response(payload,{status:200,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question:'What carbohydrate amount does the label show per serving?',package:{id:'structured-nutrition-answer',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[observation],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
+
+    const result=await assist(data);
+    expect(result.agentDiagnostics).toMatchObject({answerStatus:'structured-package-summary',structuredPackageSummaryAccepted:true,acceptedClaims:1,acceptedModelClaims:0,acceptedStructuredNutritionClaims:1});
+    expect(result.answer).toContain('23.1 g');
+    expect(result.answer).not.toContain('Cholesterol 0 mg');
+    expect(result.claims.some(claim=>claim.interpretationRowIds?.includes('carbohydrate-per-serving'))).toBe(true);
+    expect(result.agentTrace.some(step=>step.name==='package_answer_synthesis')).toBe(false);
+    expect(result.agentTrace.some(step=>step.name==='answer_repair')).toBe(false);
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
   it('returns cited local guidance evidence to the conversation UI', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');

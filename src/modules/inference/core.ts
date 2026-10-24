@@ -537,6 +537,10 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     data.calculations??[],
   );
   const supportedByIndex = new Map<number, (typeof result.data.claims)[number] & {supportingSpans:NonNullable<(typeof result.data.claims)[number]['supportingSpans']>}>();
+  // A compound provider claim can contain several correctly reconstructed
+  // rows plus one unsupported number. Record the numeric rejection so the
+  // independently validated row summary can preserve the supported portion.
+  let numericAnswerOrBasisWithheld=false;
   const supported = result.data.claims.flatMap((originalClaim, claimIndex) => {
     let claim = linkRowToClaim(originalClaim);
     const hasLinkedPackageContext = claim.observationIds.length > 0 || (claim.calculationIds?.length ?? 0) > 0
@@ -559,6 +563,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
     }
     const reject = (reason: string) => {
       data.diagnostic?.({ stage: 'claim', index: claimIndex, decision: 'rejected', reason });
+      if(reason==='unsupported-numeric-value'||reason==='unsupported-basis')numericAnswerOrBasisWithheld=true;
       return [];
     };
     const visualEvidence = claim.visualEvidence ?? [];
@@ -781,7 +786,6 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
   };
 
   const answerPartRejections: string[] = [];
-  let numericAnswerOrBasisWithheld=false;
   const validatedAnswerParts = (result.data.answerParts ?? []).flatMap((part, answerPartIndex) => {
     const reject = (reason: string) => {
       answerPartRejections.push(reason);

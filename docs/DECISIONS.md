@@ -1,5 +1,12 @@
 # Chronological decisions
 
+## 24 October 2026 — preserve evidence-linked row summaries after aggregate numeric rejection
+
+- Keep the atomic numeric validator strict. When a compound model claim is rejected because one value or basis is unsupported, allow the existing nutrition summary to emit only individually linked reconstructed rows for a nutrition question.
+- Treat an accepted row summary as a completed conversational answer in the orchestration layer. Do not launch answer repair or package synthesis solely because the original aggregate claim did not survive; judgment questions and genuinely missing answer facets may still use bounded synthesis.
+- Count accepted provider claims and accepted structured-row claims separately in diagnostics so a useful summary is not reported as zero accepted output.
+- Evidence: a saved live transcript contained a valid provider response with one aggregate claim; one unsupported value caused claim-level rejection. A route-level mocked regression fell from two requests to one after the orchestration change. A separate live free-tier saved-package follow-up returned one grounded response in one request. The initial multimodal scan has not yet been rerun on this revision.
+
 ## 24 October 2026 — normalize Gemini package and compact-evidence dialects before validation
 
 - Adapt a reconstruction-shaped root `package` into the shared `packageReconstruction` contract, including common provider aliases for serving statements/mass and package claims, warnings, allergens, certifications and facts. Drop unusable supplemental answer-part links when the core response still parses. Do not fabricate evidence or treat schema repair as an answer-quality repair.

@@ -1,5 +1,12 @@
 # Sanitized engineering journal
 
+## 2026-10-24 — retain supported row claims when a provider bundles an unsupported value
+
+- Inspected a readable saved Gemini transcript. The provider response was valid JSON; one compound claim included supported reconstructed rows and an unsupported number, so numeric validation rejected that whole claim. After image-region recovery, the accepted row summary was not treated as a conversational answer by the wrapper, which triggered an avoidable generation.
+- Updated inference/orchestration to surface evidence-linked row claims after a numeric/basis rejection, preserve them for coverage, skip answer repair when that summary already answers a factual nutrition question, and report structured-row claim counts separately. The unsupported value remains withheld.
+- A synthetic route regression observed two calls before the repair-suppression condition and one afterward. A live photo-free follow-up on a saved 35 g package reconstruction used free `gemini-3.5-flash-lite`, one request, 5,072 reported tokens, one accepted claim and no image/profile transfer. Local free-route cost estimate: zero; Google billing was not queried.
+- 206 focused tests passed; full suite 652 passed and 1 skipped; TypeScript and diff checks passed. No build or browser test was run. The initial multimodal analysis has not been replayed on this revision.
+
 ## 2026-10-23 — configure paid Gemini only as the final fallback
 
 - The owner supplied distinct free and paid Google project IDs. Added only those identifiers to ignored `.env.local`; credentials and paid caps were left unchanged. `/api/status` confirms free mode selected, free Gemini enabled, paid authorization and fallback enabled, and distinct project identities declared. The free-first routing test file passed all 11 tests.

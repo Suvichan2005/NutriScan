@@ -101,6 +101,17 @@ export const focusedIngredientRecoverySchema=z.object({
   additives:z.array(reconstructedAdditiveSchema.extend({evidence:focusedRecoveryEvidenceSchema})).max(100),
   statements:z.array(reconstructedStatementSchema.extend({evidence:focusedRecoveryEvidenceSchema})).max(100),
 }).strict();
+const focusedNutritionCellRecoverySchema=z.object({
+  nutrient:z.string().min(1).max(120),printedLabel:z.string().max(160),printedValue:z.string().max(80).nullable(),
+  value:z.number().finite().nonnegative().max(100000).nullable(),unit:z.string().max(24).nullable(),
+  basisText:z.string().max(160).nullable(),basisAmount:z.number().positive().max(10000).nullable(),basisUnit:z.enum(['g','ml']).nullable(),
+  qualifier:z.string().max(300).nullable(),evidence:focusedRecoveryEvidenceSchema,
+}).strict();
+/** A compact response for a missing whole table column, avoiding repeated full-row metadata and truncation. */
+export const focusedNutritionColumnRecoverySchema=z.object({
+  nutritionRows:z.array(focusedNutritionCellRecoverySchema).max(32),
+  serving:reconstructedServingSchema.extend({evidence:focusedRecoveryEvidenceSchema}).nullable(),
+}).strict();
 const minimumUsefulNutritionFamilies=6;
 function providerOutputSchema(requirePackageReconstruction:boolean){
   return requirePackageReconstruction?initialPackageAssistOutput:followupAssistOutput;
@@ -705,6 +716,96 @@ export function parseAgentProviderOutput(text: string,requirePackageReconstructi
   };
 }
 
+type PrintedNutritionBasis = { kind:'quantity'; amount:number; unit:'g'|'ml' } | { kind:'serving' };
+
+function nutritionBasisKey(basis:PrintedNutritionBasis,serving:PackageReconstructionContent['serving']) {
+  if(basis.kind==='serving'&&serving?.quantity!==null&&serving?.quantity!==undefined&&serving.unit)return `quantity:${Number(serving.quantity)}:${serving.unit}`;
+  return basis.kind==='serving'?'serving':`quantity:${Number(basis.amount)}:${basis.unit}`;
+}
+
+function printedNutritionBasisCues(text:string):PrintedNutritionBasis[] {
+  const normalized=text.normalize('NFKC').toLocaleLowerCase('en').replace(/,(?=\d)/g,'.');
+  const bases:PrintedNutritionBasis[]=[];
+  for(const match of normalized.matchAll(/\bper\s*(?=\d)(\d+(?:\.\d+)?)\s*(g|ml)\b/g)){
+    const amount=Number(match[1]);
+    if(Number.isFinite(amount)&&amount>0)bases.push({kind:'quantity',amount,unit:match[2] as 'g'|'ml'});
+  }
+  if(/\bper\s*(?:serv(?:ing)?|portion)\b/.test(normalized))bases.push({kind:'serving'});
+  return bases;
+}
+
+/** Find explicit, nearby printed basis headings without treating row values as expected columns. */
+function detectedNutritionBasisColumns(observations:readonly Observation[],serving:PackageReconstructionContent['serving']) {
+  const groups=new Map<string,Map<number,Set<string>>>();
+  for(const observation of observations){
+    if(observation.origin!=='ocr'||observation.field!=='ocr-line'||!observation.imageId||!observation.readingOrder)continue;
+    const cues=printedNutritionBasisCues(observation.text);
+    if(!cues.length)continue;
+    const order=observation.readingOrder;
+    const groupKey=`${observation.imageId}|${order.runId}|${order.blockIndex}|${order.paragraphIndex}`;
+    const lines=groups.get(groupKey)??new Map<number,Set<string>>();
+    const line=lines.get(order.lineIndex)??new Set<string>();
+    for(const cue of cues)line.add(nutritionBasisKey(cue,serving));
+    lines.set(order.lineIndex,line);groups.set(groupKey,lines);
+  }
+  const columnsByImage=new Map<string,Set<string>>();
+  for(const [groupKey,lines] of groups){
+    const imageId=groupKey.slice(0,groupKey.indexOf('|'));
+    const indexes=[...lines.keys()].sort((a,b)=>a-b);
+    for(const start of indexes){
+      const nearby=new Set<string>();
+      for(const index of indexes)if(index>=start&&index<=start+2)for(const key of lines.get(index)??[])nearby.add(key);
+      if(nearby.size<2)continue;
+      const columns=columnsByImage.get(imageId)??new Set<string>();
+      for(const key of nearby)columns.add(key);
+      columnsByImage.set(imageId,columns);
+    }
+  }
+  return columnsByImage;
+}
+
+function reconstructedNutritionBasisKey(row:PackageReconstructionContent['nutritionRows'][number],serving:PackageReconstructionContent['serving']):string|null {
+  if(row.value===null||!row.unit||row.basisAmount===null||!row.basisUnit||!['clear','provisional'].includes(row.status))return null;
+  const label=`${row.columnLabel??''} ${row.basisText??''}`.normalize('NFKC').toLocaleLowerCase('en');
+  if(/\b(?:serv(?:ing)?|portion)\b/.test(label)){
+    // A row may already encode the serving mass even when the separate
+    // serving declaration is incomplete. Count that explicit quantity as
+    // coverage for the same printed column (for example, per serving = 35 g).
+    if(serving?.quantity!==null&&serving?.quantity!==undefined&&serving.unit)return nutritionBasisKey({kind:'serving'},serving);
+    return nutritionBasisKey({kind:'quantity',amount:row.basisAmount,unit:row.basisUnit},serving);
+  }
+  return nutritionBasisKey({kind:'quantity',amount:row.basisAmount,unit:row.basisUnit},serving);
+}
+
+function missingPrintedNutritionBases(
+  reconstruction:Pick<PackageReconstructionContent,'nutritionRows'|'serving'>,
+  observations:readonly Observation[],
+) {
+  const observedImageById=new Map(observations.map(observation=>[observation.id,observation.imageId]));
+  const columnsByImage=detectedNutritionBasisColumns(observations,reconstruction.serving);
+  const gaps=new Map<string,{expected:number;missing:number;missingKeys:string[]}>();
+  for(const [imageId,expected] of columnsByImage){
+    const covered=new Set(reconstruction.nutritionRows.flatMap(row=>{
+      const linkedImages=[...new Set([
+        ...row.evidence.imageRegions.map(region=>region.imageId),
+        ...row.evidence.observationIds.map(id=>observedImageById.get(id)).filter((id):id is string=>!!id),
+      ])];
+      if(linkedImages.length&&!linkedImages.includes(imageId))return [];
+      const key=reconstructedNutritionBasisKey(row,reconstruction.serving);
+      return key?[key]:[];
+    }));
+    const missingKeys=[...expected].filter(key=>!covered.has(key));
+    if(missingKeys.length)gaps.set(imageId,{expected:expected.size,missing:missingKeys.length,missingKeys});
+  }
+  return gaps;
+}
+
+function displayNutritionBasisKey(key:string) {
+  if(key==='serving')return 'per serving';
+  const match=/^quantity:(\d+(?:\.\d+)?):(g|ml)$/.exec(key);
+  return match?`per ${Number(match[1])} ${match[2]}`:key;
+}
+
 /** Pick one model-located, geometry-backed nutrition region for a bounded recovery pass. */
 export function selectNutritionRecoveryRegion(
   reconstruction:Pick<PackageReconstructionContent,'nutritionRows'|'regions'|'serving'|'ingredients'>,
@@ -715,8 +816,12 @@ export function selectNutritionRecoveryRegion(
   const usableNutrientFamilies=new Set(reconstruction.nutritionRows
     .filter(row=>row.value!==null&&!!row.unit)
     .map(row=>row.nutrient.normalize('NFKC').toLocaleLowerCase('en').replace(/\bcarbohydrates?\b|\bcarbs?\b/g,'carbohydrate').replace(/\bsugars?\b/g,'sugar').replace(/\bfats?\b/g,'fat').replace(/\s+/g,' ').trim()));
-  const needsNutrition=usableNutrientFamilies.size<minimumUsefulNutritionFamilies
+  const missingBasisColumns=missingPrintedNutritionBases(reconstruction,observations);
+  const needsNutrition=usableNutrientFamilies.size<minimumUsefulNutritionFamilies||missingBasisColumns.size>0
     ||reconstruction.serving?.quantity===null||reconstruction.serving?.quantity===undefined||!reconstruction.serving.unit;
+  const trigger=missingBasisColumns.size?'missing-detected-basis-column'
+    :reconstruction.serving?.quantity===null||reconstruction.serving?.quantity===undefined||!reconstruction.serving.unit?'missing-serving-basis'
+      :'sparse-nutrition-coverage';
   const needsIngredients=reconstruction.ingredients.length===0;
   // Count nutrient identities, not row/column values: two recovered columns
   // for carbohydrate are still one field family. Recover the most consequential
@@ -729,35 +834,36 @@ export function selectNutritionRecoveryRegion(
     &&image.preprocessing.crop.height*image.sourceImage.height>=40
     &&image.preprocessing.crop.width*image.preprocessing.crop.height<0.98;
   const hasNutritionText=(imageId:string)=>observations.some(item=>item.origin==='ocr'&&item.imageId===imageId
-    &&item.field==='ocr-line'&&/\b(?:nutrition(?:al)?|energy|kcal|carbohydrates?|protein|proten|sugars?|fat|sodium|salt|serving|per\s*100)\b/i.test(item.text));
+    &&item.field==='ocr-line'&&/\b(?:nutrition(?:al)?|nutrients?|energy|kcal|carbohydrates?|protein|proten|sugars?|fat|sodium|salt|serving|per\s*100)\b/i.test(item.text));
   if(needsNutrition){
-    for(const region of reconstruction.regions){
+    const imagePriority=(imageId:string)=>missingBasisColumns.has(imageId)?0:1;
+    for(const region of [...reconstruction.regions].sort((a,b)=>imagePriority(a.imageId)-imagePriority(b.imageId))){
       if(region.role!=='nutrition-table'||alreadyInspectedImageIds.has(region.imageId))continue;
       const image=images.find(candidate=>candidate.imageId===region.imageId&&candidate.preprocessing.crop===null);
       if(!image)continue;
       if(region.region.width*image.sourceImage.width<64||region.region.height*image.sourceImage.height<40)continue;
       // A crop covering almost the whole image will not improve the model's view.
       if(region.region.width*region.region.height>=0.98)continue;
-      return{image,region,source:'model-located-region' as const};
+      return{image,region,source:'model-located-region' as const,trigger,missingBasisColumns:(missingBasisColumns.get(image.imageId)?.missingKeys??[]).map(displayNutritionBasisKey)};
     }
     // Prefer the geometry-separated table over a broader mixed-text band.
-    const attachedCrop=images.find(image=>image.regionRole==='nutrition-table'&&validCrop(image));
+    const attachedCrop=images.filter(image=>image.regionRole==='nutrition-table'&&validCrop(image)).sort((a,b)=>imagePriority(a.imageId)-imagePriority(b.imageId))[0];
     if(attachedCrop){
       const region={imageId:attachedCrop.imageId,role:'nutrition-table' as const,region:attachedCrop.preprocessing.crop!,observationIds:[]};
-      return{image:attachedCrop,region,source:'attached-ocr-crop' as const};
+      return{image:attachedCrop,region,source:'attached-ocr-crop' as const,trigger,missingBasisColumns:(missingBasisColumns.get(attachedCrop.imageId)?.missingKeys??[]).map(displayNutritionBasisKey)};
     }
-    const attachedDenseLabel=images.find(image=>image.regionRole==='label-detail'&&validCrop(image));
+    const attachedDenseLabel=images.filter(image=>image.regionRole==='label-detail'&&validCrop(image)).sort((a,b)=>imagePriority(a.imageId)-imagePriority(b.imageId))[0];
     if(attachedDenseLabel){
       const region={imageId:attachedDenseLabel.imageId,role:'other' as const,region:attachedDenseLabel.preprocessing.crop!,observationIds:[]};
-      return{image:attachedDenseLabel,region,source:'attached-label-detail-crop' as const};
+      return{image:attachedDenseLabel,region,source:'attached-label-detail-crop' as const,trigger,missingBasisColumns:(missingBasisColumns.get(attachedDenseLabel.imageId)?.missingKeys??[]).map(displayNutritionBasisKey)};
     }
     // The browser's geometry-ranked generic crop may still contain a useful
     // nutrition table. Use it only when OCR observations identify that section.
-    const attachedLabelDetail=images.find(image=>image.regionRole==='other'&&validCrop(image)
-      &&hasNutritionText(image.imageId));
+    const attachedLabelDetail=images.filter(image=>image.regionRole==='other'&&validCrop(image)
+      &&hasNutritionText(image.imageId)).sort((a,b)=>imagePriority(a.imageId)-imagePriority(b.imageId))[0];
     if(attachedLabelDetail){
       const region={imageId:attachedLabelDetail.imageId,role:'other' as const,region:attachedLabelDetail.preprocessing.crop!,observationIds:[]};
-      return{image:attachedLabelDetail,region,source:'attached-label-detail-crop' as const};
+      return{image:attachedLabelDetail,region,source:'attached-label-detail-crop' as const,trigger,missingBasisColumns:(missingBasisColumns.get(attachedLabelDetail.imageId)?.missingKeys??[]).map(displayNutritionBasisKey)};
     }
     return null;
   }
@@ -906,8 +1012,28 @@ export function mergeFocusedLabelRecovery(
   if(recoveredServing){
     const candidate={...recoveredServing,status:'provisional' as const,evidence:{observationIds:recoveredServing.evidence.observationIds.filter(id=>validObservationIds.has(id)),...imageEvidence}};
     if(!serving)serving=candidate;
-    else if(serving.quantity!==candidate.quantity||serving.unit!==candidate.unit||serving.pieceCount!==candidate.pieceCount){
-      unresolved.push({field:'serving',reason:`A focused photo-region reading gives ${candidate.printedText??`${candidate.quantity??'unknown'} ${candidate.unit??''}`} while another serving reading is already retained. The original serving was preserved.`,evidence:candidate.evidence});
+    else{
+      const disagreements:string[]=[];
+      if(serving.quantity!==null&&candidate.quantity!==null&&serving.quantity!==candidate.quantity)disagreements.push(`mass ${serving.quantity} ${serving.unit??''} vs ${candidate.quantity} ${candidate.unit??''}`);
+      if(serving.unit!==null&&candidate.unit!==null&&serving.unit!==candidate.unit)disagreements.push(`unit ${serving.unit} vs ${candidate.unit}`);
+      if(serving.pieceCount!==null&&candidate.pieceCount!==null&&serving.pieceCount!==candidate.pieceCount)disagreements.push(`piece count ${serving.pieceCount} vs ${candidate.pieceCount}`);
+      if(serving.pieceDescription!==null&&candidate.pieceDescription!==null&&normalizedPackageText(serving.pieceDescription)!==normalizedPackageText(candidate.pieceDescription))disagreements.push(`serving description ${serving.pieceDescription} vs ${candidate.pieceDescription}`);
+      if(disagreements.length){
+        unresolved.push({field:'serving',reason:`A focused photo-region reading conflicts with the saved serving (${disagreements.join('; ')}). The saved reading was preserved for review.`,evidence:candidate.evidence});
+      }else{
+        // A focused visual reread can complete an earlier partial reading. Fill
+        // only fields the saved object did not establish and retain both traces.
+        serving={
+          ...serving,
+          printedText:serving.printedText??candidate.printedText,
+          quantity:serving.quantity??candidate.quantity,
+          unit:serving.unit??candidate.unit,
+          pieceCount:serving.pieceCount??candidate.pieceCount,
+          pieceDescription:serving.pieceDescription??candidate.pieceDescription,
+          status:serving.status==='conflict'?'conflict':'provisional',
+          evidence:mergeNutritionEvidence(serving.evidence,candidate.evidence),
+        };
+      }
     }
   }
   for(const candidate of recovered.ingredients){
@@ -939,16 +1065,52 @@ export function mergeFocusedLabelRecovery(
   return packageReconstructionContentSchema.parse({...existing,nutritionRows:rows.slice(0,100),ingredients:ingredients.sort((a,b)=>a.position-b.position).slice(0,250),additives:additives.slice(0,100),statements:statements.slice(0,100),serving,unresolved:unresolved.slice(0,100)});
 }
 
+function normalizeFocusedNutritionColumnRecovery(
+  recovered:z.infer<typeof focusedNutritionColumnRecoverySchema>,
+  missingBasisColumns:readonly string[],
+){
+  const targetBasisSlots=new Set(missingBasisColumns.flatMap(value=>{
+    if(/\bserv(?:ing|ings)\b/i.test(value))return ['basis:serving'];
+    const match=/\bper\s*(\d+(?:\.\d+)?)\s*(g|ml)\b/i.exec(value);
+    return match?[`basis:${Number(match[1])}:${match[2].toLocaleLowerCase('en')}`]:[];
+  }));
+  const completeRows=recovered.nutritionRows.map((row,index)=>({
+    ...row,rowId:`focused-cell-${index}`,columnLabel:row.basisText,status:'provisional' as const,
+    evidence:{...row.evidence,imageRegions:[]},
+  }));
+  const nutritionRows=completeRows.filter(row=>{
+    const key=nutritionSlotKey(row);
+    return !!key&&[...targetBasisSlots].some(target=>key.endsWith(`|${target}`));
+  });
+  const data=focusedLabelRecoverySchema.parse({nutritionRows:nutritionRows.map(({evidence,...row})=>({...row,evidence:{observationIds:evidence.observationIds}})),serving:recovered.serving,ingredients:[],additives:[],statements:[]});
+  return{data,discardedOutOfTargetRows:recovered.nutritionRows.length-nutritionRows.length};
+}
+
 function labelRegionRecoveryPrompt(
   image:GeminiToolImage,
   crop:z.infer<typeof normalizedCropSchema>,
   reconstruction:PackageReconstructionContent,
   observations:Observation[],
+  missingBasisColumns:readonly string[]=[] ,
 ){
-  const ocrLines=observations.filter(item=>item.origin==='ocr'&&item.imageId===image.imageId)
+  const orderedLines=observations.filter(item=>item.origin==='ocr'&&item.imageId===image.imageId)
     .sort((a,b)=>(a.readingOrder?.blockIndex??0)-(b.readingOrder?.blockIndex??0)||(a.readingOrder?.paragraphIndex??0)-(b.readingOrder?.paragraphIndex??0)||(a.readingOrder?.lineIndex??0)-(b.readingOrder?.lineIndex??0))
-    .slice(0,40).map(item=>({id:item.id,text:item.text.slice(0,320),readingOrder:item.readingOrder??null}));
-  return JSON.stringify({task:'Interpret every useful label detail visible in this crop. Separate the nutrition table from adjacent ingredient text, claims or warnings before extracting fields. Return every legible nutrient row with its printed column label, value, unit, basis and qualifier. Carefully inspect any serving declaration, especially when the table has a per-serving column: preserve its printedText and parse pieceCount, pieceDescription, quantity and unit independently. If the mass or unit is partly unreadable, retain the readable words and numbers while leaving only the unsupported parsed field null; do not discard the serving declaration. Retain ingredient items in printed order, additive names/codes, and package claims or warnings when visible. Preserve what is printed and normalize spelling separately. Do not infer missing text or answer the user question. Return OCR observation IDs only when a line directly supports a field. Do not return image coordinates: the application will link all interpretations to this exact crop.',image:{imageId:image.imageId,side:image.side,originalDimensions:image.sourceImage,cropNormalizedToOriginal:crop,attachedView:image.preprocessing.crop?'already-focused OCR geometry crop; it may include adjacent package sections and coordinates still refer to the original photo':'crop produced from the original photo'},existingReadings:{serving:reconstruction.serving,nutritionRows:reconstruction.nutritionRows},ocrLines});
+    .slice(0,40);
+  const imageMetadata={imageId:image.imageId,side:image.side,originalDimensions:image.sourceImage,cropNormalizedToOriginal:crop};
+  if(missingBasisColumns.length){
+    const ocrLines=orderedLines.filter(item=>/[0-9]/.test(item.text)&&/(?:\b(?:kcal|kj|g|mg|mcg|µg)\b|\b(?:energy|protein|carbohydrat|sugar|fibre|fiber|fat|sodium|salt|cholesterol|iron|calcium|nutrient|nutrition|serving)\b|per\s*\d)/i.test(item.text))
+      .slice(0,22).map(item=>({id:item.id,text:item.text.slice(0,220),readingOrder:item.readingOrder??null}));
+    const coveredColumns=[...new Set(reconstruction.nutritionRows.map(row=>row.basisText||row.columnLabel).filter((value):value is string=>!!value))];
+    const coveredNutrients=[...new Set(reconstruction.nutritionRows.map(row=>row.printedLabel||row.nutrient))].slice(0,32);
+    return JSON.stringify({
+      task:'Recover a missing printed nutrition-table column from the attached focused photo. Read the table visually and associate each value with its row and heading. Return complete readable nutrient cells only for the requested basis columns; do not repeat cells from other columns. Also return the printed serving declaration if legible. Do not extract ingredients, claims or other sections in this focused pass.',
+      recoveryTargets:{missingPrintedNutritionColumns:missingBasisColumns,alreadyCoveredColumns:coveredColumns,alreadyCoveredNutrientLabels:coveredNutrients,instruction:'The listed headings are detected on the label but absent from the saved reconstruction. Recover the values printed under those headings only. Do not use the already-covered column values, conventions, arithmetic or estimates to fill a cell. Omit a cell when its printed value, unit or column association is not legible.'},
+      image:imageMetadata,
+      ocrLines,
+    });
+  }
+  const ocrLines=orderedLines.slice(0,40).map(item=>({id:item.id,text:item.text.slice(0,320),readingOrder:item.readingOrder??null}));
+  return JSON.stringify({task:'Interpret every useful label detail visible in this crop. Separate the nutrition table from adjacent ingredient text, claims or warnings before extracting fields. Return every legible nutrient row with its printed column label, value, unit, basis and qualifier. Carefully inspect any serving declaration, especially when the table has a per-serving column: preserve its printedText and parse pieceCount, pieceDescription, quantity and unit independently. If the mass or unit is partly unreadable, retain the readable words and numbers while leaving only the unsupported parsed field null; do not discard the serving declaration. Retain ingredient items in printed order, additive names/codes, and package claims or warnings when visible. Preserve what is printed and normalize spelling separately. Do not infer missing text or answer the user question. Return OCR observation IDs only when a line directly supports a field. Do not return image coordinates: the application will link all interpretations to this exact crop.',image:{...imageMetadata,attachedView:image.preprocessing.crop?'already-focused OCR geometry crop; it may include adjacent package sections and coordinates still refer to the original photo':'crop produced from the original photo'},existingReadings:{serving:reconstruction.serving,nutritionRows:reconstruction.nutritionRows},ocrLines});
 }
 
 /** A schema repair is text-only: carry the provider's draft and safe issue paths, never replay image parts. */
@@ -2058,10 +2220,14 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
           ?selectNutritionRecoveryRegion(reconstruction,data.visualImages??[],inspectedImageIds,data.package.observations)
           :null;
         if(selectedRegion&&reconstruction){
+          // Reusing an already-attached crop is still an image inspection. Mark
+          // it before the call so later agent rounds cannot repeat the same
+          // automatic recovery when that crop remains incomplete.
+          inspectedImageIds.add(selectedRegion.image.imageId);
           const recoveryStarted=Date.now();
           const args={imageId:selectedRegion.image.imageId,crop:selectedRegion.region.region};
           const reuseAttachedCrop=selectedRegion.source==='attached-ocr-crop'||selectedRegion.source==='attached-label-detail-crop';
-          await recordGeminiDiagnostic({event:'nutrition_region_recovery',analysisId,status:'started',trigger:'fewer-than-three-valued-nutrition-rows',regionSelection:selectedRegion.source,imageSide:selectedRegion.image.side,regionArea:selectedRegion.region.region.width*selectedRegion.region.region.height});
+          await recordGeminiDiagnostic({event:'nutrition_region_recovery',analysisId,status:'started',trigger:selectedRegion.trigger,regionSelection:selectedRegion.source,imageSide:selectedRegion.image.side,regionArea:selectedRegion.region.region.width*selectedRegion.region.region.height});
           try{
             let recoveryImage:{mimeType:GeminiToolImage['mimeType'];base64:string}|null=null;
             let imageStatus:GeminiToolResult['status']='ok';
@@ -2076,14 +2242,19 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
               recoveryImage=imageResult.image??null;
             }
             if(imageStatus==='ok'&&recoveryImage){
-              const prompt=labelRegionRecoveryPrompt(selectedRegion.image,selectedRegion.region.region,reconstruction,data.package.observations);
+              const missingBasisColumns=selectedRegion.missingBasisColumns??[];
+              const recoverOnlyMissingColumn=missingBasisColumns.length>0;
+              const recoverySchema=recoverOnlyMissingColumn?focusedNutritionColumnRecoverySchema:focusedLabelRecoverySchema;
+              const prompt=labelRegionRecoveryPrompt(selectedRegion.image,selectedRegion.region.region,reconstruction,data.package.observations,missingBasisColumns);
               const response=await generateTracked(context,{
                 model:context.model,
                 contents:[{role:'user',parts:[{text:prompt},{inlineData:{mimeType:recoveryImage.mimeType,data:recoveryImage.base64}}]}],
                 config:{
-                  systemInstruction:'Interpret the attached focused package-label crop as a spatially mixed document region. Separate nutrition rows from adjacent ingredients, claims, warnings, serving text, and other package details. Extract every legible field supported by the crop, preserving printed values, units, bases, qualifiers, ingredient order and percentages. The crop is not independent corroboration. Preserve existing readings and do not use arithmetic to invent or select digits. Treat returned readings as provisional image interpretations; leave unsupported details absent or null. Return only the declared JSON object.',
+                  systemInstruction:recoverOnlyMissingColumn
+                    ?'Inspect the attached crop and recover only the nutrition cells under the requested missing printed basis heading, plus the serving declaration if legible. Return compact cell records in the declared schema. Do not return values from already-covered columns. Do not infer values from arithmetic, conventions or another column. Preserve printed labels and exact values; omit unreadable or unassociated cells. Return only JSON.'
+                    :'Interpret the attached focused package-label crop as a spatially mixed document region. Separate nutrition rows from adjacent ingredients, claims, warnings, serving text, and other package details. Extract every legible field supported by the crop, preserving printed values, units, bases, qualifiers, ingredient order and percentages. The crop is not independent corroboration. Preserve existing readings and do not use arithmetic to invent or select digits. Treat returned readings as provisional image interpretations; leave unsupported details absent or null. Return only the declared JSON object.',
                   responseMimeType:'application/json' as const,
-                  responseJsonSchema:geminiResponseJsonSchema(focusedLabelRecoverySchema),
+                  responseJsonSchema:geminiResponseJsonSchema(recoverySchema),
                   maxOutputTokens:5000,
                   thinkingConfig:{thinkingLevel:ThinkingLevel.LOW},
                   automaticContinuation:false,
@@ -2092,7 +2263,7 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
               },{analysisId,stage:'nutrition-region-recovery',round:0,profileIncluded:false,deadlineAt:deadline});
               let decoded:unknown=null;
               try{decoded=response.text?JSON.parse(response.text) as unknown:null;}catch{/* Invalid focused output is retained as a failed recovery, not a failed package answer. */}
-              let recovered=focusedLabelRecoverySchema.safeParse(decoded);
+              let recovered=recoverySchema.safeParse(decoded);
               if(response.candidates?.[0]?.finishReason==='STOP'&&!recovered.success&&response.text&&response.text.length<=50_000){
                 const issuePaths=recovered.error.issues.slice(0,12).map(issue=>issue.path.join('.'));
                 const issueCodes=recovered.error.issues.slice(0,12).map(issue=>issue.code);
@@ -2105,7 +2276,7 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
                     config:{
                       systemInstruction:'Repair only the focused package-label extraction JSON structure. Preserve discernible printed values, units, bases, qualifiers, ingredient text/order, statements and evidence identifiers exactly. Do not add or reinterpret package facts. Use null or omit a field when the original draft did not establish it. Return one JSON object.',
                       responseMimeType:'application/json' as const,
-                      responseJsonSchema:geminiResponseJsonSchema(focusedLabelRecoverySchema),
+                      responseJsonSchema:geminiResponseJsonSchema(recoverySchema),
                       maxOutputTokens:3500,
                       thinkingConfig:{thinkingLevel:ThinkingLevel.LOW},
                       automaticContinuation:false,
@@ -2114,7 +2285,7 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
                   },{analysisId,stage:'nutrition-region-structure-repair',round:0,profileIncluded:false,deadlineAt:deadline});
                   let repairedValue:unknown=null;
                   try{repairedValue=repair.text?JSON.parse(repair.text) as unknown:null;}catch{/* The bounded repair remains a schema failure. */}
-                  const repaired=focusedLabelRecoverySchema.safeParse(repairedValue);
+                  const repaired=recoverySchema.safeParse(repairedValue);
                   if(repair.candidates?.[0]?.finishReason==='STOP'&&repaired.success){recovered=repaired;await recordGeminiDiagnostic({event:'nutrition_region_recovery_repair',analysisId,status:'completed',elapsedMs:Date.now()-repairStarted});}
                   else{await recordGeminiDiagnostic({event:'nutrition_region_recovery_repair',analysisId,status:'failed',finishReason:repair.candidates?.[0]?.finishReason??null,schemaIssuePaths:repaired.success?[]:repaired.error.issues.slice(0,12).map(issue=>issue.path.join('.')),schemaIssueCodes:repaired.success?[]:repaired.error.issues.slice(0,12).map(issue=>issue.code),elapsedMs:Date.now()-repairStarted});}
                 }catch(error){
@@ -2122,11 +2293,15 @@ async function generateAgentOutput(data: z.infer<typeof assistInput>, imageParts
                 }
               }
               if(response.candidates?.[0]?.finishReason==='STOP'&&recovered.success){
-                const mergedReconstruction=mergeFocusedLabelRecovery(reconstruction,recovered.data,selectedRegion.image.imageId,selectedRegion.region.region,new Set(data.package.observations.map(item=>item.id)));
+                const normalizedRecovery=recoverOnlyMissingColumn
+                  ?normalizeFocusedNutritionColumnRecovery(recovered.data as z.infer<typeof focusedNutritionColumnRecoverySchema>,missingBasisColumns)
+                  :{data:focusedLabelRecoverySchema.parse(recovered.data),discardedOutOfTargetRows:0};
+                const recoveryData=normalizedRecovery.data;
+                const mergedReconstruction=mergeFocusedLabelRecovery(reconstruction,recoveryData,selectedRegion.image.imageId,selectedRegion.region.region,new Set(data.package.observations.map(item=>item.id)));
                 groundedOutput={...outputRecord,packageReconstruction:mergedReconstruction};
-                await recordGeminiEvaluationEvent(analysisId,{event:'nutrition_region_recovery_result',status:'parsed',nutritionRowCount:recovered.data.nutritionRows.length,ingredientCount:recovered.data.ingredients.length,additiveCount:recovered.data.additives.length,statementCount:recovered.data.statements.length,servingRead:Boolean(recovered.data.serving),servingPieceCount:recovered.data.serving?.pieceCount??null,servingMassRead:Boolean(recovered.data.serving?.quantity!==null&&recovered.data.serving?.unit),addedRows:Math.max(0,mergedReconstruction.nutritionRows.length-reconstruction.nutritionRows.length),conflictRows:mergedReconstruction.nutritionRows.filter(row=>row.status==='conflict').length});
-                await recordGeminiDiagnostic({event:'nutrition_region_recovery',analysisId,status:recovered.data.nutritionRows.length?'completed':'no-rows-read',candidateRowCount:recovered.data.nutritionRows.length,storedRowCount:mergedReconstruction.nutritionRows.length,conflictRowCount:mergedReconstruction.nutritionRows.filter(row=>row.status==='conflict').length,elapsedMs:Date.now()-recoveryStarted});
-                trace.push({name:'nutrition_region_recovery',status:recovered.data.nutritionRows.length?'ok':'empty',resultCount:recovered.data.nutritionRows.length,elapsedMs:Date.now()-recoveryStarted});
+                await recordGeminiEvaluationEvent(analysisId,{event:'nutrition_region_recovery_result',status:'parsed',nutritionRowCount:recoveryData.nutritionRows.length,discardedOutOfTargetRows:normalizedRecovery.discardedOutOfTargetRows,ingredientCount:recoveryData.ingredients.length,additiveCount:recoveryData.additives.length,statementCount:recoveryData.statements.length,servingRead:Boolean(recoveryData.serving),servingPieceCount:recoveryData.serving?.pieceCount??null,servingMassRead:Boolean(recoveryData.serving?.quantity!==null&&recoveryData.serving?.unit),addedRows:Math.max(0,mergedReconstruction.nutritionRows.length-reconstruction.nutritionRows.length),conflictRows:mergedReconstruction.nutritionRows.filter(row=>row.status==='conflict').length});
+                await recordGeminiDiagnostic({event:'nutrition_region_recovery',analysisId,status:recoveryData.nutritionRows.length?'completed':'no-rows-read',candidateRowCount:recoveryData.nutritionRows.length,discardedOutOfTargetRows:normalizedRecovery.discardedOutOfTargetRows,storedRowCount:mergedReconstruction.nutritionRows.length,conflictRowCount:mergedReconstruction.nutritionRows.filter(row=>row.status==='conflict').length,elapsedMs:Date.now()-recoveryStarted});
+                trace.push({name:'nutrition_region_recovery',status:recoveryData.nutritionRows.length?'ok':'empty',resultCount:recoveryData.nutritionRows.length,elapsedMs:Date.now()-recoveryStarted});
               }else{
                 await recordGeminiEvaluationEvent(analysisId,{event:'nutrition_region_recovery_result',status:'invalid-response',finishReason:response.candidates?.[0]?.finishReason??null,schemaIssuePaths:recovered.success?[]:recovered.error.issues.slice(0,12).map(issue=>issue.path.join('.'))});
                 await recordGeminiDiagnostic({event:'nutrition_region_recovery',analysisId,status:'invalid-response',finishReason:response.candidates?.[0]?.finishReason??null,schemaIssuePaths:recovered.success?[]:recovered.error.issues.slice(0,12).map(issue=>issue.path.join('.')),schemaIssueCodes:recovered.success?[]:recovered.error.issues.slice(0,12).map(issue=>issue.code),elapsedMs:Date.now()-recoveryStarted});
@@ -2573,22 +2748,31 @@ export async function assist(data: z.infer<typeof assistInput>) {
       const cleanedCandidateOutput=sanitizeAssistantEvidenceLabels(candidateOutput);
       const validated = validateClaims(cleanedCandidateOutput, extendedData, event => events.push(event));
       const parsedCandidate=assistOutput.safeParse(cleanedCandidateOutput);
+      let naturalAnswerAccepted=false;
+      let structuredPackageSummaryAccepted=false;
       if(parsedCandidate.success){
-        const naturalAnswerAccepted=events.some(event=>event.stage==='natural-answer'&&event.decision==='accepted');
+        naturalAnswerAccepted=events.some(event=>event.stage==='natural-answer'&&event.decision==='accepted');
+        structuredPackageSummaryAccepted=events.some(event=>event.stage==='structured-answer'&&event.decision==='accepted');
         const acceptedClaimIndexes=new Set(events.filter(event=>event.stage==='claim'&&event.decision==='accepted').map(event=>event.index));
         const linkedClaimIndexes=new Set(events.filter(event=>event.stage==='answer-part'&&event.index>=0&&event.decision==='accepted')
           .flatMap(event=>parsedCandidate.data.answerParts?.[event.index]?.claimIndexes??[])
           .filter(index=>acceptedClaimIndexes.has(index)));
         const linkedClaimTexts=new Set([...linkedClaimIndexes].map(index=>parsedCandidate.data.claims[index]?.text).filter((text):text is string=>!!text));
-        conversationalAnswerClaims=naturalAnswerAccepted
+        // A deterministic nutrition summary is already an answer assembled
+        // from independently validated row claims. Keep those claims in the
+        // conversational context; dropping them here made the following
+        // coverage check think the turn had no grounded answer and trigger an
+        // unnecessary Gemini synthesis call.
+        conversationalAnswerClaims=naturalAnswerAccepted||structuredPackageSummaryAccepted
           ?validated.claims
           :validated.claims.filter(claim=>linkedClaimTexts.has(claim.text));
       }else conversationalAnswerClaims=[];
       const profileIncluded = Object.values(extendedData.profile ?? {}).some(value => value.trim());
-      const acceptedNaturalAnswer=events.some(event=>event.stage==='natural-answer'&&event.decision==='accepted');
-      const structuredPackageSummaryAccepted=events.some(event=>event.stage==='structured-answer'&&event.decision==='accepted');
+      const acceptedNaturalAnswer=naturalAnswerAccepted;
       const rejectedNaturalAnswerSegments=events.filter(event=>event.stage==='natural-answer'&&event.decision==='rejected'&&event.index>0).length;
       const acceptedAnswerParts=events.filter(event => event.stage === 'answer-part' && event.index >= 0 && event.decision === 'accepted').length;
+      const acceptedModelClaims=events.filter(event=>event.stage==='claim'&&event.decision==='accepted').length;
+      const acceptedStructuredNutritionClaims=structuredPackageSummaryAccepted?Math.max(0,validated.claims.length-acceptedModelClaims):0;
       const answerStatus = structuredPackageSummaryAccepted ? 'structured-package-summary'
         : acceptedNaturalAnswer||acceptedAnswerParts>0 ? 'model-answer'
         : validated.claims.length ? 'grounded-claims-answer-unavailable'
@@ -2608,7 +2792,9 @@ export async function assist(data: z.infer<typeof assistInput>) {
         structuredPackageSummaryAccepted,
         rejectedNaturalAnswerSegments,
         acceptedConversationalAnswers:Number(acceptedNaturalAnswer)+acceptedAnswerParts,
-        acceptedClaims: events.filter(event => event.stage === 'claim' && event.decision === 'accepted').length,
+        acceptedClaims: validated.claims.length,
+        acceptedModelClaims,
+        acceptedStructuredNutritionClaims,
         rejectedClaims: events.filter(event => event.stage === 'claim' && event.decision === 'rejected').length,
         acceptedAnswerParts,
         rejectedAnswerParts: events.filter(event => event.stage === 'answer-part' && event.index >= 0 && event.decision === 'rejected').length,
@@ -2622,6 +2808,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       await recordGeminiDiagnostic({
         event: 'claim_validation', analysisId, status: 'completed', accepted: events.filter(event => event.decision === 'accepted').length,
         rejected: events.filter(event => event.decision === 'rejected').length,
+        acceptedClaims:validated.claims.length,acceptedModelClaims,acceptedStructuredNutritionClaims,
         rejectionCategories: validationSummary.rejectedReasons,
         rejectionCategoriesByStage:validationSummary.rejectionCategoriesByStage,
         acceptedAnswerParts: validationSummary.acceptedAnswerParts,
@@ -2668,7 +2855,8 @@ export async function assist(data: z.infer<typeof assistInput>) {
   const initialRejectionCategories = validationSummary?.rejectedReasons as Record<string, number> | undefined;
   const repairableCitationFailure = ['unknown-evidence-id', 'unsupported-claim-link', 'direct-quote-needs-exact-evidence', 'no-evidence-reference']
     .some(reason => Number(initialRejectionCategories?.[reason] ?? 0) > 0);
-  if (!targetedRepairUsed && result.claims.length === 0 && rejectedClaimCount > 0 && repairableCitationFailure) {
+  const packageContextCanGroundNextSynthesis=result.claims.length===0&&hasUsableReconstructedPackageDetails(preservedReconstruction??null);
+  if (!targetedRepairUsed && result.claims.length === 0 && rejectedClaimCount > 0 && repairableCitationFailure && !packageContextCanGroundNextSynthesis) {
     const repairStarted = Date.now();
     targetedRepairUsed = true;
     try {
@@ -2683,6 +2871,13 @@ export async function assist(data: z.infer<typeof assistInput>) {
       generated.trace.push({ name: 'evidence_answer_repair', status: 'withheld', resultCount: 0, elapsedMs: Date.now() - repairStarted });
       await recordGeminiDiagnostic({ event: 'evidence_answer_repair', analysisId, status: 'failed', failureCode: error instanceof ApiError ? error.code : 'unknown', elapsedMs: Date.now() - repairStarted });
     }
+  }else if(packageContextCanGroundNextSynthesis&&rejectedClaimCount>0&&repairableCitationFailure){
+    // The next bounded package-answer synthesis receives the exact validated
+    // reconstruction and derives its own row/fact links. Re-asking the model
+    // to repair the same unlinked aggregate claim only replays evidence and
+    // has repeatedly failed to improve the eventual grounded answer.
+    generated.trace.push({name:'evidence_answer_repair',status:'withheld',resultCount:0,elapsedMs:0});
+    await recordGeminiDiagnostic({event:'evidence_answer_repair',analysisId,status:'skipped',reason:'validated-package-context-will-ground-bounded-synthesis'});
   }
   // Fill explicitly requested source facts only after evidence validation has
   // removed unsupported model claims; otherwise a discarded claim can falsely
@@ -2696,11 +2891,12 @@ export async function assist(data: z.infer<typeof assistInput>) {
   if (compositionCoverage.added || guidanceCoverage.added || ingredientCoverage.added) result = await validateWithDiagnostics(ingredientCoverage.output);
   const acceptedAnswerPartCount = Number(validationSummary?.acceptedAnswerParts ?? 0);
   const acceptedNaturalAnswer = validationSummary?.acceptedNaturalAnswer === true;
+  const acceptedStructuredPackageSummary = validationSummary?.structuredPackageSummaryAccepted === true;
   const rejectedAnswerPartCount = Number(validationSummary?.rejectedAnswerParts ?? 0);
   // Repair is for wording/linkage failures after factual claims survived.
   // No supportable claims is a quality outcome, not malformed output.
   const hasRepairEvidence = result.claims.length > 0;
-  const needsAnswerRepair = needsConversationalAnswerRepair(acceptedAnswerPartCount, rejectedAnswerPartCount, hasRepairEvidence, answerRepairUsed, acceptedNaturalAnswer, Number(validationSummary?.rejectedNaturalAnswerSegments??0));
+  const needsAnswerRepair = needsConversationalAnswerRepair(acceptedAnswerPartCount, rejectedAnswerPartCount, hasRepairEvidence, answerRepairUsed, acceptedNaturalAnswer||acceptedStructuredPackageSummary, Number(validationSummary?.rejectedNaturalAnswerSegments??0));
   if (needsAnswerRepair) {
     answerRepairUsed = true;
     const repairStarted = Date.now();
