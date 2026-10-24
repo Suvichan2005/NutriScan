@@ -1019,3 +1019,7 @@ Use the official Codex GSFA search only as an on-demand identity resolver for an
 ## 24 October 2026 — anchor natural answers to their linked evidence
 
 When a validated claim cites a structured package fact or source, allow a natural-language sentence to paraphrase that linked record only when it has a strong multi-term evidence match. Do not lend evidence across unrelated claims. Independently recheck every numeric value, unit, basis, external-source attribution and safety statement. Never infer a missing external source ID from a package fact or model wording. This preserves grounded prose without another generation while keeping unsupported source or numeric statements out.
+
+## 24 October 2026 — adapt exact Codex identity results at the answer boundary
+
+Keep identity retrieval and answer coverage dialect-independent at the boundary. Normalize the local identity result and the exact Codex GSFA result only when the requested code, single candidate subtype, candidate-linked evidence source, user question and OCR ingredient observation agree. Preserve ambiguity and never turn identity lookup into an authorization, exposure, effect or safety conclusion.

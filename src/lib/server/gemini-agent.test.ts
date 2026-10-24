@@ -858,6 +858,60 @@ describe('explicit additive-identity answer coverage', () => {
     expect(requestedIngredientIdentityCoverageFacts('What nutrients are printed?', packageData.observations, lookup)).toEqual([]);
     expect(requestedIngredientIdentityCoverageFacts(question, [], lookup)).toEqual([]);
   });
+
+  it('adapts an exact Codex subtype result into source-linked package identity coverage', () => {
+    const codexEvidence={
+      id:'codex-gsfa-ins-450-i',title:'Disodium diphosphate (INS 450(i)) — Codex GSFA',publisher:'Codex Alimentarius Commission (FAO/WHO)',
+      url:'https://www.fao.org/gsfaonline/',category:'registry' as const,jurisdiction:'International identity reference',publishedAt:null,effectiveAt:null,
+      retrievedAt:'2026-10-24T00:00:00.000Z',summary:'The Codex GSFA search returned Disodium diphosphate (INS 450(i)) as an INS identity. Match type: INS Exact.',
+      limitations:'Identity lookup only. This does not establish product presence, amount, exposure, Indian authorization or personal safety.',
+    };
+    const lookup={
+      status:'ok' as const,resultCount:1,evidence:[codexEvidence],
+      output:{status:'codex_identity_match',requestedCode:'450(i)',candidates:[{name:'Disodium diphosphate',insNumber:'450(i)',matchType:'INS Exact',sourceId:codexEvidence.id}]},
+    };
+    const observations=[{id:'ocr-additive-450-i',field:'ocr-line',text:'INGREDIENTS: refined wheat flour; raising agent (INS 450(i))',side:'back',confidence:80,origin:'ocr',imageId:'back-photo'}];
+    const question='What is INS 450(i) on this ingredients list?';
+    const pkg=packageSchema.parse({
+      id:'codex-identity-coverage-test',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],
+      observations,rawText:'',warnings:[],synthetic:true,createdAt:'2026-10-24T00:00:00.000Z',
+    });
+    const facts=requestedIngredientIdentityCoverageFacts(question,pkg.observations,lookup);
+    const supplemented=supplementRequestedIngredientIdentityCoverage({answer:'',claims:[],limitations:[],inspectImage:null},facts);
+    const validated=validateInferenceOutput(supplemented.output,{package:pkg,evidence:[codexEvidence]});
+
+    expect(facts).toHaveLength(1);
+    expect(facts[0]).toMatchObject({code:'450(i)',name:'Disodium diphosphate',sourceId:codexEvidence.id,observationId:'ocr-additive-450-i'});
+    expect(supplemented.added).toBe(1);
+    expect(validated.claims).toHaveLength(1);
+    expect(validated.claims[0].sourceIds).toEqual([codexEvidence.id]);
+    expect(validated.claims[0].observationIds).toEqual(['ocr-additive-450-i']);
+  });
+
+  it('withholds ambiguous, subtype-mismatched, unlinked and unobserved Codex identities', () => {
+    const source={
+      id:'codex-gsfa-ins-450-i',title:'Disodium diphosphate (INS 450(i)) — Codex GSFA',publisher:'Codex Alimentarius Commission (FAO/WHO)',
+      url:'https://www.fao.org/gsfaonline/',category:'registry' as const,jurisdiction:'International identity reference',publishedAt:null,effectiveAt:null,
+      retrievedAt:'2026-10-24T00:00:00.000Z',summary:'The Codex GSFA search returned Disodium diphosphate (INS 450(i)) as an INS identity.',limitations:'Identity only; no authorization or exposure conclusion.',
+    };
+    const makeResult=(output:Record<string,unknown>,evidence=[source])=>({status:'ok' as const,resultCount:evidence.length,evidence,output});
+    const candidate={name:'Disodium diphosphate',insNumber:'450(i)',matchType:'INS Exact',sourceId:source.id};
+    const makePackage=(text:string)=>packageSchema.parse({
+      id:'codex-identity-negative-test',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],
+      observations:[{id:'ocr-additive',field:'ocr-line',text,side:'back',confidence:80,origin:'ocr',imageId:'back-photo'}],
+      rawText:'',warnings:[],synthetic:true,createdAt:'2026-10-24T00:00:00.000Z',
+    });
+    const wrongSubtype=makePackage('INGREDIENTS: raising agent INS 450(ii)');
+    const question='What does INS 450(i) mean?';
+
+    expect(requestedIngredientIdentityCoverageFacts(question,wrongSubtype.observations,makeResult({status:'codex_identity_candidates',requestedCode:'450(i)',candidates:[candidate]}))).toEqual([]);
+    expect(requestedIngredientIdentityCoverageFacts(question,wrongSubtype.observations,makeResult({status:'codex_identity_match',requestedCode:'450(ii)',candidates:[{...candidate,insNumber:'450(ii)'}]}))).toEqual([]);
+    expect(requestedIngredientIdentityCoverageFacts(question,wrongSubtype.observations,makeResult({status:'codex_identity_match',requestedCode:'450(i)',candidates:[candidate]}))).toEqual([]);
+    const unlabelledNumber=makePackage('NUTRITION: 450(i)');
+    expect(requestedIngredientIdentityCoverageFacts(question,unlabelledNumber.observations,makeResult({status:'codex_identity_match',requestedCode:'450(i)',candidates:[candidate]}))).toEqual([]);
+    const unlinked=makePackage('INGREDIENTS: raising agent INS 450(i)');
+    expect(requestedIngredientIdentityCoverageFacts(question,unlinked.observations,makeResult({status:'codex_identity_match',requestedCode:'450(i)',candidates:[{...candidate,sourceId:'unlinked-source'}]}))).toEqual([]);
+  });
 });
 
 describe('Gemini tool citation feedback', () => {

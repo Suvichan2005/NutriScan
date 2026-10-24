@@ -2159,25 +2159,81 @@ export function supplementRequestedNutritionGuidanceCoverage(output: unknown, fa
   return { output: { ...parsed.data, claims }, added };
 }
 
+type InsIdentityCode={base:string;variant:string|null};
+
+function parseInsIdentityCode(value:string):InsIdentityCode|null {
+  const match=/^\s*(?:INS\s*)?(\d{2,4})(?:\s*\(([ivxlcdm]+)\))?\s*$/i.exec(value);
+  return match?{base:match[1],variant:match[2]?.toLocaleLowerCase('en')??null}:null;
+}
+
+function escapeRegExp(value:string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+}
+
+function findExactInsIdentityCode(text:string,code:string):{index:number;end:number}|null {
+  const parsed=parseInsIdentityCode(code);
+  if(!parsed)return null;
+  const suffix=parsed.variant
+    ?`\\s*\\(${escapeRegExp(parsed.variant)}\\)`
+    :`(?!\\s*\\([ivxlcdm]+\\))`;
+  const expression=new RegExp(`(?<![a-z0-9])${parsed.base}${suffix}(?![a-z0-9])`,'ig');
+  const match=expression.exec(text);
+  return match?{index:match.index,end:match.index+match[0].length}:null;
+}
+
+function sameInsIdentityCode(left:string,right:string) {
+  const a=parseInsIdentityCode(left);
+  const b=parseInsIdentityCode(right);
+  return Boolean(a&&b&&a.base===b.base&&a.variant===b.variant);
+}
+
+function requestedIdentityFromToolResult(result:GeminiToolResult):{code:string;name:string;sourceId:string}|null {
+  const local=z.object({
+    status:z.literal('identity_match'),
+    identity:z.object({code:z.string().regex(/^\d{2,4}$/),name:z.string().min(1).max(200)}).passthrough(),
+  }).passthrough().safeParse(result.output);
+  if(local.success){
+    const code=local.data.identity.code;
+    const source=result.evidence?.find(item=>item.summary.toLocaleLowerCase('en').includes(local.data.identity.name.toLocaleLowerCase('en'))&&findExactInsIdentityCode(item.summary,code));
+    return source?{code,name:local.data.identity.name,sourceId:source.id}:null;
+  }
+
+  const codex=z.object({
+    status:z.literal('codex_identity_match'),
+    requestedCode:z.string().max(24),
+    candidates:z.array(z.object({name:z.string().min(1).max(180),insNumber:z.string().max(24),matchType:z.string().max(40),sourceId:z.string().min(1).max(160)})).length(1),
+  }).passthrough().safeParse(result.output);
+  if(!codex.success)return null;
+  const candidate=codex.data.candidates[0];
+  const exactMatchType=['exact','ins exact'].includes(candidate.matchType.trim().toLocaleLowerCase('en'));
+  if(!exactMatchType||!sameInsIdentityCode(codex.data.requestedCode,candidate.insNumber))return null;
+  const source=result.evidence?.find(item=>item.id===candidate.sourceId
+    &&item.summary.toLocaleLowerCase('en').includes(candidate.name.toLocaleLowerCase('en'))
+    &&findExactInsIdentityCode(item.summary,candidate.insNumber));
+  return source?{code:candidate.insNumber,name:candidate.name,sourceId:source.id}:null;
+}
+
 export function requestedIngredientIdentityCoverageFacts(question:string,observations:Observation[],result:GeminiToolResult):IngredientIdentityCoverageFact[] {
-  if(result.status!=='ok'||!/\b(?:resolve|identify|meaning|refer(?:s)?\s+to|what\s+does)\b/i.test(question))return [];
-  const parsed=z.object({status:z.literal('identity_match'),identity:z.object({code:z.string().regex(/^\d{3,4}$/),name:z.string().min(1).max(200)}).passthrough()}).passthrough().safeParse(result.output);
-  if(!parsed.success)return [];
-  const {code,name}=parsed.data.identity;
-  if(!new RegExp(`\\b(?:INS\\s*)?${code}\\b`,'i').test(question))return [];
-  const marker=new RegExp(`(?:antioxidant|preservative|emulsifier|stabili[sz]er|colou?r|raising\\s+agent|flavou?r|acidity\\s+regulator|sweetener|INS\\s*)[^\\n]{0,60}\\b${code}\\b`,'i');
+  if(result.status!=='ok'||!/\b(?:resolve|identify|meaning|refer(?:s)?\s+to|what\s+(?:does|is)|stand\s+for)\b/i.test(question))return [];
+  const identity=requestedIdentityFromToolResult(result);
+  if(!identity||!findExactInsIdentityCode(question,identity.code))return [];
+  const role=/\b(?:antioxidant|preservative|emulsifier|stabili[sz]er|colou?r|raising\s+agent|flavou?r|acidity\s+regulator|sweetener|INS)\b/i;
   let observationQuote='';
   const observation=observations.find(item=>{
     if(item.origin!=='ocr'||item.field!=='ocr-line')return false;
-    const match=marker.exec(item.text);
-    if(!match)return false;
-    observationQuote=match[0].slice(0,1600);
+    const codeRange=findExactInsIdentityCode(item.text,identity.code);
+    if(!codeRange)return false;
+    const prefix=item.text.slice(Math.max(0,codeRange.index-160),codeRange.index);
+    if(!role.test(prefix))return false;
+    const start=Math.max(item.text.lastIndexOf('\n',codeRange.index),codeRange.index-120)+1;
+    const end=Math.min(item.text.length,codeRange.end+100);
+    observationQuote=item.text.slice(start,end).trim().slice(0,1600);
     return true;
   });
   if(!observation)return [];
-  const source=result.evidence?.find(item=>item.summary.toLowerCase().includes(name.toLowerCase())&&new RegExp(`\\b(?:INS\\s*)?${code}\\b`,'i').test(item.summary));
+  const source=result.evidence?.find(item=>item.id===identity.sourceId);
   if(!source)return [];
-  return [{sourceId:source.id,code,name,observationId:observation.id,observationQuote,sourceQuote:source.summary.slice(0,1600),limitationQuote:source.limitations.slice(0,1600)}];
+  return [{sourceId:source.id,code:identity.code,name:identity.name,observationId:observation.id,observationQuote,sourceQuote:source.summary.slice(0,1600),limitationQuote:source.limitations.slice(0,1600)}];
 }
 
 export function supplementRequestedIngredientIdentityCoverage(output:unknown,facts:readonly IngredientIdentityCoverageFact[]) {
