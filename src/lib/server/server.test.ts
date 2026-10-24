@@ -1030,6 +1030,47 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.claims[2].packageFactIds).toContain('package-fact:statement:0');
     expect(result.answer).toBe(answer);
   });
+  it('keeps OCR-label and OCR-value disagreements ambiguous without discarding either reading',()=>{
+    const imageId='recovery-evidence-photo';
+    const observations=[
+      {id:'sugar-line',field:'ocr-line',text:'Sugar 10.2g 3.6g',side:'back' as const,confidence:98,origin:'ocr' as const,imageId,readingOrder:{runId:'ocr-run',blockIndex:0,paragraphIndex:0,lineIndex:0}},
+      {id:'fibre-line',field:'ocr-line',text:'Dietary Fibre 4.4g 1.5g',side:'back' as const,confidence:97,origin:'ocr' as const,imageId,readingOrder:{runId:'ocr-run',blockIndex:0,paragraphIndex:0,lineIndex:1}},
+      {id:'protein-line',field:'ocr-line',text:'Protein 14.2g 5.79g',side:'back' as const,confidence:94,origin:'ocr' as const,imageId,readingOrder:{runId:'ocr-run',blockIndex:0,paragraphIndex:0,lineIndex:2}},
+    ];
+    const data=assistInput.parse({consent:true,question:'Reconstruct this label.',images:[{handle:imageId,side:'back',width:900,height:363}],package:{id:'row-evidence-disagreement',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations,ocrCaptures:[{runId:'ocr-run',imageId,side:'back',sourceImage:{width:900,height:363},preparedImage:{width:900,height:363},bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'Tesseract',version:'7.0',language:'eng',confidenceScale:'0-100',segmentationMode:'auto'},processing:{rotation:0,contrast:false,invert:false,cropPercent:null}}],rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
+    const imageEvidence={observationIds:[],imageRegions:[{imageId,region:{x:0.02,y:0.02,width:0.9,height:0.6}}]};
+    const row=(rowId:string,nutrient:string,printedLabel:string,value:number,basisAmount:number,observationIds:string[]=[])=>({rowId,nutrient,printedLabel,printedValue:`${value} g`,value,unit:'g',columnLabel:basisAmount===100?'Per 100 g':'Per 35 g serving',basisText:basisAmount===100?'per 100 g':'per 35 g serving',basisAmount,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{...imageEvidence,observationIds}});
+    const raw={
+      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:imageEvidence},
+      serving:{printedText:'Serving size 35 g',quantity:35,unit:'g' as const,pieceCount:null,pieceDescription:null,status:'provisional' as const,evidence:{observationIds:['sugar-line'],imageRegions:[]}},
+      nutritionRows:[
+        row('sugar-100', 'sugars','Sugar',0,100),
+        row('sugar-35', 'sugars','Sugar',3.6,35,['sugar-line']),
+        row('fiber-100','dietary_fibre','Dietary Fibre',10.2,100,['sugar-line']),
+        row('fiber-35','fiber','Dietary Fibre',1.5,35,['fibre-line']),
+        row('protein-35','protein','Protein',5.7,35,['protein-line']),
+        row('protein-100','protein','Protein',14.2,100,['protein-line']),
+      ],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional visual reconstruction.',
+    } satisfies PackageReconstructionContent;
+    const sanitized=sanitizePackageReconstruction(raw,data)!;
+    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='sugar-100')?.status).toBe('ambiguous');
+    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='fiber-100')?.status).toBe('ambiguous');
+    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='protein-35')?.status).toBe('ambiguous');
+    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='sugar-35')?.status).toBe('provisional');
+    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='fiber-35')?.status).toBe('provisional');
+    expect(sanitized.content.nutritionRows.find(item=>item.rowId==='protein-100')?.status).toBe('provisional');
+    expect(sanitized.content.unresolved.map(item=>item.field)).toEqual(expect.arrayContaining([
+      'nutrition-evidence:sugar-100','nutrition-evidence:fiber-100','nutrition-evidence:protein-35',
+    ]));
+    const fibreAnswer='The label appears to show 1.5 g of dietary fibre for a 35 g serving.';
+    const fibreOutput=parseAgentProviderOutput(JSON.stringify({answer:fibreAnswer,limitations:[],inspectImage:null})).output;
+    const fibreResult=validateClaims({...fibreOutput,packageReconstruction:sanitized.content},data);
+    expect(fibreResult.answer).toBe(fibreAnswer);
+    expect(fibreResult.claims.flatMap(claim=>claim.interpretationRowIds??[])).toContain('fiber-35');
+    expect(fibreResult.claims.flatMap(claim=>claim.interpretationRowIds??[])).not.toContain('fiber-100');
+    expect(observations.map(item=>item.text)).toEqual(['Sugar 10.2g 3.6g','Dietary Fibre 4.4g 1.5g','Protein 14.2g 5.79g']);
+  });
   it('maps compact provider evidenceIds into typed references, avoids a duplicate synthesis, and still rejects changed values', async() => {
     const observation={id:'label-line',field:'label-note',text:'SERVING SIZE 2 biscuits approximately 13.4 g; carbohydrates 9.28 g per serving',side:'back' as const,confidence:82,origin:'user' as const};
     const reconstruction={

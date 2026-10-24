@@ -26,6 +26,52 @@ const visionPreprocessingSchema=z.object({rotation:z.union([z.literal(0),z.liter
 const imagePayloadSchema=z.object({ imageId:z.string().min(1).max(160),mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']), base64: z.string().min(16).max(2_800_000).regex(/^[A-Za-z0-9+/]*={0,2}$/), side: z.enum(['front', 'back', 'extra']),sourceImage:visionSourceImageSchema,preprocessing:visionPreprocessingSchema }).strict();
 const assistImageSchema=imagePayloadSchema.extend({base64:z.string().min(16).max(1_250_000).regex(/^[A-Za-z0-9+/]*={0,2}$/),regionRole:z.enum(['full-image','nutrition-table','ingredients','label-detail','other']).optional()});
 const assistImageByteLength=(base64:string)=>Math.max(0,Math.floor(base64.length*3/4)-(base64.endsWith('==')?2:base64.endsWith('=')?1:0));
+
+const reconstructedNutrientFamilies:Array<[string,RegExp]>=[
+  ['added-sugars',/\badded\s+sugars?\b/i],['sugars',/\b(?:total\s+)?sugars?\b/i],
+  ['carbohydrate',/\bcarbohydrat\w*\b|\bcarbs?\b/i],['protein',/\b(?:protein|proten)\b/i],
+  ['fiber',/\b(?:dietary\s+|total\s+)?(?:fiber|fibre)s?\b/i],['fat',/\b(?:total\s+)?fat\b/i],
+  ['sodium',/\bsodium\b/i],['salt',/\bsalt\b/i],['energy',/\b(?:energy|calories?|kcal|kilocalories?|kj|kilojoules?)\b/i],
+  ['cholesterol',/\bcholesterol\b/i],['iron',/\biron\b/i],
+];
+function reconstructedFamilies(text:string){
+  const normalized=text.normalize('NFKC').replace(/[_-]+/g,' ');
+  return reconstructedNutrientFamilies.filter(([,pattern])=>pattern.test(normalized)).map(([family])=>family);
+}
+function numericEvidenceTokens(text:string){
+  return [...text.matchAll(/(?<![\p{L}\p{N}])\d+(?:[.,]\d+)?/gu)].map(match=>({text:match[0],value:Number(match[0].replace(',','.'))})).filter(token=>Number.isFinite(token.value));
+}
+function displayedNumberTolerance(value:string){
+  const token=/\d+(?:[.,](\d+))?/.exec(value)?.[0];
+  if(!token)return 0;
+  const decimals=token.match(/[.,](\d+)/)?.[1].length??0;
+  return 0.5*10**(-decimals);
+}
+function nutritionRowOcrDisagreement(row:PackageReconstructionContent['nutritionRows'][number],observations:Observation[]):string|null{
+  if(row.value===null||!row.unit)return null;
+  const expectedFamilies=reconstructedFamilies(`${row.nutrient} ${row.printedLabel}`);
+  if(!expectedFamilies.length)return null;
+  const linkedIds=new Set(row.evidence.observationIds);
+  const imageIds=new Set(row.evidence.imageRegions.map(region=>region.imageId));
+  const relevant=observations.filter(observation=>observation.origin==='ocr'
+    &&(linkedIds.has(observation.id)||!!observation.imageId&&imageIds.has(observation.imageId)));
+  if(!relevant.length)return null;
+  const cited=relevant.filter(observation=>linkedIds.has(observation.id));
+  const citedLabelMismatch=cited.some(observation=>{
+    const observedFamilies=reconstructedFamilies(observation.text);
+    return observedFamilies.length>0&&!observedFamilies.some(family=>expectedFamilies.includes(family));
+  });
+  const matchingLabelLines=relevant.filter(observation=>reconstructedFamilies(observation.text).some(family=>expectedFamilies.includes(family)));
+  const numericLines=matchingLabelLines.map(observation=>numericEvidenceTokens(observation.text)).filter(tokens=>tokens.length>0);
+  const candidateTolerance=displayedNumberTolerance(row.printedValue??String(row.value));
+  const hasMatchingNumericEvidence=numericLines.some(tokens=>tokens.some(token=>
+    Math.abs(token.value-row.value!)<candidateTolerance+displayedNumberTolerance(token.text)+Number.EPSILON*Math.max(1,Math.abs(token.value),Math.abs(row.value!))*8));
+  const numericDisagreement=numericLines.length>0&&!hasMatchingNumericEvidence;
+  if(citedLabelMismatch)return 'The cited OCR line explicitly names a different nutrient; the image-linked reading is retained as ambiguous.';
+  if(numericDisagreement)return 'The OCR line for this nutrient does not contain the image-linked value; both readings are retained as ambiguous.';
+  return null;
+}
+
 export const assistInput = z.object({ consent: z.literal(true), question: z.string().trim().min(1).max(2000), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
   const observations=new Set(data.package.observations.map(observation=>observation.id));
   const visualImageIds=new Set(data.visualImages?.map(image=>image.imageId)??[]);
@@ -180,15 +226,22 @@ export function sanitizePackageReconstruction(value:unknown,data:z.infer<typeof 
   const identity=hasEvidence(identityWithEvidence.evidence)?identityWithEvidence:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:identityWithEvidence.evidence};
   const serving=parsed.data.serving?withEvidence(parsed.data.serving):null;
   const cleanRows=parsed.data.nutritionRows.map(withEvidence).filter(row=>hasEvidence(row.evidence));
-  const ingredients=parsed.data.ingredients.map(withEvidence).filter(item=>hasEvidence(item.evidence));
-  const additives=parsed.data.additives.map(withEvidence).filter(item=>hasEvidence(item.evidence));
-  const statements=parsed.data.statements.map(withEvidence).filter(item=>hasEvidence(item.evidence));
   const unresolved=parsed.data.unresolved.map(item=>{
     const linked=linkEvidence(item.evidence);
     return{...item,evidence:linked.evidence};
   }).filter(item=>hasEvidence(item.evidence));
+  const checkedRows=cleanRows.map(row=>{
+    const disagreement=nutritionRowOcrDisagreement(row,data.package.observations);
+    if(!disagreement)return row;
+    const field=`nutrition-evidence:${row.rowId}`;
+    if(!unresolved.some(item=>item.field===field))unresolved.push({field,reason:disagreement,evidence:row.evidence});
+    return{...row,status:row.status==='conflict'?'conflict' as const:'ambiguous' as const};
+  });
+  const ingredients=parsed.data.ingredients.map(withEvidence).filter(item=>hasEvidence(item.evidence));
+  const additives=parsed.data.additives.map(withEvidence).filter(item=>hasEvidence(item.evidence));
+  const statements=parsed.data.statements.map(withEvidence).filter(item=>hasEvidence(item.evidence));
   const regions=parsed.data.regions.filter(item=>imageIds.has(item.imageId)).map(item=>({...item,observationIds:item.observationIds.filter(id=>observationIds.has(id))}));
-  const normalized=packageReconstructionContentSchema.parse({...parsed.data,identity,serving:serving&&hasEvidence(serving.evidence)?serving:null,nutritionRows:cleanRows,ingredients,additives,statements,regions,unresolved});
+  const normalized=packageReconstructionContentSchema.parse({...parsed.data,identity,serving:serving&&hasEvidence(serving.evidence)?serving:null,nutritionRows:checkedRows,ingredients,additives,statements,regions,unresolved});
   return normalized.identity.name||normalized.identity.brand||normalized.identity.variant||normalized.serving||normalized.nutritionRows.length||normalized.ingredients.length||normalized.additives.length||normalized.statements.length?{content:normalized,coarseImageFallbackCount}:null;
 }
 
