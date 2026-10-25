@@ -40,7 +40,8 @@
           "other-arm-results",
           "hidden-image-descriptions"
         ],
-        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored"
+        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored",
+        "analysisMethod": "tesseract-text"
       },
       {
         "id": "B",
@@ -56,7 +57,8 @@
           "other-arm-results",
           "hidden-image-descriptions"
         ],
-        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored"
+        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored",
+        "analysisMethod": "paddle-text"
       },
       {
         "id": "C",
@@ -72,7 +74,8 @@
           "other-arm-results",
           "hidden-image-descriptions"
         ],
-        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored"
+        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored",
+        "analysisMethod": "vision"
       },
       {
         "id": "D",
@@ -88,7 +91,8 @@
           "other-arm-results",
           "hidden-image-descriptions"
         ],
-        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored"
+        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored",
+        "analysisMethod": "tesseract-vision"
       },
       {
         "id": "E",
@@ -104,7 +108,8 @@
           "other-arm-results",
           "hidden-image-descriptions"
         ],
-        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored"
+        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored",
+        "analysisMethod": "paddle-vision"
       }
     ],
     "pairedInputs": "Same original photographs, product groups, independent references, Gemini model/version/config/schema/task/validation/scoring and non-perception access. Only allowed observations differ.",

@@ -1,4 +1,6 @@
 import { z } from 'zod';
+export const analysisMethodSchema=z.enum(['tesseract-text','paddle-text','vision','tesseract-vision','paddle-vision']);
+export type AnalysisMethod=z.infer<typeof analysisMethodSchema>;
 export const nutrientKeys = ['energy','carbohydrate','sugars','addedSugars','protein','fat','saturatedFat','fiber','sodium','salt'] as const;
 export type NutrientKey = typeof nutrientKeys[number];
 export const calculableNutrientUnits = ['g','mg','µg','μg','mcg','ug','kcal','kJ','IU'] as const;
@@ -75,7 +77,7 @@ export const packageReconstructionContentSchema=z.object({
   unresolved:z.array(z.object({field:z.string().min(1).max(120),reason:z.string().min(1).max(500),evidence:reconstructionEvidenceSchema}).strict()).max(100),
   interpretationNote:z.string().max(1000)
 }).strict();
-export const packageReconstructionSchema=packageReconstructionContentSchema.extend({revision:z.number().int().positive().max(100000),updatedAt:z.iso.datetime(),model:z.string().min(1).max(120),current:z.boolean()}).strict();
+export const packageReconstructionSchema=packageReconstructionContentSchema.extend({revision:z.number().int().positive().max(100000),updatedAt:z.iso.datetime(),model:z.string().min(1).max(120),current:z.boolean(),analysisMethod:analysisMethodSchema.optional()}).strict();
 export const packageReconstructionHistoryEntrySchema=packageReconstructionSchema.extend({current:z.literal(false)}).strict();
 export type PackageReconstructionContent=z.infer<typeof packageReconstructionContentSchema>;
 export type PackageReconstruction=z.infer<typeof packageReconstructionSchema>;

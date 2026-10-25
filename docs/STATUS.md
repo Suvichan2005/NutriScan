@@ -1,6 +1,6 @@
 # Current engineering status
 
-Updated: 2026-10-25. This is a local development application and research workspace. Feature levels below describe evidence available in this checkout; they do not imply clinical or production acceptance.
+Updated: 2026-10-26. This is a local development application and research workspace. Feature levels below describe evidence available in this checkout; they do not imply clinical or production acceptance.
 
 ## Current checkpoint — 25 October 2026: full EFSA source preservation and controlled completion queue
 
@@ -1194,3 +1194,14 @@ Fixed a shared output-boundary defect, not a dietary intent gate: standard denom
 Exact prior provider output replay preserves the full missing-data guidance (five withheld sentences→zero), no provider call. Original source-quantity sentence remains withheld, not force-admitted. Two live transfer questions complete in one generation each: drink measurement/unknown guidance retained; combined-condition answer retains most content but loses an isolated illustrative100g clause. No new “such as” exception or provider repair. Clinical source selection/independent answer quality remain partial. Actual usage:two completed free Flash-Lite generations plus two failed free3.8/3.7 attempts,6189 input/509 output,$0 local estimate; thinking/cache absent. Frozen experiments not run. Evidence: .data/numeric-reference-roles-20261026 and missing-data-reference-role-transfer-20261026 export.
 
 Checkpoint checks:756 passed/one skipped with four workers, TypeScript and final optimized build passed. Exact saved-response replay and two real source-only transfer turns retained; no new photo/browser or independent clinical acceptance claimed. Owner dirty-file hashes preserved.
+
+
+### 26 October — isolated analysis methods, actual image-first journey
+
+Five explicit methods now use the same Gemini reconstruction path with server-side reader/image isolation, per-revision method/model metadata and preserved originals/corrections. Empty OCR no longer blocks a valid photo; Vision can persist without OCR through saved image-lineage metadata. Actual browser reader-dispatch checks cover all four OCR methods on an oats photo (provider intercepted), and Vision upload/save on desktop/mobile; screenshot review confirmed controls and inspector metadata. These are functional boundaries, not extraction-accuracy results.
+
+Actual free Amul Lassi Vision reconstruction returned identity, serving, ingredients and11 rows in2 completed generations, followed by a1-generation saved-package follow-up with no photo/OCR retransmission. No repairs. Initial14393 input/3002 output; follow-up6352 input/52 output/129 thinking; initial thinking/cache metadata absent. Local estimated cost $0, no Google billing verification. Total-sugars digit remains glare-obscured and independently unverified. Real oats OCR-only generation completed but contains corrupted/provisional quantities and inconsistent columns. This failure is retained, not counted as successful extraction. A shared physical-mass calculation safeguard is next, without inventing replacement digits. Final independent evaluation, model/default decision, clinical-answer usefulness and report results remain incomplete.
+
+Evidence/metrics and screenshots under ignored `.data/analysis-methods-20261026`; readable Amul pair export `.data/gemini-evaluations/exports/image-first-method-and-saved-followup-20261026.md`. Full suite passed764/one skip with two workers before the additional unseen-image negative regression; final validation is recorded with the checkpoint. Initial unrestricted suite contended with browser startup and timed out seven data-heavy tests; reduced-worker rerun passed. Preserve this distinction.
+
+Final M3 checkpoint validation:765 tests passed/one skipped with two workers; TypeScript and optimized reusable-directory build passed. Owner config bytes restored and all five preserved owner-file hashes match. Frozen-method/accuracy evaluation and the impossible-mass safeguard remain pending.

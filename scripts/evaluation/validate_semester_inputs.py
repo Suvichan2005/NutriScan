@@ -26,6 +26,7 @@ def validate(source=None):
     arms = e['reconstruction']['arms']
     selections = [['tesseract-observations'], ['paddle-observations'], ['original-images'], ['tesseract-observations', 'original-images'], ['paddle-observations', 'original-images']]
     assert [a['id'] for a in arms] == list('ABCDE')
+    assert [a['analysisMethod'] for a in arms] == ['tesseract-text', 'paddle-text', 'vision', 'tesseract-vision', 'paddle-vision']
     for arm, selection in zip(arms, selections):
         assert arm['invokesGemini'] is True and arm['allowedInputs'] == selection
         assert not set(selection) & set(arm['forbiddenInputs'])

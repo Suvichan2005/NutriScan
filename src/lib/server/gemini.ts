@@ -6,6 +6,8 @@ import { packageForAssist, packageReconstructionFactReferences, validateInferenc
 import { assistantUiComponentSchema, calculationEvidenceText, calculationSchema, conversationEvidenceSourceSchema, evidenceSpanSchema, normalizedCropSchema, observationSchema, packageReconstructionContentSchema, packageSchema, profileSchema, reconstructedAdditiveSchema, reconstructedIngredientSchema, reconstructedNutritionRowSchema, reconstructedServingSchema, reconstructedStatementSchema, sourceSchema, tentativeStructuredCandidateSchema, visionCaptureSchema, type AssistantUiComponent, type Calculation, type NutrientKey, type Observation, type PackageReconstructionContent, type VisionCapture } from '../contracts';
 import { applicationGeminiContext, generateTracked, providerStatus, safeProviderFailure } from './gemini-provider';
 import { calculateSavedServing, executeGeminiTool, geminiToolDeclarations, type GeminiToolImage, type GeminiToolResult } from './gemini-tools';
+import {analysisMethodPolicy,packageForSelectedMethod} from '../analysis-method';
+import {analysisMethodSchema} from '../contracts';
 import {selectAgentTools,toolAccessInput} from './gemini-tool-access';
 import { ApiError } from './http';
 import { recordGeminiDiagnostic } from './gemini-diagnostics';
@@ -154,7 +156,7 @@ function calculationHasPackageEvidence(calculation:Calculation,data:{package:z.i
   });
 }
 
-export const assistInput = z.object({ toolAccess:toolAccessInput.optional(), consent: z.literal(true), question: z.string().trim().min(1).max(2000), workspacePortion:workspacePortionSchema.optional(), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
+export const assistInput = z.object({ analysisMethod:analysisMethodSchema.optional(), toolAccess:toolAccessInput.optional(), consent: z.literal(true), question: z.string().trim().min(1).max(2000), workspacePortion:workspacePortionSchema.optional(), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
   const observations=new Set(data.package.observations.map(observation=>observation.id));
   const visualImageIds=new Set(data.visualImages?.map(image=>image.imageId)??[]);
   // A saved calculation may cite the image that supported a persisted
@@ -1686,7 +1688,7 @@ async function reconstructPackage(
   imageParts:Part[],
   analysisId:string,
   referenceAliases:ReferenceAliases,
-):Promise<{content:PackageReconstructionContent;elapsedMs:number}>{
+):Promise<{content:PackageReconstructionContent;elapsedMs:number;model:string}>{
   const hasTextEvidence=Boolean(data.package.observations.length||data.package.rawText.trim()||data.package.userDescription?.trim()||data.package.barcode||data.package.brand||data.package.name!=='Unidentified package');
   if(!imageParts.length&&!hasTextEvidence)throw new ApiError(400,'package_evidence_required','Add a package photo or label text before reconstructing package details.');
   const context=applicationGeminiContext();
@@ -1749,7 +1751,7 @@ async function reconstructPackage(
     resultCount:content.nutritionRows.length+content.ingredients.length+content.additives.length+content.statements.length,
     packageReconstruction:content,
   });
-  return{content,elapsedMs:Date.now()-started};
+  return{content,elapsedMs:Date.now()-started,model:response.modelVersion??context.model};
 }
 
 async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:string,referenceAliases:ReferenceAliases):Promise<GeneratedAgentOutput>{
@@ -2080,6 +2082,18 @@ export function assistPromptPayload(data:z.infer<typeof assistInput>, referenceA
 }
 
 export async function assist(data: z.infer<typeof assistInput>) {
+  const previousPackage=data.package;
+  const selectedMethod=data.analysisMethod??data.package.reconstruction?.analysisMethod;
+  const selectedPolicy=selectedMethod?analysisMethodPolicy(selectedMethod):null;
+  // Enforce modality on the server too, including follow-up tool access.
+  if(selectedPolicy&&!selectedPolicy.images&&(data.visualImages?.length??0)>0)throw new ApiError(400,'analysis_method_images_forbidden','This analysis method sends OCR observations only. Choose an image method to inspect photos.');
+  if(data.analysisMethod&&!data.package.reconstruction?.current){
+    const selectedPackage=packageForSelectedMethod(data.package,data.analysisMethod,data.images?.map(image=>image.handle));
+    if(data.analysisMethod==='vision'&&data.visualImages?.some(image=>image.regionRole!=='full-image'))throw new ApiError(400,'analysis_method_originals_required','Gemini Vision starts from the selected full photos, without OCR-derived close-ups.');
+    if(selectedPolicy?.images&&!(data.visualImages?.length))throw new ApiError(400,'analysis_method_images_required','This analysis method needs the selected package photos.');
+    if(selectedPolicy&&!selectedPolicy.images&&!selectedPackage.observations.length)throw new ApiError(400,'analysis_method_reader_required','The selected OCR reader returned no usable observations. Your photos are preserved; select Gemini Vision or try another reader.');
+    data=assistInput.parse({...data,package:selectedPackage,interpretedCandidates:[],calculations:[],images:selectedPolicy?.images?data.images?.map(({handle,side,width,height})=>({handle,side,width,height})):[]});
+  }
   if(data.toolAccess?.mode==='research'&&(process.env.NODE_ENV!=='development'||process.env.CI||process.env.VERCEL))throw new ApiError(403,'research_tools_local_only','Controlled research tool selection is available only in local development.');
   try{selectAgentTools(geminiToolDeclarations,(data.visualImages?.length??0)>0,data.toolAccess);}catch{throw new ApiError(400,'invalid_tool_selection','The selected investigation tools are unavailable.');}
   const status=providerStatus();
@@ -2153,26 +2167,30 @@ export async function assist(data: z.infer<typeof assistInput>) {
       packageReconstruction=reconstructed.content;
       reconstructionElapsedMs=reconstructed.elapsedMs;
       reconstructionGenerationCount=1;
-      const nextRevision=Math.max(data.package.reconstruction?.revision??0,...(data.package.reconstructionHistory??[]).map(item=>item.revision))+1;
+      const nextRevision=Math.max(previousPackage.reconstruction?.revision??0,...(previousPackage.reconstructionHistory??[]).map(item=>item.revision))+1;
       const parsedPackage=packageSchema.safeParse({
         ...data.package,
+        ...(previousPackage.reconstructionCorrections?{reconstructionCorrections:previousPackage.reconstructionCorrections}:{}),
+        nutrients:selectedMethod?previousPackage.nutrients.filter(nutrient=>nutrient.status==='corrected'):data.package.nutrients,
+        observations:[...data.package.observations,...previousPackage.observations.filter(observation=>observation.origin==='user'&&!data.package.observations.some(current=>current.id===observation.id))],
         visionCaptures:[
           ...(data.package.visionCaptures??[]),
-          ...(data.visualImages??[]).filter(image=>!(data.package.visionCaptures??[]).some(capture=>capture.imageId===image.imageId&&capture.model===(status.model??'Gemini'))).map((image,index)=>visionCaptureSchema.parse({
+          ...(data.visualImages??[]).filter(image=>!(data.package.visionCaptures??[]).some(capture=>capture.imageId===image.imageId&&capture.model===(reconstructed.model))).map((image,index)=>visionCaptureSchema.parse({
             runId:`${analysisId}-reconstruction-${index}`,
             imageId:image.imageId,
             side:image.side,
             sourceImage:image.sourceImage,
             processing:image.preprocessing,
-            model:status.model??'Gemini',
+            model:reconstructed.model,
           })),
         ].slice(-50),
         reconstruction:{
           ...reconstructed.content,
           revision:nextRevision,
           updatedAt:new Date().toISOString(),
-          model:status.model??'Gemini',
+          model:reconstructed.model,
           current:true,
+          ...(selectedMethod?{analysisMethod:selectedMethod}:{}),
         },
       });
       if(!parsedPackage.success)throw new ApiError(502,'package_reconstruction_invalid','The package reading could not be saved as a valid revision.');
@@ -2287,6 +2305,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       answer,
       answerStatus,
       ...(packageReconstruction?{packageReconstruction}:{}),
+      ...(selectedMethod?{analysisReceipt:{method:selectedMethod,model:activePackage.reconstruction?.model??status.model,ocrRunIds:(activePackage.ocrCaptures??[]).map(c=>c.runId),ocrObservationCount:activePackage.observations.filter(observation=>observation.origin==='ocr').length,imageIds:(data.visualImages??[]).map(image=>image.imageId)}}:{}),
       tentativeCandidates:[],
       uiComponents,
       calculations:responseCalculations,

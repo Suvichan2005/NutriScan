@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import {analysisMethodPolicy} from '@/lib/analysis-method';
 import { correctionUnits, type ReconstructionRowEdit } from '@/lib/reconstruction-correction';
 import { ScanLine } from 'lucide-react';
 import type { PackageReconstruction, NutrientKey, ReconstructionCorrection } from '@/lib/contracts';
@@ -128,7 +129,7 @@ export function PackageReconstructionView({ reconstruction, history = [], savedN
   const quantityDeclarations = displayed.quantityDeclarations ?? [];
   const savedByKey = new Map(savedNutrients.map(item => [item.key, item]));
   return <section className="package-reconstruction" aria-label="Gemini package reconstruction">
-    <header><div><span className="eyebrow">PACKAGE UNDERSTANDING</span><h2>{identity || 'Package details'}</h2></div><span className="reconstruction-version">Revision {displayed.revision} · {isActive ? 'active' : 'alternative'}</span></header>
+    <header><div><span className="eyebrow">PACKAGE UNDERSTANDING</span><h2>{identity || 'Package details'}</h2></div><span className="reconstruction-version">Revision {displayed.revision} · {isActive ? 'active' : 'alternative'}{displayed.analysisMethod?` · ${analysisMethodPolicy(displayed.analysisMethod).label}`:''}</span></header>
     {!isActive && <p className="reconstruction-caveat">This saved package reading is kept for review and is not currently active.</p>}
     {isActive && <p className="reconstruction-caveat">{isEvidenceMerge ? 'Compatible details from saved readings are combined. Conflicting fields remain unresolved and are withheld from calculations.' : 'Gemini’s interpretation is linked to the scan evidence. Confirmed user corrections are stored separately.'}</p>}
     {history.length > 0 && <details className="reconstruction-history"><summary>{history.length} earlier or alternative interpretation{history.length === 1 ? '' : 's'}</summary><ol>{[...history].sort((a,b)=>b.revision-a.revision).map(item=>{

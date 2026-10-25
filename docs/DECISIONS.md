@@ -1208,3 +1208,8 @@ Default to the selected ordinary tool inventory, preserving relevant condition/i
 ### 26 October — numeric roles are not semantic response templates
 
 Do not discard ordinary measurement-basis explanations as though a reference denominator were a measured food value. Keep precise amounts and their printed basis checks coupled; preserve user numeral identifiers only with adjacent wording. No condition names or source outcomes drive these rules, and prose cannot mutate canonical facts/calculations. This bounded representation correction is not scientific entailment. Retain unhandled illustrative wording instead of indefinitely expanding phrase rules.
+
+
+### 26 October — explicit evidence methods share one reconstruction stage
+
+Make reader choice an execution boundary rather than a heuristic-reader cascade. All five methods invoke Gemini; no-image methods cannot inspect/cite unseen photos, and image-only starts with no OCR or earlier interpreted/corrected values. Original evidence/corrections remain application state and can be reused after the fresh interpretation. Persist method/model and valid photo lineage per revision. Preserve the existing combined default provisionally; one successful image-first task and one poor OCR-only task do not establish a general winner. Keep objective numerical plausibility separate from semantic understanding, and retain failed observations for research.

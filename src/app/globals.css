@@ -502,3 +502,9 @@ dialog.onboarding-dialog{width:min(620px,calc(100% - 24px));max-width:none;max-h
 .reconstruction-quantity-list li>div span{font-size:12px;overflow-wrap:anywhere}
 .reconstruction-quantity-list li small{grid-column:1/-1;color:var(--muted);font-size:10px;line-height:1.4}
 .reconstruction-quantity-list li>.text-button{grid-column:2;grid-row:1/-1;align-self:center}
+
+/* A single reconstruction choice, outside the image editor. */
+.analysis-method-control{display:flex;align-items:center;gap:.5rem;font-size:.75rem;color:var(--muted);min-width:0;flex-wrap:wrap}
+.analysis-method-control select{font:inherit;color:inherit;background:var(--surface,#fff);border:1px solid var(--border,#dce4da);border-radius:.5rem;padding:.45rem .55rem;max-width:100%;min-width:0}
+.empty-thread-compose>.analysis-method-control{margin:0 0 .6rem .75rem}
+@media(max-width:640px){.thread-context-actions .analysis-method-control{flex-basis:100%}.analysis-method-control select{flex:1}}
