@@ -46,7 +46,7 @@ const toolArgs = {
   resolve_ingredient: z.object({ query: querySchema }).strict(),
   lookup_chemical_identity: z.object({ query: querySchema }).strict(),
   get_substance_assessments: z.object({ query: querySchema }).strict(),
-  calculate_nutrition: z.object({ nutrient: z.enum(nutrientKeys), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml', 'pieces', 'servings']), candidateId:z.preprocess(value=>value===null?undefined:value,z.string().min(1).max(120).optional()) }).strict(),
+  calculate_nutrition: z.object({ nutrient: z.enum(nutrientKeys), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml', 'pieces', 'servings', 'package']), candidateId:z.preprocess(value=>value===null?undefined:value,z.string().min(1).max(120).optional()) }).strict(),
   lookup_product: z.object({ query: z.string().trim().min(2).max(80).optional(), barcode: z.string().regex(/^\d{8,14}$/).optional() }).strict().refine(value => Number(Boolean(value.query)) + Number(Boolean(value.barcode)) === 1),
   search_research: z.object({ query: querySchema, topic: z.enum(['science', 'regulation', 'claims']) }).strict(),
 };
@@ -70,7 +70,7 @@ export const geminiToolDeclarations: FunctionDeclaration[] = [
   { name: 'resolve_ingredient', description: 'Look up one observed ingredient or additive. Returns exact source-attributed Indian terminology, FoodOn identity candidates, reviewed ingredient-source/allergen name relationships, and linked outcome evidence when available. Explicit INS codes may query Codex and exact EFSA records. Relationships retain provenance and limitations: identity is not package presence, dose, personal safety or Indian authorization. No photos/profile are sent to external identity services.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'One observed ingredient name or additive identifier, not the entire ingredient list.' } }, required: ['query'] } },
   { name: 'lookup_chemical_identity', description: 'Read-only PubChem PUG REST lookup of a chemical name already present in the user question/package text or returned by exact local ingredient or assessment lookup. Returns registry identity candidates only, not food-use authorization, dose, hazard assessment or personal safety. Sends only the name; never photos or profile data.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific chemical name from the question, printed package text or an exact local identity result, not a numeric value or general food question.' } }, required: ['query'] } },
   { name: 'get_substance_assessments', description: 'Search the locally imported EFSA OpenFoodTox 3.0 assessment snapshot for a named substance or exact identifier. Returns attributed EFSA assessment records and toxicological reference values when available. The local snapshot may only link a scientific output without its conclusion; if the user asks what the linked assessment found, follow that title with search_research using the exact local identity returned. Use to distinguish hazard assessments from package exposure; this does not establish Indian authorization, package dose, product presence or personal safety. No network request is made.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A substance name, synonym, CAS number or PubChem CID from the question, package text or a locally resolved ingredient identity.' } }, required: ['query'] } },
-  { name: 'calculate_nutrition', description: 'Use deterministic results already supplied with the package when they cover the requested nutrient and exact portion; do not repeat those calculations. Call this tool for missing portion results, including comparisons between piece counts or servings. Never perform package arithmetic in answer text. Pieces and servings are converted using the saved evidence-linked printed serving definition; no typical piece weight is assumed. Calculate from an unconflicted user-confirmed package nutrient, a currently attached evidence-linked interpretation, or an exact rowId from the saved package reconstruction. Interpretation-based arithmetic remains provisional and never confirms or changes the package. Missing or conflicting definitions withhold the calculation.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Requested number of grams, millilitres, pieces or declared servings.' }, unit: { type: Type.STRING, enum: ['g', 'ml', 'pieces', 'servings'] }, candidateId:{type:Type.STRING,description:'Optional exact candidateId from supplied interpretations or exact rowId from the saved package reconstruction.'} }, required: ['nutrient', 'amount', 'unit'] } },
+  { name: 'calculate_nutrition', description: 'Use deterministic results already supplied with the package when they cover the requested nutrient and exact portion; do not repeat those calculations. Call this tool for missing portion results, including comparisons between piece counts, servings, or a whole/partial package. Never perform package arithmetic in answer text. Pieces and servings use the saved evidence-linked printed serving definition; package amounts use only one current, evidence-linked printed net-content declaration and a compatible nutrient basis. Do not derive net contents from an item count or serving size. Calculate from an unconflicted user-confirmed package nutrient, a currently attached evidence-linked interpretation, or an exact rowId from the saved package reconstruction. Interpretation-based arithmetic remains provisional and never confirms or changes the package. Missing or conflicting definitions withhold the calculation.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Requested amount in the selected unit. For package, this is the number of packages (for example 1 for one package or 0.5 for half a package); otherwise grams, millilitres, pieces or declared servings.' }, unit: { type: Type.STRING, enum: ['g', 'ml', 'pieces', 'servings', 'package'] }, candidateId:{type:Type.STRING,description:'Optional exact candidateId from supplied interpretations or exact rowId from the saved package reconstruction.'} }, required: ['nutrient', 'amount', 'unit'] } },
   { name: 'lookup_product', description: 'Read-only Open Food Facts search by an exact barcode or product text explicitly present in the user question or package observations. Sends only that query to the public catalog; never sends images or profile data. Results are community candidates, not confirmed package facts.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A product name or brand present in the question or visible package OCR.' }, barcode: { type: Type.STRING, description: 'An exact 8–14 digit barcode present in the question or package OCR.' } } } },
   { name: 'search_research', description: 'Read-only search of Europe PMC or NutriScan’s fixed official India regulation sources. External query terms must be present in the user question/package OCR or a successful exact local identity lookup. If a local registry supplies only publication links and the user asks for the assessment finding, search the linked entity/topic rather than inferring the finding from metadata. Search results are candidates, not an evidence synthesis.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'Focused terms drawn from the explicit question, package OCR or successful exact local identity results.' }, topic: { type: Type.STRING, enum: ['science', 'regulation', 'claims'] } }, required: ['query', 'topic'] } },
 ];
@@ -674,6 +674,41 @@ async function lookupChemicalIdentity(args: z.infer<typeof toolArgs.lookup_chemi
 }
 
 function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, context: GeminiToolContext): GeminiToolResult {
+  if(args.unit==='package'){
+    const reconstruction=context.package.reconstruction;
+    const declarations=reconstruction?.current?(reconstruction.quantityDeclarations??[]).filter(item=>item.kind==='net-content'):[];
+    const withheld=(message:string):GeminiToolResult=>({status:'withheld',resultCount:0,output:{status:'withheld',message}});
+    if(!reconstruction?.current)return withheld('A current package reconstruction is required before calculating a whole-package amount.');
+    if(declarations.length!==1)return withheld('Whole-package calculation requires exactly one current printed net-content declaration. Physical unit counts and servings-per-package are not substitutes.');
+    const declaration=declarations[0];
+    const knownImageIds=new Set([
+      ...context.package.observations.flatMap(item=>item.imageId?[item.imageId]:[]),
+      ...(context.package.ocrCaptures??[]).map(item=>item.imageId),
+      ...(context.package.visionCaptures??[]).map(item=>item.imageId),
+      ...context.visualImages.map(item=>item.imageId),
+    ]);
+    const hasQuantityEvidence=declaration.evidence.observationIds.some(id=>context.package.observations.some(item=>item.id===id))
+      ||declaration.evidence.imageRegions.some(item=>knownImageIds.has(item.imageId));
+    if(!['clear','provisional'].includes(declaration.status)||declaration.quantity===null||!declaration.unit||!hasQuantityEvidence)return withheld('The printed net contents are unresolved or lack retained package evidence.');
+    const portion=declaration.quantity*args.amount;
+    if(!Number.isFinite(portion)||portion<=0||portion>10000)return withheld('The requested package amount exceeds validated calculation limits.');
+    const result=calculateNutrition({...args,amount:portion,unit:declaration.unit},context);
+    if(result.status!=='ok')return result;
+    const quantityObservationIds=declaration.evidence.observationIds.filter(id=>context.package.observations.some(item=>item.id===id));
+    const quantityImageIds=[...new Set(declaration.evidence.imageRegions.map(item=>item.imageId).filter(id=>knownImageIds.has(id)))];
+    const calculations=(result.calculations??[]).map(calculation=>{
+      const updated=calculationSchema.parse({...calculation,
+        label:`${calculation.label}; ${args.amount} package${args.amount===1?'':'s'}`,
+        packagePortion:{packageCount:args.amount,netContentPerPackage:declaration.quantity!,unit:declaration.unit!,printedText:declaration.printedText},
+        observationIds:[...new Set([...calculation.observationIds,...quantityObservationIds])],
+        imageIds:[...new Set([...(calculation.imageIds??[]),...quantityImageIds])],
+        formula:`${args.amount} package${args.amount===1?'':'s'} × ${declaration.quantity} ${declaration.unit} net contents per package = ${portion} ${declaration.unit}; ${calculation.formula}`,
+        assumptions:[...calculation.assumptions,'Uses the explicit evidence-linked printed net contents; no package amount was derived from a serving or inner-unit count.'],
+      });
+      return{...updated,evidenceText:calculationEvidenceText(updated)};
+    });
+    return{...result,calculations,output:{...result.output,calculation:calculations[0],packageConversion:{requestedPackages:args.amount,netContentPerPackage:declaration.quantity,unit:declaration.unit,printedText:declaration.printedText,revision:reconstruction.revision}}};
+  }
   if(args.unit==='pieces'||args.unit==='servings'){
     const reconstruction=context.package.reconstruction;
     const serving=reconstruction?.serving;

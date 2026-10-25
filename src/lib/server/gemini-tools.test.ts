@@ -60,6 +60,63 @@ describe('Gemini tool retrieval boundaries', () => {
       ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Developer fixture.'};
     return toolContext;
   }
+  function packageContentContext(unit:'g'|'ml'='g',quantity=250){
+    const toolContext=countedContext();
+    const row=toolContext.package.reconstruction!.nutritionRows[0];
+    row.basisUnit=unit;row.basisText=`per 100 ${unit}`;
+    toolContext.package.observations.push({...toolContext.package.observations[0],id:'net-content-ocr',field:'ocr-line',text:`NET CONTENTS ${quantity} ${unit}`,readingOrder:{runId:'run-1',blockIndex:0,paragraphIndex:0,lineIndex:2}});
+    toolContext.package.reconstruction!.quantityDeclarations=[{kind:'net-content',printedText:`Net contents ${quantity} ${unit}`,quantity,unit,status:'provisional',evidence:{observationIds:['net-content-ocr'],imageRegions:[]}}];
+    return toolContext;
+  }
+  it.each([
+    {unit:'g' as const,quantity:250,expected:50},
+    {unit:'ml' as const,quantity:300,expected:60},
+  ])('calculates $unit whole-package nutrition only from an explicit, linked net-content declaration',async scenario=>{
+    const toolContext=packageContentContext(scenario.unit,scenario.quantity);
+    const result=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:1,unit:'package',candidateId:'count-carb'},toolContext);
+    expect(result.status).toBe('ok');
+    expect(result.calculations?.[0]).toMatchObject({portion:scenario.quantity,portionUnit:scenario.unit,result:scenario.expected,packagePortion:{packageCount:1,netContentPerPackage:scenario.quantity,unit:scenario.unit,printedText:`Net contents ${scenario.quantity} ${scenario.unit}`},observationIds:['ocr-1','net-content-ocr']});
+    expect(result.output.packageConversion).toMatchObject({requestedPackages:1,netContentPerPackage:scenario.quantity,unit:scenario.unit,revision:2});
+    expect(result.calculations?.[0].assumptions.join(' ')).toContain('no package amount was derived');
+    const payload={consent:true,question:'How much carbohydrate is in the full package?',package:toolContext.package,calculations:result.calculations};
+    expect(assistInput.safeParse(payload).success).toBe(true);
+    const answer=validateNaturalAnswerText(`The full package contains ${scenario.expected} g carbohydrate.`,{package:toolContext.package,calculations:result.calculations});
+    expect(answer.answer).toContain(`${scenario.expected} g carbohydrate`);
+    const forged=structuredClone(payload);
+    forged.package.reconstruction!.quantityDeclarations![0].quantity=100;
+    expect(assistInput.safeParse(forged).success).toBe(false);
+    expect(calculationSchema.safeParse({...result.calculations![0],packagePortion:{...result.calculations![0].packagePortion!,packageCount:2}}).success).toBe(false);
+    const half=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:0.5,unit:'package',candidateId:'count-carb'},toolContext);
+    expect(half.calculations?.[0]).toMatchObject({portion:scenario.quantity/2,result:scenario.expected/2,packagePortion:{packageCount:0.5,netContentPerPackage:scenario.quantity}});
+  });
+  it('withholds whole-package arithmetic when net contents are absent, disputed, unlinked or too large',async()=>{
+    const withoutNetContent=packageContentContext();
+    withoutNetContent.package.reconstruction!.quantityDeclarations=[];
+    expect((await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:1,unit:'package'},withoutNetContent)).status).toBe('withheld');
+
+    for(const mutate of [
+      (toolContext:GeminiToolContext)=>{toolContext.package.reconstruction!.quantityDeclarations![0].status='ambiguous';},
+      (toolContext:GeminiToolContext)=>{toolContext.package.reconstruction!.quantityDeclarations![0].evidence.observationIds=['missing-observation'];},
+      (toolContext:GeminiToolContext)=>{toolContext.package.reconstruction!.quantityDeclarations!.push({...toolContext.package.reconstruction!.quantityDeclarations![0],quantity:300,printedText:'Net contents 300 g'});},
+      (toolContext:GeminiToolContext)=>{toolContext.package.reconstruction!.quantityDeclarations![0]={kind:'unit-count',printedText:'10 pieces',quantity:10,unit:'pieces',status:'provisional',evidence:{observationIds:['net-content-ocr'],imageRegions:[]}};},
+      (toolContext:GeminiToolContext)=>{toolContext.package.reconstruction!.quantityDeclarations![0]={kind:'servings-per-package',printedText:'10 servings',quantity:10,unit:'servings',status:'provisional',evidence:{observationIds:['net-content-ocr'],imageRegions:[]}};},
+    ]){
+      const toolContext=packageContentContext();mutate(toolContext);
+      expect((await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:1,unit:'package',candidateId:'count-carb'},toolContext)).status).toBe('withheld');
+    }
+    expect((await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:50,unit:'package',candidateId:'count-carb'},packageContentContext())).status).toBe('withheld');
+    const mismatchedBasis=packageContentContext('g');mismatchedBasis.package.reconstruction!.nutritionRows[0].basisUnit='ml';
+    expect((await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:1,unit:'package',candidateId:'count-carb'},mismatchedBasis)).status).toBe('withheld');
+  });
+  it('uses a current user nutrient correction with printed net contents while keeping both provenances distinct',async()=>{
+    const toolContext=packageContentContext('g',250);
+    toolContext.package=applyNutrientCorrection(toolContext.package,{key:'carbohydrate',value:25,unit:'g',basisAmount:100,basisUnit:'g'});
+    const result=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:1,unit:'package',candidateId:'count-carb'},toolContext);
+    expect(result.status).toBe('ok');
+    expect(result.calculations?.[0]).toMatchObject({input:25,portion:250,result:62.5,packagePortion:{packageCount:1,netContentPerPackage:250},assumptions:expect.arrayContaining([expect.stringContaining('explicit evidence-linked printed net contents')])});
+    expect(result.calculations?.[0].interpretationIds).toBeUndefined();
+    expect(assistInput.safeParse({consent:true,question:'Calculate this for the whole package.',package:toolContext.package,calculations:result.calculations}).success).toBe(true);
+  });
   it('converts declared piece counts and fractional servings before deterministic nutrition arithmetic',async()=>{
     const toolContext=countedContext();
     const original=structuredClone(toolContext.package);

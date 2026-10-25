@@ -758,6 +758,9 @@ export function validateNaturalAnswerText(
       ...pkg.reconstruction.statements.filter(item => ['clear', 'provisional'].includes(item.status)
         && (item.evidence.observationIds.length > 0 || item.evidence.imageRegions.length > 0))
         .map(item => `${item.label ?? ''} ${item.text}`),
+      ...(pkg.reconstruction.quantityDeclarations??[]).filter(item=>['clear','provisional'].includes(item.status)
+        &&(item.evidence.observationIds.length>0||item.evidence.imageRegions.length>0))
+        .map(item=>`${item.printedText??''} ${item.quantity??''} ${item.unit??''} ${item.kind}`),
     ] : []),
     ...reconstructedBasisEvidence,
     ...(context.evidence ?? []).flatMap(source => [

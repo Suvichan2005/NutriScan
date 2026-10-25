@@ -107,6 +107,19 @@ function calculationHasPackageEvidence(calculation:Calculation,data:{package:z.i
       ||!provenanceMatches(serving.evidence.observationIds,serving.evidence.imageRegions.map(region=>region.imageId))
       ||(data.package.serving&&(!numericFieldMatches(data.package.serving.value,count.servingQuantity)||data.package.serving.unit!==count.servingUnit)))return false;
   }
+  if(calculation.packagePortion){
+    const reconstruction=data.package.reconstruction?.current?data.package.reconstruction:null;
+    const declarations=(reconstruction?.quantityDeclarations??[]).filter(item=>item.kind==='net-content');
+    if(declarations.length!==1)return false;
+    const declaration=declarations[0];
+    if(!['clear','provisional'].includes(declaration.status)
+      ||declaration.quantity===null||declaration.unit===null
+      ||!numericFieldMatches(calculation.packagePortion.netContentPerPackage,declaration.quantity)
+      ||calculation.packagePortion.unit!==declaration.unit
+      ||calculation.packagePortion.printedText!==declaration.printedText
+      ||calculation.portionUnit!==declaration.unit
+      ||!provenanceMatches(declaration.evidence.observationIds,declaration.evidence.imageRegions.map(region=>region.imageId)))return false;
+  }
   const hasMatchingInterpretation=(data.package.reconstruction?.current?data.package.reconstruction.nutritionRows:[]).some(row=>
     (!(calculation.interpretationIds?.length)||calculation.interpretationIds.includes(row.rowId))
     &&['clear','provisional'].includes(row.status)
@@ -1906,7 +1919,7 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
       ?modelCalculatedPortions
       :precomputedRequestedCalculations;
     const distinctCalculatedPortions=new Set(usedCalculations.map(item=>`${item.portion}|${item.portionUnit}`));
-    const initialCalculatorPortion=distinctCalculatedPortions.size===1&&usedCalculations[0].portion<=2000?usedCalculations[0]:undefined;
+    const initialCalculatorPortion=distinctCalculatedPortions.size===1&&usedCalculations[0].portion<=10000?usedCalculations[0]:undefined;
     if(usedCalculations.length){
       const parsed=assistantUiComponentSchema.safeParse({
         type:'portion-calculator',observationIds:[...new Set(usedCalculations.flatMap(item=>item.observationIds))].slice(0,20),

@@ -857,6 +857,34 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.calculations).toEqual([expect.objectContaining({nutrient:'carbohydrate',portion:33.5,result:expect.closeTo(69.29*33.5/100,10),countedPortion:{amount:5,unit:'pieces',servingQuantity:13.4,servingUnit:'g',piecesPerServing:2}})]);
     expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculatorAmount:33.5,calculatorUnit:'g',calculationIds:[result.calculations[0].id]}));
   });
+  it('routes whole-package questions through the explicit net-content calculator and renders the package amount',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const observations=[
+      {id:'nutrition-label',field:'label-note',text:'Carbohydrates 20 g per 100 g',side:'back' as const,confidence:null,origin:'user' as const},
+      {id:'net-content-label',field:'label-note',text:'Net contents 250 g',side:'back' as const,confidence:null,origin:'user' as const},
+    ];
+    const evidence={observationIds:['nutrition-label'],imageRegions:[]};
+    const reconstruction={
+      identity:{brand:null,name:'Generic food',variant:null,status:'provisional' as const,evidence},
+      serving:null,
+      quantityDeclarations:[{kind:'net-content' as const,printedText:'Net contents 250 g',quantity:250,unit:'g' as const,status:'provisional' as const,evidence:{observationIds:['net-content-label'],imageRegions:[]}}],
+      nutritionRows:[{rowId:'carbohydrate-row',nutrient:'carbohydrate',printedLabel:'Carbohydrates',printedValue:'20 g',value:20,unit:'g',columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Saved evidence-linked interpretation.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true,
+    };
+    const answer='One 250 g package contains 50 g carbohydrate, using the printed net contents and the reconstructed label row.';
+    const fetcher=vi.fn()
+      .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('whole-package-carbohydrate','calculate_nutrition',{nutrient:'carbohydrate',amount:1,unit:'package',candidateId:'carbohydrate-row'})]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question:'How much carbohydrate is in the whole package?',package:{id:'whole-package-fixture',name:'Generic food',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:true,createdAt:new Date().toISOString(),reconstruction}});
+
+    const result=await assist(data);
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result.answer).toContain('50 g carbohydrate');
+    expect(result.calculations).toEqual([expect.objectContaining({nutrient:'carbohydrate',portion:250,result:50,packagePortion:{packageCount:1,netContentPerPackage:250,unit:'g',printedText:'Net contents 250 g'}})]);
+    expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculatorAmount:250,calculatorUnit:'g',calculationIds:[result.calculations[0].id]}));
+  });
   it.each([
     {unit:'g' as const,workspace:20,printedServing:30,requested:50,question:'Use 50 g instead of the amount selected earlier.'},
     {unit:'ml' as const,workspace:250,printedServing:200,requested:250,question:'Use the same glass we discussed.'},
