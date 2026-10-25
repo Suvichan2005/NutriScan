@@ -72,6 +72,10 @@ function servingReading(serving: NonNullable<PackageReconstruction['serving']>) 
     ?? `${serving.pieceCount ?? '?'} ${serving.pieceDescription ?? 'pieces'}${serving.quantity !== null && serving.unit ? `, about ${serving.quantity} ${serving.unit}` : ''}`;
 }
 
+function quantityDeclarationKey(item: NonNullable<PackageReconstructionContent['quantityDeclarations']>[number]): string {
+  return `${item.kind}|${item.quantity??''}|${item.unit??''}|${normalized(item.printedText)}`;
+}
+
 const statusRank = { clear: 0, provisional: 1, ambiguous: 2, conflict: 3, unreadable: 4 } as const;
 function conservativeStatus<T extends keyof typeof statusRank>(previous: T, next: T): T {
   return statusRank[previous] >= statusRank[next] ? previous : next;
@@ -236,12 +240,47 @@ export function mergeCompatibleReconstruction(
     const matching = [...previous.regions, ...next.regions].filter(other => other.imageId === item.imageId && other.role === item.role && JSON.stringify(other.region) === JSON.stringify(item.region));
     return { ...item, observationIds: [...new Set(matching.flatMap(region => region.observationIds))].slice(0, 32) };
   });
+  const quantityDeclarations=[...(previous.quantityDeclarations??[])];
+  for(const item of next.quantityDeclarations??[]){
+    const index=quantityDeclarations.findIndex(old=>quantityDeclarationMatch(old,item));
+    if(index<0){quantityDeclarations.push(item);continue;}
+    const old=quantityDeclarations[index];
+    const samePrintedText=normalized(old.printedText)!==''&&normalized(old.printedText)===normalized(item.printedText);
+    const disagrees=samePrintedText&&((old.quantity!==null&&item.quantity!==null&&old.quantity!==item.quantity)
+      ||(old.unit!==null&&item.unit!==null&&old.unit!==item.unit));
+    const combinedEvidence=mergeEvidence(old.evidence,item.evidence);
+    if(disagrees||old.status==='conflict'||item.status==='conflict'){
+      if(disagrees)addConflict(
+        `quantity.${old.kind}`,
+        `Saved interpretation: ${quantityDeclarationReading(old)}. Recheck: ${quantityDeclarationReading(item)}. Both remain in revision history; this printed quantity is withheld until reviewed.`,
+        combinedEvidence,
+      );
+      quantityDeclarations[index]={...old,quantity:null,unit:old.unit===item.unit?old.unit:null,status:'conflict',evidence:combinedEvidence};
+      continue;
+    }
+    quantityDeclarations[index]={
+      ...old,
+      printedText:old.printedText&&item.printedText?(old.printedText.length>=item.printedText.length?old.printedText:item.printedText):old.printedText??item.printedText,
+      quantity:old.quantity??item.quantity,
+      unit:old.unit??item.unit,
+      status:conservativeStatus(old.status,item.status),
+      evidence:combinedEvidence,
+    };
+  }
+  const deduplicatedQuantities=uniqueBy(quantityDeclarations,quantityDeclarationKey).map(item=>{
+    const matching=quantityDeclarations.filter(other=>quantityDeclarationKey(other)===quantityDeclarationKey(item));
+    return{
+      ...item,
+      status:matching.reduce((status,other)=>conservativeStatus(status,other.status),item.status),
+      evidence:matching.reduce((evidence,other)=>mergeEvidence(evidence,other.evidence),item.evidence),
+    };
+  });
   const mergedUnresolved = uniqueBy(unresolved, item => `${normalized(item.field)}:${normalized(item.reason)}`).map(item => {
     const matching = unresolved.filter(other => normalized(other.field) === normalized(item.field) && normalized(other.reason) === normalized(item.reason));
     return { ...item, evidence: matching.reduce((evidence, other) => mergeEvidence(evidence, other.evidence), item.evidence) };
   });
   const content = {
-    identity, serving, nutritionRows, ingredients, additives, statements, regions,
+    identity, serving, quantityDeclarations:deduplicatedQuantities, nutritionRows, ingredients, additives, statements, regions,
     unresolved: mergedUnresolved,
     interpretationNote: previous.interpretationNote || next.interpretationNote,
   };
@@ -277,6 +316,18 @@ function isMissingServingDetail(previous: NonNullable<PackageReconstruction['ser
     || (previous.pieceCount !== null && next.pieceCount === null)
     || (previous.pieceDescription !== null && next.pieceDescription === null)
     || (previous.printedText !== null && next.printedText === null);
+}
+
+function quantityDeclarationMatch(previous:NonNullable<PackageReconstructionContent['quantityDeclarations']>[number],next:NonNullable<PackageReconstructionContent['quantityDeclarations']>[number]):boolean{
+  if(previous.kind!==next.kind)return false;
+  const priorText=normalized(previous.printedText),nextText=normalized(next.printedText);
+  return (priorText!==''&&priorText===nextText)
+    ||(previous.unit===next.unit&&previous.quantity!==null&&previous.quantity===next.quantity);
+}
+
+function quantityDeclarationReading(item:NonNullable<PackageReconstructionContent['quantityDeclarations']>[number]):string{
+  const value=item.quantity!==null&&item.unit?`${item.quantity} ${item.unit}`:'quantity unresolved';
+  return item.printedText?`${value} (printed: “${item.printedText}”)`:value;
 }
 
 function ingredientMatch(previous: PackageReconstruction['ingredients'][number], next: PackageReconstructionContent['ingredients'][number]): boolean {
@@ -316,6 +367,15 @@ export function decideReconstructionUpdate(
       omitted ||= isMissingServingDetail(previous.serving, next.serving);
       disagrees ||= servingDisagreement(previous.serving, next.serving);
     }
+  }
+
+  for(const declaration of previous.quantityDeclarations??[]){
+    const candidate=(next.quantityDeclarations??[]).find(item=>quantityDeclarationMatch(declaration,item));
+    if(!candidate){omitted=true;continue;}
+    if(normalized(declaration.printedText)!==''&&normalized(declaration.printedText)===normalized(candidate.printedText)
+      &&((declaration.quantity!==null&&candidate.quantity!==null&&declaration.quantity!==candidate.quantity)
+        ||(declaration.unit!==null&&candidate.unit!==null&&declaration.unit!==candidate.unit)))disagrees=true;
+    if(candidate.status==='ambiguous'||candidate.status==='conflict'||candidate.status==='unreadable')omitted=true;
   }
 
   const nextRows = new Map(next.nutritionRows.map(row => [rowKey(row), row]));

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fixedFetch, input, localGate, readBounded, route } from './http';
 import { lookupProducts, normalizeProduct, productInput } from './products';
-import { assist, assistInput, assistOutput, assistPromptPayload, focusedLabelRecoverySchema, geminiResponseJsonSchema, getAgentSystemInstruction, getPackageReconstructionSystemInstruction, linkVisionResponseToCapture, mergeFocusedLabelRecovery, normalizeGeminiPackageRegionCoordinates, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, sanitizePackageReconstruction, selectNutritionRecoveryRegion, validateClaims, validateImage, vision, visionInput } from './gemini';
+import { assist, assistInput, assistOutput, assistPromptPayload, focusedLabelRecoverySchema, geminiResponseJsonSchema, getAgentSystemInstruction, getPackageReconstructionSystemInstruction, linkVisionResponseToCapture, mergeFocusedLabelRecovery, normalizeGeminiPackageRegionCoordinates, normalizeProviderPackageReconstructionShape, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, sanitizePackageReconstruction, selectNutritionRecoveryRegion, validateClaims, validateImage, vision, visionInput } from './gemini';
 import { applicationGeminiContext, committedPaidSpendUsd, countGoogleSearchQueries, freeTierSyntheticSmokeContext, resetGeminiUsageLedgerForTests, safeProviderFailure } from './gemini-provider';
 import { research, researchInput, researchRecalls } from './research';
 import { getNutritionGuidance } from './nutrition-guidance';
@@ -500,6 +500,60 @@ describe('provider validation, independent of provider invocation', () => {
     expect((ingredientPrompt.package.reconstruction as {ingredients:unknown[]}).ingredients).toHaveLength(13);
     expect(ingredientPrompt.packageFacts.map(fact=>fact.id)).toContain('package-fact:ingredient:12');
     expect(ingredientPrompt.packageFacts.map(fact=>fact.id)).toContain('package-fact:additive:8');
+  });
+  it('normalizes only explicitly printed package quantities and converts their units consistently',()=>{
+    const normalized=normalizeProviderPackageReconstructionShape({
+      answer:'The outer pack lists its printed contents.',answerParts:[],claims:[],
+      packageReconstruction:{
+        identity:{brand:'Example',name:'Assorted food pack',variant:null,status:'provisional',evidence:{observationIds:['net-line'],imageRegions:[]}},
+        serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'',
+        quantityDeclarations:[
+          {kind:'net_content',printed_text:'Net weight 0.5 kg',quantity:0.5,unit:'kg',observation_ids:['net-line']},
+          {kind:'unit_count',printed_text:'10 sachets',quantity:10,observation_ids:['count-line']},
+          {kind:'servings_per_package',printed_text:'About 20 servings',quantity:20,observation_ids:['servings-line']},
+        ],
+      },
+    }) as {packageReconstruction:{quantityDeclarations:Array<Record<string,unknown>>}};
+    expect(normalized.packageReconstruction.quantityDeclarations).toEqual([
+      expect.objectContaining({kind:'net-content',printedText:'Net weight 0.5 kg',quantity:500,unit:'g',evidence:{observationIds:['net-line'],imageRegions:[]}}),
+      expect.objectContaining({kind:'unit-count',printedText:'10 sachets',quantity:10,unit:'pieces'}),
+      expect.objectContaining({kind:'servings-per-package',printedText:'About 20 servings',quantity:20,unit:'servings'}),
+    ]);
+    // Text is retained as printed; normalized conversion does not claim the
+    // package itself printed a gram quantity.
+    expect(normalized.packageReconstruction.quantityDeclarations[0].printedText).toBe('Net weight 0.5 kg');
+    const observations=['net-line','count-line','servings-line'].map((id,index)=>({id,field:'label-note',text:['Net weight 0.5 kg','10 sachets','About 20 servings'][index],side:'back' as const,confidence:91,origin:'ocr' as const}));
+    const data=assistInput.parse({consent:true,question:'Summarize printed package quantities.',package:{id:'quantity-adapter-fixture',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
+    const sanitized=sanitizePackageReconstruction((normalized as {packageReconstruction:unknown}).packageReconstruction,data);
+    expect(sanitized?.content.quantityDeclarations).toMatchObject([
+      {kind:'net-content',quantity:500,unit:'g',evidence:{observationIds:['net-line']}},
+      {kind:'unit-count',quantity:10,unit:'pieces',evidence:{observationIds:['count-line']}},
+      {kind:'servings-per-package',quantity:20,unit:'servings',evidence:{observationIds:['servings-line']}},
+    ]);
+    const servingOnly=normalizeProviderPackageReconstructionShape({packageReconstruction:{identity:{brand:null,name:'Example',variant:null},serving:{printedText:'Serving size 30 g',quantity:30,unit:'g',observationIds:['net-line']},nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:''}}) as {packageReconstruction:{quantityDeclarations:Array<unknown>}};
+    expect(servingOnly.packageReconstruction.quantityDeclarations).toEqual([]);
+  });
+  it('keeps reconstructed package quantities evidence-linked in compact follow-up context',()=>{
+    const observation={id:'net-content-line',field:'ocr-line',text:'NET CONTENTS 500 g; 10 sachets; 20 servings per package',side:'back' as const,confidence:91,origin:'ocr' as const,imageId:'back-image',readingOrder:{runId:'quantity-capture',blockIndex:0,paragraphIndex:0,lineIndex:0}};
+    const evidence={observationIds:[observation.id],imageRegions:[]};
+    const reconstruction={revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true,
+      identity:{brand:'Example',name:'Food pack',variant:null,status:'provisional' as const,evidence},serving:null,
+      quantityDeclarations:[
+        {kind:'net-content' as const,printedText:'NET CONTENTS 500 g',quantity:500,unit:'g' as const,status:'provisional' as const,evidence},
+        {kind:'unit-count' as const,printedText:'10 sachets',quantity:10,unit:'pieces' as const,status:'provisional' as const,evidence},
+        {kind:'servings-per-package' as const,printedText:'20 servings per package',quantity:20,unit:'servings' as const,status:'provisional' as const,evidence},
+      ],nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Fixture package.'};
+    const pkg=packageSchema.parse({id:'quantity-followup',name:'Food pack',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[observation],
+      ocrCaptures:[{runId:'quantity-capture',imageId:'back-image',side:'back',sourceImage:{width:900,height:600},preparedImage:{width:900,height:600},bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'fixture-reader',version:'1',language:'eng',confidenceScale:'0-100',segmentationMode:'auto'},processing:{rotation:0,contrast:false,invert:false,cropPercent:null}}],
+      reconstruction,rawText:observation.text,warnings:[],synthetic:false,createdAt:new Date().toISOString()});
+    const followup=assistInput.parse({consent:true,question:'How many servings are in the pack?',package:pkg});
+    const prompt=assistPromptPayload(followup) as {package:Record<string,unknown>;packageFacts:Array<{id:string}>};
+    expect(prompt.packageFacts.map(fact=>fact.id)).toEqual(expect.arrayContaining(['package-fact:quantity:0','package-fact:quantity:1','package-fact:quantity:2']));
+    const compact=prompt.package as {rawText?:string;reconstruction:{quantityDeclarations:Array<{kind:string;printedText:string;quantity:number;unit:string}>};observations:Array<{id:string}>};
+    expect(compact.reconstruction.quantityDeclarations).toHaveLength(3);
+    expect(compact.reconstruction.quantityDeclarations[2]).toMatchObject({kind:'servings-per-package',printedText:'20 servings per package',quantity:20,unit:'servings'});
+    expect(compact.observations).toEqual([]);
+    expect(compact.rawText).toBeUndefined();
   });
   it('normalizes Gemini 0-1000 image regions into the saved 0-1 evidence contract',()=>{
     const candidate={

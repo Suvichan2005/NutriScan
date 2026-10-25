@@ -222,6 +222,29 @@ it('keeps a rejected recheck reviewable and exposes a deliberate way to select t
   expect(markup).toContain('alternative');
 });
 
+it('shows printed pack contents and unit declarations separately from the serving',()=>{
+  const evidence={observationIds:['pack-quantity-line'],imageRegions:[]};
+  const reconstruction=packageReconstructionSchema.parse({
+    identity:{brand:'Example',name:'Snack assortment',variant:null,status:'provisional',evidence},
+    serving:{printedText:'Serving size 2 pieces (30 g)',quantity:30,unit:'g',pieceCount:2,pieceDescription:'pieces',status:'provisional',evidence},
+    quantityDeclarations:[
+      {kind:'net-content',printedText:'Net contents 300 g',quantity:300,unit:'g',status:'provisional',evidence},
+      {kind:'unit-count',printedText:'10 individual packets',quantity:10,unit:'pieces',status:'provisional',evidence},
+      {kind:'servings-per-package',printedText:'About 10 servings',quantity:10,unit:'servings',status:'provisional',evidence},
+    ],
+    nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Explicit package declarations.',
+    revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture',current:true,
+  });
+  const markup=renderToStaticMarkup(<PackageReconstructionView reconstruction={reconstruction} savedNutrients={[]} onCorrect={()=>true} onInspectEvidence={()=>true}/>);
+  expect(markup).toContain('2 pieces · about 30 g');
+  expect(markup).toContain('Printed package quantities');
+  expect(markup).toContain('Net contents');
+  expect(markup).toContain('300 g');
+  expect(markup).toContain('10 individual packets');
+  expect(markup).toContain('About 10 servings');
+  expect(markup).toContain('10 servings');
+});
+
 it('keeps raw package-evidence OCR out of the assistant conversation cards', () => {
   const observation: Observation = { id: 'raw-label-line', field: 'ocr-line', text: 'INGREDIENTS: wheat flour, edible oil, antioxidant (319)', side: 'back', confidence: 88, origin: 'ocr', imageId };
   const pkg = packageSchema.parse({ ...parseLabel('Package label', { origin: 'user' }), name: 'Unidentified package', observations: [observation], rawText: observation.text });

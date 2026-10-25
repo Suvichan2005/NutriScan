@@ -2,6 +2,14 @@
 
 Updated: 2026-10-25. This is a local development application and research workspace. Feature levels below describe evidence available in this checkout; they do not imply clinical or production acceptance.
 
+## Current checkpoint — 25 October 2026: preserve printed package quantity declarations
+
+- Added a backward-compatible, evidence-linked `quantityDeclarations` field for explicit net contents, physical unit counts and servings per package. These declarations stay separate from serving size and from legacy product-record `netWeight`.
+- The provider adapter normalizes supported units (including kg/L to g/ml) while retaining the original wording. It does not infer net contents or servings from a serving amount. Quantity evidence is included in package validation, package facts and compact follow-up context; the inspector displays the declarations.
+- Rechecks preserve omitted quantity details. If the same printed declaration is interpreted with conflicting number or unit, the merged active field is withheld and the two saved revisions remain available for review.
+- Offline acceptance: provider normalization/sanitization, evidence lineage, follow-up retention, invalid units, recheck omission/conflict and inspector rendering. The full suite passes (691 passed, 1 skipped) and TypeScript passes. No live model call yet verifies that Gemini extracts these fields from a photo. This is a product data-path capability, not an accuracy result.
+- General next gap: first-scan delay. A clean local browser profile on a different Indian package pair dispatched after 33.46 s, with primary OCR 9.68 s and Paddle fallback 20.57 s; the endpoint was intercepted before any Gemini call. Measure secondary-reader benefit across layouts before changing its default execution policy.
+
 ## Current checkpoint — 25 October 2026: count-based portions retain their calculation provenance
 
 - Extended the existing nutrition tool to accept food pieces or declared servings, converting only through the current evidence-linked printed serving. Missing/ambiguous/stale definitions, unit-labelled pseudo-piece counts, conflicting serving mass and excessive quantities abstain. A new optional `countedPortion` field preserves the conversion in the shared calculation contract; arithmetic is checked and inbound records must match the saved serving evidence. Existing mass/volume calculations remain compatible.

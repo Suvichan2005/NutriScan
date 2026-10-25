@@ -60,6 +60,13 @@ export function packageReconstructionFactReferences(
     if (details.length) add('serving', `Reconstructed serving declaration: ${[...new Set(details)].join('; ')}.`, serving.status, serving.evidence);
   }
 
+  (reconstruction.quantityDeclarations??[]).forEach((item,index)=>{
+    const kind=item.kind==='net-content'?'net package contents':item.kind==='unit-count'?'number of physical units in the package':'servings per package';
+    const quantity=item.quantity!==null&&item.unit?`${item.quantity} ${item.unit}`:null;
+    const detail=[item.printedText,quantity].filter((part):part is string=>!!part?.trim());
+    if(detail.length)add(`quantity:${index}`,`Reconstructed ${kind}: ${[...new Set(detail)].join('; ')}.`,item.status,item.evidence);
+  });
+
   reconstruction.ingredients.forEach((item, index) => {
     const text = [`Ingredient ${index + 1}: ${item.name}.`, item.printedText ? `Printed wording: ${item.printedText}.` : null,
       item.printedPercentage !== null ? `Printed percentage: ${item.printedPercentage}%.` : null].filter(Boolean).join(' ');

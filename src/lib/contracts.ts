@@ -43,6 +43,10 @@ export const reconstructionEvidenceSchema=z.object({
 }).strict();
 const reconstructedIdentitySchema=z.object({brand:z.string().max(160).nullable(),name:z.string().max(240).nullable(),variant:z.string().max(240).nullable(),status:reconstructionStatusSchema,evidence:reconstructionEvidenceSchema}).strict();
 export const reconstructedServingSchema=z.object({printedText:z.string().max(300).nullable(),quantity:z.number().positive().max(10000).nullable(),unit:z.enum(['g','ml']).nullable(),pieceCount:z.number().positive().max(10000).nullable(),pieceDescription:z.string().max(100).nullable(),status:reconstructionStatusSchema,evidence:reconstructionEvidenceSchema}).strict();
+export const reconstructedQuantityDeclarationSchema=z.object({kind:z.enum(['net-content','unit-count','servings-per-package']),printedText:z.string().max(300).nullable(),quantity:z.number().positive().max(1000000).nullable(),unit:z.enum(['g','ml','pieces','servings']).nullable(),status:reconstructionStatusSchema,evidence:reconstructionEvidenceSchema}).strict().superRefine((declaration,context)=>{
+  const allowedUnits=declaration.kind==='net-content'?['g','ml']:declaration.kind==='unit-count'?['pieces']:['servings'];
+  if(declaration.unit&&!allowedUnits.includes(declaration.unit))context.addIssue({code:'custom',path:['unit'],message:`${declaration.kind} must use ${allowedUnits.join(' or ')}.`});
+});
 export const reconstructedNutritionRowSchema=z.object({
   rowId:z.string().min(1).max(100),nutrient:z.string().min(1).max(120),printedLabel:z.string().max(160),
   printedValue:z.string().max(80).nullable(),value:z.number().finite().nonnegative().max(100000).nullable(),unit:z.string().max(24).nullable(),
@@ -59,6 +63,9 @@ export const reconstructedRegionSchema=z.object({imageId:z.string().min(1).max(1
 export const packageReconstructionContentSchema=z.object({
   identity:reconstructedIdentitySchema,
   serving:reconstructedServingSchema.nullable(),
+  // Optional for old saved revisions; new reconstructions can retain explicit
+  // pack quantities without conflating them with the printed serving size.
+  quantityDeclarations:z.array(reconstructedQuantityDeclarationSchema).max(12).optional(),
   nutritionRows:z.array(reconstructedNutritionRowSchema).max(100),
   ingredients:z.array(reconstructedIngredientSchema).max(250),
   additives:z.array(reconstructedAdditiveSchema).max(100),
@@ -84,7 +91,7 @@ export const packageSchema=packageBaseSchema.superRefine((pkg,context)=>{
   if(new Set((pkg.reconstructionHistory??[]).map(item=>item.revision)).size!==(pkg.reconstructionHistory?.length??0))context.addIssue({code:'custom',path:['reconstructionHistory'],message:'Archived reconstruction revisions must be unique.'});
   for(const {path,value:reconstruction} of reconstructions){
     const imageIds=new Set([...pkg.observations.flatMap(observation=>observation.imageId?[observation.imageId]:[]),...(pkg.ocrCaptures??[]).map(capture=>capture.imageId),...(pkg.visionCaptures??[]).map(capture=>capture.imageId)]);
-    const evidenceGroups=[reconstruction.identity.evidence,...(reconstruction.serving?[reconstruction.serving.evidence]:[]),...reconstruction.nutritionRows.map(row=>row.evidence),...reconstruction.ingredients.map(item=>item.evidence),...reconstruction.additives.map(item=>item.evidence),...reconstruction.statements.map(item=>item.evidence),...reconstruction.unresolved.map(item=>item.evidence)];
+    const evidenceGroups=[reconstruction.identity.evidence,...(reconstruction.serving?[reconstruction.serving.evidence]:[]),...(reconstruction.quantityDeclarations??[]).map(item=>item.evidence),...reconstruction.nutritionRows.map(row=>row.evidence),...reconstruction.ingredients.map(item=>item.evidence),...reconstruction.additives.map(item=>item.evidence),...reconstruction.statements.map(item=>item.evidence),...reconstruction.unresolved.map(item=>item.evidence)];
     for(const [index,evidence] of evidenceGroups.entries())for(const id of evidence.observationIds)if(!observationIds.has(id))context.addIssue({code:'custom',path:[...path,index,'observationIds'],message:'Reconstruction evidence must reference observations in this package.'});
     for(const [index,region] of reconstruction.regions.entries()){
       if(!imageIds.has(region.imageId))context.addIssue({code:'custom',path:[...path,'regions',index,'imageId'],message:'Reconstruction regions must point to an image retained in the package evidence lineage.'});

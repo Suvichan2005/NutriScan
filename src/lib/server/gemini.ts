@@ -253,6 +253,7 @@ export function sanitizePackageReconstruction(value:unknown,data:z.infer<typeof 
   const identityWithEvidence=withEvidence(parsed.data.identity);
   const identity=hasEvidence(identityWithEvidence.evidence)?identityWithEvidence:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:identityWithEvidence.evidence};
   const serving=parsed.data.serving?withEvidence(parsed.data.serving):null;
+  const quantityDeclarations=(parsed.data.quantityDeclarations??[]).map(withEvidence).filter(item=>hasEvidence(item.evidence));
   const cleanRows=parsed.data.nutritionRows.map(withEvidence).filter(row=>hasEvidence(row.evidence));
   const unresolved=parsed.data.unresolved.map(item=>{
     const linked=linkEvidence(item.evidence);
@@ -265,8 +266,8 @@ export function sanitizePackageReconstruction(value:unknown,data:z.infer<typeof 
   const additives=parsed.data.additives.map(withEvidence).filter(item=>hasEvidence(item.evidence));
   const statements=parsed.data.statements.map(withEvidence).filter(item=>hasEvidence(item.evidence));
   const regions=parsed.data.regions.filter(item=>imageIds.has(item.imageId)).map(item=>({...item,observationIds:item.observationIds.filter(id=>observationIds.has(id))}));
-  const normalized=packageReconstructionContentSchema.parse({...parsed.data,identity,serving:serving&&hasEvidence(serving.evidence)?serving:null,nutritionRows:checkedRows,ingredients,additives,statements,regions,unresolved});
-  return normalized.identity.name||normalized.identity.brand||normalized.identity.variant||normalized.serving||normalized.nutritionRows.length||normalized.ingredients.length||normalized.additives.length||normalized.statements.length?{content:normalized,coarseImageFallbackCount}:null;
+  const normalized=packageReconstructionContentSchema.parse({...parsed.data,identity,serving:serving&&hasEvidence(serving.evidence)?serving:null,quantityDeclarations,nutritionRows:checkedRows,ingredients,additives,statements,regions,unresolved});
+  return normalized.identity.name||normalized.identity.brand||normalized.identity.variant||normalized.serving||normalized.quantityDeclarations?.length||normalized.nutritionRows.length||normalized.ingredients.length||normalized.additives.length||normalized.statements.length?{content:normalized,coarseImageFallbackCount}:null;
 }
 
 /** @deprecated Historical provider-output adapter retained for offline transcript regressions; the canonical assist route consumes native tool calls and plain text. */
@@ -392,7 +393,7 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
     ?objectRecord(firstDefined(packageCandidate,'packageReconstruction','package_reconstruction','reconstruction'))
     :null;
   const packageLooksLikeReconstruction=!!packageCandidate&&(
-    ['identity','productIdentity','product_identity','serving','servingDefinition','serving_definition','servingSize','serving_size'].some(key=>objectRecord(packageCandidate[key])!==null)
+    ['identity','productIdentity','product_identity','serving','servingDefinition','serving_definition','servingSize','serving_size','quantityDeclarations','quantity_declarations','packageQuantities','package_quantities'].some(key=>objectRecord(packageCandidate[key])!==null||Array.isArray(packageCandidate[key]))
     ||['nutritionRows','nutrition_rows','nutritionTable','nutrition_table'].some(key=>Array.isArray(packageCandidate[key]))
   );
   const reconstruction=declaredReconstruction??nestedPackageReconstruction??(packageLooksLikeReconstruction?packageCandidate:null);
@@ -452,6 +453,40 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
       evidence,
     };
   }
+
+  const quantityInput=firstDefined(reconstruction,'quantityDeclarations','quantity_declarations','packageQuantities','package_quantities','packageContents','package_contents');
+  const quantityFactItems=factsFor('net-content','net-contents','package-quantity','unit-count','units-per-package','servings-per-package','servings-per-container');
+  const quantityItems=Array.isArray(quantityInput)&&quantityInput.length?quantityInput:quantityFactItems;
+  const quantityKind=(value:unknown):'net-content'|'unit-count'|'servings-per-package'|null=>{
+    const kind=typeof value==='string'?value.normalize('NFKC').toLocaleLowerCase('en').replace(/[ _]+/g,'-').trim():'';
+    if(['net-content','net-contents','package-quantity'].includes(kind))return 'net-content';
+    if(['unit-count','units-per-package'].includes(kind))return 'unit-count';
+    if(['servings-per-package','servings-per-container'].includes(kind))return 'servings-per-package';
+    return null;
+  };
+  const quantityDeclarations=Array.isArray(quantityItems)?quantityItems.slice(0,12).flatMap(value=>{
+    const item=objectRecord(value);if(!item)return[];
+    const kind=quantityKind(firstDefined(item,'kind','type','category'));if(!kind)return[];
+    const evidence=providerPackageFactEvidence(item);
+    const rawUnit=firstDefined(item,'unit','quantityUnit','quantity_unit');
+    const unitText=typeof rawUnit==='string'?rawUnit.normalize('NFKC').toLocaleLowerCase('en').trim():'';
+    let quantity=safeProviderNumber(firstDefined(item,'quantity','amount','count','value'));
+    let unit: 'g'|'ml'|'pieces'|'servings'|null;
+    if(kind==='net-content'){
+      if(unitText==='kg'){unit='g';quantity=quantity===null?null:quantity*1000;}
+      else if(['l','liter','litre','liters','litres'].includes(unitText)){unit='ml';quantity=quantity===null?null:quantity*1000;}
+      else unit=['g','ml'].includes(unitText)?unitText as 'g'|'ml':null;
+      if(quantity!==null&&quantity>1_000_000)quantity=null;
+    }else unit=kind==='unit-count'?'pieces':'servings';
+    return[{
+      kind,
+      printedText:safeProviderText(firstDefined(item,'printedText','printed_text','text','label','printedLabel','printed_label','description'),300),
+      quantity,
+      unit,
+      status:providerPackageFactStatus(item,evidence),
+      evidence,
+    }];
+  }):[];
 
   const nutritionInput=firstDefined(reconstruction,'nutritionRows','nutrition_rows','nutritionTable','nutrition_table','nutrients');
   const nutritionFactItems=factsFor('nutrition','nutrient','nutrition-row','nutrient-row');
@@ -543,6 +578,7 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
   };
   const structuralPackageFactCategories=new Set([
     'identity','product-identity','product','serving','serving-size','serving-declaration',
+    'net-content','net-contents','package-quantity','unit-count','units-per-package','servings-per-package','servings-per-container',
     'ingredient','ingredient-item','ingredient-list-item','additive','additive-identity',
     'nutrition','nutrient','nutrition-row','nutrient-row',
   ]);
@@ -591,6 +627,7 @@ export function normalizeProviderPackageReconstructionShape(value:unknown):unkno
   const normalized={
     identity:identityValues,
     serving,
+    quantityDeclarations,
     nutritionRows,ingredients,additives,statements:uniqueStatements,regions,unresolved,
     interpretationNote:safeProviderText(firstDefined(reconstruction,'interpretationNote','interpretation_note','note','summary'),1000)??'',
   };
@@ -1243,12 +1280,12 @@ const packageReconstructionSystemInstruction=[
   'Interpret the supplied package evidence into a reusable structured description of what is printed. Do not answer the user’s food or health question. The original attached photographs are primary evidence; OCR is an imperfect, ordered set of observations with geometry and reader provenance.',
   'Each OCR observation’s readingOrder.runId links to the ocrCaptures entry with the same runId. Use that link to identify which reader produced a line and compare readers. Repeated OCR readings are not independent visual confirmation, and confidence scores alone do not resolve disagreement.',
   'First separate each image into visible package regions. For a nutrition panel, use image geometry to identify headings, row labels, subrows and value columns, then associate each cell with its printed column heading and serving basis. Keep adjacent ingredient text separate even when OCR merged the regions. Preserve parent and subrows as printed.',
-  'Interpret ingredients in printed order and keep percentages, additive codes, allergen statements, claims, serving declarations and other useful package details distinct. Link every interpretation to exact supplied OCR observation IDs and/or the relevant image region. Normalize spelling separately from printed text.',
+  'Interpret ingredients in printed order and keep percentages, additive codes, allergen statements, claims, serving declarations, printed net contents, physical unit counts and servings-per-package distinct. Use quantityDeclarations only for quantities explicitly printed on the package; do not calculate a net pack amount from an inner-unit count or infer servings per package from a serving size. Link every interpretation to exact supplied OCR observation IDs and/or the relevant image region. Normalize spelling separately from printed text.',
   'Do not invent or arithmetic-correct printed digits, units, identities or bases. Cross-column arithmetic can flag a reading for review but cannot prove or choose a printed value. Keep unsupported, conflicting and unreadable details unresolved; return only evidence-linked interpretations.'
 ].join(' ');
 const packageReconstructionTool:FunctionDeclaration={
   name:'submit_package_reconstruction',
-  description:'On a new scan or explicit recheck, interpret the complete package from supplied photos and ordered OCR/text. When photos are present, separate visual regions such as front identity, nutrition table, ingredients, serving declaration, allergens, claims and warnings. Reconstruct each nutrient row and printed column as a separate cell with its own value, unit, heading and basis. Preserve ingredient order and percentages. Treat merged OCR from adjacent regions as a layout artifact, not automatically as a conflict. Use exact supplied observation/image identifiers as evidence. Every image region uses the Gemini 0-1000 visual coordinate grid: x/y start at the top-left, width/height are extents, and all values must stay within 0..1000. The application converts these coordinates to normalized original-image coordinates. Keep unresolved details unknown. Arithmetic may flag a possible mismatch but must never create or choose printed digits. Submit provisional interpretations for the application to validate and persist; do not claim visual confirmation when no photo is attached.',
+  description:'On a new scan or explicit recheck, interpret the complete package from supplied photos and ordered OCR/text. When photos are present, separate visual regions such as front identity, nutrition table, ingredients, serving declaration, allergens, claims and warnings. Reconstruct each nutrient row and printed column as a separate cell with its own value, unit, heading and basis. Preserve ingredient order and percentages. Keep a printed net-content quantity, physical unit count and servings-per-package as separate quantityDeclarations; do not derive one from another. Treat merged OCR from adjacent regions as a layout artifact, not automatically as a conflict. Use exact supplied observation/image identifiers as evidence. Every image region uses the Gemini 0-1000 visual coordinate grid: x/y start at the top-left, width/height are extents, and all values must stay within 0..1000. The application converts these coordinates to normalized original-image coordinates. Keep unresolved details unknown. Arithmetic may flag a possible mismatch but must never create or choose printed digits. Submit provisional interpretations for the application to validate and persist; do not claim visual confirmation when no photo is attached.',
   parametersJsonSchema:packageReconstructionProviderToolSchema(),
 };
 
@@ -1525,6 +1562,7 @@ export function normalizeModelImageRegions(output: unknown) {
       ...(reconstruction.serving as Record<string,unknown>),
       evidence:normalizeEvidenceRegions((reconstruction.serving as Record<string,unknown>).evidence,()=>{discardedRegionCount+=1;}),
     }:reconstruction.serving,
+    quantityDeclarations:normalizeReconstructionItems(reconstruction.quantityDeclarations,()=>{discardedRegionCount+=1;}),
     nutritionRows:normalizeReconstructionItems(reconstruction.nutritionRows,()=>{discardedRegionCount+=1;}),
     ingredients:normalizeReconstructionItems(reconstruction.ingredients,()=>{discardedRegionCount+=1;}),
     additives:normalizeReconstructionItems(reconstruction.additives,()=>{discardedRegionCount+=1;}),

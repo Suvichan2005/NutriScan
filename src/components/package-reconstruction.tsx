@@ -34,6 +34,9 @@ function allowedUnit(key: NutrientKey, printed: string | null): NutrientCorrecti
 function statusLabel(status: string) {
   return ({ clear: 'Readable interpretation', provisional: 'Provisional', ambiguous: 'Ambiguous', conflict: 'Conflicting', unreadable: 'Unreadable' } as Record<string, string>)[status] ?? 'Unresolved';
 }
+function quantityKindLabel(kind:'net-content'|'unit-count'|'servings-per-package'){
+  return kind==='net-content'?'Net contents':kind==='unit-count'?'Physical units in pack':'Servings per package';
+}
 
 function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
   row: PackageReconstruction['nutritionRows'][number];
@@ -95,6 +98,7 @@ export function PackageReconstructionView({ reconstruction, history = [], savedN
   const isEvidenceMerge = isActive && reconstruction.model.startsWith('local evidence merge');
   const identity = [displayed.identity.brand, displayed.identity.name, displayed.identity.variant].filter(Boolean).join(' ');
   const serving = normalizeReconstructedServing(displayed.serving);
+  const quantityDeclarations = displayed.quantityDeclarations ?? [];
   const savedByKey = new Map(savedNutrients.map(item => [item.key, item]));
   return <section className="package-reconstruction" aria-label="Gemini package reconstruction">
     <header><div><span className="eyebrow">PACKAGE UNDERSTANDING</span><h2>{identity || 'Package details'}</h2></div><span className="reconstruction-version">Revision {displayed.revision} · {isActive ? 'active' : 'alternative'}</span></header>
@@ -106,6 +110,11 @@ export function PackageReconstructionView({ reconstruction, history = [], savedN
     })}</ol></details>}
     {!isActive && <div className="reconstruction-alternative-actions"><button type="button" className="text-button" onClick={()=>setSelectedRevision(null)}>Return to active reading</button>{onActivateRevision&&<button type="button" className="text-button" onClick={()=>{if(onActivateRevision(displayed.revision))setSelectedRevision(null);}}>Use this reading</button>}</div>}
     {serving && <section className="reconstruction-serving"><strong>Serving</strong><span>{serving.pieceCount ? `${serving.pieceCount} ${serving.pieceDescription ?? 'pieces'}` : serving.printedText ?? 'Amount unresolved'}{serving.quantity !== null && serving.unit ? ` · about ${serving.quantity} ${serving.unit}` : ''}</span><small>{statusLabel(serving.status)} · unverified</small>{serving.evidence.observationIds.length > 0 && <button type="button" className="text-button" onClick={() => onInspectEvidence(serving.evidence.observationIds)}>Inspect evidence</button>}</section>}
+    {quantityDeclarations.length > 0 && <section><h3>Printed package quantities</h3><ul className="reconstruction-quantity-list">{quantityDeclarations.map((item, index) => <li key={`${item.kind}-${item.quantity}-${item.unit}-${index}`}>
+      <div><strong>{quantityKindLabel(item.kind)}</strong><span>{item.quantity !== null && item.unit ? `${item.quantity} ${item.unit}` : item.printedText ?? 'Quantity unresolved'}</span>{item.printedText && item.quantity !== null && <small>Printed wording: {item.printedText}</small>}</div>
+      <small>{statusLabel(item.status)} · unverified</small>
+      {item.evidence.observationIds.length > 0 && <button type="button" className="text-button" onClick={() => onInspectEvidence(item.evidence.observationIds)}>Inspect evidence</button>}
+    </li>)}</ul></section>}
     {displayed.nutritionRows.length > 0 && <section><h3>Nutrition as printed</h3><div className="reconstruction-rows">{displayed.nutritionRows.map(row => {const key=nutrientKey(row.nutrient || row.printedLabel);return <InterpretedRow key={row.rowId} row={row} saved={key? savedByKey.get(key):undefined} onCorrect={onCorrect} onInspectEvidence={onInspectEvidence}/>;})}</div></section>}
     {displayed.ingredients.length > 0 && <section><h3>Ingredients</h3><ol className="reconstruction-ingredients">{displayed.ingredients.slice(0, 40).map((item, index) => <li key={`${item.position}-${index}`}><span>{item.normalizedName || item.name}</span>{item.printedPercentage !== null && <strong>{item.printedPercentage}%</strong>}<small>{statusLabel(item.status)} · unverified</small></li>)}</ol></section>}
     {displayed.additives.length > 0 && <section><h3>Additives identified on the label</h3><ul className="reconstruction-statements">{displayed.additives.slice(0, 20).map((item, index) => <li key={`${item.printedName}-${index}`}>{item.normalizedName || item.printedName}{item.code ? ` · ${item.code}` : ''}<small>{statusLabel(item.status)} · unverified</small></li>)}</ul></section>}

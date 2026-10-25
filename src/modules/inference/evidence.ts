@@ -33,6 +33,7 @@ export function packageForAssist(pkg: PackageData): PackageData {
     const requiredIds=new Set([
       ...reconstruction.identity.evidence.observationIds,
       ...(reconstruction.serving?.evidence.observationIds??[]),
+      ...(reconstruction.quantityDeclarations??[]).flatMap(item=>item.evidence.observationIds),
       ...reconstruction.nutritionRows.flatMap(row=>row.evidence.observationIds),
       ...reconstruction.ingredients.flatMap(item=>item.evidence.observationIds),
       ...reconstruction.additives.flatMap(item=>item.evidence.observationIds),
@@ -68,6 +69,7 @@ export function packageForAssist(pkg: PackageData): PackageData {
       ...[
         reconstruction.identity.evidence,
         ...(reconstruction.serving?[reconstruction.serving.evidence]:[]),
+        ...(reconstruction.quantityDeclarations??[]).map(item=>item.evidence),
         ...reconstruction.nutritionRows.map(row=>row.evidence),
         ...reconstruction.ingredients.map(item=>item.evidence),
         ...reconstruction.additives.map(item=>item.evidence),

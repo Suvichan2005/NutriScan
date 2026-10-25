@@ -495,3 +495,10 @@ dialog.onboarding-dialog{width:min(620px,calc(100% - 24px));max-width:none;max-h
 @media(max-width:700px){.thread-ui-stack{width:calc(100% - 36px)}}
 .thread-ui-heading{min-width:0;flex-wrap:wrap}
 .thread-ui-heading>strong{min-width:0;text-align:right;white-space:normal;overflow-wrap:anywhere}
+.reconstruction-quantity-list{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.reconstruction-quantity-list li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:4px 10px;padding:9px 10px;border:1px solid #e2e9dd;border-radius:9px;background:#fff;font-size:11px}
+.reconstruction-quantity-list li>div{display:grid;gap:3px;min-width:0}
+.reconstruction-quantity-list li>div strong{color:#425d47;font-size:10px;font-weight:650}
+.reconstruction-quantity-list li>div span{font-size:12px;overflow-wrap:anywhere}
+.reconstruction-quantity-list li small{grid-column:1/-1;color:var(--muted);font-size:10px;line-height:1.4}
+.reconstruction-quantity-list li>.text-button{grid-column:2;grid-row:1/-1;align-self:center}

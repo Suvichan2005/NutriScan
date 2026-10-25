@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { packageReconstructionContentSchema, packageReconstructionSchema, packageSchema, type PackageReconstructionContent } from '../contracts';
 import { activateReconstructionRevision, decideReconstructionUpdate, mergeCompatibleReconstruction } from '../reconstruction-revisions';
 
-const evidence = { observationIds: [], imageRegions: [] };
+const evidence: PackageReconstructionContent['identity']['evidence'] = { observationIds: [], imageRegions: [] };
+const quantityDeclaration = (kind: 'net-content'|'unit-count'|'servings-per-package', printedText: string, quantity: number, unit: 'g'|'ml'|'pieces'|'servings', evidenceValue=evidence) => ({
+  kind, printedText, quantity, unit, status: 'provisional' as const, evidence: evidenceValue,
+});
 const row = (rowId: string, value: number, basisAmount: number, basisText: string) => ({
   rowId, nutrient: 'Carbohydrates', printedLabel: 'CARBOHYDRATES', printedValue: `${value} g`, value,
   unit: 'g', columnLabel: basisText, basisText, basisAmount, basisUnit: 'g' as const, qualifier: null,
@@ -53,6 +56,66 @@ describe('package reconstruction revision promotion', () => {
       ...row('protein-100g', 11.42, 100, 'Per 100 g'), nutrient: 'Protein', printedLabel: 'PROTEIN', printedValue: '11.42 g',
     }] });
     expect(decideReconstructionUpdate(saved(), next)).toEqual({ promote: true, reason: 'preserves-and-adds' });
+  });
+
+  it('keeps explicit pack quantities separate from serving size across a partial recheck', () => {
+    const active = saved(content({ quantityDeclarations: [
+      quantityDeclaration('net-content', 'Net weight 500 g', 500, 'g'),
+      quantityDeclaration('unit-count', '10 sachets', 10, 'pieces'),
+      quantityDeclaration('servings-per-package', 'About 20 servings per pack', 20, 'servings'),
+    ] }));
+    const partial = content({
+      quantityDeclarations: [quantityDeclaration('net-content', 'Net weight 500 g', 500, 'g')],
+    });
+
+    expect(decideReconstructionUpdate(active, partial)).toEqual({ promote: false, reason: 'omits-saved-details' });
+    const merged = mergeCompatibleReconstruction(active, partial);
+    expect(merged.content.quantityDeclarations).toHaveLength(3);
+    expect(merged.content.quantityDeclarations?.map(item => [item.kind, item.quantity, item.unit])).toEqual([
+      ['net-content', 500, 'g'], ['unit-count', 10, 'pieces'], ['servings-per-package', 20, 'servings'],
+    ]);
+  });
+
+  it('merges evidence for the same printed package quantity without deriving another quantity kind', () => {
+    const previous = saved(content({ quantityDeclarations: [
+      quantityDeclaration('unit-count', '6 individual packets', 6, 'pieces', { observationIds: ['count-line-a'], imageRegions: [] }),
+    ] }));
+    const next = content({ quantityDeclarations: [
+      quantityDeclaration('unit-count', '6 individual packets', 6, 'pieces', { observationIds: ['count-line-b'], imageRegions: [] }),
+      quantityDeclaration('net-content', 'Net contents 300 g', 300, 'g', { observationIds: ['net-line'], imageRegions: [] }),
+    ] });
+
+    const merged = mergeCompatibleReconstruction(previous, next);
+    expect(merged.conflicts).toEqual([]);
+    expect(merged.content.quantityDeclarations).toHaveLength(2);
+    expect(merged.content.quantityDeclarations?.find(item => item.kind === 'unit-count')?.evidence.observationIds).toEqual(['count-line-a', 'count-line-b']);
+    expect(merged.content.quantityDeclarations?.some(item => item.kind === 'servings-per-package')).toBe(false);
+  });
+
+  it('withholds a package quantity when a recheck assigns different values to the same printed declaration',()=>{
+    const printed='Net contents 500 g';
+    const active=saved(content({quantityDeclarations:[quantityDeclaration('net-content',printed,500,'g')]}));
+    const recheck=content({quantityDeclarations:[quantityDeclaration('net-content',printed,450,'g')]});
+
+    expect(decideReconstructionUpdate(active,recheck)).toEqual({promote:false,reason:'disagrees-with-saved-reading'});
+    const merged=mergeCompatibleReconstruction(active,recheck);
+    expect(merged.conflicts).toContain('quantity.net-content');
+    expect(merged.content.quantityDeclarations).toMatchObject([{kind:'net-content',quantity:null,unit:'g',status:'conflict'}]);
+    expect(merged.content.unresolved.some(item=>item.field==='quantity.net-content'&&item.reason.includes('500 g')&&item.reason.includes('450 g'))).toBe(true);
+  });
+
+  it('rejects a package quantity whose unit does not match its printed meaning', () => {
+    const invalid = packageReconstructionContentSchema.safeParse({
+      ...content(),
+      quantityDeclarations: [quantityDeclaration('unit-count', '6 pieces', 6, 'g')],
+    });
+    expect(invalid.success).toBe(false);
+  });
+
+  it('requires package-quantity evidence to resolve inside the saved package',()=>{
+    const orphaned=saved(content({quantityDeclarations:[quantityDeclaration('net-content','Net weight 500 g',500,'g',{observationIds:['missing-observation'],imageRegions:[]})]}));
+    const pkg=packageSchema.safeParse({id:'orphaned-pack-quantity',name:'Example package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction:orphaned,observations:[],rawText:'',warnings:[],synthetic:false,createdAt:'2026-10-25T00:00:00.000Z'});
+    expect(pkg.success).toBe(false);
   });
 
   it('merges complementary rechecks instead of discarding non-conflicting ingredients and additives', () => {
