@@ -1193,3 +1193,8 @@ Keep the assessment source's original reference value, date, comments and histor
 ### 26 October — preserve source depth, stop expansion-first priority
 
 Finish the existing FoodOn class-source preservation at a recoverable boundary. Keep original annotations/restrictions as source structure, never clinical entailments; expose bounded source fields without changing taxonomy results. Preserve the store and importer under the final semester scope, with no automatic further ontology acquisition. The latest owner directive supersedes the older expansion-first completion criterion.
+
+
+### 26 October — owner final-phase supersession
+
+Semester acceptance is now a complete consumer product, selected applicable knowledge and two rigorous feasible experiments, not exhaustive source operationalization. Keep advanced sources and technical evidence; explicitly defer expansion. One primary semantic index remains unless measured benefit warrants a second. The latest directive corrects the immediately prior overhaul: all five evidence arms use Gemini reconstruction; the primary profile portfolio is nine D/H/DH conversations/27 vegetarian test turns, not twelve/celiac or deterministic OCR-only arms. Expected evaluation obligations never enter production prompts; no implicit modality recovery or model fallback in a frozen aggregate. Private originals, human references/ratings, frozen budget and authentic report remain required.

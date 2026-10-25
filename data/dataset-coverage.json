@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "auditedAt": "2026-10-25T18:33:47.727356+00:00",
+  "auditedAt": "2026-10-25T18:46:38.010969+00:00",
   "method": "Pinned local-source/hash/count audit plus explicit source dispositions; not independent scientific/legal validation.",
   "sources": [
     {
@@ -311,7 +311,10 @@
         "nutrientRowsIndexed": 15156,
         "foodsWithPortions": 285
       },
-      "importCommand": "npm exec -- tsx scripts/import-fdc-foundation.mts; python scripts/import-fdc-source-records.py"
+      "importCommand": "npm exec -- tsx scripts/import-fdc-foundation.mts; python scripts/import-fdc-source-records.py",
+      "semesterRole": "CORE",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "fdc-fndds-2021-2023",
@@ -365,7 +368,10 @@
         "nutrientRowsIndexed": 353015,
         "foodsWithPortions": 5432
       },
-      "importCommand": "npm exec -- tsx scripts/import-fdc-fndds.mts; python scripts/import-fdc-source-records.py"
+      "importCommand": "npm exec -- tsx scripts/import-fdc-fndds.mts; python scripts/import-fdc-source-records.py",
+      "semesterRole": "SPECIALIZED",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "foodon",
@@ -440,7 +446,10 @@
           "typedAliases": 13566
         }
       },
-      "importCommand": "python src/modules/knowledge/import_foodon.py; python src/modules/knowledge/import_foodon_records.py; python src/modules/knowledge/import_foodon_records.py --verify"
+      "importCommand": "python src/modules/knowledge/import_foodon.py; python src/modules/knowledge/import_foodon_records.py; python src/modules/knowledge/import_foodon_records.py --verify",
+      "semesterRole": "CORE",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "efsa-openfoodtox-3",
@@ -660,7 +669,10 @@
         "unresolvedReferencedDocumentIds": 96
       },
       "importCommand": "python src/modules/knowledge/import_openfoodtox.py",
-      "verifyCommand": "python src/modules/knowledge/verify_openfoodtox.py"
+      "verifyCommand": "python src/modules/knowledge/verify_openfoodtox.py",
+      "semesterRole": "RESEARCH",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "open-food-facts",
@@ -700,7 +712,10 @@
         "Establish official snapshot size/version/rights and streaming India filter. No completeness claim for live catalog; preserve ODbL obligations and separate image rights.",
         "Official organization also publishes Hugging Face bulk exports. The older JSONL mirror reports 7.68 GB; inspect current Parquet release/filter options before a major transfer. No mass API crawl."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "CORE",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "codex-gsfa",
@@ -729,7 +744,10 @@
       "remainingGaps": [
         "Category detail endpoint timed out; provisions/notes and effective-date applicability remain unacquired. Hierarchy is not Indian authorization. Native source handoff retains child/ancestor facts; real first run plus offline replay, not independent scientific acceptance."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "SPECIALIZED",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "fssai",
@@ -758,7 +776,10 @@
       "remainingGaps": [
         "Inventory compendia/amendments/effective dates, permission and category/exception coverage; no package legal verdict from a generic rule."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "CORE",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "who-jecfa",
@@ -797,7 +818,10 @@
         "Full release scope/rights remain unacquired; two developer source questions do not establish independent toxicological appraisal or broad consumer-answer quality. Original source pages/receipts stay ignored.",
         "WHO EHC240 glossary is all-rights-reserved: four original source-linked summaries only, not a complete glossary import or redistribution permission. Model interpretations of status, causality and review completeness still require evaluation."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "SPECIALIZED",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "pubchem",
@@ -826,7 +850,10 @@
       "remainingGaps": [
         "Current property tool exposes CID/title/formula/IUPAC/InChIKey; review synonym and linked-reference operations and demonstrate multi-entity use."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "SPECIALIZED",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "europe-pmc-pubmed",
@@ -863,7 +890,10 @@
       "remainingGaps": [
         "Audit abstract/detail access and population/intervention/dose/outcome/source applicability handoff; independently judge relevance and answer use."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "SPECIALIZED",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "who-clinical-guidance",
@@ -892,7 +922,10 @@
       "remainingGaps": [
         "Inventory every selected guideline/version/rights scope; preserve population, dose, recommendation strength and individualization limits; expand missing applicable guidance."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "CORE",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "ifct-icmr-nin",
@@ -921,7 +954,10 @@
       "remainingGaps": [
         "Verify actual IFCT/ICMR-NIN terms and electronic-use permission; public PDF access alone does not authorize database extraction/distribution."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "DEFERRED EXPANSION",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "indian-nutrient-databank",
@@ -951,7 +987,10 @@
         "Verify authoritative distribution and permissions; select an authorized release or record explicit alternative.",
         "Official portal states per-100-g and per-serving values, derived using IFCT/NVIF/CoFID/USDA sources; reuse/dependency terms must be reviewed before integration."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "DEFERRED EXPANSION",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "foodb",
@@ -981,7 +1020,10 @@
       "remainingGaps": [
         "Decide source relevance/permissions; do not download world chemistry merely for count."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "DEFERRED EXPANSION",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "usda-sr-legacy",
@@ -1010,7 +1052,10 @@
       "remainingGaps": [
         "Official page lists 12.3 MB JSON archive / 205 MB uncompressed; decide incremental food coverage against current Foundation/FNDDS."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "DEFERRED EXPANSION",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "usda-branded",
@@ -1039,7 +1084,10 @@
       "remainingGaps": [
         "Official April 2026 JSON archive listed 195 MB / 3.1 GB uncompressed. Prefer OFF India relevance; reconsider only with demonstrated need."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "DEFERRED EXPANSION",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "codex-gsfa-categories",
@@ -1082,7 +1130,10 @@
         "parentEdges": 249,
         "uniqueCodes": 265
       },
-      "importCommand": "npm exec -- tsx scripts/acquire-codex-categories.mts; python src/modules/knowledge/import_codex_categories.py --source-html PINNED_HTML --output .data/knowledge/codex-categories.json --retrieved-at YYYY-MM-DD"
+      "importCommand": "npm exec -- tsx scripts/acquire-codex-categories.mts; python src/modules/knowledge/import_codex_categories.py --source-html PINNED_HTML --output .data/knowledge/codex-categories.json --retrieved-at YYYY-MM-DD",
+      "semesterRole": "SPECIALIZED",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "who-guideline-carbohydrate-2023",
@@ -1130,7 +1181,10 @@
           40
         ]
       },
-      "importCommand": "npm exec -- tsx scripts/acquire-guideline-documents.mts; python src/modules/knowledge/import_guideline_documents.py; python src/modules/knowledge/import_guideline_documents.py --verify"
+      "importCommand": "npm exec -- tsx scripts/acquire-guideline-documents.mts; python src/modules/knowledge/import_guideline_documents.py; python src/modules/knowledge/import_guideline_documents.py --verify",
+      "semesterRole": "CORE",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "who-guideline-fat-quality-2023",
@@ -1178,7 +1232,10 @@
           52
         ]
       },
-      "importCommand": "npm exec -- tsx scripts/acquire-guideline-documents.mts; python src/modules/knowledge/import_guideline_documents.py; python src/modules/knowledge/import_guideline_documents.py --verify"
+      "importCommand": "npm exec -- tsx scripts/acquire-guideline-documents.mts; python src/modules/knowledge/import_guideline_documents.py; python src/modules/knowledge/import_guideline_documents.py --verify",
+      "semesterRole": "CORE",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "who-guideline-salt-substitutes-2025",
@@ -1226,7 +1283,10 @@
           43
         ]
       },
-      "importCommand": "npm exec -- tsx scripts/acquire-guideline-documents.mts; python src/modules/knowledge/import_guideline_documents.py; python src/modules/knowledge/import_guideline_documents.py --verify"
+      "importCommand": "npm exec -- tsx scripts/acquire-guideline-documents.mts; python src/modules/knowledge/import_guideline_documents.py; python src/modules/knowledge/import_guideline_documents.py --verify",
+      "semesterRole": "CORE",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     },
     {
       "id": "curated-semantic-and-identities",
@@ -1259,7 +1319,10 @@
       "remainingGaps": [
         "Source-specific breadth and independent relevance/answer utility remain incomplete; source count is not database completeness."
       ],
-      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "semesterRole": "CORE",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "furtherExpansionDisposition": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
     }
   ]
 }

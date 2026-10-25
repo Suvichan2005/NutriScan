@@ -1,0 +1,297 @@
+{
+  "schemaVersion": 1,
+  "manifestVersion": "semester-experiments-v1",
+  "status": "PREPARATION_NOT_FINAL_FROZEN",
+  "evaluationOnly": true,
+  "provenance": {
+    "sourceAttachmentId": "69095055-f328-4ac4-9ab5-913f732ad31b",
+    "sourceFileName": "Pasted text.txt",
+    "sourceSha256": "ff940c17555c19e6ba15f69ef04b40e14821fa7d140c4fca9ec86c25504d9f41",
+    "encoding": "UTF-8",
+    "extraction": "Section 8 headings; text inside owner-authored curly quotation delimiters retained verbatim; delimiters excluded.",
+    "sourceIsOwnerDirective": true
+  },
+  "freeze": {
+    "freezeId": null,
+    "implementationCommit": null,
+    "modelVersion": null,
+    "generationConfig": null,
+    "reconstructionSchemaSha256": null,
+    "promptSha256": null,
+    "sourceSnapshotSha256": null,
+    "toolAccessSha256": null,
+    "splitReview": null,
+    "ownerApproval": null
+  },
+  "reconstruction": {
+    "researchQuestion": "Compare evidence modalities for Gemini structured reconstruction, not OCR engines versus Gemini.",
+    "arms": [
+      {
+        "id": "A",
+        "name": "Tesseract OCR → Gemini",
+        "invokesGemini": true,
+        "allowedInputs": [
+          "tesseract-observations"
+        ],
+        "forbiddenInputs": [
+          "paddle-observations",
+          "original-images",
+          "human-reference-values",
+          "other-arm-results",
+          "hidden-image-descriptions"
+        ],
+        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored"
+      },
+      {
+        "id": "B",
+        "name": "PaddleOCR → Gemini",
+        "invokesGemini": true,
+        "allowedInputs": [
+          "paddle-observations"
+        ],
+        "forbiddenInputs": [
+          "tesseract-observations",
+          "original-images",
+          "human-reference-values",
+          "other-arm-results",
+          "hidden-image-descriptions"
+        ],
+        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored"
+      },
+      {
+        "id": "C",
+        "name": "Gemini Vision",
+        "invokesGemini": true,
+        "allowedInputs": [
+          "original-images"
+        ],
+        "forbiddenInputs": [
+          "tesseract-observations",
+          "paddle-observations",
+          "human-reference-values",
+          "other-arm-results",
+          "hidden-image-descriptions"
+        ],
+        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored"
+      },
+      {
+        "id": "D",
+        "name": "Tesseract + Gemini Vision",
+        "invokesGemini": true,
+        "allowedInputs": [
+          "tesseract-observations",
+          "original-images"
+        ],
+        "forbiddenInputs": [
+          "paddle-observations",
+          "human-reference-values",
+          "other-arm-results",
+          "hidden-image-descriptions"
+        ],
+        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored"
+      },
+      {
+        "id": "E",
+        "name": "PaddleOCR + Gemini Vision",
+        "invokesGemini": true,
+        "allowedInputs": [
+          "paddle-observations",
+          "original-images"
+        ],
+        "forbiddenInputs": [
+          "tesseract-observations",
+          "human-reference-values",
+          "other-arm-results",
+          "hidden-image-descriptions"
+        ],
+        "recovery": "disabled during primary extraction; any later recovery separately labelled and scored"
+      }
+    ],
+    "pairedInputs": "Same original photographs, product groups, independent references, Gemini model/version/config/schema/task/validation/scoring and non-perception access. Only allowed observations differ.",
+    "noHiddenRecovery": true,
+    "ocrPreservation": "Native real text, order, reading regions/geometry if supplied; no model cleanup or human-corrected prefill. Local engines see photos, text-only Gemini requests do not.",
+    "unfamiliarProductGroupsRequested": {
+      "minimum": 12,
+      "maximum": 18,
+      "acquiredForThisManifest": 0,
+      "status": "owner-selection-and-independent-exposure-review-pending",
+      "unitOfIndependence": "productGroupId; variants, crops, repeated captures and related family members stay in one split",
+      "splits": "development/calibration/held-out assigned and human reviewed before freeze; any known exposed family permanently development"
+    },
+    "budgetPolicy": "Prefer all five on identical held-out groups. If budget constrained, A/B/C on identical groups and D/E on a predeclared identical paired subset; report separate denominators and do not claim full five-arm results.",
+    "referenceStatus": "pending-two-independent-human-readers-and-adjudication",
+    "reuse": {
+      "nutritionPass": "data/ocr-annotation-pass.schema.json",
+      "packageTextPass": "data/evaluation/package-text-pass.schema.json",
+      "annotationImplementation": "src/modules/ocr/annotation.ts",
+      "reconstructionScorer": "scripts/evaluation/score-reconstruction.mts",
+      "preparationAndReceiptGates": "scripts/evaluation/run_experiments.py"
+    },
+    "adapterIntegrationStatus": "pending-owner-integration: existing experiment-plan.json and runner modality mapping describe earlier arms; this manifest is not a directly executable replacement",
+    "measures": [
+      "complete correct value/nutrient/unit/basis/row/column/qualifier entries",
+      "incorrect/missing/invented entries",
+      "field precision/recall with explicit denominators",
+      "per-product exact match",
+      "ingredient names omissions inventions order percentages",
+      "allergen versus precaution correctness",
+      "local OCR/provider/click-to-table latency",
+      "generations tool rounds retries recoveries tokens estimated versus billed cost"
+    ],
+    "receiptFields": [
+      "jobId",
+      "productGroupId",
+      "input hashes",
+      "actualModel",
+      "actualGenerationConfig",
+      "schema/prompt hashes",
+      "actual allowed input hashes/modalities",
+      "fallbackOccurred",
+      "recovery stage",
+      "status/error",
+      "OCR/provider/total ms",
+      "token categories or unavailable",
+      "cost basis/date or unavailable"
+    ],
+    "fallbackPolicy": "Changed model/config/modality is noncomparable; retain failures/retries and unavailable metrics without silently pooling."
+  },
+  "conversation": {
+    "manifest": "data/evaluation/semester-conversations.json",
+    "pipelineCount": 1,
+    "conversations": 9,
+    "logicalUserTurns": 27,
+    "providerGenerations": "measure actual count including tool rounds; may exceed 27",
+    "packageFacts": "one fixed human-reviewed package snapshot per exact product/revision, no repeated extraction",
+    "status": "pending-exact-product-facts-freeze-and-human-review"
+  },
+  "knowledgeAblation": {
+    "design": "nine paired initial turns; no full factorial by OCR method/database",
+    "arms": [
+      "package-context-no-external-knowledge-tools",
+      "same-context-relevant-knowledge-tools"
+    ],
+    "requests": [
+      {
+        "conversationId": "M-D",
+        "turn": 1,
+        "contextSnapshotSha256": null,
+        "baselineReceipt": null,
+        "knowledgeReceipt": null
+      },
+      {
+        "conversationId": "M-H",
+        "turn": 1,
+        "contextSnapshotSha256": null,
+        "baselineReceipt": null,
+        "knowledgeReceipt": null
+      },
+      {
+        "conversationId": "M-DH",
+        "turn": 1,
+        "contextSnapshotSha256": null,
+        "baselineReceipt": null,
+        "knowledgeReceipt": null
+      },
+      {
+        "conversationId": "B-D",
+        "turn": 1,
+        "contextSnapshotSha256": null,
+        "baselineReceipt": null,
+        "knowledgeReceipt": null
+      },
+      {
+        "conversationId": "B-H",
+        "turn": 1,
+        "contextSnapshotSha256": null,
+        "baselineReceipt": null,
+        "knowledgeReceipt": null
+      },
+      {
+        "conversationId": "B-DH",
+        "turn": 1,
+        "contextSnapshotSha256": null,
+        "baselineReceipt": null,
+        "knowledgeReceipt": null
+      },
+      {
+        "conversationId": "A-D",
+        "turn": 1,
+        "contextSnapshotSha256": null,
+        "baselineReceipt": null,
+        "knowledgeReceipt": null
+      },
+      {
+        "conversationId": "A-H",
+        "turn": 1,
+        "contextSnapshotSha256": null,
+        "baselineReceipt": null,
+        "knowledgeReceipt": null
+      },
+      {
+        "conversationId": "A-DH",
+        "turn": 1,
+        "contextSnapshotSha256": null,
+        "baselineReceipt": null,
+        "knowledgeReceipt": null
+      }
+    ],
+    "controls": [
+      "identical frozen initial context and package/profile/question",
+      "same model/config/base prompt and output contract",
+      "only external knowledge availability differs; freeze both tool manifests",
+      "freeze source snapshots and record relevance/applicability/use",
+      "reuse exact matching knowledge-enabled conversation receipt; otherwise record reason for fresh generation",
+      "blind random arm labels/order; retain actual mapping privately"
+    ]
+  },
+  "humanReview": {
+    "dimensions": [
+      "factualCorrectness",
+      "packageEvidenceCorrectness",
+      "conditionRelevance",
+      "sourceApplicability",
+      "uncertainty",
+      "numericalCorrectness",
+      "practicalUsefulness",
+      "naturalnessReadability",
+      "multiTurnConsistency"
+    ],
+    "scale": "0 incorrect/unusable; 1 major problems; 2 mixed; 3 mostly correct/useful; 4 fully supported/useful; null not applicable or not yet rated with reason",
+    "independentReviewers": 2,
+    "adjudication": "Preserve independent ratings and disagreements, then human adjudicator records reasoned decision; critical errors reported separately from means.",
+    "existingAnswerScorerMapping": {
+      "usefulness": "practicalUsefulness",
+      "grounding": "factualCorrectness and packageEvidenceCorrectness; human mapping decision required",
+      "applicability": "sourceApplicability",
+      "numericalCorrectness": "numericalCorrectness",
+      "uncertainty": "uncertainty",
+      "actionability": "practicalUsefulness; retain full nine-dimension sheet separately"
+    },
+    "blankRatingRow": {
+      "conversationId": null,
+      "turn": null,
+      "blindResponseId": null,
+      "contextSha256": null,
+      "responseSha256": null,
+      "raterCode": null,
+      "provenance": null,
+      "scores": {
+        "factualCorrectness": null,
+        "packageEvidenceCorrectness": null,
+        "conditionRelevance": null,
+        "sourceApplicability": null,
+        "uncertainty": null,
+        "numericalCorrectness": null,
+        "practicalUsefulness": null,
+        "naturalnessReadability": null,
+        "multiTurnConsistency": null
+      },
+      "notApplicableReasons": {},
+      "criticalErrors": [],
+      "evidencePointers": [],
+      "comments": null,
+      "adjudication": null
+    }
+  },
+  "results": null
+}

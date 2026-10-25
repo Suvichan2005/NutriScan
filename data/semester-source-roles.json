@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "authority": {
+    "title": "Owner authoritative final-phase overhaul",
+    "sha256": "ff940c17555c19e6ba15f69ef04b40e14821fa7d140c4fca9ec86c25504d9f41",
+    "effectiveDate": "2026-10-26"
+  },
+  "scope": "Selected consumer capabilities and two feasible experiments; source technical gates remain separate from semester acceptance. Existing data/code are preserved.",
+  "sourceRoles": [
+    {
+      "sourceId": "fdc-foundation-2026-04",
+      "role": "CORE",
+      "use": "Generic structured composition only; never replace branded package readings.",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "rightsRecord": "data/dataset-coverage.json#fdc-foundation-2026-04",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "fdc-fndds-2021-2023",
+      "role": "SPECIALIZED",
+      "use": "Retain the demonstrated generic recipe-reference case; not the default branded-food evidence.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#fdc-fndds-2021-2023",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "foodon",
+      "role": "CORE",
+      "use": "Ingredient identities, reviewed aliases, taxonomy and useful definitions; no health/allergen entailment. Further OWL reasoning deferred.",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "rightsRecord": "data/dataset-coverage.json#foodon",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "efsa-openfoodtox-3",
+      "role": "RESEARCH",
+      "use": "Retain full local verified store and selective scientific tools; toxicological completion and redistribution are not semester gates.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#efsa-openfoodtox-3",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "open-food-facts",
+      "role": "CORE",
+      "use": "Optional exact/candidate product lookup with formulation and community-data uncertainty; no India bulk prerequisite.",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "rightsRecord": "data/dataset-coverage.json#open-food-facts",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "codex-gsfa",
+      "role": "SPECIALIZED",
+      "use": "Retain additive identity and bounded category information; full provisions acquisition deferred.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#codex-gsfa",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "fssai",
+      "role": "CORE",
+      "use": "Selected dated labelling/claim references and original attributable summaries; no comprehensive legal compliance verdict.",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "rightsRecord": "data/dataset-coverage.json#fssai",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "who-jecfa",
+      "role": "SPECIALIZED",
+      "use": "Retain dated source history/terminology and failures; exhaustive appraisal deferred.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#who-jecfa",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "pubchem",
+      "role": "SPECIALIZED",
+      "use": "Retain existing source capability selectively.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#pubchem",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "europe-pmc-pubmed",
+      "role": "SPECIALIZED",
+      "use": "Retain existing source capability selectively.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#europe-pmc-pubmed",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "who-clinical-guidance",
+      "role": "CORE",
+      "use": "Selected applicable diabetes/hypertension/combined-profile evidence; no individual prescriptions.",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "rightsRecord": "data/dataset-coverage.json#who-clinical-guidance",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "ifct-icmr-nin",
+      "role": "DEFERRED EXPANSION",
+      "use": "Preserve existing research and rights notes; additional acquisition is outside mandatory semester scope.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#ifct-icmr-nin",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "indian-nutrient-databank",
+      "role": "DEFERRED EXPANSION",
+      "use": "Preserve existing research and rights notes; additional acquisition is outside mandatory semester scope.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#indian-nutrient-databank",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "foodb",
+      "role": "DEFERRED EXPANSION",
+      "use": "Preserve existing research and rights notes; additional acquisition is outside mandatory semester scope.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#foodb",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "usda-sr-legacy",
+      "role": "DEFERRED EXPANSION",
+      "use": "Preserve existing research and rights notes; additional acquisition is outside mandatory semester scope.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#usda-sr-legacy",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "usda-branded",
+      "role": "DEFERRED EXPANSION",
+      "use": "Preserve existing research and rights notes; additional acquisition is outside mandatory semester scope.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#usda-branded",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "codex-gsfa-categories",
+      "role": "SPECIALIZED",
+      "use": "Retain existing source capability selectively.",
+      "semesterAcceptance": "NOT_A_MANDATORY_COMPLETION_GATE",
+      "rightsRecord": "data/dataset-coverage.json#codex-gsfa-categories",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "who-guideline-carbohydrate-2023",
+      "role": "CORE",
+      "use": "Retain existing source capability selectively.",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "rightsRecord": "data/dataset-coverage.json#who-guideline-carbohydrate-2023",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "who-guideline-fat-quality-2023",
+      "role": "CORE",
+      "use": "Retain existing source capability selectively.",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "rightsRecord": "data/dataset-coverage.json#who-guideline-fat-quality-2023",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "who-guideline-salt-substitutes-2025",
+      "role": "CORE",
+      "use": "Retain existing source capability selectively.",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "rightsRecord": "data/dataset-coverage.json#who-guideline-salt-substitutes-2025",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    },
+    {
+      "sourceId": "curated-semantic-and-identities",
+      "role": "CORE",
+      "use": "One primary semantic evidence pipeline plus reviewed ingredient/allergen relationships; deepen relevant records, not source counts.",
+      "semesterAcceptance": "PARTIAL_SELECTED_USE_PENDING",
+      "rightsRecord": "data/dataset-coverage.json#curated-semantic-and-identities",
+      "furtherExpansion": "DEFERRED — OUT OF SEMESTER SCOPE unless a concrete core failure justifies readmission"
+    }
+  ],
+  "semanticEvidence": {
+    "primaryIndex": "data/semantic-index.json",
+    "pipeline": "Existing MiniLM/BM25 with source-specific exact/structured access; do not embed the ontology or numeric tables.",
+    "organization": "One primary index initially; selected condition/nutrition/label records retain source applicability metadata.",
+    "secondIndexPolicy": "Only after documented incremental retrieval benefit."
+  },
+  "toolInventory": {
+    "ordinary": [
+      "inspect_package_image",
+      "calculate_nutrition",
+      "resolve_ingredient",
+      "get_ingredient_concept",
+      "search_knowledge",
+      "get_nutrition_guidance",
+      "search_guideline_documents",
+      "get_guideline_pages",
+      "lookup_product",
+      "get_product_record",
+      "search_food_composition",
+      "get_food_composition_record"
+    ],
+    "specialized": "All existing native source tools when explicitly selected; preserve detail interfaces.",
+    "research": "Explicit frozen subsets for each experiment; no extra intent-routing model call.",
+    "runtimeStatus": "INVENTORY_SELECTED; runtime still exposes the existing full catalogue until M2 integrates and tests profiles.",
+    "capabilities": [
+      "package evidence/visual inspection",
+      "deterministic calculations",
+      "ingredient identity/detail",
+      "nutrition and condition guidance",
+      "optional product lookup",
+      "generic composition"
+    ]
+  }
+}
