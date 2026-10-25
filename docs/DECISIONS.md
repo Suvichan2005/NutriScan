@@ -1178,3 +1178,8 @@ Use WHO site full filtered-results API, not autocomplete, for pageable name/CAS 
 ### 25 October — complete selected WHO guideline documents
 
 Preserve complete selected guideline text-layer releases locally instead of indefinitely extending tiny source summaries. Keep original PDFs/hashes, source rights, all page text and original page numbers; expose bounded search and complete pages with adjoining rationale/remarks. No indiscriminate embedding, clinical intent classifier or patient-target engine. Model chooses and interprets guidance; code verifies input/source integrity and numerical representation. Paired strong-emphasis markers cannot change quantity/comparator meaning. Explicit compound year-old user context is typed separately and cannot corroborate food amounts or study duration; unrelated question numbers remain excluded. Scientific entailment still needs evaluation.
+
+
+### 25 October — numerical presentation versus scientific meaning
+
+Treat flat mathematical text/unit wrappers and escaped percentage signs as presentation, not new evidence. Preserve numerical signs, dimensions, SI symbol case, comparators and time bases; never evaluate model-authored mathematics. Source-faithful numerical replay is separate from scientific entailment. A stronger model's better development answer does not establish independent accuracy or authorize automatic paid consumer routing. Retain unsupported scientific assertions and temporal-grammar failures in answer-quality evaluation instead of adding endpoint-specific validators or repair prompts.

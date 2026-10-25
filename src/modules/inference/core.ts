@@ -564,9 +564,18 @@ function containsOrderedEvidenceTokens(quote: string, words: string[]): boolean 
   return true;
 }
 
-type NumericDimension = 'mass' | 'energy' | 'volume' | 'percent' | 'unitless' | 'age-year';
-type NumericMention = { value: number; dimension: NumericDimension; rawValue: string; factor: number; decimalPlaces:number; localeAmbiguous: boolean };
-const numericMentionPattern = /(?<![\p{L}\p{N}_])(-?(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?|\.\d+))(?!\d)\s*(?:-\s*(?=years?-old))?(years?-old|kcal|kilocalories?|kj|kilojoules?|mg|milligrams?|µg|μg|mcg|ug|micrograms?|kg|g|grams?|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|%|percent)?(?![\p{L}\p{N}_])/giu;
+type NumericDimension = 'mass' | 'energy' | 'volume' | 'length' | 'percent' | 'unitless' | 'age-year';
+type NumericMention = { value: number; dimension: NumericDimension; rawValue: string; factor: number; decimalPlaces:number; localeAmbiguous: boolean; literalUnit?: string };
+const numericMentionPattern = /(?<![\p{L}\p{N}_])(-?(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?|\.\d+))(?!\d)\s*(?:-\s*(?=years?-old))?(years?-old|kcal|kilocalories?|kj|kilojoules?|mg|milligrams?|µg|μg|mcg|ug|micrograms?|kg|g|grams?|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|mm|cm|metres?|meters?|m|%|percent)?(?![\p{L}\p{N}_])/giu;
+
+/** Flatten presentation syntax only: never evaluate model-authored mathematics. */
+function numericPresentationText(text: string): string {
+  return text.replace(/\*\*([^*\n]+)\*\*/g, '$1').replace(/__([^_\n]+)__/g, '$1')
+    .replace(/\\(?:text|mathrm)\{([^{}\\\n]*)\}/g, '$1')
+    .replace(/\\%/g, '%')
+    .replace(/\\(?:leq|le)(?![a-z])/g, '≤')
+    .replace(/\\(?:geq|ge)(?![a-z])/g, '≥');
+}
 
 function parseNumericLiteral(value: string): { value: number; localeAmbiguous: boolean } {
   if (value.includes(',') && value.includes('.')) {
@@ -604,10 +613,18 @@ function numericMentions(text: string): NumericMention[] {
     else if (/^(?:kcal|kilocalories?)$/.test(unit)) dimension = 'energy';
     else if (/^(?:l|lit(?:er|re)s?)$/.test(unit)) { dimension = 'volume'; factor = 1000; }
     else if (/^(?:ml|millilit(?:er|re)s?)$/.test(unit)) dimension = 'volume';
+    else if (unit === 'mm') { dimension = 'length'; factor = 0.001; }
+    else if (unit === 'cm') { dimension = 'length'; factor = 0.01; }
+    else if (/^(?:m|metres?|meters?)$/.test(unit)) dimension = 'length';
     else if (/^(?:%|percent)$/.test(unit)) dimension = 'percent';
+    // SI symbols are case-sensitive: mM (a concentration) is not mm (length).
+    // Preserve an unrecognized casing literally rather than lending it a
+    // physical dimension or treating it as a unitless value.
+    const literalUnit = /^(?:m|mm|cm)$/i.test(match[2] ?? '') && match[2] !== unit ? match[2] : undefined;
+    if (literalUnit) { dimension = 'unitless'; factor = 1; }
     const separator=Math.max(match[1].lastIndexOf('.'),match[1].lastIndexOf(','));
     const decimalPlaces=separator<0?0:match[1].length-separator-1;
-    result.push({ value: parsed.value * factor, dimension, rawValue: match[1], factor, decimalPlaces, localeAmbiguous: parsed.localeAmbiguous });
+    result.push({ value: parsed.value * factor, dimension, rawValue: match[1], factor, decimalPlaces, localeAmbiguous: parsed.localeAmbiguous, literalUnit });
   }
   return result;
 }
@@ -662,9 +679,10 @@ function basisMentionsAreSupported(text: string, evidenceTexts: string[]): boole
 
 /** Arabic-numeric synthesis must match a quantity in its cited spans, allowing basic unit equivalence. */
 function numericMentionsAreSupported(claim: string, citedSpans: string[],calculatedResults:{value:number;unit:string}[]=[]): boolean {
+  claim = numericPresentationText(claim);
   const claimed = numericOccurrences(claim);
   if (!claimed.length) return true;
-  const cited = citedSpans.flatMap(numericOccurrences);
+  const cited = citedSpans.flatMap(span => numericOccurrences(numericPresentationText(span)));
   // Calculations are typed application outputs, not locale-formatted strings.
   // A value such as 4.712 can look locale-ambiguous when parsed back from text,
   // which incorrectly rejects normal display rounding to 4.7. Keep the
@@ -673,7 +691,7 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[],calcula
   return claimed.every(({mention:value,operator,index,timeBasis})=>{
     const approximate=isApproximateNumericClaim(claim,index);
     const matchesEvidence=cited.some(({mention:evidence,operator:evidenceOperator,timeBasis:evidenceTimeBasis})=>{
-      if(value.dimension!==evidence.dimension||operator!==evidenceOperator||timeBasis!==evidenceTimeBasis)return false;
+      if(value.dimension!==evidence.dimension||value.literalUnit!==evidence.literalUnit||operator!==evidenceOperator||timeBasis!==evidenceTimeBasis)return false;
       if(value.localeAmbiguous||evidence.localeAmbiguous){
         if(value.localeAmbiguous&&evidence.localeAmbiguous)return value.rawValue===evidence.rawValue&&value.factor===evidence.factor;
         // In English output, comma-grouped thousands can be parsed as a
@@ -696,7 +714,7 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[],calcula
       return Math.abs(value.value-evidence.value)<=roundingTolerance+tolerance;
     });
     const matchesCalculation=calculated.some(result=>{
-      if(timeBasis!==null||operator!==null||value.dimension!==result.dimension||value.localeAmbiguous||result.localeAmbiguous)return false;
+      if(timeBasis!==null||operator!==null||value.dimension!==result.dimension||value.literalUnit!==result.literalUnit||value.localeAmbiguous||result.localeAmbiguous)return false;
       // Do not let rounding turn a small non-zero amount into an asserted zero.
       if(value.value===0||result.value===0)return value.value===result.value;
       const roundingTolerance=0.5*10**(-value.decimalPlaces)*value.factor;
@@ -791,7 +809,7 @@ export function validateNaturalAnswerText(
       // Markdown list numbering is presentation syntax, not a factual amount.
       // Strong-emphasis delimiters are presentation, not part of an amount,
       // comparator or basis. Keep the original prose for rendering.
-      const checkingText=sentence.replace(/\*\*([^*\n]+)\*\*/g,'$1').replace(/__([^_\n]+)__/g,'$1');
+      const checkingText=numericPresentationText(sentence);
       if (!numericMentionsAreSupported(checkingText, evidenceTexts, calculatedResults)
         || !basisMentionsAreSupported(checkingText, evidenceTexts)) {
         withheldUnsupportedQuantitySentenceCount += 1;
