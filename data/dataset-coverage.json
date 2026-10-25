@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "auditedAt": "2026-10-25T16:53:27.371436+00:00",
+  "auditedAt": "2026-10-25T17:45:39.067987+00:00",
   "method": "Pinned local-source/hash/count audit plus explicit source dispositions; not independent scientific/legal validation.",
   "sources": [
     {
@@ -759,7 +759,8 @@
       "license": "Source-specific reuse review pending; do not infer permission from availability.",
       "fieldsPreserved": [
         "Chemical identity, CAS/INS/synonyms and functional class where supplied",
-        "Available evaluation years; original ADI/reference text and body-weight units; comments, intake, meeting, specifications-only scope, report/monograph links"
+        "Available evaluation years; original ADI/reference text and body-weight units; comments, intake, meeting, specifications-only scope, report/monograph links",
+        "Compact original dated ADI/TDI/comment history (20 years/8000 text characters, explicit omissions/detail pointers), plus four original WHO EHC240 terminology summaries with edition/page/rights; no inferred ADI adoption date."
       ],
       "fieldsNotExposed": [
         "No complete bulk JECFA corpus or full linked reports; oversized fields/passages bounded. WHO reuse rights not asserted for bulk redistribution."
@@ -771,14 +772,15 @@
         "B_preservation": "SELECTED_DATED_ORIGINAL_FIELDS",
         "C_access": "FULL_FILTERED_SEARCH_PAGING_AND_YEAR_DETAIL",
         "D_agent": "REAL_NATIVE_HISTORY_AND_ASSESSMENT_USE",
-        "E_answer_utility": "TWO_SCOPE_CORRECT_DEVELOPMENT_ANSWERS"
+        "E_answer_utility": "PARTIAL_CROSS_SOURCE_USE_SCIENTIFIC_INTERPRETATION_FAILURES_RETAINED"
       },
       "verifiedCapabilities": [
         "Actual aspartame and exact benzoic-acid assessments, unknown search; autocomplete omission avoided using full filtered endpoint.",
         "Two live answers distinguish toxicological versus specifications-only reviews, old/new group reference and unknown package exposure/Indian applicability."
       ],
       "remainingGaps": [
-        "Full release scope/rights remain unacquired; two developer source questions do not establish independent toxicological appraisal or broad consumer-answer quality. Original source pages/receipts stay ignored."
+        "Full release scope/rights remain unacquired; two developer source questions do not establish independent toxicological appraisal or broad consumer-answer quality. Original source pages/receipts stay ignored.",
+        "WHO EHC240 glossary is all-rights-reserved: four original source-linked summaries only, not a complete glossary import or redistribution permission. Model interpretations of status, causality and review completeness still require evaluation."
       ],
       "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
     },

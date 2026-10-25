@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "declaredScope": "Four original summaries of assessment terminology, not a copy or complete import of the WHO glossary.",
+  "source": {
+    "title": "Principles and Methods for the Risk Assessment of Chemicals in Food, EHC 240, Annex 1: Glossary of Terms",
+    "url": "https://www.who.int/docs/default-source/fos/annex1.pdf",
+    "catalogUrl": "https://www.who.int/publications/i/item/9789241572408",
+    "edition": "2009",
+    "reviewedAt": "2026-10-25",
+    "rights": "WHO publication: all rights reserved. Original NutriScan summaries and source/page references only; full glossary reproduction/import and redistribution are not authorized by this record."
+  },
+  "terms": [
+    {
+      "id": "adi",
+      "label": "Acceptable daily intake (ADI)",
+      "scope": "Food chemicals covered by the source definition",
+      "pdfPages": [5],
+      "summary": "A toxicological reference for long-term daily ingestion, scaled to body mass. It is not a recommended nutrient intake or a measured exposure."
+    },
+    {
+      "id": "adi-not-specified",
+      "label": "ADI not specified; historical ADI not limited",
+      "scope": "Food-additive definition; veterinary-drug wording is separate in the original source",
+      "pdfPages": [5],
+      "summary": "The committee judged a numerical ADI unnecessary given very low toxicity and anticipated uses plus background exposure. Good Manufacturing Practice still matters; this status does not mean unlimited use or an individual safety guarantee."
+    },
+    {
+      "id": "no-adi-allocated",
+      "label": "No ADI allocated",
+      "scope": "JECFA terminology; consult the specific evaluation for its reason",
+      "pdfPages": [28],
+      "summary": "An ADI was not established. Reasons may involve incomplete safety evidence, missing use information or absent identity/purity specifications. Read the individual evaluation; this differs from judging a numerical ADI unnecessary."
+    },
+    {
+      "id": "temporary-adi",
+      "label": "Temporary ADI",
+      "scope": "Time-limited assessment pending further evidence",
+      "pdfPages": [38, 39],
+      "summary": "A time-limited reference awaiting evidence and review, rather than completed lifetime assurance. The source describes an additional safety margin and a deadline for data needed to resolve remaining questions."
+    }
+  ]
+}

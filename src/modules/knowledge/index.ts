@@ -1,4 +1,5 @@
 import type { EvidenceSource } from '../../lib/contracts';
+export { jecfaAssessmentTerminology } from './assessment-terminology';
 export { lookupDeclaredFoodLabelAlias } from './declared-food-labels';
 export type { DeclaredFoodKind, DeclaredFoodLabelAlias } from './declared-food-labels';
 export { findIngredientEvidence, ingredientEvidenceRelations } from './ingredient-evidence';

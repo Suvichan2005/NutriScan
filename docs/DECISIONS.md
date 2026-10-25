@@ -1183,3 +1183,8 @@ Preserve complete selected guideline text-layer releases locally instead of inde
 ### 25 October — numerical presentation versus scientific meaning
 
 Treat flat mathematical text/unit wrappers and escaped percentage signs as presentation, not new evidence. Preserve numerical signs, dimensions, SI symbol case, comparators and time bases; never evaluate model-authored mathematics. Source-faithful numerical replay is separate from scientific entailment. A stronger model's better development answer does not establish independent accuracy or authorize automatic paid consumer routing. Retain unsupported scientific assertions and temporal-grammar failures in answer-quality evaluation instead of adding endpoint-specific validators or repair prompts.
+
+
+### 25 October — assessment terminology and reference chronology
+
+Keep the assessment source's original reference value, date, comments and history together. A specifications update and the scientific basis for an ADI are distinct; do not infer reference adoption from the most recent row. Supply a dated source legend of original terminology summaries alongside source fields. Gemini owns the interpretation; code neither classifies ADI semantics nor constructs an answer. Preserve unknown/omitted history and detailed access, and do not bulk-copy an all-rights-reserved glossary.

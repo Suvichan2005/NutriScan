@@ -100,3 +100,8 @@ python scripts/audit-dataset-coverage.py
 Acquisition verifies existing/pinned bytes and refuses changed sources without overwriting them. Verification regenerates every page, compares stored text and FTS entries, checks integrity, and writes `.data/knowledge/guidelines.verification.json`. Import updates only selected document IDs in one transaction. A failed import preserves previous committed database contents.
 
 Native `search_guideline_documents` returns catalog/navigation results; `get_guideline_pages` supplies complete, hash-checked pages and precise original-PDF page links. The server can override the store using `NUTRISCAN_GUIDELINES_DATABASE`; no consumer-controlled path or external URL is accepted. Empty, missing, corrupt and oversized pages remain explicit. Model answers still require scientific-applicability evaluation.
+
+
+### Assessment terminology and dated history
+
+The public module exports `jecfaAssessmentTerminology` for source records with an ADI column. It supplies a four-term source legend, not a status classifier or a dietary answer. `data/assessment-terminology.json` contains original summaries with WHO EHC240 edition, PDF-page references and rights; the complete all-rights-reserved glossary is not imported. Native `get_jecfa_record` retains original selected fields plus compact ADI/TDI/comments across up to twenty dated entries/eight thousand text characters. Explicit omissions and year/offset detail access preserve the distinction between current specifications, earlier assessments and missing information. Historical source evidence is handed to the ordinary agent without a new generation or embedding job. Source interpretation still requires quality evaluation.
