@@ -88,6 +88,9 @@ describe('Gemini tool retrieval boundaries', () => {
     const fresh=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:5,unit:'pieces',candidateId:'count-carb'},toolContext);
     expect(fresh.calculations?.[0]).toMatchObject({input:25,portion:75,result:18.75,countedPortion:{amount:5,unit:'pieces'}});
     expect(fresh.calculations?.[0].interpretationIds).toBeUndefined();
+    const withoutRow=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:75,unit:'g',candidateId:null},toolContext);
+    expect(withoutRow.calculations?.[0]).toMatchObject({input:25,portion:75,result:18.75});
+    expect((await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:null,unit:'g',candidateId:null},toolContext)).status).toBe('error');
     expect(assistInput.safeParse({consent:true,question:toolContext.question,package:toolContext.package,calculations:stale.calculations}).success).toBe(false);
     expect(assistInput.safeParse({consent:true,question:toolContext.question,package:toolContext.package,calculations:fresh.calculations}).success).toBe(true);
     expect(calculateSavedServing(toolContext.package)).toEqual([expect.objectContaining({input:25,portion:45,result:11.25})]);
@@ -95,6 +98,21 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(payload.package.reconstruction?.nutritionRows).toEqual([]);
     expect(payload.package.nutrients).toEqual([expect.objectContaining({key:'carbohydrate',value:25,status:'corrected'})]);
     expect(toolContext.package.reconstruction).toEqual(originalReconstruction);
+  });
+  it.each(['g','ml'] as const)('does not fall back to legacy parser values over a current reconstruction on a %s basis',async unit=>{
+    const toolContext=countedContext();
+    const row=toolContext.package.reconstruction!.nutritionRows[0];
+    row.basisUnit=unit;row.basisText=`per 100 ${unit}`;
+    toolContext.package.nutrients=[{key:'carbohydrate',value:99,unit:'g',basis:{amount:100,unit,description:'Legacy parser reading'},observationIds:['ocr-1'],status:'observed'}];
+    const result=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:30,unit},toolContext);
+    expect(result.calculations?.[0]).toMatchObject({input:20,portion:30,portionUnit:unit,result:6,interpretationIds:['count-carb']});
+    expect(validateNaturalAnswerText(`The package lists 99 g carbohydrate per 100 ${unit}.`,{package:toolContext.package}).answer).toBe('');
+    const stale={...result.calculations![0],input:99,result:29.7};
+    expect(assistInput.safeParse({consent:true,question:'Calculate this amount.',package:toolContext.package,calculations:[stale]}).success).toBe(false);
+    row.status='conflict';
+    const conflicted=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:30,unit},toolContext);
+    expect(conflicted.status).toBe('withheld');
+    expect(conflicted.calculations).toBeUndefined();
   });
   it('derives revisioned provisional calculations only from complete evidence-linked saved rows and the declared serving', () => {
     const packageData=context('What about the serving?').package;

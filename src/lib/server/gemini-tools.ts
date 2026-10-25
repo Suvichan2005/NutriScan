@@ -13,6 +13,7 @@ import {
   type TentativeStructuredCandidate,
 } from '../contracts';
 import { matchesPackageRows, reconcileInterpretedNutrition } from '../interpreted-nutrients';
+import { calculationsFromReconstruction } from '../portion';
 import { isGuidanceEvidenceInScope, isLocalEvidenceTopicallyRelevant } from '../followup-evidence';
 import { evidenceSources, findIngredientEvidence, indianStapleIdentitySources, lookupAdditive, lookupExplicitAdditiveMention, lookupIndianStapleIngredientIdentity, resolveTentativeAdditiveIdentity } from '../../modules/knowledge';
 import { searchOpenFoodTox, semanticRetrieve } from '../semantic';
@@ -45,7 +46,7 @@ const toolArgs = {
   resolve_ingredient: z.object({ query: querySchema }).strict(),
   lookup_chemical_identity: z.object({ query: querySchema }).strict(),
   get_substance_assessments: z.object({ query: querySchema }).strict(),
-  calculate_nutrition: z.object({ nutrient: z.enum(nutrientKeys), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml', 'pieces', 'servings']), candidateId:z.string().min(1).max(120).optional() }).strict(),
+  calculate_nutrition: z.object({ nutrient: z.enum(nutrientKeys), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml', 'pieces', 'servings']), candidateId:z.preprocess(value=>value===null?undefined:value,z.string().min(1).max(120).optional()) }).strict(),
   lookup_product: z.object({ query: z.string().trim().min(2).max(80).optional(), barcode: z.string().regex(/^\d{8,14}$/).optional() }).strict().refine(value => Number(Boolean(value.query)) + Number(Boolean(value.barcode)) === 1),
   search_research: z.object({ query: querySchema, topic: z.enum(['science', 'regulation', 'claims']) }).strict(),
 };
@@ -750,6 +751,12 @@ function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, 
     });
     const unverifiedCalculation = { ...calculation, evidenceText: calculationEvidenceText(calculation) };
     return { status: 'ok', resultCount: 1, calculations: [unverifiedCalculation], output: { status: 'ok', calculation: unverifiedCalculation, note: 'Deterministic arithmetic from a tentative evidence-linked interpretation. It does not confirm or overwrite the package reading.' } };
+  }
+  if (context.package.reconstruction?.current && !context.package.nutrients.some(row => row.key === args.nutrient && row.status === 'corrected')) {
+    const matches=calculationsFromReconstruction(context.package,args.amount,args.unit).filter(row=>row.nutrient===args.nutrient);
+    if(matches.length!==1)return{status:'withheld',resultCount:0,output:{status:'withheld',message:'Choose a complete, unconflicted reconstructed row with the requested basis; legacy parser values are not a substitute for the current package interpretation.'}};
+    const calculation={...matches[0],evidenceText:calculationEvidenceText(matches[0])};
+    return{status:'ok',resultCount:1,calculations:[calculation],output:{status:'ok',calculation,note:'Calculated from the current reconstructed package row; its interpretation remains unverified.'}};
   }
   const matches = context.package.nutrients.filter(item => item.key === args.nutrient);
   if (matches.length !== 1) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: matches.length ? 'Conflicting or duplicate package values prevent a single calculation.' : 'No usable package value exists for this nutrient.' } };

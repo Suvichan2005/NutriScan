@@ -729,7 +729,7 @@ export function validateNaturalAnswerText(
     : [];
   const evidenceTexts = [
     ...pkg.observations.filter(item => item.origin !== 'ocr' && !supersededObservationIds.has(item.id)).map(item => item.text),
-    ...pkg.nutrients.filter(item => item.status !== 'conflict' && item.basis).map(item =>
+    ...pkg.nutrients.filter(item => item.status !== 'conflict' && item.basis && (!pkg.reconstruction?.current || item.status === 'corrected')).map(item =>
       `${item.key} ${item.value} ${item.unit} per ${item.basis!.amount} ${item.basis!.unit}`),
     ...(pkg.reconstruction?.current&&pkg.reconstruction.serving
       &&['clear','provisional'].includes(pkg.reconstruction.serving.status)

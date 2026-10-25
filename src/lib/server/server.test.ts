@@ -32,6 +32,11 @@ describe('bounded server boundary', () => {
   it('requires consent even when a caller supplies valid image metadata', () => {
     expect(visionInput.safeParse({ consent: false, image: visionTestImage }).success).toBe(false);
   });
+  it('bounds workspace portion state independently of the amount requested in conversation', () => {
+    const input={consent:true,question:'What about 100 ml instead?',workspacePortion:{amount:250,unit:'ml'},package:{id:'workspace-fixture',name:'Label text',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString()}};
+    expect(assistPromptPayload(assistInput.parse(input)).workspacePortion).toEqual({amount:250,unit:'ml'});
+    for(const workspacePortion of [{amount:0,unit:'g'},{amount:10001,unit:'g'},{amount:1,unit:'pieces'},{amount:1,unit:'ml',extra:'not allowed'}])expect(assistInput.safeParse({...input,workspacePortion}).success).toBe(false);
+  });
   it('requires bounded source-image dimensions and preprocessing provenance', () => {
     expect(visionInput.safeParse({consent:true,image:visionTestImage}).success).toBe(true);
     expect(visionInput.safeParse({consent:true,image:{...visionTestImage,sourceImage:{width:40000,height:1}}}).success).toBe(true);
@@ -797,6 +802,27 @@ describe('provider validation, independent of provider invocation', () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
     expect(result.calculations).toEqual([expect.objectContaining({nutrient:'carbohydrate',portion:33.5,result:expect.closeTo(69.29*33.5/100,10),countedPortion:{amount:5,unit:'pieces',servingQuantity:13.4,servingUnit:'g',piecesPerServing:2}})]);
     expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculatorAmount:33.5,calculatorUnit:'g',calculationIds:[result.calculations[0].id]}));
+  });
+  it.each([
+    {unit:'g' as const,workspace:20,printedServing:30,requested:50,question:'Use 50 g instead of the amount selected earlier.'},
+    {unit:'ml' as const,workspace:250,printedServing:200,requested:250,question:'Use the same glass we discussed.'},
+  ])('passes $unit workspace state without injecting a competing default serving calculation',async scenario=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const evidence={observationIds:['label-quantity'],imageRegions:[]};
+    const reconstruction={identity:{brand:null,name:'Generic food',variant:null,status:'provisional',evidence},serving:{printedText:`${scenario.printedServing} ${scenario.unit}`,quantity:scenario.printedServing,unit:scenario.unit,pieceCount:null,pieceDescription:null,status:'provisional',evidence},nutritionRows:[{rowId:'protein-row',nutrient:'protein',printedLabel:'Protein',printedValue:'4 g',value:4,unit:'g',columnLabel:null,basisText:`per 100 ${scenario.unit}`,basisAmount:100,basisUnit:scenario.unit,qualifier:null,status:'provisional',evidence}],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Developer fixture.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};
+    const answer=`That is ${4*scenario.requested/100} g protein in ${scenario.requested} ${scenario.unit}.`;
+    const fetcher=vi.fn()
+      .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('portion-choice','calculate_nutrition',{nutrient:'protein',amount:scenario.requested,unit:scenario.unit,candidateId:'protein-row'})]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question:scenario.question,workspacePortion:{amount:scenario.workspace,unit:scenario.unit},conversationContext:[{question:`Use ${scenario.workspace} ${scenario.unit} for later questions.`,answer:''}],package:{id:`workspace-${scenario.unit}`,name:'Generic food',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[{id:'label-quantity',field:'label-note',text:`Protein 4 g per 100 ${scenario.unit}`,origin:'user',side:'text',confidence:null}],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString(),reconstruction}});
+    const result=await assist(data);
+    const prompt=JSON.parse(JSON.parse(String(fetcher.mock.calls[0][1]?.body)).contents[0].parts[0].text);
+    expect(prompt.workspacePortion).toEqual({amount:scenario.workspace,unit:scenario.unit});
+    expect(prompt.calculations).toEqual([]);
+    expect(result.answer).toBe(answer);
+    expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculatorAmount:scenario.requested,calculatorUnit:scenario.unit}));
+    expect(result.agentDiagnostics.generationCount).toBe(2);
   });
   it('rejects malformed package reconstruction once and does not run schema repair', async () => {
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');

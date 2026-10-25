@@ -8,7 +8,7 @@ import { chooseUntouchedStartupProfile } from '@/lib/profile-startup';
 import { reconcileInterpretedNutrition } from '@/lib/interpreted-nutrients';
 import { assistEvidenceContext, packageForAssist } from '@/lib/assist-evidence';
 import { parseLabel } from '@/lib/parser';
-import { calculationsFromReconstruction, defaultPortion, normalizePackageServing, normalizeReconstructedServing, resolveQuestionPortion } from '@/lib/portion';
+import { defaultPortion, normalizePackageServing, normalizeReconstructedServing, resolveQuestionPortion } from '@/lib/portion';
 import { productEvidenceSource } from '@/lib/product-evidence';
 import { buildProductLookupRequest, defaultProductLookup, productQuerySource } from '@/lib/product-query';
 import { appendVisionEvidence } from '@/lib/reconcile';
@@ -30,7 +30,7 @@ import { ThreadGenerativeUI } from './thread-generative-ui';
 import { isLowSignalPackageOcrLine } from '@/lib/package-label-evidence';
 import { clonePhotoEditState, photoHasEdits, PackagePhotoCard, pristinePhotoEditState, renderPhotoEdit, type PhotoEditState, type PhotoReviewAsset } from './package-photo-card';
 import { applyNutrientCorrection, type NutrientCorrection } from '@/lib/correction';
-import { assistantUiComponentSchema, calculationEvidenceText, calculationSchema, conversationEvidenceSourceSchema, defaultProfile, hasUserContext, nutrientKeys, packageReconstructionContentSchema, packageSchema, tentativeStructuredCandidateSchema, type AssistantUiComponent, type Audit, type EvidenceSource, type ImageAsset, type NutrientKey, type Observation, type PackageData, type PackageReconstructionContent, type ProductRecord, type Profile, type ResearchItem, type TentativeStructuredCandidate } from '@/lib/contracts';
+import { assistantUiComponentSchema, calculationSchema, conversationEvidenceSourceSchema, defaultProfile, hasUserContext, nutrientKeys, packageReconstructionContentSchema, packageSchema, tentativeStructuredCandidateSchema, type AssistantUiComponent, type Audit, type EvidenceSource, type ImageAsset, type NutrientKey, type Observation, type PackageData, type PackageReconstructionContent, type ProductRecord, type Profile, type ResearchItem, type TentativeStructuredCandidate } from '@/lib/contracts';
 import { lookupAdditive } from '@/lib/knowledge';
 import { clearHistory, completeOnboardingSession, deleteRememberedProfile, deleteSessionProfile, downloadJson, hasCompletedOnboardingSession, imageBase64, loadImage, prepareImage, readHistory, readImages, readRememberedProfile, readSessionProfile, removeSavedScan, saveRememberedProfile, saveScan, saveSessionProfile, type SavedScan } from '@/lib/browser';
 
@@ -505,9 +505,9 @@ export default function NutriScan(){
   async function startFromDescription(){if(!profileReady){setNotice('Loading this browser’s optional context. Try again in a moment.');return;}const text=productDescription.trim();if(text.length<3){setError('Add a product name or a few details first.');return;}const providerStatus=cloudMode?await ensureProviderStatus():statusRef.current;setError('');const parsedBase=parseLabel(text,{origin:'user',userDescription:text});const parsed={...parsedBase,warnings:[...parsedBase.warnings,'No package photo or verified product record has been supplied.'],name:parsedBase.name||'Product details only'};const firstTurn=acceptPackage(parsed,question.trim());if(cloudMode&&providerStatus.gemini?.enabled){const selectedPortion=resolveQuestionPortion(question.trim(),defaultPortion(parsed),parsed.netWeight);const auditData=buildAudit(parsed,selectedPortion.value,selectedPortion.unit,includeProfileWithGemini?profile:defaultProfile,question.trim());void gemini(false,{packageData:parsed,question:question.trim(),auditData,imageAssets:[],messages:[],replaceTurnAt:firstTurn?.at,portion:selectedPortion.value,unit:selectedPortion.unit});}}
   function reset(){epoch.current++;pendingLocalEvidenceRequests.current.clear();setLocalEvidenceBusy(false);abort.current?.abort();setBusy(false);setRemoteBusy('');setRemoteNotice('');setProductLookupNotice('');portionTouched.current=false;setPkg(null);setRawText('');setProductDescription('');setMessages([]);setProducts([]);setResearch([]);setNotice('');setError('');setRemember(false);setRememberConversation(false);setRemoteCandidates([]);setSelectedProduct(null);setSemantic([]);setInspection(null);setContrast(false);setInvert(false);setCropEnabled(false);setCropTarget('');setVisionImageId('');setQuestion('');setActiveQuestion('');setAuditQuestion('');processedImages.current.clear();images.forEach(releasePhoto);setImages([]);window.scrollTo({top:0,behavior:'smooth'});}
  async function ask(text=question){
-   if(!profileReady){setNotice('Loading this browser’s optional context. Try again in a moment.');return;}if(!pkg||!text.trim())return;const providerStatus=cloudMode?await ensureProviderStatus():statusRef.current;const prompt=text.trim().slice(0,1000);const serving=pkg.reconstruction?.current?pkg.reconstruction.serving:undefined;const selected=resolveQuestionPortion(prompt,{value:portion,unit},pkg.netWeight,serving);setPortion(selected.value);setUnit(selected.unit);
+   if(!profileReady){setNotice('Loading this browser’s optional context. Try again in a moment.');return;}if(!pkg||!text.trim())return;const providerStatus=cloudMode?await ensureProviderStatus():statusRef.current;const prompt=text.trim().slice(0,1000);const serving=pkg.reconstruction?.current?pkg.reconstruction.serving:undefined;const useGemini=cloudMode&&providerStatus.gemini?.enabled&&!pkg.synthetic;const selected=useGemini?{value:portion,unit}:resolveQuestionPortion(prompt,{value:portion,unit},pkg.netWeight,serving);setPortion(selected.value);setUnit(selected.unit);
   setActiveQuestion(prompt);setAuditQuestion(prompt);const response=buildAudit(pkg,selected.value,selected.unit,profile,prompt,remoteCandidates,images.map(image=>image.id));
-   const at=new Date().toISOString();const useGemini=cloudMode&&providerStatus.gemini?.enabled&&!pkg.synthetic;const localReply=useGemini?null:buildLocalAuditConversationReply(response,prompt);
+   const at=new Date().toISOString();const localReply=useGemini?null:buildLocalAuditConversationReply(response,prompt);
    setMessages(prev=>[...prev,{question:prompt,answer:localReply?.answer??'',answerOrigin:useGemini?'gemini':'local',at,...(useGemini?{status:'pending' as const}:{}),...(localReply?.evidence?{evidence:localReply.evidence}:{})}]);setQuestion('');
    if(!useGemini&&shouldSearchLocalEvidence(response)){setSemantic([]);searchLocalEvidenceForTurn(prompt,localReply?.answer??'',at,epoch.current,true);}
    if(useGemini)void gemini(false,{packageData:pkg,question:prompt,auditData:response,imageAssets:images,messages,replaceTurnAt:at,portion:selected.value,unit:selected.unit,interpretedCandidates:remoteCandidates});
@@ -554,16 +554,9 @@ export default function NutriScan(){
   const reusingReconstruction=!!targetPackage?.reconstruction?.current&&!context?.forceReconstruction;
   const requestCandidates=reusingReconstruction?[]:targetCandidates;
   const targetAudit=context&&Object.prototype.hasOwnProperty.call(context,'auditData')?context.auditData??null:targetPackage?buildAudit(targetPackage,amount,amountUnit,targetProfile,targetQuestion,targetCandidates,images.map(image=>image.id)):audit;
-  const requestPackage=targetPackage?{...targetPackage,nutrients:targetPackage.nutrients.filter(nutrient=>nutrient.status==='corrected'),ingredients:[],additives:[],allergens:[],claims:[]}:null;
-  // The local parser remains visible as a diagnostic baseline. It cannot seed
-  // Gemini's product understanding or calculations; only user-confirmed
-  // corrections and a later explicit reconstruction calculation may do so.
-  const requestAudit=requestPackage?buildAudit(requestPackage,amount,amountUnit,targetProfile,targetQuestion,[],[]):targetAudit;
-  const correctedNutrientKeys=new Set(requestPackage?.nutrients.map(nutrient=>nutrient.key)??[]);
-  const requestCalculations=[
-    ...(targetPackage?calculationsFromReconstruction(targetPackage,amount,amountUnit):[]).filter(calculation=>!correctedNutrientKeys.has(calculation.nutrient)),
-    ...(requestAudit?.calculations??[]),
-  ].slice(0,20);
+  // The model receives explicit workspace state and asks typed tools for
+  // derived quantities; unsolicited default-serving calculations can bias
+  // an ambiguous follow-up toward the wrong amount.
   if(!cloudMode||!providerStatus.gemini?.enabled||!targetPackage||targetPackage.synthetic)return;
   if(geminiRequest.current){geminiRequest.current.intentional=true;geminiRequest.current.controller.abort();}
   const pendingDetail=context?.forceReconstruction?'Rechecking package photos and label details':reusingReconstruction?'Using the saved package reading and relevant evidence':targetImages.length?'Reading package photos and label evidence':'Interpreting package text and checking evidence';
@@ -617,7 +610,7 @@ export default function NutriScan(){
     const historyEvidence=safeConversationEvidence(usableHistory.flatMap(turn=>selectCitedEvidence(turn.answer,turn.evidence??[])).filter(inScope));
     const evidence=assistEvidenceContext({auditSources:(targetAudit?.sources??[]).filter(inScope),localSearch:localSearch.filter(hit=>inScope(hit.source)).map(({source,score})=>({...source,score})),research:[],...(conversationContext?{conversationEvidence:historyEvidence}:{})});
     if(selectedProductSource&&!targetPackage.identityConflict&&evidence.length<15&&!evidence.some(source=>source.id===selectedProductSource.id))evidence.push(selectedProductSource);
-    body={consent:true,question:questionText,package:packageForAssist(packageContext??targetPackage),...(requestCandidates.length?{interpretedCandidates:requestCandidates}:{}),...(includeProfileWithGemini&&hasProfile(profile)?{profile}:{}),evidence,calculations:requestCalculations.map(calculation=>({...calculation,evidenceText:calculationEvidenceText(calculation)})),images:targetImages.slice(0,10).map(x=>({handle:x.id,side:x.side,width:x.width,height:x.height,role:x.role,description:x.description})),...(visualImages.length?{visualImages}:{}),...(conversationContext?{conversationContext}:{})};
+    body={consent:true,question:questionText,workspacePortion:{amount,unit:amountUnit},package:packageForAssist(packageContext??targetPackage),...(requestCandidates.length?{interpretedCandidates:requestCandidates}:{}),...(includeProfileWithGemini&&hasProfile(profile)?{profile}:{}),evidence,images:targetImages.slice(0,10).map(x=>({handle:x.id,side:x.side,width:x.width,height:x.height,role:x.role,description:x.description})),...(visualImages.length?{visualImages}:{}),...(conversationContext?{conversationContext}:{})};
    }
    const response=await fetch('/api/'+(vision?'vision':'assist'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:requestController.signal});const data=await response.json();if(stamp!==epoch.current)return;
    if(!response.ok){requestState.failureCode=typeof data.code==='string'?data.code:typeof data.error==='string'?data.error:'';throw new Error(data.message??'Gemini is not available.');}
