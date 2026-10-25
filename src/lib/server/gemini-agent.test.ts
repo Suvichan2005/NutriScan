@@ -36,6 +36,37 @@ describe('nutrition guidance retrieval', () => {
       limitations: expect.stringContaining('not a package-specific threshold'),
     });
   });
+
+  it('retrieves India-specific package RDA references without mixing them with clinical targets', () => {
+    const matches = getNutritionGuidance({
+      query: 'What does the per-serving %RDA on this Indian nutrition label mean?',
+      jurisdiction: 'India',
+      maxResults: 5,
+    });
+    const labelRule = matches.find(source => source.id === 'fssai-labelling-rda-reference-viii-2025');
+    expect(labelRule).toMatchObject({
+      publisher: 'Food Safety and Standards Authority of India',
+      jurisdiction: 'India',
+      publishedAt: '2025-09-09',
+      summary: expect.stringContaining('2,000 mg sodium'),
+      limitations: expect.stringContaining('not a finding that a particular package complies'),
+    });
+    expect(matches.map(source => source.id)).not.toContain('fssai-labelling-amendment-2026');
+    expect(matches.map(source => source.id)).not.toContain('aha-sodium-guidance-2025');
+  });
+
+  it('surfaces the future FSSAI RDA exception only for infant-label amendment queries', () => {
+    const matches = getNutritionGuidance({
+      query: 'What changes for infant nutrition labels under the 2026 FSSAI RDA amendment?',
+      jurisdiction: 'India',
+      maxResults: 5,
+    });
+    expect(matches.find(source => source.id === 'fssai-labelling-amendment-2026')).toMatchObject({
+      publishedAt: '2026-03-24',
+      effectiveAt: '2027-07-01',
+      limitations: expect.stringContaining('Do not apply its changes before 1 July 2027'),
+    });
+  });
 });
 
 describe('saved-package follow-up context', () => {

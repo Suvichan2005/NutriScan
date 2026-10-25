@@ -32,6 +32,20 @@ function matchesAuthorizedContext(contextText: string, candidate: string): boole
   const normalizedCandidate = candidate.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
   return normalizedCandidate.length > 0 && normalizedContext.includes(' ' + normalizedCandidate + ' ');
 }
+function matchesAuthorizedJurisdiction(contextText: string, candidate: string): boolean {
+  const normalize = (value: string) => value.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  const normalizedCandidate = normalize(candidate);
+  const aliases: Record<string, readonly string[]> = {
+    india: ['India', 'Indian'],
+    'united states': ['United States', 'US', 'USA'],
+    'united kingdom': ['United Kingdom', 'UK', 'Britain'],
+    'european union': ['European Union', 'EU'],
+    global: ['global', 'international'],
+  };
+  const matchingGroup = Object.entries(aliases).find(([canonical, values]) =>
+    normalize(canonical) === normalizedCandidate || values.some(value => normalize(value) === normalizedCandidate));
+  return (matchingGroup?.[1] ?? [candidate]).some(alias => matchesAuthorizedContext(contextText, alias));
+}
 const toolArgs = {
   inspect_package_image: z.object({ imageId: imageIdSchema, crop: normalizedCropSchema.optional() }).strict(),
   search_knowledge: z.object({ query: querySchema }).strict(),
@@ -388,7 +402,7 @@ function retrieveNutritionGuidance(args: z.infer<typeof toolArgs.get_nutrition_g
   ].filter(Boolean).join(' ');
   const condition = args.condition && matchesAuthorizedContext(authorizedContext, args.condition) ? args.condition : undefined;
   const goal = args.goal && matchesAuthorizedContext(authorizedContext, args.goal) ? args.goal : undefined;
-  const jurisdiction = args.jurisdiction && matchesAuthorizedContext(authorizedContext, args.jurisdiction)
+  const jurisdiction = args.jurisdiction && matchesAuthorizedJurisdiction(authorizedContext, args.jurisdiction)
     ? args.jurisdiction
     : context.profile?.country.trim() || undefined;
   const evidence = getNutritionGuidance({

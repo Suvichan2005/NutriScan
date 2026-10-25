@@ -2,6 +2,7 @@ import { sourceSchema, type EvidenceSource } from '../contracts';
 import { evidenceSources } from '../knowledge';
 
 const snapshotRetrievedAt = '2026-10-23T00:00:00.000Z';
+const currentGuidanceRetrievedAt = '2026-10-25T00:00:00.000Z';
 
 type GuidanceEntry = {
   source: EvidenceSource;
@@ -109,6 +110,46 @@ const entries: readonly GuidanceEntry[] = [
     },
   },
   {
+    source: guidanceSource({
+      id: 'fssai-labelling-rda-reference-viii-2025',
+      title: 'Food Safety and Standards (Labelling and Display) Regulations, 2020 — Version VIII',
+      publisher: 'Food Safety and Standards Authority of India',
+      url: 'https://fssai.gov.in/upload/uploadfiles/files/Comp_Labelling%20Display_Version%20VIII_09_09_2025.pdf',
+      category: 'regulation',
+      jurisdiction: 'India',
+      publishedAt: '2025-09-09',
+      effectiveAt: '2022-07-01',
+      retrievedAt: currentGuidanceRetrievedAt,
+      summary: 'FSSAI Version VIII defines Recommended Dietary Allowance (RDA) as an average daily nutrient intake sufficient for nearly all (97–98%) healthy people in a particular life-stage and gender group, using current Indian Council of Medical Research RDA values and Codex or WHO values where an Indian RDA is unavailable. The nutrition panel provides information per 100 g/ml or per single-consumption pack and per-serve percentage contribution to RDA, using average-adult daily references of 2,000 kcal energy, 67 g total fat, 22 g saturated fat, 2 g trans fat, 50 g added sugars and 2,000 mg sodium. Serving quantity is stated in g/ml and servings per package are declared. These package-label references are not individualized dietary targets.',
+      limitations: 'This is an FSSAI label-reference explanation, not a finding that a particular package complies with current law. The linked Version VIII is dated 9 September 2025; FSSAI separately notified a 2026 amendment that commences 1 July 2027 and changes specified label provisions. Check the original notification, the applicable effective date and category-specific rules for compliance questions. The average-adult label basis cannot establish any one person’s needs or total daily intake.',
+      license: 'Official FSSAI regulatory compendium; NutriScan stores a short source-linked summary and does not redistribute the source text.',
+    }),
+    terms: ['rda', 'recommended dietary allowance', 'per serve', 'per serving', 'nutrition label', 'nutrition panel', 'label reference', 'label percentage'],
+    conditions: [],
+    numericCoverage: {
+      queryTerms: ['rda', 'recommended dietary allowance', 'label reference', 'label percentage'],
+      requiredValuePatterns: ['\\b97\\s*(?:–|-|to)\\s*98\\s*%(?:\\s|$)', '\\b2,?000\\s*kcal\\b', '\\b67\\s*g\\b', '\\b22\\s*g\\b', '\\b2\\s*g\\b', '\\b50\\s*g\\b', '\\b2,?000\\s*mg\\b'],
+    },
+  },
+  {
+    source: guidanceSource({
+      id: 'fssai-labelling-amendment-2026',
+      title: 'Food Safety and Standards (Labelling and Display) First Amendment Regulations, 2026',
+      publisher: 'Food Safety and Standards Authority of India',
+      url: 'https://www.fssai.gov.in/upload/notifications/2026/04/69cca2b3f3ce9Notification%20dt%2024.03.2026_NRC.pdf',
+      category: 'regulation',
+      jurisdiction: 'India',
+      publishedAt: '2026-03-24',
+      effectiveAt: '2027-07-01',
+      retrievedAt: currentGuidanceRetrievedAt,
+      summary: 'FSSAI notified this labelling amendment on 24 March 2026 with commencement on 1 July 2027. Among its changes, it specifies that infant-nutrition products may omit per-serve percentage contribution to RDA and servings per pack; it also revises other nutrition and package-label provisions. The amendment is not effective before its stated commencement date.',
+      limitations: 'Future-effective amendment. Do not apply its changes before 1 July 2027. The notification changes several provisions; this short summary is not a complete statement of the amendment or a product-compliance determination. Consult the Gazette and product-category rules.',
+      license: 'Official Gazette notification; NutriScan stores a short source-linked summary and does not redistribute the source text.',
+    }),
+    terms: ['infant nutrition', 'infant label', 'rda exemption', 'non-retail container', 'labelling amendment 2026', 'label amendment 2026'],
+    conditions: [],
+  },
+  {
     source: curatedGuidanceSource('who-carbohydrate-2023'),
     terms: ['carbohydrate quality', 'refined wheat flour', 'refined flour', 'whole grain', 'whole grains', 'wholegrain', 'dietary fibre', 'dietary fiber', 'pulses'],
     conditions: [],
@@ -209,6 +250,7 @@ function explicitlyNamesSource(query: string, record: EvidenceSource): boolean {
     'American Heart Association': ['AHA'],
     'American Diabetes Association': ['ADA'],
     'World Health Organization': ['WHO'],
+    'Food Safety and Standards Authority of India': ['FSSAI'],
     'National Institute of Diabetes and Digestive and Kidney Diseases': ['NIDDK'],
     'Kidney Disease: Improving Global Outcomes': ['KDIGO'],
   };

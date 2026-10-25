@@ -401,6 +401,40 @@ describe('Gemini tool retrieval boundaries', () => {
     ]));
   });
 
+  it('passes Indian-label RDA rules and amendment dates through the model-facing tool output', async () => {
+    const question = 'What does the per-serving %RDA on this Indian package label mean?';
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'Explain per-serving RDA label references',
+      jurisdiction: 'India',
+    }, context(question));
+
+    const labelRule = result.evidence?.find(source => source.id === 'fssai-labelling-rda-reference-viii-2025');
+    expect(labelRule).toBeDefined();
+    expect(result.evidence?.map(source => source.id)).not.toContain('fssai-labelling-amendment-2026');
+    expect(result.output.guidanceCoverageFacts).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        sourceId: 'fssai-labelling-rda-reference-viii-2025',
+        requiredValuePatterns: expect.arrayContaining(['\\b2,?000\\s*kcal\\b', '\\b50\\s*g\\b', '\\b2,?000\\s*mg\\b']),
+      }),
+    ]));
+    const modelResult = toolResultForModel(result.output, result.evidence);
+    expect(modelResult.citationEvidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        sourceId: 'fssai-labelling-rda-reference-viii-2025',
+        summary: expect.stringContaining('not individualized dietary targets'),
+        limitations: expect.stringContaining('not a finding that a particular package complies'),
+      }),
+    ]));
+
+    const amendment = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'infant nutrition label RDA exception 2026 amendment',
+      jurisdiction: 'India',
+    }, context('What changes for infant nutrition labels under the 2026 FSSAI amendment?'));
+    expect(amendment.evidence?.find(source => source.id === 'fssai-labelling-amendment-2026')).toMatchObject({
+      effectiveAt: '2027-07-01',
+    });
+  });
+
   it('does not retrieve ICMR-NIN 2024 content until its product-use permission is cleared', async () => {
     const result = await executeGeminiTool('get_nutrition_guidance', {
       query: 'ICMR NIN dietary guidelines 2024 balanced diet India',
