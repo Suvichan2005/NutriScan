@@ -134,6 +134,14 @@ descriptors = [
 ]
 for identifier,role,url,scope,access,gaps in descriptors:
     entry=source(identifier,role,[url],scope,access,gaps)
+    if identifier=='who-jecfa':
+        entry['declaredScope']='Bounded public filtered name/CAS search with full-result paging, exact chemical record and selected dated evaluation fields; no bulk release acquired.'
+        entry['retrievalInterface']='search_jecfa + get_jecfa_record (evaluation year, paged original fields/report links)'
+        entry['fieldsPreserved']=['Chemical identity, CAS/INS/synonyms and functional class where supplied', 'Available evaluation years; original ADI/reference text and body-weight units; comments, intake, meeting, specifications-only scope, report/monograph links']
+        entry['fieldsNotExposed']=['No complete bulk JECFA corpus or full linked reports; oversized fields/passages bounded. WHO reuse rights not asserted for bulk redistribution.']
+        entry['gates'].update(B_preservation='SELECTED_DATED_ORIGINAL_FIELDS',C_access='FULL_FILTERED_SEARCH_PAGING_AND_YEAR_DETAIL',D_agent='REAL_NATIVE_HISTORY_AND_ASSESSMENT_USE',E_answer_utility='TWO_SCOPE_CORRECT_DEVELOPMENT_ANSWERS')
+        entry['remainingGaps']=['Full release scope/rights remain unacquired; two developer source questions do not establish independent toxicological appraisal or broad consumer-answer quality. Original source pages/receipts stay ignored.']
+        entry['verifiedCapabilities']=['Actual aspartame and exact benzoic-acid assessments, unknown search; autocomplete omission avoided using full filtered endpoint.', 'Two live answers distinguish toxicological versus specifications-only reviews, old/new group reference and unknown package exposure/Indian applicability.']
     if identifier=='europe-pmc-pubmed':
         entry['retrievalInterface']='search_research(science) + get_research_record exact source/id, paged complete abstract passages and source metadata'
         entry['fieldsPreserved']=['Exact source/id, title/date/DOI/PMCID; publication types, original retraction/correction flags where supplied', 'Complete bounded abstract sentences with pagination, explicit absent/oversized passages; bounded original MeSH/chemical/keyword metadata and omission markers']

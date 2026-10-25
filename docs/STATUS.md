@@ -1124,3 +1124,10 @@ Europe PMC detail checkpoint: exact source/id reader, publication/status metadat
 Source-fidelity follow-through: original API markup demonstrated that the shared broad HTML stripper removed a literal statistical comparison and the following BMI result. Tag-shaped stripping now preserves `p < 0.001` and numeric comparisons; actual original-core replay retains both. Four focused tests cover markup, inequalities, complete passage paging, metadata, source-case normalization, ID mismatch and upstream errors. This is objective data preservation, not clinical reasoning or prompt tuning. No additional provider call for the fidelity replay.
 
 Final shared-source-fidelity suite: 732 passed / one skipped / zero failed. Optimized build of the inequality-preserving source path passed; original owner configuration restored byte-for-byte.
+
+
+### 25 October — JECFA dated assessment utilization
+
+WHO JECFA now has bounded full filtered name/CAS discovery, paged candidates with exact-name/CAS priority, and exact chemical/year assessment access. Avoided autocomplete cap (benzoic acid missing from ten suggestions but present among 37 full filtered matches). Real source reads: aspartame, exact benzoic acid and unknown. Two live free Flash-Lite questions use eight generations/six tools, 46,582 input / 753 output tokens, $0 estimate, no photos/profile. Both answer-ready with zero numeric withholding: latest versus specs-only evaluation and changed benzoate group reference, preserving unknown package dose and Indian authorization. No full WHO corpus acquisition, linked-report appraisal or independent scientific accuracy claim.
+
+JECFA checkpoint verification: 736 passed / one skipped, TypeScript clean; second-parser comparison retained all 15 selected current-assessment fields across two original WHO pages. SDK cache metadata reports 20,134 cached tokens across the task; thinking counts absent, not measured zero. Final reusable-directory production build passed; compiled bundle includes filtered search and final entity handoff. Owner config restored byte-for-byte.

@@ -28,7 +28,8 @@ import { isValidGtin, findOcrGtinCandidate } from '../barcode';
 import { productInput, lookupProducts } from './products';
 import {readProductRecord,productRecordInput} from './product-records';
 import {readCodexCategories,codexCategoryInput} from './codex-categories';
-import {readResearchRecord,researchRecordInput} from './research-records';
+import {readResearchRecord,researchRecordInput,abstractChunks} from './research-records';
+import {searchJecfa,readJecfaRecord,jecfaSearchInput,jecfaRecordInput} from './jecfa-records';
 import { researchInput, research } from './research';
 import { fixedFetch } from './http';
 import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutrition-guidance';
@@ -71,6 +72,8 @@ const toolArgs = {
   get_assessment_records: openFoodToxDetailInput,
   get_ingredient_concept:foodOnConceptInput,
   get_food_composition_record:fdcRecordInput,
+  search_jecfa:jecfaSearchInput,
+  get_jecfa_record:jecfaRecordInput,
   get_research_record:researchRecordInput,
   get_codex_category: codexCategoryInput,
   get_product_record:productRecordInput,
@@ -91,6 +94,8 @@ const cropParameters = {
 };
 
 export const geminiToolDeclarations: FunctionDeclaration[] = [
+ {name:'search_jecfa',description:'Search WHO JECFA by a substance name or CAS number. Returns identity candidates and record IDs, not personal safety or Indian authorization. Resolve similar salts/mixtures carefully.',parameters:{type:Type.OBJECT,properties:{query:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['query']}},
+ {name:'get_jecfa_record',description:'Read one WHO JECFA chemical ID and its latest or explicitly selected evaluation year. Preserves original ADI/TDI text, comments, intake, meeting, report/monograph links, history years and qualifiers. Page fields when nextOffset exists. Never convert a body-weight exposure reference into a package allowance without measured additive amounts.',parameters:{type:Type.OBJECT,properties:{id:{type:Type.INTEGER},year:{type:Type.INTEGER},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['id']}},
  {name:'get_research_record',description:'Inspect one exact Europe PMC publication source/id returned by research discovery or explicitly supplied. Returns original publication-type/retraction/correction metadata where supplied and complete bounded abstract passages with pagination. Use these to inspect populations, exposures, outcomes and limitations before scientific synthesis. Not full-text appraisal or clinical guidance; missing status/abstract is unknown.',parameters:{type:Type.OBJECT,properties:{source:{type:Type.STRING,enum:['MED','PMC','PPR','AGR','CBA','PAT'],description:'Publication database source, normally MED for a PubMed identifier.'},id:{type:Type.STRING,description:'Identifier only, without source prefix; for MED 12345678 use id 12345678.'},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['id']}},
  { name: 'get_codex_category', description: 'Search the locally pinned complete English Codex food-category hierarchy or inspect one exact code, its ancestors and paged direct children. This is international taxonomy, not a food classification decision, additive permission, maximum dose or Indian law. Category-specific provisions/notes must be investigated separately.', parameters: {type:Type.OBJECT,properties:{code:{type:Type.STRING},query:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}}} },
  {name:'get_product_record',description:'Inspect the original Open Food Facts record for an exact GTIN already in the question/package or returned by lookup_product. Start with section identity, ingredients, nutrition, claims or quality to list present/missing fields; request one field and optional exact entryKey for a nutrient/source object. Bounded original fields preserve ingredient tree/percentages, allergen versus precautionary traces, serving basis, as-sold versus prepared nutrients, qualifiers and source quality. This is external community data, never confirmed package facts or local stock.',parameters:{type:Type.OBJECT,properties:{barcode:{type:Type.STRING},section:{type:Type.STRING,enum:['identity','ingredients','nutrition','claims','quality']},field:{type:Type.STRING},entryKey:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['barcode']}},
@@ -1092,6 +1097,18 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
     case 'calculate_nutrition': {
       const parsed = toolArgs.calculate_nutrition.safeParse(args);
       return parsed.success ? calculateNutrition(parsed.data, context) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The nutrition calculation arguments were invalid.' } };
+    }
+    case 'search_jecfa': {
+      const parsed=toolArgs.search_jecfa.safeParse(args);if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments'}};
+      if(!externalQueryIsSupported(parsed.data.query,context))return{status:'withheld',resultCount:0,output:{status:'unsupported_query',message:'Use an observed substance or an explicitly requested substance name/CAS.'}};
+      const result=await searchJecfa(parsed.data);return{status:result.status==='ok'?'ok':result.status==='empty'?'empty':'unavailable',resultCount:'results'in result?(result.results?.length??0):0,output:result,searchTerms:'results'in result?result.results?.map(item=>item.name):[]};
+    }
+    case 'get_jecfa_record': {
+      const parsed=toolArgs.get_jecfa_record.safeParse(args);if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments'}};
+      const record=await readJecfaRecord(parsed.data);if(record.status!=='ok')return{status:record.status==='no_year'?'empty':'unavailable',resultCount:0,output:record};
+      const parts=[{key:'identity',text:JSON.stringify({name:record.name,overview:record.overview,availableYears:record.availableYears}).slice(0,1500)},...record.fields.flatMap((field,i)=>abstractChunks(field.text).chunks.map((chunk,j)=>({key:`${record.selectedYear}-field-${parsed.data.offset+i}-${j}`,text:`${record.name.slice(0,100)}. Evaluation year ${record.selectedYear}. ${field.label.slice(0,50)}: ${chunk}`})))];
+      const evidence=parts.filter(p=>p.text.length<=1600).flatMap(part=>{const source=asEvidenceSource({id:`jecfa-${record.id}-${part.key}`,title:`${record.name} — JECFA ${record.selectedYear??'identity'}`.slice(0,300),publisher:'WHO / Joint FAO/WHO Expert Committee on Food Additives',url:record.url,category:'registry',jurisdiction:'International scientific assessment; not Indian authorization or individual dietary advice',publishedAt:record.selectedYear?String(record.selectedYear):null,effectiveAt:null,retrievedAt:record.retrievedAt,summary:part.text,limitations:record.limitations,license:record.rights});return source?[source]:[];});
+      return{status:'ok',resultCount:1,output:record,evidence,searchTerms:[record.name,...record.overview.filter(item=>['CAS number','Synonyms','Chemical Names'].includes(item.label)).map(item=>item.text)]};
     }
     case 'get_research_record': {
       const parsed=toolArgs.get_research_record.safeParse(args);if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments',issues:parsed.error.issues.slice(0,4).map(issue=>({field:issue.path.join('.'),message:issue.message})),message:'Use a database source such as MED and its bare identifier; do not combine source and identifier in the id field.'}};

@@ -69,10 +69,11 @@ export async function input<T extends z.ZodType>(request: Request, schema: T, ma
 }
 
 export async function fixedFetch(url: URL, type: 'json' | 'html' | 'pdf' = 'json', max = 900_000, searchBody?: object) {
-  const allowed = ['world.openfoodfacts.org', 'search.openfoodfacts.org', 'www.ebi.ac.uk', 'www.who.int', 'pubchem.ncbi.nlm.nih.gov', 'fssai.gov.in', 'www.fssai.gov.in', 'delhihighcourt.nic.in', 'api.fda.gov', 'codex.fao.org'];
+  const allowed = ['world.openfoodfacts.org', 'search.openfoodfacts.org', 'www.ebi.ac.uk', 'www.who.int', 'pubchem.ncbi.nlm.nih.gov', 'fssai.gov.in', 'www.fssai.gov.in', 'delhihighcourt.nic.in', 'api.fda.gov', 'codex.fao.org', 'apps.who.int'];
   const fixedCodexInsPath = '/codex-texts/codex-online-databases/gsfa/gsfa-database-search/SearchAdditivesByInsNumber/';
   const codexDestinationAllowed = url.hostname !== 'codex.fao.org' || (url.pathname === fixedCodexInsPath && !url.search && Boolean(searchBody));
-  if (url.protocol !== 'https:' || !allowed.includes(url.hostname) || url.username || url.password || url.port || !codexDestinationAllowed) throw new ApiError(400, 'url_rejected', 'Remote destination is not allowed.');
+  const jecfaDestinationAllowed=url.hostname!=='apps.who.int'||(!searchBody&&!url.search&&(/^\/food-additives-contaminants-jecfa-database\/Home\/Chemical\/[1-9]\d{0,6}$/.test(url.pathname)||/^\/food-additives-contaminants-jecfa-database\/api\/ChemicalData\/GetBy\/par\/[^/]+$/.test(url.pathname)));
+  if (url.protocol !== 'https:' || !allowed.includes(url.hostname) || url.username || url.password || url.port || !codexDestinationAllowed || !jecfaDestinationAllowed) throw new ApiError(400, 'url_rejected', 'Remote destination is not allowed.');
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 12_000);
   try {
     const openFoodFactsSearch = url.hostname === 'search.openfoodfacts.org' && url.pathname === '/search';
