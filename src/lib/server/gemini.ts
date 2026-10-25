@@ -6,6 +6,7 @@ import { packageForAssist, packageReconstructionFactReferences, validateInferenc
 import { assistantUiComponentSchema, calculationEvidenceText, calculationSchema, conversationEvidenceSourceSchema, evidenceSpanSchema, normalizedCropSchema, observationSchema, packageReconstructionContentSchema, packageSchema, profileSchema, reconstructedAdditiveSchema, reconstructedIngredientSchema, reconstructedNutritionRowSchema, reconstructedServingSchema, reconstructedStatementSchema, sourceSchema, tentativeStructuredCandidateSchema, visionCaptureSchema, type AssistantUiComponent, type Calculation, type NutrientKey, type Observation, type PackageReconstructionContent, type VisionCapture } from '../contracts';
 import { applicationGeminiContext, generateTracked, providerStatus, safeProviderFailure } from './gemini-provider';
 import { calculateSavedServing, executeGeminiTool, geminiToolDeclarations, type GeminiToolImage, type GeminiToolResult } from './gemini-tools';
+import {selectAgentTools,toolAccessInput} from './gemini-tool-access';
 import { ApiError } from './http';
 import { recordGeminiDiagnostic } from './gemini-diagnostics';
 import { finishGeminiEvaluation, recordGeminiEvaluationEvent, startGeminiEvaluation } from './gemini-evaluation-recorder';
@@ -153,7 +154,7 @@ function calculationHasPackageEvidence(calculation:Calculation,data:{package:z.i
   });
 }
 
-export const assistInput = z.object({ consent: z.literal(true), question: z.string().trim().min(1).max(2000), workspacePortion:workspacePortionSchema.optional(), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
+export const assistInput = z.object({ toolAccess:toolAccessInput.optional(), consent: z.literal(true), question: z.string().trim().min(1).max(2000), workspacePortion:workspacePortionSchema.optional(), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
   const observations=new Set(data.package.observations.map(observation=>observation.id));
   const visualImageIds=new Set(data.visualImages?.map(image=>image.imageId)??[]);
   // A saved calculation may cite the image that supported a persisted
@@ -1318,8 +1319,8 @@ export function getPackageReconstructionSystemInstruction():string{
 }
 
 /** Reconstruction is an application operation; ordinary turns see only useful tools. */
-export function getAgentToolDeclarations(hasAttachedImages:boolean,requirePackageReconstruction=false):FunctionDeclaration[]{
-  const available=hasAttachedImages?geminiToolDeclarations:geminiToolDeclarations.filter(tool=>tool.name!=='inspect_package_image');
+export function getAgentToolDeclarations(hasAttachedImages:boolean,requirePackageReconstruction=false,access?:z.input<typeof toolAccessInput>):FunctionDeclaration[]{
+  const available=selectAgentTools(geminiToolDeclarations,hasAttachedImages,access).declarations;
   return requirePackageReconstruction?[packageReconstructionTool,...available]:available;
 }
 type GeminiToolTrace = { name: string; status: GeminiToolResult['status'] | 'cached' | 'limit'; resultCount: number; elapsedMs: number };
@@ -1626,6 +1627,7 @@ type GeneratedAgentOutput={
   calledCalculationIds:string[];
   uiComponents:AssistantUiComponent[];
   generationCount:number;
+  toolAccess:{mode:string;names:string[];schemaBytes:number};
 };
 
 function selectUnconflictedCalculations(calculations:Calculation[]):Calculation[]{
@@ -1752,6 +1754,10 @@ async function reconstructPackage(
 
 async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:string,referenceAliases:ReferenceAliases):Promise<GeneratedAgentOutput>{
   const context=applicationGeminiContext();
+  const access=selectAgentTools(geminiToolDeclarations,(data.visualImages?.length??0)>0,data.toolAccess);
+  const allowedToolNames=new Set(access.names);
+  await recordGeminiDiagnostic({event:'agent_tool_access',analysisId,mode:access.mode,toolNames:access.names,schemaBytes:access.schemaBytes});
+  await recordGeminiEvaluationEvent(analysisId,{event:'agent_tool_access',mode:access.mode,toolNames:access.names,schemaBytes:access.schemaBytes});
   const profileIncluded=Object.values(data.profile??{}).some(value=>value.trim());
   const started=Date.now();
   const deadline=started+maxAgentWallMs;
@@ -1781,8 +1787,8 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
     const remaining=deadline-Date.now();
     if(remaining<=0)throw new ApiError(504,'agent_timeout','Gemini analysis reached its bounded time limit. Your scan and package reading are preserved.');
     const finalOnly=round===maxAgentToolRounds;
-    const allowGoogleSearch=!finalOnly&&canUseGoogleSearch(data,providerStatus().searchEnabled)&&!serverSearchUsed&&groundedQueryCount<maxGroundingQueriesPerAssist;
-    const declarations=getAgentToolDeclarations((data.visualImages?.length??0)>0,false);
+    const allowGoogleSearch=access.mode==='specialized'&&!finalOnly&&canUseGoogleSearch(data,providerStatus().searchEnabled)&&!serverSearchUsed&&groundedQueryCount<maxGroundingQueriesPerAssist;
+    const declarations=access.declarations;
     const generationStarted=Date.now();
     const response=await generateTracked(context,{
       model:context.model,
@@ -1792,7 +1798,7 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
         maxOutputTokens:finalOnly?3000:4500,
         thinkingConfig:{thinkingLevel:ThinkingLevel.LOW},
         automaticContinuation:false,
-        ...(!finalOnly?{
+        ...(!finalOnly&&(allowGoogleSearch||declarations.length)?{
           tools:[...(allowGoogleSearch?[{googleSearch:{}}]:[]),{functionDeclarations:declarations}],
           toolConfig:{
             ...(allowGoogleSearch?{includeServerSideToolInvocations:true}:{}),
@@ -1843,7 +1849,10 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
         await recordGeminiEvaluationEvent(analysisId,{event:'tool_call',round,toolCallId:call.id,name,arguments:args});
         let resultPromise=cache.get(cacheKey);
         let state:GeminiToolTrace['status']='error';
-        if(resultPromise)state='cached';
+        if(!allowedToolNames.has(name)){
+          resultPromise=Promise.resolve({status:'withheld',resultCount:0,output:{status:'tool_not_enabled',message:'This capability is outside the selected investigation mode. Use enabled tools and available evidence; do not invent its result.'}});
+          state='withheld';
+        }else if(resultPromise)state='cached';
         else if(executedToolCalls>=maxAgentToolCalls){
           resultPromise=Promise.resolve({status:'error',resultCount:0,output:{status:'tool_call_limit',message:'The tool budget is exhausted. Use available evidence and answer what can be supported.'}});
           state='limit';
@@ -1947,6 +1956,7 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
       calledCalculationIds:[...calledCalculationIds],
       uiComponents,
       generationCount,
+      toolAccess:{mode:access.mode,names:access.names,schemaBytes:access.schemaBytes},
     };
   }
   throw new ApiError(504,'agent_timeout','Gemini reached the bounded conversation step limit. Your package state is preserved.');
@@ -2070,6 +2080,8 @@ export function assistPromptPayload(data:z.infer<typeof assistInput>, referenceA
 }
 
 export async function assist(data: z.infer<typeof assistInput>) {
+  if(data.toolAccess?.mode==='research'&&(process.env.NODE_ENV!=='development'||process.env.CI||process.env.VERCEL))throw new ApiError(403,'research_tools_local_only','Controlled research tool selection is available only in local development.');
+  try{selectAgentTools(geminiToolDeclarations,(data.visualImages?.length??0)>0,data.toolAccess);}catch{throw new ApiError(400,'invalid_tool_selection','The selected investigation tools are unavailable.');}
   const status=providerStatus();
   if(!status.enabled)throw new ApiError(503,'provider_disabled',status.message);
   const analysisId=randomUUID();
@@ -2238,6 +2250,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       .slice(0,12);
     const diagnostics={
       contract:'native-tools-and-natural-text',
+      toolAccess:generated.toolAccess,
       answerStatus,
       acceptedSentences:answerCheck.acceptedSentenceCount,
       withheldQuantitySentences:answerCheck.withheldUnsupportedQuantitySentenceCount,

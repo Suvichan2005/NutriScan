@@ -4,7 +4,7 @@ Updated26 October2026. The owner's latest **Authoritative Final-Phase Overhaul**
 
 ## Mission and active milestone
 
-Finish a technically substantial India-first semester product, two defensible experiments and the existing KIIT report. Active M1: scoped source/tool inventory and evaluation inputs. Next executable engineering M2: ordinary versus specialized tool profiles with relevant ingredient/nutrition/D/H/DH evidence, then M3 analysis-method selection. Do not continue unlimited database/ontology acquisition.
+Finish a technically substantial India-first semester product, two defensible experiments and the existing KIIT report. M1 scope/evaluation preparation published at50e5d0235a7589ed9d0ab57dd99d25776207f7d8. Active M2: ordinary/specialized tool profiles now implemented; address the recorded general numerical-validation loss before claiming constructive missing-data answers. M3 analysis-method selection remains next independent product work. Do not continue unlimited database/ontology acquisition.
 
 ## Current implementation and evidence
 
@@ -18,7 +18,7 @@ Latest source checkpoint checks:748 passed/one skipped with four test workers; T
 
 `data/semester-source-roles.json` defines CORE, SPECIALIZED, RESEARCH and DEFERRED EXPANSION; `data/dataset-coverage.json` retains technical A–E gates separately from semester acceptance. One existing MiniLM/BM25 semantic index, structured FoodOn/composition and selected source tools; no ontology/numeric-table vectorization. Full source operational completion is not a submission gate. FoodOn/selected FSSAI/WHO/condition guidance/curated evidence, generic Foundation and optional OFF are selected core uses, acceptance/rights still explicit. Advanced Codex/JECFA/EFSA/PubChem/literature remain intact and selective.
 
-Runtime still advertises the existing full20-tool catalogue; selected ordinary12-tool inventory has NOT yet been integrated. M2 must implement and measure it without hiding relevant condition guidance, new wrappers or a routing model. Do not claim the tool change already works.
+Runtime defaults to12 ordinary tools (11 without photos); explicit specialized mode retains20 (19 without photos). Existing Research inspector includes the checkbox; no new consumer panel. Server rejects tool calls outside selected profile before execution and restricts exact research subsets to local development. Empty research tool sets send no SDK tools; Google Search is available only in specialized mode under existing privacy guards. Serialized no-photo schema10801 versus16827 bytes, not token estimates. Desktop/mobile UI request propagation and native execution boundary tested; source/answer quality remains partial.
 
 ## Experiments and owner inputs
 
@@ -33,3 +33,5 @@ Experiment2: fixed HUMAN-REVIEWED Maggi Masala Noodles/Bisk Farm Sugar Free Crea
 One worktree; primary server127.0.0.1:3418/PID16992 uses `.data/next-gemini-qc-dev`; reusable build `.data/next-gemini-checkpoint-build`. Preserve browser/storage and ignored datasets/transcripts/reports. Owner dirty next-env/lockfile/regulation-test/OCR/tsconfig hashes were preserved across source build. No new clone/worktree/server.
 
 Free-first with bounded authorized paid development fallback, never silent paid consumer usage. No new provider calls in preservation/scope preparation. Private readable capture remains opt-in; no credentials/hidden reasoning/real health context exported. No public deployment, force-push or contributor invitation. Current source-review artifacts: `.data/knowledge/cross-source-legend-20261025/review.json` and `.data/gemini-evaluations/exports/assessment-history-before-after-20261025.md`.
+
+M2 provider/quality receipt: .data/semester-tools-20261026/review.json; two synthetic source tasks/four free3.5-Flash-Lite generations/18982 input/676 output/4037 reported cached tokens/$0 local estimate, thinking absent. Same ingredient question still selected4 relevant tools/3 generations; input15882 versus18611 previously, not an independent causal benchmark. One source quantity sentence withheld. Missing-data answer lost5 sentences to the existing numeric guard (reference bases and explicit user type2 wording), no tool selected; preserve raw output as systemic failure, no special-case repair. The selected tool implementation is not full answer-quality acceptance. Browser screenshots/receipts under .data/semester-tools-20261026; UI provider requests intercepted, separate from real source runs.

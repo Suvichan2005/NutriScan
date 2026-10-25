@@ -1198,3 +1198,8 @@ Finish the existing FoodOn class-source preservation at a recoverable boundary. 
 ### 26 October — owner final-phase supersession
 
 Semester acceptance is now a complete consumer product, selected applicable knowledge and two rigorous feasible experiments, not exhaustive source operationalization. Keep advanced sources and technical evidence; explicitly defer expansion. One primary semantic index remains unless measured benefit warrants a second. The latest directive corrects the immediately prior overhaul: all five evidence arms use Gemini reconstruction; the primary profile portfolio is nine D/H/DH conversations/27 vegetarian test turns, not twelve/celiac or deterministic OCR-only arms. Expected evaluation obligations never enter production prompts; no implicit modality recovery or model fallback in a frozen aggregate. Private originals, human references/ratings, frozen budget and authentic report remain required.
+
+
+### 26 October — explicit agent capability profiles
+
+Default to the selected ordinary tool inventory, preserving relevant condition/ingredient source depth. Let users enable specialized investigation inside existing Advanced controls; do not infer scope from question keywords. Enforce tool eligibility at execution, not only SDK declarations. Exact research subsets are local-development-only, with no hidden Google Search or automatic broadening. Record bytes/usage separately; smaller schemas do not establish better answers. Retain the general numerical-validation/missing-data failure for a shared boundary fix rather than add diabetes wording exceptions.

@@ -199,7 +199,7 @@
     ],
     "specialized": "All existing native source tools when explicitly selected; preserve detail interfaces.",
     "research": "Explicit frozen subsets for each experiment; no extra intent-routing model call.",
-    "runtimeStatus": "INVENTORY_SELECTED; runtime still exposes the existing full catalogue until M2 integrates and tests profiles.",
+    "runtimeStatus": "IMPLEMENTED ordinary/specialized profiles; controlled research subsets restricted to local development. Source/answer acceptance remains partial.",
     "capabilities": [
       "package evidence/visual inspection",
       "deterministic calculations",
