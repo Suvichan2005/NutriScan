@@ -652,7 +652,7 @@ function numericOccurrences(text:string){
     const prefixStart=Math.max(0,previous?(previous.index??0)+previous[0].length:0,(match.index??0)-100);
     const prefix=text.slice(prefixStart,match.index??0).split(/[.!?;\n]/).at(-1)??'';
     const rate=suffix.match(/(?:\bper\s+|\/)\s*(?:a\s+|each\s+)?(hours?|days?|weeks?|months?|years?)\b/i)?.[1]
-      ??(/^\s*(?:\*\*)?\s*daily\b/i.test(suffix)||/\bdaily\s*$/i.test(prefix)?'day':null);
+      ??(/^\s*(?:\*\*)?\s*daily\b/i.test(suffix)||/\bdaily\b[^.!?;\d]{0,60}$/i.test(prefix)?'day':null);
     const timeBasis=rate?.toLowerCase().replace(/s$/,'')??null;
     const operator=numericComparisonOperator(text,match.index??0)
       ??(/^\s*(?:\*\*)?\s*or more\b/i.test(suffix)?'>=': /^\s*(?:\*\*)?\s*or less\b/i.test(suffix)?'<=':null);
@@ -664,7 +664,27 @@ function isApproximateNumericClaim(text:string,index:number){
   return /(?:~|≈|\b(?:about|around|approximately|approx\.?|nearly|roughly))\s*$/i.test(text.slice(Math.max(0,index-24),index));
 }
 
-function basisMentionsAreSupported(text: string, evidenceTexts: string[]): boolean {
+// Conventional denominator notation describes a measurement system, not a
+// measured food amount. It cannot support another amount in the same sentence.
+function referenceBasisRanges(text:string){
+  return [...text.matchAll(/\bper\s*100\s*(?:g|grams?|ml|millilit(?:er|re)s?)\b(?:\s*(?:\/|\(\s*or)\s*100\s*(?:g|grams?|ml|millilit(?:er|re)s?)\b\s*\)?)?/gi)]
+    .map(match=>({start:match.index!,end:match.index!+match[0].length}));
+}
+
+function hasMeasuredAmount(text:string,contextIdentifiers:ReadonlySet<string>=new Set()){
+  const reference=referenceBasisRanges(text);
+  return numericOccurrences(text).some(item=>{
+    if(item.mention.dimension==='age-year'||reference.some(range=>item.index>=range.start&&item.index<range.end))return false;
+    const identifier=item.mention.dimension==='unitless'&&!item.mention.literalUnit&&item.operator===null&&item.timeBasis===null?numericIdentifier(text,item.index,item.mention.rawValue):null;
+    return !identifier||!contextIdentifiers.has(identifier);
+  });
+}
+
+function basisMentionsAreSupported(text: string, evidenceTexts: string[],contextIdentifiers:ReadonlySet<string>=new Set()): boolean {
+  // Without a measured amount, allow discussion of standard denominators and
+  // per-serving notation. Applying any actual amount still requires the
+  // matching printed basis below and a separately supported quantity.
+  if(!hasMeasuredAmount(text,contextIdentifiers))return true;
   const mentions = [
     ...[...text.matchAll(/\bper\s*\d+(?:[.,]\d+)?\s*(?:g|grams?|mg|milligrams?|kg|ml|millilit(?:er|re)s?)\b/gi)].map(match => match[0]),
     ...[...text.matchAll(/\bper\s*(?:(?:each|a|one)\s+)?(?:servings?|portions?|packs?|packages?|biscuits?|pieces?)\b/gi)].map(match => match[0]),
@@ -678,7 +698,14 @@ function basisMentionsAreSupported(text: string, evidenceTexts: string[]): boole
 }
 
 /** Arabic-numeric synthesis must match a quantity in its cited spans, allowing basic unit equivalence. */
-function numericMentionsAreSupported(claim: string, citedSpans: string[],calculatedResults:{value:number;unit:string}[]=[]): boolean {
+function numericIdentifier(text:string,index:number,rawValue:string){
+  if(!/^\d{1,4}$/.test(rawValue))return null;
+  const word=/\b([\p{L}][\p{L}-]{0,39})\s+$/u.exec(text.slice(Math.max(0,index-45),index))?.[1];
+  const following=/^\s+([\p{L}][\p{L}-]{0,39})\b/u.exec(text.slice(index+rawValue.length))?.[1]??'';
+  return word?`${word.toLocaleLowerCase('en')} ${rawValue} ${following.toLocaleLowerCase('en')}`:null;
+}
+
+function numericMentionsAreSupported(claim: string, citedSpans: string[],calculatedResults:{value:number;unit:string}[]=[],contextIdentifiers:ReadonlySet<string>=new Set()): boolean {
   claim = numericPresentationText(claim);
   const claimed = numericOccurrences(claim);
   if (!claimed.length) return true;
@@ -688,7 +715,14 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[],calcula
   // which incorrectly rejects normal display rounding to 4.7. Keep the
   // unit-derived dimension and trust the structured numeric value.
   const calculated=calculatedResults.flatMap(item=>numericMentions(`${item.value} ${item.unit}`).map(mention=>({...mention,localeAmbiguous:false})));
+  const references=hasMeasuredAmount(claim,contextIdentifiers)?[]:referenceBasisRanges(claim);
   return claimed.every(({mention:value,operator,index,timeBasis})=>{
+    if(operator===null&&timeBasis===null&&references.some(range=>index>=range.start&&index<range.end))return true;
+    // Preserve an exact user-supplied numeral identifier (e.g. a version or
+    // classification). Adjacent words stay attached; the numeral alone
+    // cannot corroborate a nutrient amount, participant total or other label.
+    const identifier=value.dimension==='unitless'&&!value.literalUnit&&operator===null&&timeBasis===null?numericIdentifier(claim,index,value.rawValue):null;
+    if(identifier&&contextIdentifiers.has(identifier))return true;
     const approximate=isApproximateNumericClaim(claim,index);
     const matchesEvidence=cited.some(({mention:evidence,operator:evidenceOperator,timeBasis:evidenceTimeBasis})=>{
       if(value.dimension!==evidence.dimension||value.literalUnit!==evidence.literalUnit||operator!==evidenceOperator||timeBasis!==evidenceTimeBasis)return false;
@@ -795,6 +829,11 @@ export function validateNaturalAnswerText(
     ...currentCalculations.map(calculation => calculationEvidenceText(calculation)),
   ].filter(Boolean);
   const calculatedResults = currentCalculations.map(item => ({ value: item.result, unit: item.unit }));
+  const contextText=numericPresentationText(context.question??'');
+  const contextIdentifiers=new Set(numericOccurrences(contextText).flatMap(item=>{
+    if(item.mention.dimension!=='unitless'||item.mention.literalUnit||item.operator!==null||item.timeBasis!==null)return[];
+    const identifier=numericIdentifier(contextText,item.index,item.mention.rawValue);return identifier?[identifier]:[];
+  }));
   const acceptedLines: string[] = [];
   let acceptedSentenceCount = 0;
   let withheldUnsupportedQuantitySentenceCount = 0;
@@ -810,8 +849,8 @@ export function validateNaturalAnswerText(
       // Strong-emphasis delimiters are presentation, not part of an amount,
       // comparator or basis. Keep the original prose for rendering.
       const checkingText=numericPresentationText(sentence);
-      if (!numericMentionsAreSupported(checkingText, evidenceTexts, calculatedResults)
-        || !basisMentionsAreSupported(checkingText, evidenceTexts)) {
+      if (!numericMentionsAreSupported(checkingText, evidenceTexts, calculatedResults,contextIdentifiers)
+        || !basisMentionsAreSupported(checkingText, evidenceTexts,contextIdentifiers)) {
         withheldUnsupportedQuantitySentenceCount += 1;
         continue;
       }

@@ -1203,3 +1203,8 @@ Semester acceptance is now a complete consumer product, selected applicable know
 ### 26 October — explicit agent capability profiles
 
 Default to the selected ordinary tool inventory, preserving relevant condition/ingredient source depth. Let users enable specialized investigation inside existing Advanced controls; do not infer scope from question keywords. Enforce tool eligibility at execution, not only SDK declarations. Exact research subsets are local-development-only, with no hidden Google Search or automatic broadening. Record bytes/usage separately; smaller schemas do not establish better answers. Retain the general numerical-validation/missing-data failure for a shared boundary fix rather than add diabetes wording exceptions.
+
+
+### 26 October — numeric roles are not semantic response templates
+
+Do not discard ordinary measurement-basis explanations as though a reference denominator were a measured food value. Keep precise amounts and their printed basis checks coupled; preserve user numeral identifiers only with adjacent wording. No condition names or source outcomes drive these rules, and prose cannot mutate canonical facts/calculations. This bounded representation correction is not scientific entailment. Retain unhandled illustrative wording instead of indefinitely expanding phrase rules.
