@@ -773,6 +773,31 @@ describe('provider validation, independent of provider invocation', () => {
       expect.objectContaining({nutrient:'fiber',portion:70,result:7.14}),
     ]));
   });
+  it('keeps an agent-calculated count portion when the question mentions the printed serving for comparison',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const observations=[
+      {id:'nutrition-line',field:'label-note',text:'Carbohydrates 69.29 g per 100 g',side:'back' as const,confidence:null,origin:'user' as const},
+      {id:'serving-line',field:'label-note',text:'Serving size: 2 biscuits (approximately 13.4 g)',side:'back' as const,confidence:null,origin:'user' as const},
+    ];
+    const reconstruction={
+      identity:{brand:'Example',name:'Crackers',variant:null,status:'provisional' as const,evidence:{observationIds:['nutrition-line'],imageRegions:[]}},
+      serving:{printedText:'2 biscuits (approximately 13.4 g)',quantity:13.4,unit:'g' as const,pieceCount:2,pieceDescription:'biscuits',status:'provisional' as const,evidence:{observationIds:['serving-line'],imageRegions:[]}},
+      nutritionRows:[{rowId:'carbohydrates-per-100g',nutrient:'carbohydrate',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['nutrition-line'],imageRegions:[]}}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Saved evidence-linked interpretation.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true,
+    };
+    const answer='Five biscuits are about 33.5 g, compared with the printed two-biscuit serving of about 13.4 g.';
+    const fetcher=vi.fn()
+      .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('five-biscuits','calculate_nutrition',{nutrient:'carbohydrate',amount:5,unit:'pieces',candidateId:'carbohydrates-per-100g'})]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question:'Compare five biscuits with the printed two-biscuit serving.',package:{id:'count-portion-ui',name:'Example Crackers',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations,rawText:observations.map(item=>item.text).join('\n'),warnings:[],synthetic:false,createdAt:new Date().toISOString(),reconstruction}});
+
+    const result=await assist(data);
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result.calculations).toEqual([expect.objectContaining({nutrient:'carbohydrate',portion:33.5,result:expect.closeTo(69.29*33.5/100,10),countedPortion:{amount:5,unit:'pieces',servingQuantity:13.4,servingUnit:'g',piecesPerServing:2}})]);
+    expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculatorAmount:33.5,calculatorUnit:'g',calculationIds:[result.calculations[0].id]}));
+  });
   it('rejects malformed package reconstruction once and does not run schema repair', async () => {
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([toolCallPart('bad-reconstruct','submit_package_reconstruction',{identity:{brand:'BISK FARM'}})]),{status:200,headers:{'content-type':'application/json'}}));

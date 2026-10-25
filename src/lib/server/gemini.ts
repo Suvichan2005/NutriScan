@@ -1854,13 +1854,22 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
     // The application may already have supplied traceable deterministic results
     // for the amount the user asked about. Render those saved calculations
     // directly instead of making Gemini repeat a calculation tool call.
-    const usedCalculations=precomputedRequestedCalculations.length
-      ?precomputedRequestedCalculations
-      :[...calledCalculationIds].flatMap(id=>calculations.has(id)?[calculations.get(id)!]:[]);
+    const modelCalculatedPortions=[...calledCalculationIds].flatMap(id=>calculations.has(id)?[calculations.get(id)!]:[]);
+    // A validated calculation the agent actually requested is the best match
+    // for this turn. A question can mention the printed serving for comparison
+    // while asking about a different amount (for example five biscuits vs the
+    // two-biscuit serving); selecting the saved serving calculation here would
+    // make the interactive calculator contradict the answer.
+    const usedCalculations=modelCalculatedPortions.length
+      ?modelCalculatedPortions
+      :precomputedRequestedCalculations;
+    const distinctCalculatedPortions=new Set(usedCalculations.map(item=>`${item.portion}|${item.portionUnit}`));
+    const initialCalculatorPortion=distinctCalculatedPortions.size===1&&usedCalculations[0].portion<=2000?usedCalculations[0]:undefined;
     if(usedCalculations.length){
       const parsed=assistantUiComponentSchema.safeParse({
         type:'portion-calculator',observationIds:[...new Set(usedCalculations.flatMap(item=>item.observationIds))].slice(0,20),
         sourceIds:[],calculationIds:usedCalculations.map(item=>item.id).slice(0,20),
+        ...(initialCalculatorPortion?{calculatorAmount:initialCalculatorPortion.portion,calculatorUnit:initialCalculatorPortion.portionUnit}:{}),
         ...(toolContext.package.reconstruction?.current?{packageRevision:toolContext.package.reconstruction.revision}:{}),
       });
       if(parsed.success)uiComponents.push(parsed.data);

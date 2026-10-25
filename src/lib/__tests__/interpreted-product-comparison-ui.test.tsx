@@ -28,6 +28,11 @@ it('keeps total, soluble and insoluble fibre identities distinct in a portion ca
     canInspect={()=>false} isInspecting={()=>false} onInspect={()=>{}} candidates={[]} interpretedReadings={[]} sources={[]} selectedProduct={null}/>);
   for(const label of ['Total Dietary Fibre','Soluble Dietary Fibre','Insoluble Dietary Fibre'])expect(markup).toContain(label);
   for(const value of ['5.36 g','2.31 g','3.04 g'])expect(markup).toContain(value);
+  const countMarkup=renderToStaticMarkup(<ThreadGenerativeUI question="Compare five pieces with the printed serving" components={[{type:'portion-calculator',observationIds:evidence.observationIds,sourceIds:[],calculationIds:calculations.map(item=>item.id),calculatorAmount:33.5,calculatorUnit:'g'}]}
+    pkg={pkg} audit={{...buildAudit(pkg,52.5,'g',defaultProfile,''),calculations}} portion={52.5} portionUnit="g" onPortionChange={()=>{}} onPortionUnitChange={()=>{}} onSaveCorrection={()=>true}
+    canInspect={()=>false} isInspecting={()=>false} onInspect={()=>{}} candidates={[]} interpretedReadings={[]} sources={[]} selectedProduct={null}/>);
+  expect(countMarkup).toContain('value="33.5"');
+  expect(countMarkup).toContain('3.42 g');
 });
 
 function makeObservation(id: string, text: string, tokens: string[], bounds: Array<[number, number]>, y: number): Observation {

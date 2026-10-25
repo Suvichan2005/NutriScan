@@ -46,8 +46,9 @@ type Props = {
 
 export function ThreadGenerativeUI(props: Props) {
   const { components, pkg, audit, candidates, interpretedReadings, sources, selectedProduct } = props;
-  const [calculatorPortion, setCalculatorPortion] = useState(props.portion);
-  const [calculatorUnit, setCalculatorUnit] = useState(props.portionUnit);
+  const initialCalculator = components.find(component => component.type === 'portion-calculator');
+  const [calculatorPortion, setCalculatorPortion] = useState(initialCalculator?.calculatorAmount ?? props.portion);
+  const [calculatorUnit, setCalculatorUnit] = useState(initialCalculator?.calculatorUnit ?? props.portionUnit);
   const reconstructedRows = pkg.reconstruction?.current
     ? pkg.reconstruction.nutritionRows.filter(row => ['clear', 'provisional'].includes(row.status) && row.value !== null && Boolean(row.unit))
     : [];
