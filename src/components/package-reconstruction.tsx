@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { correctionUnits, type ReconstructionRowEdit } from '@/lib/reconstruction-correction';
 import { ScanLine } from 'lucide-react';
-import type { PackageReconstruction, NutrientKey } from '@/lib/contracts';
+import type { PackageReconstruction, NutrientKey, ReconstructionCorrection } from '@/lib/contracts';
 import type { NutrientCorrection } from '@/lib/correction';
 import { normalizeReconstructedServing } from '@/lib/portion';
 
@@ -12,6 +13,8 @@ type Props = {
   savedNutrients: Array<{ key: NutrientKey; value: number; unit: string; basis: { amount: number; unit: 'g' | 'ml' } | null; status: string }>;
   onCorrect: (value: NutrientCorrection) => boolean;
   onInspectEvidence: (observationIds: string[]) => boolean;
+  corrections?:ReconstructionCorrection[];
+  onCorrectRow?:(edit:ReconstructionRowEdit)=>boolean;
   onActivateRevision?: (revision: number) => boolean;
 };
 
@@ -48,7 +51,7 @@ function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
   const [value, setValue] = useState(row.value === null ? '' : String(row.value));
   const [basisAmount, setBasisAmount] = useState(row.basisAmount === null ? '' : String(row.basisAmount));
   const [basisUnit, setBasisUnit] = useState<'g' | 'ml'>(row.basisUnit ?? 'g');
-  const key = nutrientKey(row.nutrient || row.printedLabel);
+  const key = row.nutrientKey === undefined ? nutrientKey(row.nutrient || row.printedLabel) : row.nutrientKey;
   const [unit,setUnit]=useState<NutrientCorrection['unit']>(key?allowedUnit(key,row.unit):'g');
   const startEditing = () => {
     const correction = saved?.status === 'corrected' ? saved : undefined;
@@ -91,7 +94,31 @@ function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
   </article>;
 }
 
-export function PackageReconstructionView({ reconstruction, history = [], savedNutrients, onCorrect, onInspectEvidence, onActivateRevision }: Props) {
+function ExtraNutrientRow({row,correction,onSave,onInspect}:{row:PackageReconstruction['nutritionRows'][number];correction?:ReconstructionCorrection;onSave?:Props['onCorrectRow'];onInspect:Props['onInspectEvidence']}){
+ const [editing,setEditing]=useState(false);
+ const source=correction?.original??row,current=correction?.reading??row;
+ const [draft,setDraft]=useState({label:current.nutrient,value:String(current.value??''),unit:correctionUnits.includes(current.unit as typeof correctionUnits[number])?current.unit!:'',basis:String(current.basisAmount??''),basisUnit:current.basisUnit??'',qualifier:current.qualifier??''});
+ const start=()=>{setDraft({label:current.nutrient,value:String(current.value??''),unit:correctionUnits.includes(current.unit as typeof correctionUnits[number])?current.unit!:'',basis:String(current.basisAmount??''),basisUnit:current.basisUnit??'',qualifier:current.qualifier??''});setEditing(true);};
+ const valid=!!draft.label.trim()&&draft.value.trim()!==''&&Number.isFinite(Number(draft.value))&&Number(draft.value)>=0&&Number(draft.value)<=100000&&Number(draft.basis)>0&&Number(draft.basis)<=10000&&correctionUnits.includes(draft.unit as typeof correctionUnits[number])&&['g','ml'].includes(draft.basisUnit)&&['','<','<=','>','>='].includes(draft.qualifier);
+ return <article className="reconstruction-row" data-reconstruction-row={row.rowId}>
+  <div className="reconstruction-row-main"><div><strong>{source.nutrient}</strong>{source.columnLabel&&<small>{source.columnLabel}</small>}</div><div className="reconstruction-value"><strong>{source.value===null?source.printedValue??'Value unresolved':`${source.value} ${source.unit??''}`}</strong><small>{source.basisAmount!==null&&source.basisUnit?`per ${source.basisAmount} ${source.basisUnit}`:source.basisText??'Basis unresolved'}</small></div></div>
+  <div className="reconstruction-row-meta"><span>{statusLabel(source.status)} · original Gemini reading, not independently verified</span>{source.evidence.observationIds.length>0&&<button type="button" className="text-button" onClick={()=>onInspect(source.evidence.observationIds)}><ScanLine size={13}/>Inspect evidence</button>}</div>
+  {correction&&<p className="reconstruction-correction"><strong>Your correction · revision {correction.revision}:</strong> {current.nutrient} {current.qualifier}{current.value} {current.unit} per {current.basisAmount} {current.basisUnit}. Original reading retained.</p>}
+  {!editing&&onSave&&<button type="button" className="text-button reconstruction-edit" onClick={start}>{correction?'Edit your correction':'Confirm or edit this value'}</button>}
+  {editing&&<form className="reconstruction-edit-form" onSubmit={event=>{event.preventDefault();if(valid&&onSave?.({rowId:row.rowId,label:draft.label,value:Number(draft.value),unit:draft.unit as ReconstructionRowEdit['unit'],basisAmount:Number(draft.basis),basisUnit:draft.basisUnit as 'g'|'ml',qualifier:draft.qualifier||null}))setEditing(false);}}>
+   <label>Nutrient name<input aria-label="Corrected nutrient name" value={draft.label} onChange={event=>setDraft({...draft,label:event.target.value})}/></label>
+   <label>Printed value<input aria-label={`${source.nutrient} corrected value`} inputMode="decimal" value={draft.value} onChange={event=>setDraft({...draft,value:event.target.value})}/></label>
+   <label>Unit<select aria-label="Corrected nutrient unit" value={draft.unit} onChange={event=>setDraft({...draft,unit:event.target.value})}><option value="">Select printed unit</option>{correctionUnits.map(unit=><option key={unit} value={unit}>{unit}</option>)}</select></label>
+   <label>Qualifier<select aria-label="Corrected qualifier" value={draft.qualifier} onChange={event=>setDraft({...draft,qualifier:event.target.value})}><option value="">Exact value</option>{['<','<=','>','>='].map(value=><option key={value} value={value}>{value}</option>)}</select></label>
+   <label>Printed basis<input aria-label={`${source.nutrient} basis amount`} inputMode="decimal" value={draft.basis} onChange={event=>setDraft({...draft,basis:event.target.value})}/></label>
+   <label>Basis unit<select aria-label="Corrected basis unit" value={draft.basisUnit} onChange={event=>setDraft({...draft,basisUnit:event.target.value})}><option value="">Select printed basis</option><option value="g">g</option><option value="ml">ml</option></select></label>
+   <div><button type="submit" className="primary-button" disabled={!valid}>Save as my correction</button><button type="button" className="text-button" onClick={()=>setEditing(false)}>Cancel</button></div>
+   <small>Your reading updates calculations and later questions. It is not independently verified; qualified values remain excluded from exact calculations.</small>
+  </form>}
+ </article>;
+}
+
+export function PackageReconstructionView({ reconstruction, history = [], savedNutrients, onCorrect, onInspectEvidence, onActivateRevision, corrections=[], onCorrectRow }: Props) {
   const [selectedRevision, setSelectedRevision] = useState<number | null>(null);
   const displayed = selectedRevision === null ? reconstruction : history.find(item => item.revision === selectedRevision) ?? reconstruction;
   const isActive = selectedRevision === null;
@@ -115,7 +142,7 @@ export function PackageReconstructionView({ reconstruction, history = [], savedN
       <small>{statusLabel(item.status)} · unverified</small>
       {item.evidence.observationIds.length > 0 && <button type="button" className="text-button" onClick={() => onInspectEvidence(item.evidence.observationIds)}>Inspect evidence</button>}
     </li>)}</ul></section>}
-    {displayed.nutritionRows.length > 0 && <section><h3>Nutrition as printed</h3><div className="reconstruction-rows">{displayed.nutritionRows.map(row => {const key=nutrientKey(row.nutrient || row.printedLabel);return <InterpretedRow key={row.rowId} row={row} saved={key? savedByKey.get(key):undefined} onCorrect={onCorrect} onInspectEvidence={onInspectEvidence}/>;})}</div></section>}
+    {displayed.nutritionRows.length > 0 && <section><h3>Nutrition as printed</h3><div className="reconstruction-rows">{displayed.nutritionRows.map(row => {const key=row.nutrientKey===undefined?nutrientKey(row.nutrient || row.printedLabel):row.nutrientKey;if(!key)return <ExtraNutrientRow key={row.rowId} row={row} correction={corrections.find(item=>item.rowId===row.rowId)} onSave={isActive?onCorrectRow:undefined} onInspect={onInspectEvidence}/>;return <InterpretedRow key={row.rowId} row={row} saved={key? savedByKey.get(key):undefined} onCorrect={onCorrect} onInspectEvidence={onInspectEvidence}/>;})}</div></section>}
     {displayed.ingredients.length > 0 && <section><h3>Ingredients</h3><ol className="reconstruction-ingredients">{displayed.ingredients.slice(0, 40).map((item, index) => <li key={`${item.position}-${index}`}><span>{item.normalizedName || item.name}</span>{item.printedPercentage !== null && <strong>{item.printedPercentage}%</strong>}<small>{statusLabel(item.status)} · unverified</small></li>)}</ol></section>}
     {displayed.additives.length > 0 && <section><h3>Additives identified on the label</h3><ul className="reconstruction-statements">{displayed.additives.slice(0, 20).map((item, index) => <li key={`${item.printedName}-${index}`}>{item.normalizedName || item.printedName}{item.code ? ` · ${item.code}` : ''}<small>{statusLabel(item.status)} · unverified</small></li>)}</ul></section>}
     {displayed.statements.length > 0 && <section><h3>Claims and other details</h3><ul className="reconstruction-statements">{displayed.statements.slice(0, 24).map((item, index) => <li key={`${item.kind}-${index}`}><span>{item.text}</span><small>{item.kind} · {statusLabel(item.status)} · unverified</small></li>)}</ul></section>}

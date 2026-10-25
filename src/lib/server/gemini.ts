@@ -2034,6 +2034,7 @@ export function assistPromptPayload(data:z.infer<typeof assistInput>, referenceA
     ...pkg.reconstruction,nutritionRows:pkg.reconstruction.nutritionRows.filter(row=>!reconstructionRowIsSuperseded(pkg,row)),
   }):undefined;
   const compactPackage={
+    userRowCorrections:(pkg.reconstructionCorrections??[]).map(item=>({rowId:item.rowId,correctionRevision:item.revision,origin:'user correction, not independently verified',observationId:item.observationId})),
     id:pkg.id,...(modelName?{name:modelName}:{}),...(modelBrand?{brand:modelBrand}:{}),...(pkg.barcode?{barcode:pkg.barcode}:{}),
     ...(pkg.userDescription?{userDescription:pkg.userDescription}:{}),
     ...(savedReconstruction?{reconstruction:savedReconstruction}:{}),
@@ -2060,7 +2061,7 @@ export function assistPromptPayload(data:z.infer<typeof assistInput>, referenceA
     package:compactPackage,
     packageFacts,
     evidence:(data.evidence??[]).map(source=>({...source,summary:source.summary.slice(0,900),limitations:source.limitations.slice(0,350)})),
-    calculations:(data.calculations??[]).map(calculation=>({id:calculation.id,nutrient:calculation.nutrient,nutrientLabel:calculation.nutrientLabel,input:calculation.input,inputUnit:calculation.inputUnit,basisAmount:calculation.basisAmount,portion:calculation.portion,portionUnit:calculation.portionUnit,result:calculation.result,unit:calculation.unit,formula:calculation.formula,observationIds:calculation.observationIds,imageIds:calculation.imageIds??[],interpretationIds:calculation.interpretationIds??[],assumptions:calculation.assumptions})),
+    calculations:(data.calculations??[]).map(calculation=>({id:calculation.id,inputOrigin:calculation.inputOrigin,nutrient:calculation.nutrient,nutrientLabel:calculation.nutrientLabel,input:calculation.input,inputUnit:calculation.inputUnit,basisAmount:calculation.basisAmount,portion:calculation.portion,portionUnit:calculation.portionUnit,result:calculation.result,unit:calculation.unit,formula:calculation.formula,observationIds:calculation.observationIds,imageIds:calculation.imageIds??[],interpretationIds:calculation.interpretationIds??[],assumptions:calculation.assumptions})),
     images:(data.images??[]).map(image=>({handle:image.handle,side:image.side,width:image.width,height:image.height,role:image.role??'unknown',...(image.description?{description:image.description.slice(0,80)}:{})})),
     conversationContext:data.conversationContext?.slice(-6).map(turn=>({question:turn.question.slice(0,1000),answer:turn.answer.slice(0,1400)})),
     ...(visualImages?.length?{visualImages:visualImages.map(({base64:_base64,...image})=>image)}:{}),

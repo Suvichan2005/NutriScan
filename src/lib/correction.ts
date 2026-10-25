@@ -10,11 +10,15 @@ export function reconstructionRowIsSuperseded(pkg: PackageData, row: NonNullable
 /** A current user correction takes precedence over earlier model/OCR inputs. */
 export function calculationRespectsCorrections(pkg: PackageData, calculation: Calculation): boolean {
   if(calculation.nutrient===null){
+    const corrections=(pkg.reconstructionCorrections??[]).filter(item=>calculation.interpretationIds?.includes(item.rowId));
+    if(corrections.length)return corrections.some(item=>item.reading.value===calculation.input&&item.reading.unit===calculation.inputUnit&&item.reading.unit===calculation.unit&&item.reading.basisAmount===calculation.basisAmount&&item.reading.basisUnit===calculation.portionUnit&&calculation.observationIds.includes(item.observationId)&&!item.reading.qualifier);
+
+    if(calculation.inputOrigin==='user-correction')return false;
     const superseded=new Set(pkg.observations.filter(row=>row.origin==='user').flatMap(row=>row.supersedesObservationIds??[]));
     return !calculation.observationIds.some(id=>superseded.has(id));
   }
   const corrections = pkg.nutrients.filter(row => row.key === calculation.nutrient && row.status === 'corrected');
-  if (!corrections.length) return true;
+  if (!corrections.length) return calculation.inputOrigin!=='user-correction';
   const equal = (left: number, right: number) => Math.abs(left - right) <= Number.EPSILON * Math.max(1, Math.abs(left), Math.abs(right)) * 16;
   return corrections.some(row => row.basis && row.unit === calculation.inputUnit && row.unit === calculation.unit
     && row.basis.unit === calculation.portionUnit && equal(row.value, calculation.input)

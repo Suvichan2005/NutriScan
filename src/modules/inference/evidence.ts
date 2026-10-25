@@ -1,3 +1,4 @@
+import { packageWithRowCorrections } from '../../lib/reconstruction-correction';
 import {
   sourceSchema,
   type EvidenceSource,
@@ -24,6 +25,7 @@ const additionalPhotoMarker = /^--- Additional photo evidence ---$/;
  * by those observations in the same order. Mixed or ambiguous text is kept.
  */
 export function packageForAssist(pkg: PackageData): PackageData {
+  pkg=packageWithRowCorrections(pkg);
   if (pkg.reconstruction?.current) {
     // Follow-up turns use the saved interpretation as their package context.
     // Retain user corrections and their observation links, but leave the full
@@ -31,6 +33,7 @@ export function packageForAssist(pkg: PackageData): PackageData {
     // package record for the inspector and targeted recovery path.
     const reconstruction=pkg.reconstruction;
     const requiredIds=new Set([
+      ...(pkg.reconstructionCorrections??[]).flatMap(item=>item.original.evidence.observationIds),
       ...reconstruction.identity.evidence.observationIds,
       ...(reconstruction.serving?.evidence.observationIds??[]),
       ...(reconstruction.quantityDeclarations??[]).flatMap(item=>item.evidence.observationIds),
