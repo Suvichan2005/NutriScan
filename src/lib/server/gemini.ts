@@ -11,6 +11,7 @@ import { recordGeminiDiagnostic } from './gemini-diagnostics';
 import { finishGeminiEvaluation, recordGeminiEvaluationEvent, startGeminiEvaluation } from './gemini-evaluation-recorder';
 import { calculationsFromReconstruction, defaultPortion, hasExplicitPortionRequest, resolveQuestionPortion } from '../portion';
 import { selectCitedEvidence } from '../answer-evidence';
+import { calculationRespectsCorrections, reconstructionRowIsSuperseded } from '../correction';
 
 export { providerStatus };
 
@@ -92,6 +93,7 @@ function calculationLabelMatches(nutrient:NutrientKey,label:string):boolean{
 }
 
 function calculationHasPackageEvidence(calculation:Calculation,data:{package:z.infer<typeof packageSchema>;interpretedCandidates?:z.infer<typeof tentativeStructuredCandidateSchema>[]}):boolean{
+  if(!calculationRespectsCorrections(data.package,calculation))return false;
   const observationIds=new Set(calculation.observationIds);
   const imageIds=new Set(calculation.imageIds??[]);
   const provenanceMatches=(sourceObservations:string[],sourceImages:string[])=>
@@ -1970,7 +1972,9 @@ export function assistPromptPayload(data:z.infer<typeof assistInput>, referenceA
     const width=dimensions?.width??1,height=dimensions?.height??1;
     return [bbox.x0,bbox.y0,bbox.x1,bbox.y1].map((value,index)=>Math.round(value/(index%2===0?width:height)*1000)/1000);
   };
-  const savedReconstruction=pkg.reconstruction?.current?compactSavedReconstruction(pkg.reconstruction):undefined;
+  const savedReconstruction=pkg.reconstruction?.current?compactSavedReconstruction({
+    ...pkg.reconstruction,nutritionRows:pkg.reconstruction.nutritionRows.filter(row=>!reconstructionRowIsSuperseded(pkg,row)),
+  }):undefined;
   const compactPackage={
     id:pkg.id,...(modelName?{name:modelName}:{}),...(modelBrand?{brand:modelBrand}:{}),...(pkg.barcode?{barcode:pkg.barcode}:{}),
     ...(pkg.userDescription?{userDescription:pkg.userDescription}:{}),
@@ -2111,11 +2115,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       // synthesis so every package-derived quantity in a natural response has
       // deterministic, provenance-linked support. Previously these were only
       // prepared at request start, before the new reconstruction existed.
-      const correctedNutrients=new Set(activePackage.nutrients
-        .filter(nutrient=>nutrient.status==='corrected')
-        .map(nutrient=>nutrient.key));
-      const servingCalculations=calculateSavedServing(activePackage)
-        .filter(calculation=>!correctedNutrients.has(calculation.nutrient));
+      const servingCalculations=calculateSavedServing(activePackage);
       if(servingCalculations.length){
         const combined=new Map<string,Calculation>();
         for(const calculation of [...(data.calculations??[]),...servingCalculations]){

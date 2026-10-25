@@ -28,6 +28,18 @@ describe('conversationContextForAssist', () => {
     expect(context?.at(-1)?.answer).toHaveLength(2000);
     expect(context?.every((turn) => !('at' in turn))).toBe(true);
   });
+
+  it('retains declared user context after a package correction without replaying superseded answers', () => {
+    const context=conversationContextForAssist([
+      {...turns[0],question:'This is for my father; he avoids peanuts. How much protein is in one serving?',answer:'The old reading says 8 g protein.',outdated:true},
+      {...turns[1],question:'I corrected the protein value. What about half a serving?',answer:'The corrected calculation is 3 g protein.'},
+    ],true);
+    expect(context).toEqual([
+      {question:'This is for my father; he avoids peanuts. How much protein is in one serving?',answer:''},
+      {question:'I corrected the protein value. What about half a serving?',answer:'The corrected calculation is 3 g protein.'},
+    ]);
+    expect(JSON.stringify(context)).not.toContain('8 g');
+  });
 });
 
 describe('resolveLocalFollowUpQuestion', () => {

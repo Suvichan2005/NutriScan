@@ -47,6 +47,14 @@ function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
   const [basisUnit, setBasisUnit] = useState<'g' | 'ml'>(row.basisUnit ?? 'g');
   const key = nutrientKey(row.nutrient || row.printedLabel);
   const [unit,setUnit]=useState<NutrientCorrection['unit']>(key?allowedUnit(key,row.unit):'g');
+  const startEditing = () => {
+    const correction = saved?.status === 'corrected' ? saved : undefined;
+    setValue(String(correction?.value ?? row.value ?? ''));
+    setBasisAmount(String(correction?.basis?.amount ?? row.basisAmount ?? ''));
+    setBasisUnit(correction?.basis?.unit ?? row.basisUnit ?? 'g');
+    setUnit(key ? allowedUnit(key, correction?.unit ?? row.unit) : 'g');
+    setEditing(true);
+  };
   const canSave = Boolean(key && value.trim() && Number.isFinite(Number(value)) && Number(value) >= 0
     && basisAmount.trim() && Number.isFinite(Number(basisAmount)) && Number(basisAmount) > 0);
   return <article className="reconstruction-row" data-reconstruction-row={row.rowId}>
@@ -62,7 +70,7 @@ function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
       {row.evidence.observationIds.length > 0 && <button type="button" className="text-button" onClick={() => onInspectEvidence(row.evidence.observationIds)}><ScanLine size={13}/>Inspect evidence</button>}
     </div>
     {saved?.status === 'corrected' && saved.basis && <p className="reconstruction-correction"><strong>Your confirmed correction:</strong> {saved.value} {saved.unit} per {saved.basis.amount} {saved.basis.unit}. The original interpretation remains above.</p>}
-    {key && !editing && <button className="text-button reconstruction-edit" type="button" onClick={() => setEditing(true)}>{saved?.status === 'corrected' ? 'Edit your correction' : 'Confirm or edit this value'}</button>}
+    {key && !editing && <button className="text-button reconstruction-edit" type="button" onClick={startEditing}>{saved?.status === 'corrected' ? 'Edit your correction' : 'Confirm or edit this value'}</button>}
     {editing && key && <form className="reconstruction-edit-form" onSubmit={event => {
       event.preventDefault();
       if (!canSave) return;

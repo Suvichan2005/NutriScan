@@ -1,11 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { applyNutrientCorrection } from '../correction';
+import { applyNutrientCorrection, calculationRespectsCorrections } from '../correction';
 import { defaultProfile, packageSchema } from '../contracts';
 import { buildAudit } from '../engine';
 import { mergePackageEvidence } from '../merge-evidence';
 import { parseLabel } from '../parser';
 
 describe('user correction provenance', () => {
+  it.each([
+    {label:'Nutrition per 100 g\nSodium 850 mg',key:'sodium' as const,value:900,unit:'mg' as const,portion:20,basisUnit:'g' as const,result:180},
+    {label:'Nutrition per 100 ml\nProtein 3.2 g',key:'protein' as const,value:3.4,unit:'g' as const,portion:250,basisUnit:'ml' as const,result:8.5},
+  ])('uses current correction provenance for $key on a $basisUnit basis',fixture=>{
+    const before=parseLabel(fixture.label,{origin:'ocr'});
+    const oldCalculation=buildAudit(before,fixture.portion,fixture.basisUnit,defaultProfile,'').calculations.find(row=>row.nutrient===fixture.key)!;
+    const corrected=applyNutrientCorrection(before,{key:fixture.key,value:fixture.value,unit:fixture.unit,basisAmount:100,basisUnit:fixture.basisUnit});
+    const fresh=buildAudit(corrected,fixture.portion,fixture.basisUnit,defaultProfile,'').calculations.find(row=>row.nutrient===fixture.key)!;
+    expect(fresh.result).toBeCloseTo(fixture.result,10);
+    expect(calculationRespectsCorrections(corrected,oldCalculation)).toBe(false);
+    expect(calculationRespectsCorrections(corrected,fresh)).toBe(true);
+    expect(calculationRespectsCorrections(corrected,{...fresh,observationIds:oldCalculation.observationIds})).toBe(false);
+    expect(calculationRespectsCorrections(corrected,{...fresh,portionUnit:fixture.basisUnit==='g'?'ml':'g'})).toBe(false);
+  });
   it('recalculates from a correction while preserving the original OCR evidence', () => {
     const pkg = parseLabel('Nutrition per 100 g\nSodium 850 mg', { origin: 'ocr' });
     const before = buildAudit(pkg, 20, 'g', defaultProfile, 'How much sodium?');

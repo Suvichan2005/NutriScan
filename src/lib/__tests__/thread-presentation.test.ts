@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { geminiFailureMessage, hasVisibleProvisionalPackageAmounts, mergeRecheckedPackageCandidates, packageDisplayIdentity, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, scaleCalculationToPortion, type ThreadMessage } from '../thread-presentation';
-import { packageSchema, type AssistantUiComponent, type Calculation, type TentativeStructuredCandidate } from '../contracts';
+import { geminiFailureMessage, hasVisibleProvisionalPackageAmounts, mergeRecheckedPackageCandidates, packageDisplayIdentity, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, scaleCalculationToPortion, supersedePackageAnswers, type ThreadMessage } from '../thread-presentation';
+import { packageSchema, savedConversationTurnSchema, type AssistantUiComponent, type Calculation, type TentativeStructuredCandidate } from '../contracts';
 
 const identityCandidate = (proposedValue: string): TentativeStructuredCandidate => ({
   candidateId: 'identity-candidate',
@@ -130,8 +130,21 @@ describe('saved conversation turns', () => {
     ];
 
     expect(savedConversationTurns(messages)).toEqual([{
-      question: 'What is in this?', answer: 'A local reading.', at: '2026-10-23T00:01:00.000Z', answerOrigin: 'local',
+      question: 'What is in this?', answer: 'A local reading.', at: '2026-10-23T00:01:00.000Z', answerOrigin: 'local', outdated: true,
     }]);
+  });
+
+  it('keeps invalidation across saving and reopening while activating only the new revision answer', () => {
+    const messages:ThreadMessage[]=[
+      {question:'How much protein?',answer:'The earlier package reading gives 8 g.',at:'2026-10-25T00:00:00.000Z',uiComponents:[{type:'nutrition-table',observationIds:[],sourceIds:[],calculationIds:[]}]},
+      {question:'Recheck the package.',answer:'The new reading gives 6 g.',at:'2026-10-25T00:01:00.000Z',outdated:true},
+    ];
+    const revised=supersedePackageAnswers(messages,messages[1].at);
+    const reopened=savedConversationTurnSchema.array().parse(JSON.parse(JSON.stringify(savedConversationTurns(revised))));
+    expect(reopened[0]).toMatchObject({question:messages[0].question,answer:messages[0].answer,outdated:true});
+    expect(reopened[0].uiComponents).toBeUndefined();
+    expect(reopened[1].outdated).toBe(false);
+    expect(messages[0].uiComponents).toHaveLength(1);
   });
 
   it('persists only validated calculations needed by a contextual UI turn', () => {
@@ -197,6 +210,16 @@ describe('operation-bound nutrition UI', () => {
     const corrected = prepareAssistantTurnPresentation([], [], reconstructionPackage(true));
     expect(corrected.calculations).toEqual([]);
     expect(corrected.components).toEqual([]);
+  });
+
+  it('keeps a fresh corrected calculation but rejects the earlier model value', () => {
+    const pkg=reconstructionPackage(true);
+    const fresh:Calculation={id:'corrected-carb',label:'Carbohydrate in 20 g',nutrient:'carbohydrate',input:60,inputUnit:'g',basisAmount:100,portion:20,portionUnit:'g',result:12,unit:'g',formula:'60 × 20 ÷ 100',observationIds:['correction-line'],assumptions:[]};
+    const stale:Calculation={...fresh,id:'old-carb',input:69.29,result:13.858,observationIds:['carbohydrate-line'],interpretationIds:['carbohydrate-row']};
+    const component:AssistantUiComponent={type:'portion-calculator',observationIds:['correction-line'],sourceIds:[],calculationIds:[fresh.id]};
+    const result=prepareAssistantTurnPresentation([component],[stale,fresh],pkg);
+    expect(result.calculations).toEqual([fresh]);
+    expect(result.components).toEqual([component]);
   });
 
   it('does not infer a calculator from wording or a saved calculation alone', () => {

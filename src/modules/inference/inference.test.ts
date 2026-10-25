@@ -3,6 +3,7 @@ import { defaultProfile, packageReconstructionContentSchema, packageSchema, tent
 import { reconcileInterpretedNutrition } from '../../lib/interpreted-nutrients';
 import { packageForAssist } from './evidence';
 import { InferenceModuleError, validateInferenceOutput, validateNaturalAnswerText } from './index';
+import { applyNutrientCorrection } from '../../lib/correction';
 
 const fixturePackage: PackageData = packageSchema.parse({
   id: 'synthetic-package',
@@ -64,6 +65,21 @@ function reconstructionFixture() {
 }
 
 describe('provider-independent inference output validation', () => {
+  it('does not let superseded model rows, original text or old calculations override a correction', () => {
+    const pkg=packageSchema.parse({...fixturePackage,nutrients:[],observations:[{id:'drink-label',field:'label-note',text:'Protein 3.2 g per 100 ml',origin:'user',side:'text',confidence:null}],reconstruction:{
+      ...reconstructionFixture(),revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture',current:true,serving:null,ingredients:[],statements:[],
+      nutritionRows:[{rowId:'drink-protein',nutrient:'protein',printedLabel:'Protein',printedValue:'3.2 g',value:3.2,unit:'g',columnLabel:'Per 100 ml',basisText:'per 100 ml',basisAmount:100,basisUnit:'ml',qualifier:null,status:'provisional',evidence:{observationIds:['drink-label'],imageRegions:[]}}],
+    }});
+    const corrected=applyNutrientCorrection(pkg,{key:'protein',value:3.4,unit:'g',basisAmount:100,basisUnit:'ml'});
+    const stale:Calculation={id:'old-drink-calculation',label:'Protein in 250 ml',nutrient:'protein',input:3.2,inputUnit:'g',basisAmount:100,portion:250,portionUnit:'ml',result:8,unit:'g',formula:'3.2 × 250 ÷ 100',observationIds:['drink-label'],interpretationIds:['drink-protein'],assumptions:[]};
+    const checked=validateNaturalAnswerText('The current label value is 3.4 g protein per 100 ml. It provides 8 g protein in 250 ml.',{package:corrected,calculations:[stale]});
+    expect(checked.answer).toContain('3.4 g protein per 100 ml');
+    expect(checked.answer).not.toContain('8 g protein');
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
+    expect(validateNaturalAnswerText('Protein is 3.2 g per 100 ml.',{package:corrected}).answer).toBe('');
+    expect(corrected.reconstruction?.nutritionRows[0].value).toBe(3.2);
+    expect(corrected.observations.find(row=>row.id==='drink-label')?.text).toBe('Protein 3.2 g per 100 ml');
+  });
   it('keeps natural prose and checks only quantities against canonical package rows and tools', () => {
     const pkg = packageSchema.parse({
       ...fixturePackage,

@@ -19,7 +19,7 @@ import { buildLocalAuditConversationReply, buildLocalEvidenceFollowUp, buildLoca
 import { requestLocalEvidence } from '@/lib/local-evidence-client';
 import { presentConversationAnswer } from '@/lib/conversation-answer';
 import { selectCitedEvidence } from '@/lib/answer-evidence';
-import { geminiFailureMessage, hasVisibleProvisionalPackageAmounts, mergeRecheckedPackageCandidates, packageDisplayIdentity, parseThreadAgentDiagnostics, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, type ThreadMessage } from '@/lib/thread-presentation';
+import { geminiFailureMessage, hasVisibleProvisionalPackageAmounts, mergeRecheckedPackageCandidates, packageDisplayIdentity, parseThreadAgentDiagnostics, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, supersedePackageAnswers, type ThreadMessage } from '@/lib/thread-presentation';
 import { canAddGeminiVisualImage, cropPreparedImage, geminiImageScale, selectBestLabelCropSet } from '@/lib/gemini-visual-crop';
 import { applyBarcodeReadings } from '@/lib/barcode';
 import { ThreadPublicProductRecord } from './thread-public-product-record';
@@ -457,7 +457,7 @@ export default function NutriScan(){
    const next=combined??data;
    setRawText(next.rawText);
    if(combined){
-     epoch.current++;setBusy(false);setPkg(next);setRemoteCandidates([]);setProducts([]);setProductLookupNotice('');setResearch([]);setSemantic([]);setSelectedProduct(null);setRemoteNotice('');setRemoteBusy('');setRemember(false);setRememberConversation(false);setInspection(null);setLookup(defaultLookup(next));setMessages(previous=>previous.map(({uiComponents:_uiComponents,...turn})=>({...turn,outdated:true})));
+     epoch.current++;setBusy(false);setPkg(next);setRemoteCandidates([]);setProducts([]);setProductLookupNotice('');setResearch([]);setSemantic([]);setSelectedProduct(null);setRemoteNotice('');setRemoteBusy('');setRemember(false);setRememberConversation(false);setInspection(null);setLookup(defaultLookup(next));setMessages(previous=>supersedePackageAnswers(previous));
      setNotice(secondaryUsed?'Photos added. Some label details may need a closer look.':secondaryUnavailable?'We kept the first reading. Some package text may be missing.':`Added label evidence from ${selected.length} photo${selected.length===1?'':'s'}. Earlier findings and your conversation are still here; review any conflicts.`);
      if(initialQuestion){
       const selectedPortion=resolveQuestionPortion(initialQuestion,defaultPortion(next),next.netWeight);setPortion(selectedPortion.value);setUnit(selectedPortion.unit);setActiveQuestion(initialQuestion);setAuditQuestion(initialQuestion);
@@ -489,7 +489,7 @@ export default function NutriScan(){
    const textPackage=parseLabel(rawText,{origin:'user',userDescription:productDescription.trim()});setPanel(null);setError('');setInspection(null);
    if(pkg&&!pkg.synthetic){
     const next=mergePackageEvidence(pkg,textPackage);epoch.current++;setPkg(next);setRawText(next.rawText);setRemoteCandidates([]);setProducts([]);setProductLookupNotice('');setResearch([]);setSemantic([]);setSelectedProduct(null);setRemoteNotice('');setRemoteBusy('');setRemember(false);setRememberConversation(false);setLookup(defaultLookup(next));
-    setMessages(current=>current.map(({uiComponents:_uiComponents,...turn})=>({...turn,outdated:true})));
+    setMessages(current=>supersedePackageAnswers(current));
     setNotice('Added your label text. Earlier answers are marked as based on the previous label evidence.');
     const prompt=question.trim()||'What can you tell me about this package?';const selected=resolveQuestionPortion(prompt,defaultPortion(next),next.netWeight);setPortion(selected.value);setUnit(selected.unit);setActiveQuestion(prompt);setAuditQuestion(prompt);
     const response=buildAudit(next,selected.value,selected.unit,profile,prompt);const at=new Date().toISOString();const useGemini=cloudMode&&providerStatus.gemini?.enabled&&!next.synthetic;const localReply=useGemini?null:buildLocalAuditConversationReply(response,prompt);
@@ -577,7 +577,7 @@ export default function NutriScan(){
   const requestController=new AbortController();const requestState={controller:requestController,intentional:false,failureCode:''};geminiRequest.current=requestState;const requestTimeout=window.setTimeout(()=>requestController.abort(),125000);
   const stamp=epoch.current;setRemoteBusy(vision?'vision':'assist');setRemoteNotice('');
   try{
-    let body:unknown;const usableHistory=targetMessages.filter(turn=>turn.at!==responseTurnAt&&!turn.outdated);const conversationContext=conversationContextForAssist(usableHistory,true);
+    let body:unknown;const usableHistory=targetMessages.filter(turn=>turn.at!==responseTurnAt&&turn.status!=='pending');const conversationContext=conversationContextForAssist(usableHistory,true);
    if(vision){const asset=inspection?targetImages.find(x=>x.id===inspection.handle):targetImages.find(x=>x.id===visionImageId)??targetImages[0];if(!asset)throw new Error('The selected image is no longer in this session. Select it again to inspect the label.');const crop=inspection?.crop;const rotation=(asset.rotation??0) as 0|90|180|270;const blob=await prepareImage(asset,rotation,contrast,crop?{x:crop.x*100,y:crop.y*100,width:crop.width*100,height:crop.height*100}:undefined,invert);body={consent:true,image:{mimeType:'image/jpeg',base64:await imageBase64(blob),side:asset.side,imageId:asset.id,sourceImage:{width:asset.width,height:asset.height},preprocessing:{rotation,contrast,invert,crop:crop??null}},instruction:'Read the nutrition basis, values, ingredients and product identity from this user-selected image. User hint, if any: '+(asset.role==='unknown'?'no hint supplied':asset.role)+'; user note (untrusted text): '+(asset.description||'none')+'. Preserve uncertainty. Return observations only.'};}
    else {
     const visualImages=[];
@@ -624,6 +624,7 @@ export default function NutriScan(){
    if(vision&&data.observations?.length){setPkg(appendVisionEvidence(targetPackage,data.visionCapture,data.observations));setInspection(null);setNotice('Image observations were added to the evidence inspector. They remain unverified and do not change package facts or calculations.');}
      else {
        let reconstructionRejected=false;
+       let packageRevisionChanged=false;
        let reconstructionRejectionDetail='This recheck disagreed with or omitted saved package details. I kept the earlier reading active. Review the alternative in Package details, or retry using the saved reading.';
        let packageForTurn=targetPackage;
         const reconstructionDraft=packageReconstructionContentSchema.safeParse(data.packageReconstruction);
@@ -663,6 +664,7 @@ export default function NutriScan(){
                :'The recheck omitted saved package details. The fuller reading remains active; the alternative is available in Package details.');
            }
            else {
+              packageRevisionChanged=true;
               const serving=normalizeReconstructedServing(reconstructed.data.reconstruction?.serving);
               if(!portionTouched.current&&serving?.quantity&&serving.unit){const selected=resolveQuestionPortion(targetQuestion,{value:serving.quantity,unit:serving.unit},reconstructed.data.netWeight,serving);setPortion(selected.value);setUnit(selected.unit);}
              if(current&&context?.forceReconstruction&&(merged.content.nutritionRows.length>current.nutritionRows.length||merged.content.ingredients.length>current.ingredients.length||merged.content.additives.length>current.additives.length||merged.content.statements.length>current.statements.length))setNotice('The recheck added compatible label details. Model readings remain unverified.');
@@ -671,23 +673,23 @@ export default function NutriScan(){
        }
         else if(!reconstructionContent&&(!reusingReconstruction||context?.forceReconstruction)){reconstructionRejected=true;reconstructionRejectionDetail='Gemini did not return a usable package revision. The saved scan and previous reading remain available; retry when ready.';}
        const parsedCandidates=tentativeStructuredCandidateSchema.array().max(20).safeParse(data.tentativeCandidates??[]);if(parsedCandidates.success)setRemoteCandidates(current=>mergeRecheckedPackageCandidates(current,parsedCandidates.data));const parsedComponents=assistantUiComponentSchema.array().max(6).safeParse(data.uiComponents??[]);const baseComponents=parsedComponents.success?parsedComponents.data:[];const parsedCalculations=calculationSchema.array().max(20).safeParse(data.calculations??[]);const presentation=prepareAssistantTurnPresentation(baseComponents,parsedCalculations.success?parsedCalculations.data:[],packageForTurn);const calculations=presentation.calculations;const uiComponents=presentation.components;const parsedSources=conversationEvidenceSourceSchema.array().max(12).safeParse(data.agentEvidence??[]);const sharedCountry=includeProfileWithGemini&&hasProfile(profile)?profile.country:'';const evidence=safeConversationEvidence(parsedSources.success?parsedSources.data:[]).filter(source=>isGuidanceEvidenceInScope(source,targetQuestion,sharedCountry));const agentTrace=parseThreadAgentTrace(data.agentTrace);const agentDiagnostics=parseThreadAgentDiagnostics(data.agentDiagnostics);const diagnosticId=typeof data.diagnosticId==='string'&&/^[a-f0-9-]{36}$/i.test(data.diagnosticId)?data.diagnosticId:undefined;
-       if(responseTurnAt)setMessages(current=>current.map(turn=>{
+       if(responseTurnAt)setMessages(current=>(packageRevisionChanged?supersedePackageAnswers(current,responseTurnAt):current).map(turn=>{
          if(turn.at!==responseTurnAt)return turn;
          if(reconstructionRejected)return preservePreviousAnswerAfterRejectedRecheck(turn,messages.find(previous=>previous.at===turn.at),reconstructionRejectionDetail,{agentTrace,agentDiagnostics,diagnosticId});
          const answer=data.answer??data.message??'No grounded answer was returned.';
-         return {...turn,answer,answerOrigin:'gemini',status:undefined,statusDetail:undefined,uiComponents,calculations,agentTrace,agentDiagnostics,diagnosticId,evidence:safeConversationEvidence([...evidence,...(turn.evidence??[])])};
+         return {...turn,answer,answerOrigin:'gemini',outdated:false,status:undefined,statusDetail:undefined,uiComponents,calculations,agentTrace,agentDiagnostics,diagnosticId,evidence:safeConversationEvidence([...evidence,...(turn.evidence??[])])};
        }));
        setInspection(data.inspectImage??null);
      }
   }catch{if(stamp===epoch.current&&!requestState.intentional){if(!vision&&responseTurnAt){const failureDetail=geminiFailureMessage(requestState.failureCode,requestController.signal.aborted);const previousTurn=messages.find(turn=>turn.at===responseTurnAt);if(context?.forceReconstruction&&previousTurn?.answerOrigin==='gemini'&&previousTurn.answer.trim()){setMessages(current=>current.map(turn=>turn.at===responseTurnAt?previousTurn:turn));setRemoteNotice(`The recheck could not finish, so the earlier answer and package reading remain active. ${failureDetail}`);}else{const localFallback=targetAudit&&targetPackage?buildLocalPackageFallbackReply(targetAudit,visibleQuestion,targetPackage):null;setMessages(current=>current.map(turn=>turn.at===responseTurnAt?{...turn,answer:localFallback?.answer??'',answerOrigin:'local',status:'fallback',statusDetail:failureDetail,uiComponents:undefined,...(localFallback?.evidence?{evidence:localFallback.evidence}:{evidence:undefined})}:turn));setRemoteNotice('');}}else setRemoteNotice(requestController.signal.aborted?'Gemini took too long to respond. Retry when it is available.':'Gemini could not inspect that image. Your current package readings remain available.');}}finally{window.clearTimeout(requestTimeout);if(geminiRequest.current===requestState){geminiRequest.current=null;if(stamp===epoch.current)setRemoteBusy('');}}
  }
- function rerunGemini(targetAt?:string){const activeTurns=messages.filter(turn=>!turn.outdated);const previousTurn=(targetAt?activeTurns.find(turn=>turn.at===targetAt):undefined)??activeTurns.at(-1);const question=previousTurn?.question??activeQuestion;const selected=pkg?resolveQuestionPortion(question,defaultPortion(pkg),pkg.netWeight):{value:portion,unit};const cleanAudit=pkg?buildAudit(pkg,selected.value,selected.unit,includeProfileWithGemini&&hasProfile(profile)?profile:defaultProfile,question,[],images.map(image=>image.id)):audit;const history=previousTurn?activeTurns.slice(0,activeTurns.findIndex(turn=>turn.at===previousTurn.at)):activeTurns;setRemoteCandidates(current=>current.filter(candidate=>candidate.kind==='product-identity'));void gemini(false,{...(pkg?{packageData:pkg}:{}),question,auditData:cleanAudit,imageAssets:images,messages:history,...(previousTurn?{replaceTurnAt:previousTurn.at}:{}),portion:selected.value,unit:selected.unit,interpretedCandidates:[],includeImages:true,forceReconstruction:true});}
+ function rerunGemini(targetAt?:string){const activeTurns=messages.filter(turn=>turn.status!=='pending');const previousTurn=(targetAt?activeTurns.find(turn=>turn.at===targetAt):undefined)??activeTurns.at(-1);const question=previousTurn?.question??activeQuestion;const selected=pkg?resolveQuestionPortion(question,defaultPortion(pkg),pkg.netWeight):{value:portion,unit};const cleanAudit=pkg?buildAudit(pkg,selected.value,selected.unit,includeProfileWithGemini&&hasProfile(profile)?profile:defaultProfile,question,[],images.map(image=>image.id)):audit;const history=previousTurn?activeTurns.slice(0,activeTurns.findIndex(turn=>turn.at===previousTurn.at)):activeTurns;setRemoteCandidates(current=>current.filter(candidate=>candidate.kind==='product-identity'));void gemini(false,{...(pkg?{packageData:pkg}:{}),question,auditData:cleanAudit,imageAssets:images,messages:history,...(previousTurn?{replaceTurnAt:previousTurn.at}:{}),portion:selected.value,unit:selected.unit,interpretedCandidates:[],includeImages:true,forceReconstruction:true});}
   function applyTableCorrection(value:NutrientCorrection):boolean{
    if(!pkg)return false;
    let validated:PackageData;
    try{validated=applyNutrientCorrection(pkg,value);}catch{setNotice('That correction is outside supported ranges. Check the units.');return false;}
    if(geminiRequest.current){geminiRequest.current.intentional=true;geminiRequest.current.controller.abort();geminiRequest.current=null;}
-    epoch.current++;setRemoteBusy('');setRemoteNotice('');setRemoteCandidates([]);setMessages(current=>current.map(({uiComponents:_uiComponents,...turn})=>({...turn,outdated:true})));setInspection(null);setPkg(validated);setPanel(null);setNotice('Correction saved as your reading. Calculations and future questions use it; earlier answers are marked as based on the previous label. Original OCR evidence remains linked.');return true;
+    epoch.current++;setRemoteBusy('');setRemoteNotice('');setRemoteCandidates([]);setMessages(current=>supersedePackageAnswers(current));setInspection(null);setPkg(validated);setPanel(null);setNotice('Correction saved as your reading. Calculations and future questions use it; earlier answers are marked as based on the previous label. Original OCR evidence remains linked.');return true;
   }
   function activateReconstructionRevision(revision:number):boolean{
    if(!pkg)return false;
@@ -696,7 +698,7 @@ export default function NutriScan(){
    const validated=activateStoredReconstructionRevision(pkg,revision);
    if(!validated){setNotice('That alternative could not be linked to the saved package evidence.');return false;}
    if(geminiRequest.current){geminiRequest.current.intentional=true;geminiRequest.current.controller.abort();geminiRequest.current=null;}
-   epoch.current++;setRemoteBusy('');setRemoteNotice('');setRemoteCandidates([]);setMessages(current=>current.map(({uiComponents:_uiComponents,...turn})=>({...turn,outdated:true})));setInspection(null);setPkg(validated);
+   epoch.current++;setRemoteBusy('');setRemoteNotice('');setRemoteCandidates([]);setMessages(current=>supersedePackageAnswers(current));setInspection(null);setPkg(validated);
    const serving=validated.reconstruction?.serving;if(!portionTouched.current&&serving?.status!=='conflict'&&serving?.quantity&&serving.unit){const selectedPortion=resolveQuestionPortion(activeQuestion,{value:serving.quantity,unit:serving.unit},validated.netWeight);setPortion(selectedPortion.value);setUnit(selectedPortion.unit);}
    const mergedAdditionalDetails=!!mergePreview&&!!selectedAlternative&&!!validated.reconstruction&&(
     validated.reconstruction.nutritionRows.length>selectedAlternative.nutritionRows.length||

@@ -8,6 +8,7 @@ import {
 } from '../../lib/contracts';
 import { InferenceModuleError } from './errors';
 import { assistOutput } from './schema';
+import { calculationRespectsCorrections, reconstructionRowIsSuperseded } from '../../lib/correction';
 
 export type AssistValidationContext = {
   package: PackageData;
@@ -711,9 +712,11 @@ export function validateNaturalAnswerText(
 ): { answer: string; acceptedSentenceCount: number; withheldUnsupportedQuantitySentenceCount: number } {
   const normalized = answer.replace(/\r\n?/g, '\n').trim().slice(0, 7000);
   const pkg = context.package;
+  const supersededObservationIds=new Set(pkg.observations.flatMap(observation=>observation.supersedesObservationIds??[]));
+  const currentCalculations=(context.calculations??[]).filter(calculation=>calculationRespectsCorrections(pkg,calculation));
   const reconstructedBasisEvidence = pkg.reconstruction?.current
     ? pkg.reconstruction.nutritionRows.flatMap(row => {
-      if (row.value === null || !row.unit || !row.basisAmount || !row.basisUnit
+      if (reconstructionRowIsSuperseded(pkg,row) || row.value === null || !row.unit || !row.basisAmount || !row.basisUnit
         || !['clear', 'provisional'].includes(row.status)
         || (!row.evidence.observationIds.length && !row.evidence.imageRegions.length)) return [];
       const basis = `per ${row.basisAmount} ${row.basisUnit}`;
@@ -725,7 +728,7 @@ export function validateNaturalAnswerText(
     })
     : [];
   const evidenceTexts = [
-    ...pkg.observations.filter(item => item.origin !== 'ocr').map(item => item.text),
+    ...pkg.observations.filter(item => item.origin !== 'ocr' && !supersededObservationIds.has(item.id)).map(item => item.text),
     ...pkg.nutrients.filter(item => item.status !== 'conflict' && item.basis).map(item =>
       `${item.key} ${item.value} ${item.unit} per ${item.basis!.amount} ${item.basis!.unit}`),
     ...(pkg.reconstruction?.current&&pkg.reconstruction.serving
@@ -739,7 +742,7 @@ export function validateNaturalAnswerText(
         ? [`${pkg.reconstruction.serving.printedText ?? ''} ${pkg.reconstruction.serving.quantity ?? ''} ${pkg.reconstruction.serving.unit ?? ''} ${pkg.reconstruction.serving.pieceCount ?? ''} ${pkg.reconstruction.serving.pieceDescription ?? ''}`]
         : []),
       ...pkg.reconstruction.nutritionRows.filter(row =>
-        row.value !== null && row.unit && ['clear', 'provisional'].includes(row.status)
+        !reconstructionRowIsSuperseded(pkg,row) && row.value !== null && row.unit && ['clear', 'provisional'].includes(row.status)
         && (row.evidence.observationIds.length > 0 || row.evidence.imageRegions.length > 0),
       ).map(row => `${row.nutrient} ${row.printedLabel} ${row.printedValue ?? ''} ${row.value} ${row.unit} ${row.columnLabel ?? ''} ${row.basisText ?? ''} ${row.basisAmount ?? ''} ${row.basisUnit ?? ''}`),
       ...pkg.reconstruction.ingredients.filter(item => ['clear', 'provisional'].includes(item.status)
@@ -756,9 +759,9 @@ export function validateNaturalAnswerText(
       // Preserve it only when it comes from a retrieved source's dated metadata.
       ...(source.publishedAt?.match(/^\d{4}(?:-|$)/) ? [source.publishedAt.slice(0, 4)] : []),
     ]),
-    ...(context.calculations ?? []).map(calculation => calculationEvidenceText(calculation)),
+    ...currentCalculations.map(calculation => calculationEvidenceText(calculation)),
   ].filter(Boolean);
-  const calculatedResults = (context.calculations ?? []).map(item => ({ value: item.result, unit: item.unit }));
+  const calculatedResults = currentCalculations.map(item => ({ value: item.result, unit: item.unit }));
   const acceptedLines: string[] = [];
   let acceptedSentenceCount = 0;
   let withheldUnsupportedQuantitySentenceCount = 0;

@@ -104,9 +104,9 @@ export function ThreadGenerativeUI(props: Props) {
           const scaled = scaleCalculationToPortion(row, calculatorPortion, calculatorUnit);
           const sourceRow=reconstructedRows.find(candidate=>row.interpretationIds?.includes(candidate.rowId));
           const nutrient = sourceRow?readableReconstructedNutrient(sourceRow.printedLabel||sourceRow.nutrient):nutrientLabels[row.nutrient];
-          return <li key={row.id}><span>{nutrient}<small>{scaled === null ? `Recorded for ${formatNumber(row.portion)} ${row.portionUnit}; mass and volume are not converted.` : `For ${formatNumber(calculatorPortion)} ${calculatorUnit}`}</small>{row.interpretationIds?.length ? <small>Based on an unverified interpretation</small> : null}</span><strong>{formatNumber(scaled ?? row.result)} {row.unit}</strong></li>;
+          return <li key={row.id}><span>{nutrient}<small>{scaled === null ? `Recorded for ${formatNumber(row.portion)} ${row.portionUnit}; mass and volume are not converted.` : `For ${formatNumber(calculatorPortion)} ${calculatorUnit}`}</small>{row.interpretationIds?.length || row.countedPortion ? <small>Based on an unverified interpretation</small> : null}</span><strong>{formatNumber(scaled ?? row.result)} {row.unit}</strong></li>;
         })}</ul>
-        <p className="thread-ui-caveat">{rows.some(row => row.interpretationIds?.length) ? 'Some amounts use OCR-linked Gemini interpretations that remain unverified against the original pixels.' : 'Calculated from the recorded label reading and printed basis.'} This is not a portion recommendation.</p>
+        <p className="thread-ui-caveat">{rows.some(row => row.interpretationIds?.length || row.countedPortion) ? 'Some amounts use package or serving interpretations that remain unverified.' : 'Calculated from the recorded label reading and printed basis.'} This is not a portion recommendation.</p>
       </section>;
     },
     'ingredient-explorer': component => renderEvidenceExplorer(component, observations, candidates, pkg, props, 'ingredients', 'Ingredient and additive readings', 'Package interpretations are provisional; confirm them against the linked photo before relying on a disputed detail.'),

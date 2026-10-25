@@ -696,12 +696,18 @@ function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, 
     });
     return{...result,calculations,output:{...result.output,calculation:calculations[0],portionConversion:{requestedAmount:args.amount,requestedUnit:args.unit,normalizedAmount:amount,normalizedUnit:serving.unit,printedServing:serving.printedText,revision:reconstruction.revision}}};
   }
+  if (args.candidateId && context.package.nutrients.some(row => row.key === args.nutrient && row.status === 'corrected')) {
+    // The row identifier may come from the model's saved reconstruction, but
+    // an explicit user correction is now the application's current input.
+    const { candidateId: _supersededRow, ...correctedArgs } = args;
+    const result = calculateNutrition(correctedArgs, context);
+    return { ...result, output: { ...result.output, ...(result.status === 'ok' ? { note: 'Calculated from the current user correction, which supersedes the earlier model reading. This does not independently verify the correction.' } : {}) } };
+  }
   if (args.candidateId) {
     const candidate = context.interpretedCandidates?.find(item => item.candidateId === args.candidateId && item.kind === 'nutrient' && item.field === args.nutrient);
     if (!candidate) {
       const reconstructed=context.package.reconstruction?.nutritionRows.find(row=>row.rowId===args.candidateId&&reconstructionRowMatches(row.nutrient,args.nutrient));
       if(!reconstructed)return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'The requested interpretation is not among the supplied candidates or saved package rows.' } };
-      if(context.package.nutrients.some(row=>row.key===args.nutrient&&row.status==='corrected'))return { status:'withheld',resultCount:0,output:{status:'withheld',message:'A user-confirmed correction takes precedence over the saved model interpretation.'} };
       const imageIds=[...new Set(reconstructed.evidence.imageRegions.map(item=>item.imageId))];
       if(!['clear','provisional'].includes(reconstructed.status)||reconstructed.value===null||!reconstructed.unit||!reconstructed.basisAmount||!reconstructed.basisUnit||reconstructed.basisUnit!==args.unit||(!reconstructed.evidence.observationIds.length&&!imageIds.length))return {status:'withheld',resultCount:0,output:{status:'withheld',message:'The saved package interpretation does not contain one complete, evidence-linked value and matching mass or volume basis.'}};
       if(!['g','mg','kcal','kJ'].includes(reconstructed.unit))return {status:'withheld',resultCount:0,output:{status:'withheld',message:'The saved package row uses a unit this calculator cannot safely normalize.'}};
@@ -787,12 +793,20 @@ export function calculateSavedServing(packageData:PackageData):Calculation[]{
   if(!reconstruction?.current||!serving||!['clear','provisional'].includes(serving.status)||!serving.quantity||!serving.unit||(!serving.evidence.observationIds.length&&!serving.evidence.imageRegions.length))return [];
   const context:GeminiToolContext={question:'',package:packageData,visualImages:[],searchTerms:new Set(),prepareImage:async image=>image.base64};
   const calculations:Calculation[]=[];
+  const correctedNutrients=new Set(packageData.nutrients.filter(row=>row.status==='corrected').map(row=>row.key));
+  for(const nutrient of correctedNutrients){
+    const result=calculateNutrition({nutrient,amount:serving.quantity,unit:serving.unit},context);
+    if(result.status==='ok')calculations.push(...(result.calculations??[]).map(calculation=>({
+      ...calculation,label:`${nutrient} per serving (${serving.printedText})`,
+      assumptions:[...calculation.assumptions,'Uses a user correction and the saved serving interpretation; neither is independently verified.'],
+    })));
+  }
   for(const row of reconstruction.nutritionRows){
     // A qualifier such as "<" or "trace" changes the arithmetic semantics;
     // keep it available for interpretation instead of treating its boundary as an exact value.
     if(row.qualifier||row.value===null||!row.unit||!row.basisAmount||!row.basisUnit||row.basisUnit!==serving.unit||row.basisAmount===serving.quantity)continue;
     const nutrient=nutrientKeys.find(key=>reconstructionRowMatches(row.nutrient,key));
-    if(!nutrient)continue;
+    if(!nutrient||correctedNutrients.has(nutrient))continue;
     const result=calculateNutrition({nutrient,amount:serving.quantity,unit:serving.unit,candidateId:row.rowId},context);
     if(result.status==='ok')calculations.push(...(result.calculations??[]).map(calculation=>{
       // Preserve that this amount is a derived declared-serving calculation.

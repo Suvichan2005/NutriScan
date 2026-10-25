@@ -1,10 +1,33 @@
-import { packageSchema, type Nutrient, type NutrientKey, type PackageData } from './contracts';
+import { packageSchema, type Calculation, type Nutrient, type NutrientKey, type PackageData } from './contracts';
+import { reconstructedNutrientKey } from './portion';
+
+/** Keep the original row as history, but never use it over a current correction. */
+export function reconstructionRowIsSuperseded(pkg: PackageData, row: NonNullable<PackageData['reconstruction']>['nutritionRows'][number]): boolean {
+  const key = reconstructedNutrientKey(row.nutrient) ?? reconstructedNutrientKey(row.printedLabel);
+  return key !== null && pkg.nutrients.some(nutrient => nutrient.key === key && nutrient.status === 'corrected');
+}
+
+/** A current user correction takes precedence over earlier model/OCR inputs. */
+export function calculationRespectsCorrections(pkg: PackageData, calculation: Calculation): boolean {
+  const corrections = pkg.nutrients.filter(row => row.key === calculation.nutrient && row.status === 'corrected');
+  if (!corrections.length) return true;
+  const equal = (left: number, right: number) => Math.abs(left - right) <= Number.EPSILON * Math.max(1, Math.abs(left), Math.abs(right)) * 16;
+  return corrections.some(row => row.basis && row.unit === calculation.inputUnit && row.unit === calculation.unit
+    && row.basis.unit === calculation.portionUnit && equal(row.value, calculation.input)
+    && equal(row.basis.amount, calculation.basisAmount)
+    && row.observationIds.some(id => calculation.observationIds.includes(id)));
+}
 
 /** Returns package evidence that a user correction explicitly replaces. */
 export function correctionEvidenceIds(pkg: PackageData, key: NutrientKey): string[] {
   const referencedIds = new Set<string>();
   for (const nutrient of pkg.nutrients) {
     if (nutrient.key === key) nutrient.observationIds.forEach(id => referencedIds.add(id));
+  }
+  for (const row of pkg.reconstruction?.nutritionRows ?? []) {
+    if ((reconstructedNutrientKey(row.nutrient) ?? reconstructedNutrientKey(row.printedLabel)) === key) {
+      row.evidence.observationIds.forEach(id => referencedIds.add(id));
+    }
   }
   for (const diagnostic of pkg.parserDiagnostics ?? []) {
     if (diagnostic.field !== key) continue;

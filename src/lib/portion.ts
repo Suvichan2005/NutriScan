@@ -94,7 +94,7 @@ const reconstructedNutrientLabels: Record<NutrientKey, string[]> = {
   salt: ['salt'],
 };
 
-function reconstructedNutrientKey(value: string): NutrientKey | null {
+export function reconstructedNutrientKey(value: string): NutrientKey | null {
   const normalized = value.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
   if (/^(?:soluble|insoluble) (?:dietary )?(?:fiber|fibre)$/.test(normalized)) return 'fiber';
   return (Object.keys(reconstructedNutrientLabels) as NutrientKey[]).find(key => reconstructedNutrientLabels[key].some(label =>

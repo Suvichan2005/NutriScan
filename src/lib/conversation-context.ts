@@ -8,7 +8,9 @@ export function conversationContextForAssist(
   if (!include || turns.length === 0) return undefined;
   return turns.slice(-4).map((turn) => ({
     question: turn.question.trim().slice(0, 1000),
-    answer: turn.answer.slice(0, 2000),
+    // A package revision invalidates the assistant's earlier conclusions,
+    // not the user's question or the context they explicitly supplied.
+    answer: turn.outdated ? '' : turn.answer.slice(0, 2000),
   }));
 }
 

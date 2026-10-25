@@ -2,8 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { evidenceSources } from '../../modules/knowledge';
 import { calculationSchema, defaultProfile, sourceSchema, type PackageData, type Profile, type TentativeStructuredCandidate } from '../contracts';
 import { validateNaturalAnswerText } from '../../modules/inference';
-import { assistInput } from './gemini';
+import { assistInput, assistPromptPayload } from './gemini';
 import { calculateSavedServing, executeGeminiTool, type GeminiToolContext } from './gemini-tools';
+import { applyNutrientCorrection } from '../correction';
 
 const mocks = vi.hoisted(() => ({ semanticRetrieve: vi.fn(), searchOpenFoodTox: vi.fn(), research: vi.fn() }));
 vi.mock('../semantic', () => ({ semanticRetrieve: mocks.semanticRetrieve, searchOpenFoodTox: mocks.searchOpenFoodTox }));
@@ -78,6 +79,22 @@ describe('Gemini tool retrieval boundaries', () => {
     }
     const result=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:10000,unit:'servings',candidateId:'count-carb'},countedContext());
     expect(result.status).toBe('withheld');
+  });
+  it('uses a user correction when a tool still references the saved model row and rejects stale inbound calculations',async()=>{
+    const toolContext=countedContext();
+    const stale=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:5,unit:'pieces',candidateId:'count-carb'},toolContext);
+    toolContext.package=applyNutrientCorrection(toolContext.package,{key:'carbohydrate',value:25,unit:'g',basisAmount:100,basisUnit:'g'});
+    const originalReconstruction=structuredClone(toolContext.package.reconstruction);
+    const fresh=await executeGeminiTool('calculate_nutrition',{nutrient:'carbohydrate',amount:5,unit:'pieces',candidateId:'count-carb'},toolContext);
+    expect(fresh.calculations?.[0]).toMatchObject({input:25,portion:75,result:18.75,countedPortion:{amount:5,unit:'pieces'}});
+    expect(fresh.calculations?.[0].interpretationIds).toBeUndefined();
+    expect(assistInput.safeParse({consent:true,question:toolContext.question,package:toolContext.package,calculations:stale.calculations}).success).toBe(false);
+    expect(assistInput.safeParse({consent:true,question:toolContext.question,package:toolContext.package,calculations:fresh.calculations}).success).toBe(true);
+    expect(calculateSavedServing(toolContext.package)).toEqual([expect.objectContaining({input:25,portion:45,result:11.25})]);
+    const payload=assistPromptPayload(assistInput.parse({consent:true,question:toolContext.question,package:toolContext.package,calculations:fresh.calculations}));
+    expect(payload.package.reconstruction?.nutritionRows).toEqual([]);
+    expect(payload.package.nutrients).toEqual([expect.objectContaining({key:'carbohydrate',value:25,status:'corrected'})]);
+    expect(toolContext.package.reconstruction).toEqual(originalReconstruction);
   });
   it('derives revisioned provisional calculations only from complete evidence-linked saved rows and the declared serving', () => {
     const packageData=context('What about the serving?').package;

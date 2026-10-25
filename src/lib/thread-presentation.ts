@@ -1,10 +1,10 @@
 import type { AssistantUiComponent, Calculation, PackageData, SavedConversationTurn, TentativeStructuredCandidate } from './contracts';
 import { calculationsFromReconstruction, normalizeReconstructedServing } from './portion';
+import { calculationRespectsCorrections } from './correction';
 
 export type ThreadMessage = SavedConversationTurn & {
   status?: 'pending' | 'fallback';
   statusDetail?: string;
-  outdated?: boolean;
   agentTrace?: ThreadAgentTrace[];
   agentDiagnostics?: ThreadAgentDiagnostics;
   diagnosticId?: string;
@@ -83,8 +83,15 @@ export function parseThreadAgentDiagnostics(value: unknown): ThreadAgentDiagnost
 export function savedConversationTurns(messages: ThreadMessage[]): SavedConversationTurn[] {
   return messages
     .filter(message => message.status !== 'pending' && message.answer.trim().length > 0)
-    .map(({ status: _status, statusDetail: _statusDetail, outdated: _outdated, agentTrace: _agentTrace, agentDiagnostics: _agentDiagnostics, diagnosticId: _diagnosticId, ...message }) => message)
+    .map(({ status: _status, statusDetail: _statusDetail, agentTrace: _agentTrace, agentDiagnostics: _agentDiagnostics, diagnosticId: _diagnosticId, ...message }) => message)
     .slice(-30);
+}
+
+/** Keep historical answers visible without presenting their old package basis as current. */
+export function supersedePackageAnswers(messages: ThreadMessage[], currentTurnAt?: string): ThreadMessage[] {
+  return messages.map(message => message.at === currentTurnAt
+    ? { ...message, outdated: false }
+    : { ...message, outdated: true, uiComponents: undefined });
 }
 
 /** Scale a validated package calculation only within its printed mass/volume basis. */
@@ -99,7 +106,7 @@ export function hasVisibleProvisionalPackageAmounts(components: AssistantUiCompo
   const visibleCalculationIds = new Set(components
     .filter(component => component.type === 'portion-calculator')
     .flatMap(component => component.calculationIds));
-  return calculations.some(calculation => visibleCalculationIds.has(calculation.id) && Boolean(calculation.interpretationIds?.length));
+  return calculations.some(calculation => visibleCalculationIds.has(calculation.id) && Boolean(calculation.interpretationIds?.length || calculation.countedPortion));
 }
 
 /** Bind only explicitly returned operations to their trusted UI components. */
@@ -115,7 +122,7 @@ export function prepareAssistantTurnPresentation(
       .filter(calculation => !correctedNutrients.has(calculation.nutrient))
     : [];
   const byBasis = new Map<string, Calculation>();
-  for (const calculation of [...providerCalculations.filter(calculation => !correctedNutrients.has(calculation.nutrient)), ...savedServingCalculations]) {
+  for (const calculation of [...providerCalculations.filter(calculation => calculationRespectsCorrections(pkg, calculation)), ...savedServingCalculations]) {
     const key = [calculation.nutrient, calculation.portion, calculation.portionUnit, [...(calculation.interpretationIds ?? [])].sort().join(',')].join('|');
     if (!byBasis.has(key)) byBasis.set(key, calculation);
   }
