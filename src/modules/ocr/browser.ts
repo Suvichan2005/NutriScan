@@ -36,31 +36,41 @@ export async function retryShortAutoRecognition<T extends TextRecognition>(
 export const BROWSER_OCR_ENGINE_VERSION = '7.0.0';
 
 export async function prepareImage(asset: ImageAsset, rotation = 0, contrast = false, crop?: Crop, invert = false): Promise<Blob> {
-  const bitmap = await createImageBitmap(asset.blob);
-  const box = crop
-    ? { x: bitmap.width * crop.x / 100, y: bitmap.height * crop.y / 100, w: bitmap.width * crop.width / 100, h: bitmap.height * crop.height / 100 }
-    : { x: 0, y: 0, w: bitmap.width, h: bitmap.height };
-  const scale = Math.min(3, 3000 / Math.max(box.w, box.h));
-  const width = Math.round(box.w * scale);
-  const height = Math.round(box.h * scale);
-  const canvas = document.createElement('canvas');
-  const swap = rotation % 180 !== 0;
-  canvas.width = swap ? height : width;
-  canvas.height = swap ? width : height;
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('Your browser could not prepare this image. Try another photo.');
-  context.fillStyle = '#ffffff';
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.translate(canvas.width / 2, canvas.height / 2);
-  context.rotate(rotation * Math.PI / 180);
-  context.filter = [contrast ? 'grayscale(1) contrast(1.5)' : '', invert ? 'invert(1)' : ''].filter(Boolean).join(' ') || 'none';
-  context.drawImage(bitmap, box.x, box.y, box.w, box.h, -width / 2, -height / 2, width, height);
-  bitmap.close();
-  return new Promise((resolve, reject) => canvas.toBlob(
-    blob => blob ? resolve(blob) : reject(new Error('Image preparation failed.')),
-    'image/jpeg',
-    0.98
-  ));
+  const started = performance.now();
+  let bitmap: ImageBitmap | undefined;
+  try {
+    bitmap = await createImageBitmap(asset.blob);
+    const box = crop
+      ? { x: bitmap.width * crop.x / 100, y: bitmap.height * crop.y / 100, w: bitmap.width * crop.width / 100, h: bitmap.height * crop.height / 100 }
+      : { x: 0, y: 0, w: bitmap.width, h: bitmap.height };
+    const scale = Math.min(3, 3000 / Math.max(box.w, box.h));
+    const width = Math.round(box.w * scale);
+    const height = Math.round(box.h * scale);
+    const canvas = document.createElement('canvas');
+    const swap = rotation % 180 !== 0;
+    canvas.width = swap ? height : width;
+    canvas.height = swap ? width : height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Your browser could not prepare this image. Try another photo.');
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.translate(canvas.width / 2, canvas.height / 2);
+    context.rotate(rotation * Math.PI / 180);
+    context.filter = [contrast ? 'grayscale(1) contrast(1.5)' : '', invert ? 'invert(1)' : ''].filter(Boolean).join(' ') || 'none';
+    context.drawImage(bitmap, box.x, box.y, box.w, box.h, -width / 2, -height / 2, width, height);
+    return await new Promise((resolve, reject) => canvas.toBlob(
+      blob => blob ? resolve(blob) : reject(new Error('Image preparation failed.')),
+      'image/jpeg',
+      0.98
+    ));
+  } finally {
+    bitmap?.close();
+    try {
+      const name = 'nutriscan:image-preparation';
+      if (performance.getEntriesByName(name, 'measure').length >= 100) performance.clearMeasures(name);
+      performance.measure(name, { start: started, end: performance.now() });
+    } catch { /* Local timing must never change OCR behavior. */ }
+  }
 }
 
 /**

@@ -1,6 +1,7 @@
 import { get, set, del } from 'idb-keyval';
 import { hasUserContext, profileSchema, savedScanSchema, type ImageAsset, type Observation, type OcrCapture, type Profile, type SavedScanRecord } from './contracts';
 import { detectRetailBarcodes } from './barcode';
+import { measureScanStage } from './scan-performance';
 import { readOcrImages } from '../modules/ocr';
 import type { BrowserOcrOptions } from '../modules/ocr';
 
@@ -91,7 +92,7 @@ export async function readImages(
   const recognized = await readOcrImages(assets, onProgress, signal, {
     ...options,
     beforeImage: async asset => {
-      const values = await detectRetailBarcodes(asset.blob);
+      const values = await measureScanStage('barcode', () => detectRetailBarcodes(asset.blob));
       for (const code of values) barcodes.push({ code, imageId: asset.id, side: asset.side });
       await options.beforeImage?.(asset);
     }

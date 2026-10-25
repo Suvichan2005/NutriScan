@@ -17,6 +17,7 @@ import { readPaddleOcrImages, selectPaddleFallbackAssets, shouldRunPaddleFallbac
 import { conversationContextForAssist } from '@/lib/conversation-context';
 import { buildLocalAuditConversationReply, buildLocalEvidenceFollowUp, buildLocalEvidenceUnavailableFollowUp, buildLocalPackageFallbackReply, isGuidanceEvidenceInScope, parseLocalEvidenceResponse, safeConversationEvidence, shouldSearchLocalEvidence } from '@/lib/followup-evidence';
 import { requestLocalEvidence } from '@/lib/local-evidence-client';
+import { measureScanStage, recordScanDuration } from '@/lib/scan-performance';
 import { presentConversationAnswer } from '@/lib/conversation-answer';
 import { selectCitedEvidence } from '@/lib/answer-evidence';
 import { geminiFailureMessage, hasVisibleProvisionalPackageAmounts, mergeRecheckedPackageCandidates, packageDisplayIdentity, parseThreadAgentDiagnostics, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, supersedePackageAnswers, type ThreadMessage } from '@/lib/thread-presentation';
@@ -424,7 +425,7 @@ export default function NutriScan(){
   const selected=pending.length?pending:images;
   try{
    const options={rotation:0,contrast,invert,crop:cropEnabled?crop:undefined,cropTarget};
-   const result=await readImages(selected,(label,value)=>setProgress({label,value}),abort.current.signal,options);
+   const result=await measureScanStage('primary-ocr',()=>readImages(selected,(label,value)=>setProgress({label,value}),abort.current!.signal,options));
    if(stamp!==epoch.current)return;
    if(result.text.trim().length<8&&!result.barcodes.length&&productDescription.trim().length<3)throw new Error('There is not enough readable text yet. Try a closer photograph, add a clear label close-up, or enter a product barcode in the details field.');
    let parsed=parseLabel(result.text,{origin:'ocr',confidence:result.confidence,observations:result.observations,ocrCaptures:result.captures,side:'extra',userDescription:productDescription.trim()});
@@ -434,7 +435,7 @@ export default function NutriScan(){
     const candidates=selectPaddleFallbackAssets(selected,result.observations,parsed.name==='Unidentified package');
     if(candidates.length){
      try{
-      const recovered=await readPaddleOcrImages(candidates,(label,value)=>setProgress({label,value}),abort.current.signal,options,result.observations);
+      const recovered=await measureScanStage('secondary-ocr',()=>readPaddleOcrImages(candidates,(label,value)=>setProgress({label,value}),abort.current!.signal,options,result.observations));
       if(stamp!==epoch.current)return;
       if(recovered.observations.length){
        const recoveredPackage=parseLabel(recovered.text,{origin:'ocr',confidence:recovered.confidence,observations:recovered.observations,ocrCaptures:recovered.captures,side:'extra',userDescription:productDescription.trim()});
@@ -578,7 +579,7 @@ export default function NutriScan(){
     const sharedCountry=includeProfileWithGemini&&hasProfile(profile)?profile.country:'';
     // Run the local hybrid index for every Gemini turn. Retrieval must not
     // depend on the deterministic engine recognizing a condition keyword.
-    const localSearchPromise=requestLocalEvidence(retrievalQuestion,sharedCountry).catch(()=>[]);
+    const localSearchPromise=measureScanStage('local-retrieval',()=>requestLocalEvidence(retrievalQuestion,sharedCountry)).catch(()=>[]);
     const preparedAssets:Array<{asset:ImageAsset}>=[];let visualImageBytes=0;
     const shouldAttachPackageImages=!targetPackage.reconstruction?.current||context?.includeImages===true;
     for(const asset of selectGeminiImageAssets(shouldAttachPackageImages?targetImages:[],targetPackage)){const rotation=(asset.rotation??0) as 0|90|180|270;const prepared=await prepareImage(asset,rotation,false,undefined,false);const compact=await compactGeminiImage(prepared);const base64=await imageBase64(compact);visualImages.push({imageId:asset.id,mimeType:'image/jpeg' as const,base64,side:asset.side,sourceImage:{width:asset.width,height:asset.height},preprocessing:{rotation,contrast:false,invert:false,crop:null},regionRole:'full-image' as const});visualImageBytes+=compact.size;preparedAssets.push({asset});}
@@ -612,7 +613,7 @@ export default function NutriScan(){
     if(selectedProductSource&&!targetPackage.identityConflict&&evidence.length<15&&!evidence.some(source=>source.id===selectedProductSource.id))evidence.push(selectedProductSource);
     body={consent:true,question:questionText,workspacePortion:{amount,unit:amountUnit},package:packageForAssist(packageContext??targetPackage),...(requestCandidates.length?{interpretedCandidates:requestCandidates}:{}),...(includeProfileWithGemini&&hasProfile(profile)?{profile}:{}),evidence,images:targetImages.slice(0,10).map(x=>({handle:x.id,side:x.side,width:x.width,height:x.height,role:x.role,description:x.description})),...(visualImages.length?{visualImages}:{}),...(conversationContext?{conversationContext}:{})};
    }
-   const response=await fetch('/api/'+(vision?'vision':'assist'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:requestController.signal});const data=await response.json();if(stamp!==epoch.current)return;
+   const {response,data}=await measureScanStage('cloud-roundtrip',async()=>{const response=await fetch('/api/'+(vision?'vision':'assist'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:requestController.signal});const serverTiming=response.headers.get('Server-Timing')?.match(/(?:^|,)\s*nutriscan-assist;dur=([\d.]+)/i);if(serverTiming)recordScanDuration('assist-server',Number(serverTiming[1]));return {response,data:await response.json()};});if(stamp!==epoch.current)return;
    if(!response.ok){requestState.failureCode=typeof data.code==='string'?data.code:typeof data.error==='string'?data.error:'';throw new Error(data.message??'Gemini is not available.');}
    if(vision&&data.observations?.length){setPkg(appendVisionEvidence(targetPackage,data.visionCapture,data.observations));setInspection(null);setNotice('Image observations were added to the evidence inspector. They remain unverified and do not change package facts or calculations.');}
      else {
