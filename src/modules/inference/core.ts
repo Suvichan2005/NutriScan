@@ -566,7 +566,7 @@ function containsOrderedEvidenceTokens(quote: string, words: string[]): boolean 
 
 type NumericDimension = 'mass' | 'energy' | 'volume' | 'percent' | 'unitless';
 type NumericMention = { value: number; dimension: NumericDimension; rawValue: string; factor: number; decimalPlaces:number; localeAmbiguous: boolean };
-const numericMentionPattern = /(?<![\p{L}\p{N}])(-?(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?|\.\d+))(?!\d)\s*(kcal|kilocalories?|kj|kilojoules?|mg|milligrams?|µg|μg|mcg|ug|micrograms?|kg|g|grams?|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|%|percent)?(?![\p{L}])/giu;
+const numericMentionPattern = /(?<![\p{L}\p{N}_])(-?(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?|\.\d+))(?!\d)\s*(kcal|kilocalories?|kj|kilojoules?|mg|milligrams?|µg|μg|mcg|ug|micrograms?|kg|g|grams?|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|%|percent)?(?![\p{L}\p{N}_])/giu;
 
 function parseNumericLiteral(value: string): { value: number; localeAmbiguous: boolean } {
   if (value.includes(',') && value.includes('.')) {

@@ -26,6 +26,7 @@ import { readFoodCompositionSource, fdcRecordInput } from './food-composition-re
 import { readFoodOnConcept, foodOnConceptInput, readOpenFoodToxRecords, openFoodToxDetailInput, searchFoodOn, type FoodOnHit, type FoodOnSearch, type OpenFoodToxHit, type OpenFoodToxSearch } from '../../modules/knowledge/server';
 import { isValidGtin, findOcrGtinCandidate } from '../barcode';
 import { productInput, lookupProducts } from './products';
+import {readProductRecord,productRecordInput} from './product-records';
 import { researchInput, research } from './research';
 import { fixedFetch } from './http';
 import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutrition-guidance';
@@ -68,6 +69,7 @@ const toolArgs = {
   get_assessment_records: openFoodToxDetailInput,
   get_ingredient_concept:foodOnConceptInput,
   get_food_composition_record:fdcRecordInput,
+  get_product_record:productRecordInput,
   calculate_nutrition: z.object({ nutrient: z.preprocess(value=>value===null?undefined:value,z.enum(nutrientKeys).optional()), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml', 'pieces', 'servings', 'package']), candidateId:z.preprocess(value=>value===null?undefined:value,z.string().min(1).max(120).optional()) }).strict().refine(value=>!!value.nutrient||!!value.candidateId,{message:'Select a standard nutrient or an exact saved nutrition row.'}),
   lookup_product: z.object({ query: z.string().trim().min(2).max(80).optional(), barcode: z.string().regex(/^\d{8,14}$/).optional() }).strict().refine(value => Number(Boolean(value.query)) + Number(Boolean(value.barcode)) === 1),
   search_research: z.object({ query: querySchema, topic: z.enum(['science', 'regulation', 'claims']) }).strict(),
@@ -85,6 +87,7 @@ const cropParameters = {
 };
 
 export const geminiToolDeclarations: FunctionDeclaration[] = [
+ {name:'get_product_record',description:'Inspect the original Open Food Facts record for an exact GTIN already in the question/package or returned by lookup_product. Start with section identity, ingredients, nutrition, claims or quality to list present/missing fields; request one field and optional exact entryKey for a nutrient/source object. Bounded original fields preserve ingredient tree/percentages, allergen versus precautionary traces, serving basis, as-sold versus prepared nutrients, qualifiers and source quality. This is external community data, never confirmed package facts or local stock.',parameters:{type:Type.OBJECT,properties:{barcode:{type:Type.STRING},section:{type:Type.STRING,enum:['identity','ingredients','nutrition','claims','quality']},field:{type:Type.STRING},entryKey:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['barcode']}},
   {name:'get_food_composition_record',description:'Inspect an exact local USDA food returned by search_food_composition. Start with release and fdcId to list available source fields, then request a field such as foodNutrients, foodPortions, inputFoods or nutrientConversionFactors with offset/limit. For a specific nutrient, select field foodNutrients and nutrientId from the search result to retrieve its complete original object. Preserves original measurement, derivation and recipe/sample context. These are generic references, never photographed package truth. Missing source amounts are not zero; do not invent conversions.',parameters:{type:Type.OBJECT,properties:{release:{type:Type.STRING,enum:['fdc-foundation-2026-04','fdc-fndds-2021-2023']},fdcId:{type:Type.INTEGER},nutrientId:{type:Type.INTEGER,description:'Exact FDC nutrient ID (for example 1003 for protein), only with field foodNutrients.'},field:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER,description:'One to ten complete source items.'}},required:['release','fdcId']}},
   {name:'get_ingredient_concept',description:'Inspect one exact FoodOn ingredient concept returned by resolve_ingredient. Read complete English synonyms, direct parents, children or ancestor paths with pagination. These are ontology classifications, not evidence of allergens, nutrient composition, health effects, package presence or legal permission. Do not infer those relationships from taxonomy.',parameters:{type:Type.OBJECT,properties:{id:{type:Type.STRING,description:'Exact FOODON_ plus eight-digit identifier.'},relation:{type:Type.STRING,enum:['parents','children','ancestors']},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER,description:'One to twenty related concepts per page.'}},required:['id']}},
   {name:'get_assessment_records',description:'Read detailed EFSA OpenFoodTox source records after get_substance_assessments returns an exact substanceId. Human-health and animal-health are assessment domains, not study-subject declarations; inspect species/population. Select a section, then an exact recordId for richer fields or source-declared literature/dossier/registry links. Preserves endpoints, dose and units, species/populations, methods, uncertainty and citations when present. Flattened rows can belong to one document. Animal, occupational and environmental endpoints are not human dietary limits; lack of an ADI is not proof of danger. Records do not establish package exposure, Indian authorization or personal safety.',parameters:{type:Type.OBJECT,properties:{substanceId:{type:Type.STRING,description:'Exact substance UUID from the identity/assessment lookup.'},section:{type:Type.STRING,enum:['overview','reference-values','human-health','animal-health','environment','properties','summaries','composition','metabolites']},recordId:{type:Type.STRING,description:'Exact recordId returned by this tool or its source-declared links.'},fields:{type:Type.ARRAY,items:{type:Type.STRING},description:'Up to six exact available field names; requires recordId.'},offset:{type:Type.INTEGER,description:'Zero-based page offset.'},limit:{type:Type.INTEGER,description:'One to five source rows per page.'}},required:['substanceId']}},
@@ -961,7 +964,7 @@ async function lookupProduct(args: z.infer<typeof toolArgs.lookup_product>, cont
       return requestedTerms.length > 0 && matched >= Math.max(1, Math.ceil(requestedTerms.length / 2));
     }).slice(0, 2);
     const evidence = products.map(productEvidence);
-    return { status: evidence.length ? 'ok' : 'empty', resultCount: evidence.length, evidence, output: { status: result.status, message: result.message, candidates: products.map(product => ({ name: product.name, brand: product.brand, barcode: product.barcode, quantity: product.quantity, countries: product.countries.slice(0, 8), match: product.match, nutrients: product.nutrients.slice(0, 12), ingredients: product.ingredients.slice(0, 1000), allergens: product.allergens.slice(0, 12), url: product.url, lastModified: product.lastModified, warnings: product.warnings?.slice(0, 4) })) } };
+    return { status: evidence.length ? 'ok' : 'empty', resultCount: evidence.length, evidence, searchTerms:products.map(product=>product.barcode), output: { status: result.status, message: result.message, candidates: products.map(product => ({ name: product.name, brand: product.brand, barcode: product.barcode, detailAccess:{tool:'get_product_record',barcode:product.barcode}, quantity: product.quantity, countries: product.countries.slice(0, 8), match: product.match, nutrients: product.nutrients.slice(0, 12), ingredients: product.ingredients.slice(0, 1000), allergens: product.allergens.slice(0, 12), url: product.url, lastModified: product.lastModified, warnings: product.warnings?.slice(0, 4) })) } };
   } catch {
     return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', message: 'Open Food Facts did not return a usable candidate. This does not establish product identity.' } };
   }
@@ -1083,6 +1086,18 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
     case 'calculate_nutrition': {
       const parsed = toolArgs.calculate_nutrition.safeParse(args);
       return parsed.success ? calculateNutrition(parsed.data, context) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The nutrition calculation arguments were invalid.' } };
+    }
+    case 'get_product_record': {
+      const parsed=toolArgs.get_product_record.safeParse(args);
+      if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments'}};
+      const code=parsed.data.barcode;
+      const known=code===context.package.barcode||context.searchTerms.has(code)||new RegExp(`(?<!\\d)${code}(?!\\d)`).test(context.question);
+      if(!isValidGtin(code)||!known)return{status:'withheld',resultCount:0,output:{status:'unsupported_barcode',message:'Use a checksum-valid GTIN in this question/package or a returned lookup_product candidate.'}};
+      const record=await readProductRecord(parsed.data);
+      if(record.status==='unavailable')return{status:'unavailable',resultCount:0,output:record};
+      if(record.status!=='ok')return{status:'empty',resultCount:0,output:record};
+      const source=asEvidenceSource({id:`off-record-${code}-${parsed.data.section}`,title:`Open Food Facts: ${typeof record.sourceName==='string'?record.sourceName:code} — ${parsed.data.section}`.slice(0,300),publisher:'Open Food Facts',url:record.sourceUrl,category:'product',jurisdiction:'Community product record; countries and formulation require inspection',publishedAt:null,effectiveAt:null,retrievedAt:record.retrievedAt,summary:JSON.stringify({context:'context' in record?record.context:undefined,field:parsed.data.field,results:'results' in record?record.results:undefined}).slice(0,1600),limitations:record.limitations,license:record.license});
+      return{status:'ok',resultCount:1,output:record,evidence:source?[source]:[],searchTerms:[code]};
     }
     case 'lookup_product': {
       const parsed = toolArgs.lookup_product.safeParse(args);

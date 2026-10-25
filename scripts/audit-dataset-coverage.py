@@ -144,6 +144,12 @@ for identifier,role,url,scope,access,gaps in descriptors:
         entry['license']='USDA FoodData Central CC0; attribution requested. No local release imported for this partition.'
     if identifier=='open-food-facts':
         entry['license']='ODbL database; source-image rights separate. No bulk snapshot is redistributed by this audit.'
+        entry['retrievalInterface']+='; get_product_record exact GTIN/section/field/entry/page'
+        entry['fieldsPreserved']=['Selected original ingredient tree/percentages and text; distinct allergens/precautionary traces/additives', 'As-sold/prepared nutrient keys, declared entry bases, serving quantities/units and missing fields', 'Identity/revision/modification, source quality and tag provenance where returned']
+        entry['fieldsNotExposed']=['Not a universal full-product dump or an acquired complete India partition. Bounded selected sections/items; overlarge items explicitly withheld.']
+        entry['gates'].update(B_preservation='PARTIAL_DECLARED_ON_DEMAND_SECTIONS',C_access='EXACT_SECTION_FIELD_ENTRY_PAGED_ACCESS',D_agent='REAL_NATIVE_DETAIL_TOOL_USE',E_answer_utility='PARTIAL_REAL_ANSWERS_AND_WITHHELD_QUANTITIES')
+        entry['verifiedCapabilities']=['Three actual Indian GTIN records: original ingredient/nutrition contexts read without photos/profile.', 'Live source-backed ingredient/allergen/trace distinction; second missing-serving case correctly abstained but quantity validation left incomplete prose.']
+
         entry['officialUrls'].append('https://github.com/openfoodfacts/openfoodfacts-exports')
         entry['remainingGaps'].append('Official organization also publishes Hugging Face bulk exports. The older JSONL mirror reports 7.68 GB; inspect current Parquet release/filter options before a major transfer. No mass API crawl.')
     sources.append(entry)

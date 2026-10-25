@@ -88,6 +88,12 @@ export async function fixedFetch(url: URL, type: 'json' | 'html' | 'pdf' = 'json
     const formBody = codexInsSearch && searchBody ? new URLSearchParams({ insNumber: (searchBody as { insNumber: string }).insNumber }).toString() : null;
     const response = await fetch(url, { method: searchBody ? 'POST' : 'GET', ...(searchBody ? { body: formBody ?? JSON.stringify(searchBody) } : {}), redirect: 'error', signal: controller.signal, headers: { Accept: accept, ...(searchBody ? { 'Content-Type': formBody ? 'application/x-www-form-urlencoded' : 'application/json' } : {}), 'User-Agent': 'NutriScan-LocalResearch/0.1 (evidence-based food label research)' }, cache: 'no-store' });
     if (!response.ok) {
+      // v3 uses HTTP 404 for a documented missing-product result. A transport
+      // outage or arbitrary HTML 404 must remain unavailable, never a negative.
+      if(response.status===404&&url.hostname==='world.openfoodfacts.org'&&/^\/api\/v3\/product\/\d{8,14}\.json$/.test(url.pathname)){
+        const body=await readBounded(response.body,8000,controller.signal);
+        try{const result=JSON.parse(body);if(result.result?.id==='product_not_found'&&result.status==='failure'&&!result.product&&typeof result.code==='string'&&/^\d{8,14}$/.test(result.code))return result;}catch{/* Nonconforming errors remain upstream failures. */}
+      }
       // openFDA documents a NOT_FOUND 404 for a valid search with zero matches.
       // Accept only that exact bounded error shape from this fixed endpoint.
       if (response.status === 404 && url.hostname === 'api.fda.gov' && url.pathname === '/food/enforcement.json') {
