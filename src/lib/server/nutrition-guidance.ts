@@ -87,6 +87,28 @@ const entries: readonly GuidanceEntry[] = [
     conditions: [],
   },
   {
+    source: guidanceSource({
+      id: 'who-free-sugars-guideline-2015',
+      title: 'Guideline: sugars intake for adults and children',
+      publisher: 'World Health Organization',
+      url: 'https://www.who.int/publications/i/item/9789241549028',
+      category: 'guideline',
+      jurisdiction: 'Global',
+      publishedAt: '2015-03-04',
+      effectiveAt: null,
+      retrievedAt: snapshotRetrievedAt,
+      summary: 'WHO recommends reducing free sugars throughout life; for adults and children it recommends less than 10% of total energy, with a further reduction below 5% suggested for additional benefit. WHO defines free sugars to include sugars added by the manufacturer, cook or consumer, and sugars in honey, syrups, fruit juices and concentrates. The guideline focuses on unhealthy weight gain and dental caries; the below-5% recommendation is conditional.',
+      limitations: 'Population guidance for total free-sugar intake from all sources, not an individual calorie target or pass/fail test for one product. A package added-sugars declaration is related to this intake but is not itself a total-day free-sugar measure or product-specific allowance.',
+      license: 'Source-linked, NutriScan-authored summary only. WHO source text is not bundled.',
+    }),
+    terms: ['free sugar', 'free sugars', 'added sugar', 'added sugars', 'sugar intake', 'sugars intake', 'sugar', 'sugars'],
+    conditions: [],
+    numericCoverage: {
+      queryTerms: ['free sugar', 'added sugar', 'sugar intake', 'sugars intake', 'sugar', 'sugars'],
+      requiredValuePatterns: ['\\b10\\s*%\\b', '\\b5\\s*%\\b'],
+    },
+  },
+  {
     source: curatedGuidanceSource('who-carbohydrate-2023'),
     terms: ['carbohydrate quality', 'refined wheat flour', 'refined flour', 'whole grain', 'whole grains', 'wholegrain', 'dietary fibre', 'dietary fiber', 'pulses'],
     conditions: [],
@@ -243,13 +265,11 @@ export function getNutritionGuidance(input: {
     .map(item => item.entry.source);
 }
 
-export function getNutritionGuidanceCoverageFacts(question: string, sourceIds: readonly string[]): NutritionGuidanceCoverageFact[] {
-  const directGuidanceQuestion = /\b(guideline|guidance|recommend(?:ation|ed|s)?|according to)\b|\bwhat\s+(?:does\s+)?[\p{L}\p{N}-]+(?:\s+[\p{L}\p{N}-]+){0,2}\s+(?:say|says|recommend|recommends)\b/iu.test(question);
-  if (!directGuidanceQuestion) return [];
+export function getNutritionGuidanceCoverageFacts(query: string, sourceIds: readonly string[]): NutritionGuidanceCoverageFact[] {
   const selected = new Set(sourceIds);
   return entries.flatMap(entry => {
     const coverage = entry.numericCoverage;
-    if (!coverage || !selected.has(entry.source.id) || !coverage.queryTerms.some(term => mentions(question, term))) return [];
+    if (!coverage || !selected.has(entry.source.id) || !coverage.queryTerms.some(term => mentions(query, term))) return [];
     return [{
       sourceId: entry.source.id,
       statement: entry.source.summary,

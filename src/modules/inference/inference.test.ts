@@ -179,13 +179,13 @@ describe('provider-independent inference output validation', () => {
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(0);
   });
 
-  it('keeps useful natural prose and gives a concise notice when one unsupported quantity is withheld', () => {
+  it('keeps useful natural prose and gives a concise notice when unsupported quantity detail is withheld', () => {
     const checked = validateNaturalAnswerText(
       'This is a refined-flour-heavy cracker. It contains 99 g carbohydrate per 100 g.',
       { package: fixturePackage, question: 'Is this a sensible snack?' },
     );
     expect(checked.answer).toContain('This is a refined-flour-heavy cracker.');
-    expect(checked.answer).toContain('One quantity did not match the saved package reading');
+    expect(checked.answer).toContain('I left out a numerical detail the available evidence could not verify');
     expect(checked.answer).not.toContain('99 g');
     expect(checked.answer).not.toContain('against the saved package or retrieved evidence');
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
@@ -218,7 +218,7 @@ describe('provider-independent inference output validation', () => {
     expect(checked.answer).toContain('### Portion');
     expect(checked.answer).toContain('~4.7 g fibre.');
     expect(checked.answer).not.toContain('99 g');
-    expect(checked.answer).toContain('One quantity did not match the saved package reading');
+    expect(checked.answer).toContain('I left out a numerical detail the available evidence could not verify');
     expect(checked.acceptedSentenceCount).toBe(3);
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
   });

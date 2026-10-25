@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { evidenceSources } from '../../modules/knowledge';
 import { calculationSchema, defaultProfile, sourceSchema, type PackageData, type Profile, type TentativeStructuredCandidate } from '../contracts';
 import { validateNaturalAnswerText } from '../../modules/inference';
-import { assistInput, assistPromptPayload } from './gemini';
+import { assistInput, assistPromptPayload, toolResultForModel } from './gemini';
 import { calculateSavedServing, executeGeminiTool, type GeminiToolContext } from './gemini-tools';
 import { applyNutrientCorrection } from '../correction';
 
@@ -375,6 +375,30 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.evidence?.some(source => source.jurisdiction === 'United States')).toBe(false);
     expect(result.output).toMatchObject({ status: 'ok', externalRequestMade: false });
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('passes source-linked numeric guidance through the actual tool-result adapter without a wording gate', async () => {
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'free sugars added sugar intake',
+      jurisdiction: 'India',
+    }, context('This drink has added sugars. Is it too sweet?'));
+
+    expect(result.evidence?.map(source => source.id)).toContain('who-free-sugars-guideline-2015');
+    expect(result.output.guidanceCoverageFacts).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        sourceId: 'who-free-sugars-guideline-2015',
+        requiredValuePatterns: expect.arrayContaining(['\\b10\\s*%\\b', '\\b5\\s*%\\b']),
+      }),
+    ]));
+    const modelResult = toolResultForModel(result.output, result.evidence);
+    expect(modelResult.guidanceCoverageFacts).toEqual(result.output.guidanceCoverageFacts);
+    expect(modelResult.citationEvidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        sourceId: 'who-free-sugars-guideline-2015',
+        summary: expect.stringContaining('less than 10% of total energy'),
+        limitations: expect.stringContaining('not itself a total-day free-sugar measure'),
+      }),
+    ]));
   });
 
   it('does not retrieve ICMR-NIN 2024 content until its product-use permission is cleared', async () => {

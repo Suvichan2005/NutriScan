@@ -796,7 +796,7 @@ export function validateNaturalAnswerText(
   }
   const acceptedAnswer = acceptedLines.join('\n').trim();
   if (withheldUnsupportedQuantitySentenceCount && acceptedAnswer) {
-    acceptedLines.push('', 'One quantity did not match the saved package reading, so I left that detail out.');
+    acceptedLines.push('', 'I left out a numerical detail the available evidence could not verify.');
   }
   return {
     answer: acceptedLines.join('\n').trim(),

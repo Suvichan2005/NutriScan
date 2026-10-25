@@ -23,7 +23,7 @@ import { isValidGtin, findOcrGtinCandidate } from '../barcode';
 import { productInput, lookupProducts } from './products';
 import { researchInput, research } from './research';
 import { fixedFetch } from './http';
-import { getNutritionGuidance, getNutritionGuidanceCoverageFacts, type NutritionGuidanceCoverageFact } from './nutrition-guidance';
+import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutrition-guidance';
 
 const imageIdSchema = z.string().min(1).max(160);
 const querySchema = z.string().trim().min(2).max(180);
@@ -89,7 +89,6 @@ export type GeminiToolResult = {
   output: Record<string, unknown>;
   evidence?: EvidenceSource[];
   calculations?: Calculation[];
-  guidanceCoverageFacts?: NutritionGuidanceCoverageFact[];
   image?: { mimeType: 'image/jpeg'; base64: string };
   /** Canonical terms returned by a successful local identity lookup; only these may extend later research queries. */
   searchTerms?: string[];
@@ -402,15 +401,15 @@ function retrieveNutritionGuidance(args: z.infer<typeof toolArgs.get_nutrition_g
     ...(jurisdiction ? { jurisdiction } : {}),
     ...(args.maxResults ? { maxResults: args.maxResults } : {}),
   });
-  const guidanceCoverageFacts = getNutritionGuidanceCoverageFacts(context.question, evidence.map(source => source.id));
+  const guidanceCoverageFacts = getNutritionGuidanceCoverageFacts(args.query, evidence.map(source => source.id));
   return {
     status: evidence.length ? 'ok' : 'empty',
     resultCount: evidence.length,
     evidence,
-    guidanceCoverageFacts,
     output: {
       status: evidence.length ? 'ok' : 'empty',
       results: evidence,
+      ...(guidanceCoverageFacts.length ? { guidanceCoverageFacts } : {}),
       message: evidence.length
         ? 'Local source-linked summaries only. Treat population guidance as context, not an individualized target or a verdict about one package.'
         : 'No sufficiently relevant local guidance summary matched. Do not invent a target; use an explicitly authorized current research lookup if the user needs a current source.',
