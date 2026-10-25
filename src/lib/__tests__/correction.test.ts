@@ -6,6 +6,17 @@ import { mergePackageEvidence } from '../merge-evidence';
 import { parseLabel } from '../parser';
 
 describe('user correction provenance', () => {
+  it('records a changed product name independently, without confirming an untouched prefilled name',()=>{
+    const pkg=parseLabel('Nutrition per 100 g\nProtein 3 g',{origin:'ocr'});
+    const correction={key:'protein' as const,value:4,unit:'g' as const,basisAmount:100,basisUnit:'g' as const};
+    const untouched=applyNutrientCorrection(pkg,{...correction,productName:pkg.name});
+    expect(untouched.observations.some(item=>item.field==='productName')).toBe(false);
+    expect(untouched.observations.some(item=>item.text.includes('product name supplied by user'))).toBe(false);
+    const renamed=applyNutrientCorrection(pkg,{...correction,productName:'My named product'});
+    expect(renamed.name).toBe('My named product');
+    expect(renamed.observations).toContainEqual(expect.objectContaining({origin:'user',field:'productName',text:'My named product'}));
+    expect(renamed.nutrients[0]).toMatchObject({key:'protein',value:4,status:'corrected'});
+  });
   it.each([
     {label:'Nutrition per 100 g\nSodium 850 mg',key:'sodium' as const,value:900,unit:'mg' as const,portion:20,basisUnit:'g' as const,result:180},
     {label:'Nutrition per 100 ml\nProtein 3.2 g',key:'protein' as const,value:3.4,unit:'g' as const,portion:250,basisUnit:'ml' as const,result:8.5},

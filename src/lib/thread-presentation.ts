@@ -1,4 +1,4 @@
-import type { AssistantUiComponent, Calculation, PackageData, SavedConversationTurn, TentativeStructuredCandidate } from './contracts';
+import type { AssistantUiComponent, Calculation, Observation, PackageData, SavedConversationTurn, TentativeStructuredCandidate } from './contracts';
 import { calculationsFromReconstruction, normalizeReconstructedServing } from './portion';
 import { calculationRespectsCorrections } from './correction';
 
@@ -188,19 +188,26 @@ function cleanIdentity(value: string | undefined): string | null {
 export type DisplayIdentity = { title: string; source: 'package' | 'gemini' | 'generic' };
 
 export function packageDisplayIdentity(
-  pkg: { name: string; brand?: string; reconstruction?: { identity: { name: string | null; brand: string | null; variant: string | null; status: string } } | null },
+  pkg: { name: string; brand?: string; observations?: Pick<Observation,'origin'|'field'|'text'>[]; reconstruction?: { current?: boolean; identity: { name: string | null; brand: string | null; variant: string | null; status: string } } | null },
   candidates: TentativeStructuredCandidate[],
 ): DisplayIdentity {
   const supported = cleanIdentity(pkg.name) ?? cleanIdentity(pkg.brand);
-  if (supported) return { title: supported, source: 'package' };
+  // Explicit application-recorded corrections outrank interpretations. Keep
+  // compatibility with older corrections that stored the name in their note.
+  const correctedName = pkg.observations?.some(observation => observation.origin === 'user'
+    && ((observation.field === 'productName' && observation.text === pkg.name)
+      || observation.text.endsWith('; product name supplied by user: ' + pkg.name)));
+  if (correctedName && cleanIdentity(pkg.name)) return { title: cleanIdentity(pkg.name)!, source: 'package' };
 
   const interpretation = pkg.reconstruction?.identity;
-  if (interpretation && interpretation.status !== 'unreadable') {
+  if (interpretation && pkg.reconstruction?.current !== false && ['clear','provisional'].includes(interpretation.status)) {
     const reconstructed = [interpretation.brand, interpretation.name, interpretation.variant]
       .map(value => value ? cleanIdentity(value) : null)
       .filter((value): value is string => Boolean(value));
     if (reconstructed.length) return { title: [...new Set(reconstructed)].join(' '), source: 'gemini' };
   }
+
+  if (supported) return { title: supported, source: 'package' };
 
   const suggestion = candidates.find(candidate => candidate.kind === 'product-identity' && cleanIdentity(candidate.proposedValue));
   if (suggestion) return { title: cleanIdentity(suggestion.proposedValue)!, source: 'gemini' };

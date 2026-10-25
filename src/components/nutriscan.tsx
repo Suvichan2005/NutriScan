@@ -281,7 +281,7 @@ export default function NutriScan(){
   return()=>{cancelled=true;cameraStream.current?.getTracks().forEach(track=>track.stop());cameraStream.current=null;};
  },[panel]);
  useEffect(()=>{if(!ocrRegion)return;return()=>URL.revokeObjectURL(ocrRegion.url);},[ocrRegion]);
- useEffect(()=>{if((remember||rememberConversation)&&pkg)saveScan({id:pkg.id,name:pkg.name,createdAt:pkg.createdAt,package:pkg,portion,unit,...(rememberConversation?{conversation:savedConversationTurns(messages)}:{})}).then(()=>readHistory()).then(setHistory).catch(()=>setNotice('This browser could not save the scan. You can still export it.'));},[remember,rememberConversation,pkg,portion,unit,messages]);
+ useEffect(()=>{if((remember||rememberConversation)&&pkg)saveScan({id:pkg.id,name:displayIdentity?.title??pkg.name,createdAt:pkg.createdAt,package:pkg,portion,unit,...(rememberConversation?{conversation:savedConversationTurns(messages)}:{})}).then(()=>readHistory()).then(setHistory).catch(()=>setNotice('This browser could not save the scan. You can still export it.'));},[remember,rememberConversation,pkg,portion,unit,messages,displayIdentity?.title]);
 
   function photoUrls(asset:PhotoReviewAsset){return [asset.url,asset.originalUrl,asset.editedUrl].filter((url):url is string=>Boolean(url));}
   function releasePhotosNotRetained(candidates:PhotoReviewAsset[],retained:PhotoReviewAsset[]){

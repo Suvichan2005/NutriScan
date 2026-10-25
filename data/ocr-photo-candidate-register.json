@@ -82,6 +82,46 @@
       "researchSplit": "excluded",
       "exclusionReason": "The nutrition panel remains difficult to read at original source resolution; do not use as a clear numeric reference without better source pixels or independent adjudication.",
       "redistributionReview": "pending"
+    },
+    {
+      "imageId": "off-8901262202046-front-development-20261025",
+      "productGroupId": "gtin-8901262202046",
+      "productName": "Amul Lassi Rose Flavour",
+      "productPageUrl": "https://world.openfoodfacts.org/product/8901262202046",
+      "sourceImageUrl": "https://images.openfoodfacts.org/images/products/890/126/220/2046/front_en.3.full.jpg",
+      "uploader": "smoothie-app",
+      "licenseId": "CC BY-SA (Open Food Facts contributor image); embedded brand rights not cleared for redistribution",
+      "image": {
+        "sha256": "1180f85dd5b02d4fe67f9c5ab529be7ed799d3b69dfc96702853fa4b32905800",
+        "width": 3120,
+        "height": 4160,
+        "byteLength": 920998
+      },
+      "privateLocalFile": ".data/unfamiliar-development/amul-lassi/front.jpg",
+      "status": "exploratory-development-only",
+      "researchSplit": "development",
+      "exposureNote": "Real consumer two-photo multimodal run on 2026-10-25; no independent human annotation. Exclude this product group from held-out evaluation. Two source views of one group, not independent products.",
+      "redistributionReview": "not-cleared; local-development-only"
+    },
+    {
+      "imageId": "off-8901262202046-back-development-20261025",
+      "productGroupId": "gtin-8901262202046",
+      "productName": "Amul Lassi Rose Flavour",
+      "productPageUrl": "https://world.openfoodfacts.org/product/8901262202046",
+      "sourceImageUrl": "https://images.openfoodfacts.org/images/products/890/126/220/2046/ingredients_en.8.full.jpg",
+      "uploader": "smoothie-app",
+      "licenseId": "CC BY-SA (Open Food Facts contributor image); embedded brand rights not cleared for redistribution",
+      "image": {
+        "sha256": "e7b5a93fa39c7d90e284e04b832466ca0a69827177aa477db6c54bb5f4147497",
+        "width": 4160,
+        "height": 3120,
+        "byteLength": 1475119
+      },
+      "privateLocalFile": ".data/unfamiliar-development/amul-lassi/back.jpg",
+      "status": "exploratory-development-only",
+      "researchSplit": "development",
+      "exposureNote": "Real consumer two-photo multimodal run on 2026-10-25; no independent human annotation. Exclude this product group from held-out evaluation. Two source views of one group, not independent products.",
+      "redistributionReview": "not-cleared; local-development-only"
     }
   ]
 }

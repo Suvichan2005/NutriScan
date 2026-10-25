@@ -19,6 +19,22 @@ const identityCandidate = (proposedValue: string): TentativeStructuredCandidate 
 });
 
 describe('package display identity', () => {
+  it.each(['Dairy-based drink','Wholegrain breakfast','Roasted snack'])(
+    'prefers current reconstructed identity over the plausible OCR description %s', name => {
+      expect(packageDisplayIdentity({name,reconstruction:{current:true,identity:{brand:'Example',name:'Food',variant:'Original',status:'clear'}}},[]))
+        .toEqual({title:'Example Food Original',source:'gemini'});
+    });
+
+  it('preserves explicit current user identity corrections over a reconstruction',()=>{
+    const pkg={name:'My corrected product',observations:[{origin:'user' as const,field:'productName',text:'My corrected product'}],reconstruction:{current:true,identity:{brand:'Example',name:'Food',variant:null,status:'clear'}}};
+    expect(packageDisplayIdentity(pkg,[])).toEqual({title:'My corrected product',source:'package'});
+    expect(packageDisplayIdentity({...pkg,observations:[{origin:'user',field:'protein',text:'User correction: 4 g per 100 g; product name supplied by user: My corrected product'}]},[])).toEqual({title:'My corrected product',source:'package'});
+  });
+
+  it.each(['unreadable','conflict','ambiguous'])('does not promote a %s reconstruction identity',status=>{
+    expect(packageDisplayIdentity({name:'Existing product',reconstruction:{current:true,identity:{brand:'New',name:'Identity',variant:null,status}}},[])).toEqual({title:'Existing product',source:'package'});
+    expect(packageDisplayIdentity({name:'Existing product',reconstruction:{current:false,identity:{brand:'Old',name:'Identity',variant:null,status:'clear'}}},[])).toEqual({title:'Existing product',source:'package'});
+  });
   it('keeps a structured package identity ahead of model suggestions', () => {
     expect(packageDisplayIdentity(
       { name: 'Bisk Farm Cream Cracker' },

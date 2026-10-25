@@ -67,7 +67,9 @@ export function applyNutrientCorrection(pkg: PackageData, correction: NutrientCo
     throw new Error('A correction must link to existing package evidence.');
   }
   const id = crypto.randomUUID();
-  const productName = correction.productName?.trim();
+  const enteredName = correction.productName?.trim();
+  // An untouched name prefilled in the nutrient form is not an identity correction.
+  const productName = enteredName && enteredName !== pkg.name ? enteredName : undefined;
   const observation = {
     id,
     field: correction.key,
@@ -95,6 +97,9 @@ export function applyNutrientCorrection(pkg: PackageData, correction: NutrientCo
         status: 'corrected' as const,
       },
     ],
-    observations: [...pkg.observations, observation],
+    observations: [...pkg.observations, observation, ...(productName ? [{
+      id: crypto.randomUUID(), field: 'productName', text: productName,
+      origin: 'user' as const, side: 'text' as const, confidence: null,
+    }] : [])],
   });
 }
