@@ -1,0 +1,253 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nutriscan:evaluation-package-text-pass:1",
+  "title": "Independent human package-text supplement (nutrition remains existing OCR pass)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "annotatorCode",
+    "createdAt",
+    "imageId",
+    "productGroupId",
+    "imageSha256",
+    "referenceStatus",
+    "method",
+    "sectionCoverage",
+    "items"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "annotatorCode": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "imageId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "productGroupId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "imageSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "referenceStatus": {
+      "const": "single-reader-unadjudicated"
+    },
+    "method": {
+      "const": "independent-human-visual"
+    },
+    "sectionCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "ingredients",
+        "allergens",
+        "precautions",
+        "additives",
+        "warnings",
+        "claims",
+        "serving-declarations",
+        "other"
+      ],
+      "properties": {
+        "identity": {
+          "enum": [
+            "observed",
+            "not-visible",
+            "ambiguous"
+          ]
+        },
+        "ingredients": {
+          "enum": [
+            "observed",
+            "not-visible",
+            "ambiguous"
+          ]
+        },
+        "allergens": {
+          "enum": [
+            "observed",
+            "not-visible",
+            "ambiguous"
+          ]
+        },
+        "precautions": {
+          "enum": [
+            "observed",
+            "not-visible",
+            "ambiguous"
+          ]
+        },
+        "additives": {
+          "enum": [
+            "observed",
+            "not-visible",
+            "ambiguous"
+          ]
+        },
+        "warnings": {
+          "enum": [
+            "observed",
+            "not-visible",
+            "ambiguous"
+          ]
+        },
+        "claims": {
+          "enum": [
+            "observed",
+            "not-visible",
+            "ambiguous"
+          ]
+        },
+        "serving-declarations": {
+          "enum": [
+            "observed",
+            "not-visible",
+            "ambiguous"
+          ]
+        },
+        "other": {
+          "enum": [
+            "observed",
+            "not-visible",
+            "ambiguous"
+          ]
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "itemId",
+          "category",
+          "status",
+          "literalText",
+          "regionPolygons",
+          "order"
+        ],
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "enum": [
+              "identity",
+              "ingredients",
+              "allergens",
+              "precautions",
+              "additives",
+              "warnings",
+              "claims",
+              "serving-declarations",
+              "other"
+            ]
+          },
+          "status": {
+            "enum": [
+              "clear",
+              "ambiguous",
+              "not-visible"
+            ]
+          },
+          "literalText": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "normalizedText": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional human normalization; original literal text remains authoritative."
+          },
+          "order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "printedQuantityOrCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Exact ingredient percentage, additive code or serving declaration; never infer missing digits."
+          },
+          "regionPolygons": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                ],
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "minItems": 4,
+              "maxItems": 16
+            }
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "clear"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "literalText": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "regionPolygons": {
+                  "minItems": 1
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "description": "Evaluation-only supplement. Two blind humans transcribe original pixels independently; adjudication required before reference use. No OCR/model prefill, profile, image bytes or production schema changes."
+}
