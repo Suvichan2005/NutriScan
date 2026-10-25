@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "auditedAt": "2026-10-25T17:45:39.067987+00:00",
+  "auditedAt": "2026-10-25T18:33:47.727356+00:00",
   "method": "Pinned local-source/hash/count audit plus explicit source dispositions; not independent scientific/legal validation.",
   "sources": [
     {
@@ -374,29 +374,31 @@
         "https://raw.githubusercontent.com/FoodOntology/foodon/cd73540243a84bcd511a500d9a497d12d7dc02f6/foodon.owl",
         "https://raw.githubusercontent.com/FoodOntology/foodon/cd73540243a84bcd511a500d9a497d12d7dc02f6/foodon-synonyms.tsv"
       ],
-      "declaredScope": "Pinned own-namespace active labelled FoodOn classes, English aliases and internal direct parents; original OWL/TSV retained.",
+      "declaredScope": "Pinned own-namespace labelled OWL/TSV identity projection plus named OWL class-source properties and annotated-source axioms where the source store is verified; no OWL entailment engine.",
       "version": "2026-09-20",
       "expectedRecords": null,
       "importedRecords": 25143,
-      "countUnit": "active labelled classes",
+      "countUnit": "labelled index concept IDs",
       "license": "CC BY 4.0",
       "fieldsPreserved": [
         "stable FOODON IDs",
         "English labels and typed synonyms",
         "direct internal parent IDs",
-        "full original OWL/TSV locally"
+        "full original OWL/TSV locally",
+        "Every original named class property and annotated-source axiom, including definitions, XML language/datatype, nested restrictions and explicit deprecation in local source-record store"
       ],
       "fieldsNotExposed": [],
       "integrity": {
         "ontologySha256": "b897bf64c1b265c422db9ee01e1235c10c0b809e7f02326ef810a52068347edf",
-        "synonymExportSha256": "1900fb2c80d834287cfdd0b52a98957b18269e86c197617711bc3a5d8541deb2"
+        "synonymExportSha256": "1900fb2c80d834287cfdd0b52a98957b18269e86c197617711bc3a5d8541deb2",
+        "sourceRecordRoundtripReceipt": ".data\\knowledge\\foodon-records.verification.json"
       },
-      "retrievalInterface": "searchFoodOn + readFoodOnConcept; resolve_ingredient + get_ingredient_concept native tools",
+      "retrievalInterface": "searchFoodOn + readFoodOnConcept; resolve_ingredient + get_ingredient_concept native tools; relation=source exposes complete paged source fields with explicit missing/deprecated status",
       "gates": {
         "A_acquisition": "VERIFIED_PINNED_SOURCE_FILES",
-        "B_preservation": "VERIFIED_DECLARED_TAXONOMY_ALIAS_PROJECTION",
-        "C_access": "IMPLEMENTED_EXACT_AND_PAGED_TAXONOMY",
-        "D_agent": "LIVE_IDENTITY_AND_CONCEPT_TOOL",
+        "B_preservation": "VERIFIED_NAMED_CLASS_PROPERTIES_AND_AXIOM_ANNOTATIONS",
+        "C_access": "NATIVE_SOURCE_FIELDS_AND_TAXONOMY",
+        "D_agent": "LIVE_LEGACY_IDENTITY_NATIVE_SOURCE_READER_NOT_MODEL_ACCEPTED",
         "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
       },
       "verifiedCapabilities": [
@@ -405,27 +407,40 @@
         "Five free Flash-Lite generations, 17117 input / 490 output tokens, 13391 ms provider time, estimated $0. Developer acceptance is not independent scientific evaluation."
       ],
       "remainingGaps": [
-        "Declared class, typed alias and direct-edge sets reconcile exactly. OWL restrictions/non-taxonomic relations remain outside the projection; final answer had one withheld quantity and broad outcome utility is unverified."
+        "No OWL reasoning or imported-ontology expansion. Three TSV IDs have no class declaration; status is not asserted active. Source-record reader verified locally, not accepted by a new provider/photo run. Clinical effects are not ontology entailments. Further expansion is not a semester completion gate."
       ],
       "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
       "statistics": {
         "indexedAliases": 13566,
         "indexedParentEdges": 29601,
+        "sourceRecordStore": {
+          "classes": 29239,
+          "axioms": 280,
+          "fields": 203404,
+          "definitions": 15349,
+          "restrictions": 14754,
+          "deprecatedClasses": 555
+        },
+        "synonymExportIdsWithoutClassDeclaration": [
+          "FOODON_02022117",
+          "FOODON_02022146",
+          "FOODON_03412317"
+        ],
         "sourceAccounting": {
-          "activeLabeledSourceClasses": 25143,
+          "labelledSynonymExportConceptIds": 25143,
           "classIdSetEqual": true,
           "deprecatedOwnClasses": 571,
           "uniqueEnglishAliasesBeforeCaps": 13001,
           "aliasTextsAbsentFromCompactIndex": 0,
           "sourceAliasesOver180Characters": 5,
           "classesExceeding24Aliases": 0,
-          "scope": "Pinned TSV active labelled own-namespace English terms. Complete OWL restriction/relationship projection is not asserted.",
+          "scope": "Pinned TSV labelled own-namespace English terms excluding OWL-deprecated declarations. This does not prove every TSV ID has a current OWL declaration.",
           "typedAliasSetEqual": true,
           "directEligibleParentEdgeSetEqual": true,
           "typedAliases": 13566
         }
       },
-      "importCommand": "python src/modules/knowledge/import_foodon.py"
+      "importCommand": "python src/modules/knowledge/import_foodon.py; python src/modules/knowledge/import_foodon_records.py; python src/modules/knowledge/import_foodon_records.py --verify"
     },
     {
       "id": "efsa-openfoodtox-3",

@@ -105,3 +105,10 @@ Native `search_guideline_documents` returns catalog/navigation results; `get_gui
 ### Assessment terminology and dated history
 
 The public module exports `jecfaAssessmentTerminology` for source records with an ADI column. It supplies a four-term source legend, not a status classifier or a dietary answer. `data/assessment-terminology.json` contains original summaries with WHO EHC240 edition, PDF-page references and rights; the complete all-rights-reserved glossary is not imported. Native `get_jecfa_record` retains original selected fields plus compact ADI/TDI/comments across up to twenty dated entries/eight thousand text characters. Explicit omissions and year/offset detail access preserve the distinction between current specifications, earlier assessments and missing information. Historical source evidence is handed to the ordinary agent without a new generation or embedding job. Source interpretation still requires quality evaluation.
+
+
+### FoodOn original source records
+
+`python src/modules/knowledge/import_foodon_records.py` preserves named FoodOn class declarations and their original properties and annotated-source axioms in ignored `.data/knowledge/foodon-records.sqlite`. `--verify` regenerates and compares each original record against the pinned OWL, checks accounting/integrity and writes the verification receipt. No extra download, embeddings, imported-ontology expansion or OWL reasoning is performed. Records include definitions, source language/datatype, resource links, restriction expressions, annotation provenance and explicit deprecation.
+
+`get_ingredient_concept` accepts `relation: source`; complete source fields are paged in `sourceFields`, preserving the existing taxonomy `results` shape. Source hashes, corruption, bounds and absent declarations are explicit. A TSV-only concept is not asserted to be a current OWL class. Original source fields are reference information, not proof of package ingredients, nutrient composition, health effects or allergy safety. This bounded preservation milestone is retained; further ontology expansion is not required for semester completion.

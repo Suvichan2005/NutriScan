@@ -1188,3 +1188,8 @@ Treat flat mathematical text/unit wrappers and escaped percentage signs as prese
 ### 25 October — assessment terminology and reference chronology
 
 Keep the assessment source's original reference value, date, comments and history together. A specifications update and the scientific basis for an ADI are distinct; do not infer reference adoption from the most recent row. Supply a dated source legend of original terminology summaries alongside source fields. Gemini owns the interpretation; code neither classifies ADI semantics nor constructs an answer. Preserve unknown/omitted history and detailed access, and do not bulk-copy an all-rights-reserved glossary.
+
+
+### 26 October — preserve source depth, stop expansion-first priority
+
+Finish the existing FoodOn class-source preservation at a recoverable boundary. Keep original annotations/restrictions as source structure, never clinical entailments; expose bounded source fields without changing taxonomy results. Preserve the store and importer under the final semester scope, with no automatic further ontology acquisition. The latest owner directive supersedes the older expansion-first completion criterion.

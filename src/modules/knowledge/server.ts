@@ -5,6 +5,7 @@ import type { FeatureExtractionPipeline } from '@huggingface/transformers';
 import { z } from 'zod';
 import { corpusVersion, evidenceSources, lookupAdditive, lookupExplicitAdditiveMention } from './index';
 import type { EvidenceSource } from '../../lib/contracts';
+import {readFoodOnSourceRecord} from './foodon-records';
 export { readOpenFoodToxRecords, openFoodToxDetailInput } from './openfoodtox-records';
 
 /** Node.js-only entry point. Client modules must import the static `index.ts` entry instead. */
@@ -170,7 +171,7 @@ export async function searchFoodOn(query: string, limit = 5): Promise<FoodOnSear
   return results.length ? { status: 'ok', source: snapshot.source, results } : { status: 'no_match', source: snapshot.source, results: [] };
 }
 
-export const foodOnConceptInput=z.object({id:z.string().regex(/^FOODON_[0-9]{8}$/),relation:z.enum(['parents','children','ancestors']).default('parents'),offset:z.number().int().min(0).max(35000).default(0),limit:z.number().int().min(1).max(20).default(10)}).strict();
+export const foodOnConceptInput=z.object({id:z.string().regex(/^FOODON_[0-9]{8}$/),relation:z.enum(['parents','children','ancestors','source']).default('parents'),offset:z.number().int().min(0).max(35000).default(0),limit:z.number().int().min(1).max(20).default(10)}).strict();
 
 /** Asserted FoodOn taxonomy only. Ancestors retain paths; no allergy or health inference. */
 export async function readFoodOnConcept(input:z.input<typeof foodOnConceptInput>){
@@ -179,6 +180,13 @@ export async function readFoodOnConcept(input:z.input<typeof foodOnConceptInput>
   try{snapshot=await loadFoodOnSnapshot();}catch{return{status:'unavailable' as const,reason:'invalid-index',results:[]};}
   const byId=new Map(snapshot.terms.map(term=>[term.id,term]));
   const term=byId.get(args.id);
+  if(args.relation==='source'){
+    const detail=readFoodOnSourceRecord(args,snapshot.source,term);
+    if(detail.status!=='ok')return detail;
+    // Source properties are not taxonomy edges. Preserve the existing results
+    // shape for consumers and expose the original records separately.
+    return{...detail,concept:{aliases:term?.aliases??[],parents:term?.parents??[],...detail.concept},sourceFields:detail.results,results:[] as {id:string;label:string;path:string[]}[]};
+  }
   if(!term)return{status:'no_match' as const,source:snapshot.source,results:[]};
   const related:Array<{id:string;label:string;path:string[]}>=[];
   if(args.relation==='children'){
@@ -192,7 +200,7 @@ export async function readFoodOnConcept(input:z.input<typeof foodOnConceptInput>
       if(args.relation==='ancestors')for(const id of parent.parents)if(!seen.has(id))pending.push({id,path:[...next.path,id]});
     }
   }
-  return{status:'ok' as const,source:snapshot.source,concept:term,relation:args.relation,total:related.length,offset:args.offset,nextOffset:args.offset+args.limit<related.length?args.offset+args.limit:null,results:related.slice(args.offset,args.offset+args.limit),limitations:'Asserted active FoodOn class taxonomy and English synonyms only; imported ontologies, OWL restrictions and non-taxonomic relationships are outside this declared projection. Taxonomy does not establish package presence, nutrient content, allergen cross-contact, clinical suitability or legal authorization.'};
+  return{status:'ok' as const,source:snapshot.source,concept:term,relation:args.relation,total:related.length,offset:args.offset,nextOffset:args.offset+args.limit<related.length?args.offset+args.limit:null,results:related.slice(args.offset,args.offset+args.limit),limitations:'Labelled FoodOn OWL/synonym-export taxonomy projection; current OWL declaration/status is available through source mode; imported ontologies, OWL restrictions and non-taxonomic relationships are outside this declared projection. Taxonomy does not establish package presence, nutrient content, allergen cross-contact, clinical suitability or legal authorization.'};
 }
 
 let openFoodToxSnapshotPromise: Promise<OpenFoodToxSnapshot | null> | undefined;

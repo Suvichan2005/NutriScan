@@ -946,3 +946,10 @@ Five controlled tasks/variants: 19 free gemini-3.5-flash-lite generations, 11988
 Verification: 747 passed / one skipped with `npm test -- --maxWorkers=4`; TypeScript and optimized reusable-directory build passed. The unrestricted run hit three cold embedding/PDF-OCR timeout failures; both affected files passed in isolation, no assertion/timeout relaxation. Owner build-config bytes restored. Browser/photo acceptance and independent scientific accuracy are not claimed.
 
 A UTF-8 documentation write failed under the Windows default codec; queue restored from the just-published Git checkpoint before reapplying its one-line state update. No source/private data lost.
+
+
+### 26 October — preserve the in-progress FoodOn source reader
+
+Finished the bounded reader already active when the final-phase direction arrived. Preserved 29239 named class declarations, 203404 original properties/axiom records, 15349 definitions, 14754 restriction expressions and 555 explicitly deprecated classes. Full source regeneration/record comparison passed; source is unchanged, store remains ignored. Native source-mode reads return whole bounded fields, source/field hashes, nested structure, language/datatype and explicit missing/deprecated status. Three TSV-only IDs remain status-unknown; no inferred replacement definition. All actual fields fit the bound (maximum5568 characters).
+
+Real pinned-data/native reads worked for wheat starch and besan; milk-powder lexical query returned no match and was retained. Known TSV-only boundary is explicit. Two Python importer tests, five focused Vitest tests and TypeScript passed. Full suite:748 passed/one skipped with four workers; optimized reusable-directory build passed and restored owner config bytes. No new provider/photo acceptance or clinical ontology claim. No additional source acquisition or source expansion will follow automatically. Next is the owner-authorized final-phase queue rescope and nine-conversation/two-experiment inputs.
