@@ -1161,3 +1161,10 @@ Receipt export: `.data/gemini-evaluations/exports/off-original-record-utilizatio
 
 ### Codex taxonomy is a separate finite source partition
 Keep the complete visible category index distinct from unacquired detail descriptions/provisions/notes. Preserve raw Table3 flags without converting them into permissions. Use exact/name/paged relationship access, not indiscriminate embedding. Every returned category/ancestor/child gets compact source attribution so a summary clip cannot discard valid tool evidence. International category identity does not determine Indian classification or authorization; FAO research/non-commercial reuse scope is recorded and raw/normalized data remain ignored.
+
+
+### 25 October — publication detail utilization
+
+Scientific discovery previews are not sufficient source context. Add exact source/id metadata and complete bounded abstract passages with explicit missing/oversized fields; no restricted full-text acquisition. Source codes normalize case as an identifier contract, not semantic inference. Preserve publication/status fields without inventing absent retraction assurances. Population/dose/outcome appraisal remains the model/evaluation task; aggregate quantities require supported deterministic calculation, not blanket numeric-validator relaxation.
+
+Source-fidelity follow-through: original API markup demonstrated that the shared broad HTML stripper removed a literal statistical comparison and the following BMI result. Tag-shaped stripping now preserves `p < 0.001` and numeric comparisons; actual original-core replay retains both. Four focused tests cover markup, inequalities, complete passage paging, metadata, source-case normalization, ID mismatch and upstream errors. This is objective data preservation, not clinical reasoning or prompt tuning. No additional provider call for the fidelity replay.

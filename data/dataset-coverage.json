@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "auditedAt": "2026-10-25T12:29:06.461475+00:00",
+  "auditedAt": "2026-10-25T12:40:37.956458+00:00",
   "method": "Pinned local-source/hash/count audit plus explicit source dispositions; not independent scientific/legal validation.",
   "sources": [
     {
@@ -815,18 +815,26 @@
       "importedRecords": null,
       "countUnit": null,
       "license": "Source-specific reuse review pending; do not infer permission from availability.",
-      "fieldsPreserved": [],
-      "fieldsNotExposed": [],
+      "fieldsPreserved": [
+        "Exact source/id, title/date/DOI/PMCID; publication types, original retraction/correction flags where supplied",
+        "Complete bounded abstract sentences with pagination, explicit absent/oversized passages; bounded original MeSH/chemical/keyword metadata and omission markers"
+      ],
+      "fieldsNotExposed": [
+        "Not full-text review, systematic appraisal or universal literature acquisition; overlarge metadata/abstract sentences explicitly omitted."
+      ],
       "integrity": {},
-      "retrievalInterface": "search_research(science)",
+      "retrievalInterface": "search_research(science) + get_research_record exact source/id, paged complete abstract passages and source metadata",
       "gates": {
         "A_acquisition": "NOT_VERIFIED",
-        "B_preservation": "NOT_VERIFIED",
-        "C_access": "PARTIAL",
-        "D_agent": "PARTIAL",
-        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+        "B_preservation": "SELECTED_CORE_METADATA_AND_ABSTRACT_PAGES",
+        "C_access": "EXACT_ID_AND_BOUNDED_DISCOVERY_VERIFIED",
+        "D_agent": "REAL_NATIVE_PUBLICATION_DETAIL_USE",
+        "E_answer_utility": "PARTIAL_REAL_STUDY_ANSWER_WITH_LIMITS"
       },
-      "verifiedCapabilities": [],
+      "verifiedCapabilities": [
+        "Two real source detail reads across sodium review and fibre trial.",
+        "Real lowercase source-code failure fixed by structural normalization; same task reduced six generations/five tools to two/one. Derived population sum withheld; unsupported supervision wording remains an answer-quality limitation."
+      ],
       "remainingGaps": [
         "Audit abstract/detail access and population/intervention/dose/outcome/source applicability handoff; independently judge relevance and answer use."
       ],

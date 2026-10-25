@@ -28,6 +28,7 @@ import { isValidGtin, findOcrGtinCandidate } from '../barcode';
 import { productInput, lookupProducts } from './products';
 import {readProductRecord,productRecordInput} from './product-records';
 import {readCodexCategories,codexCategoryInput} from './codex-categories';
+import {readResearchRecord,researchRecordInput} from './research-records';
 import { researchInput, research } from './research';
 import { fixedFetch } from './http';
 import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutrition-guidance';
@@ -70,6 +71,7 @@ const toolArgs = {
   get_assessment_records: openFoodToxDetailInput,
   get_ingredient_concept:foodOnConceptInput,
   get_food_composition_record:fdcRecordInput,
+  get_research_record:researchRecordInput,
   get_codex_category: codexCategoryInput,
   get_product_record:productRecordInput,
   calculate_nutrition: z.object({ nutrient: z.preprocess(value=>value===null?undefined:value,z.enum(nutrientKeys).optional()), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml', 'pieces', 'servings', 'package']), candidateId:z.preprocess(value=>value===null?undefined:value,z.string().min(1).max(120).optional()) }).strict().refine(value=>!!value.nutrient||!!value.candidateId,{message:'Select a standard nutrient or an exact saved nutrition row.'}),
@@ -89,6 +91,7 @@ const cropParameters = {
 };
 
 export const geminiToolDeclarations: FunctionDeclaration[] = [
+ {name:'get_research_record',description:'Inspect one exact Europe PMC publication source/id returned by research discovery or explicitly supplied. Returns original publication-type/retraction/correction metadata where supplied and complete bounded abstract passages with pagination. Use these to inspect populations, exposures, outcomes and limitations before scientific synthesis. Not full-text appraisal or clinical guidance; missing status/abstract is unknown.',parameters:{type:Type.OBJECT,properties:{source:{type:Type.STRING,enum:['MED','PMC','PPR','AGR','CBA','PAT'],description:'Publication database source, normally MED for a PubMed identifier.'},id:{type:Type.STRING,description:'Identifier only, without source prefix; for MED 12345678 use id 12345678.'},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['id']}},
  { name: 'get_codex_category', description: 'Search the locally pinned complete English Codex food-category hierarchy or inspect one exact code, its ancestors and paged direct children. This is international taxonomy, not a food classification decision, additive permission, maximum dose or Indian law. Category-specific provisions/notes must be investigated separately.', parameters: {type:Type.OBJECT,properties:{code:{type:Type.STRING},query:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}}} },
  {name:'get_product_record',description:'Inspect the original Open Food Facts record for an exact GTIN already in the question/package or returned by lookup_product. Start with section identity, ingredients, nutrition, claims or quality to list present/missing fields; request one field and optional exact entryKey for a nutrient/source object. Bounded original fields preserve ingredient tree/percentages, allergen versus precautionary traces, serving basis, as-sold versus prepared nutrients, qualifiers and source quality. This is external community data, never confirmed package facts or local stock.',parameters:{type:Type.OBJECT,properties:{barcode:{type:Type.STRING},section:{type:Type.STRING,enum:['identity','ingredients','nutrition','claims','quality']},field:{type:Type.STRING},entryKey:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['barcode']}},
   {name:'get_food_composition_record',description:'Inspect an exact local USDA food returned by search_food_composition. Start with release and fdcId to list available source fields, then request a field such as foodNutrients, foodPortions, inputFoods or nutrientConversionFactors with offset/limit. For a specific nutrient, select field foodNutrients and nutrientId from the search result to retrieve its complete original object. Preserves original measurement, derivation and recipe/sample context. These are generic references, never photographed package truth. Missing source amounts are not zero; do not invent conversions.',parameters:{type:Type.OBJECT,properties:{release:{type:Type.STRING,enum:['fdc-foundation-2026-04','fdc-fndds-2021-2023']},fdcId:{type:Type.INTEGER},nutrientId:{type:Type.INTEGER,description:'Exact FDC nutrient ID (for example 1003 for protein), only with field foodNutrients.'},field:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER,description:'One to ten complete source items.'}},required:['release','fdcId']}},
@@ -1015,7 +1018,7 @@ async function searchResearch(args: z.infer<typeof toolArgs.search_research>, co
   try {
     const result = await research(parsed.data);
     const evidence = result.items.slice(0, 3).map(item => toResearchEvidence(item, args.topic)).filter((item): item is EvidenceSource => item !== null);
-    return { status: evidence.length ? 'ok' : result.status === 'unavailable' ? 'unavailable' : 'empty', resultCount: evidence.length, evidence, output: { status: result.status, message: result.message, results: evidence.map(item => ({ ...item })) } };
+    return { status: evidence.length ? 'ok' : result.status === 'unavailable' ? 'unavailable' : 'empty', resultCount: evidence.length, evidence, output: { status: result.status, message: result.message, results: evidence.map(item => ({ ...item, ...(item.id.startsWith('epmc-')?{detailAccess:{tool:'get_research_record',source:item.id.split('-')[1],id:item.id.split('-').slice(2).join('-')}}:{}) })) } };
   } catch {
     return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', message: 'The bounded public research lookup failed. No source or current-law conclusion is available.' } };
   }
@@ -1089,6 +1092,13 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
     case 'calculate_nutrition': {
       const parsed = toolArgs.calculate_nutrition.safeParse(args);
       return parsed.success ? calculateNutrition(parsed.data, context) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The nutrition calculation arguments were invalid.' } };
+    }
+    case 'get_research_record': {
+      const parsed=toolArgs.get_research_record.safeParse(args);if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments',issues:parsed.error.issues.slice(0,4).map(issue=>({field:issue.path.join('.'),message:issue.message})),message:'Use a database source such as MED and its bare identifier; do not combine source and identifier in the id field.'}};
+      const record=await readResearchRecord(parsed.data);if(record.status!=='ok')return{status:record.status==='empty'?'empty':'unavailable',resultCount:0,output:record};
+      const texts=[{key:'metadata',text:JSON.stringify({title:record.title,metadata:record.metadata}).slice(0,1500)},...record.abstractChunks.map(chunk=>({key:`abstract-${chunk.index}`,text:chunk.text}))];
+      const evidence=texts.flatMap(part=>{const source=asEvidenceSource({id:`epmc-${record.source}-${record.id}-${part.key}`,title:record.title.slice(0,300),publisher:'Europe PMC indexed publication',url:record.url,category:'literature',jurisdiction:'Publication-specific population and setting; applicability requires appraisal',publishedAt:typeof record.metadata.firstPublicationDate==='string'?record.metadata.firstPublicationDate:null,effectiveAt:null,retrievedAt:record.retrievedAt,summary:part.text,limitations:record.limitations,license:'Abstract and publication rights remain with source rights holder; on-demand internal research, no bulk republication.'});return source?[source]:[];});
+      return{status:'ok',resultCount:1,output:record,evidence};
     }
     case 'get_codex_category': {
       const parsed=toolArgs.get_codex_category.safeParse(args);if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments'}};

@@ -149,4 +149,4 @@ export async function route(request: Request, group: string, work: () => Promise
   } finally { release?.(); }
 }
 
-export function plain(value: unknown, max = 1000) { return typeof value === 'string' ? value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : ''; }
+export function plain(value: unknown, max = 1000) { return typeof value === 'string' ? value.replace(/<!--[\s\S]*?-->|<\/?[A-Za-z][A-Za-z0-9:-]*(?:\s+[^<>]*?)?\s*\/?>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : ''; }

@@ -134,6 +134,12 @@ descriptors = [
 ]
 for identifier,role,url,scope,access,gaps in descriptors:
     entry=source(identifier,role,[url],scope,access,gaps)
+    if identifier=='europe-pmc-pubmed':
+        entry['retrievalInterface']='search_research(science) + get_research_record exact source/id, paged complete abstract passages and source metadata'
+        entry['fieldsPreserved']=['Exact source/id, title/date/DOI/PMCID; publication types, original retraction/correction flags where supplied', 'Complete bounded abstract sentences with pagination, explicit absent/oversized passages; bounded original MeSH/chemical/keyword metadata and omission markers']
+        entry['fieldsNotExposed']=['Not full-text review, systematic appraisal or universal literature acquisition; overlarge metadata/abstract sentences explicitly omitted.']
+        entry['gates'].update(B_preservation='SELECTED_CORE_METADATA_AND_ABSTRACT_PAGES',C_access='EXACT_ID_AND_BOUNDED_DISCOVERY_VERIFIED',D_agent='REAL_NATIVE_PUBLICATION_DETAIL_USE',E_answer_utility='PARTIAL_REAL_STUDY_ANSWER_WITH_LIMITS')
+        entry['verifiedCapabilities']=['Two real source detail reads across sodium review and fibre trial.', 'Real lowercase source-code failure fixed by structural normalization; same task reduced six generations/five tools to two/one. Derived population sum withheld; unsupported supervision wording remains an answer-quality limitation.']
     if identifier=='indian-nutrient-databank':
         entry.update(expectedRecords=1014,countUnit='recipes reported by the official portal; workbook not yet reconciled',version='2024 publication / portal; release bytes not pinned')
         entry['remainingGaps'].append('Official portal states per-100-g and per-serving values, derived using IFCT/NVIF/CoFID/USDA sources; reuse/dependency terms must be reviewed before integration.')

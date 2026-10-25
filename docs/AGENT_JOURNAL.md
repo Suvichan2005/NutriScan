@@ -907,3 +907,10 @@ Receipt export: `.data/gemini-evaluations/exports/off-original-record-utilizatio
 
 ### 25 October — finite Codex category access
 After published OFF 4b744c7, acquired/preserved all265 visible categories/249 DOM parents; independent parser compared1,325 fields. Bounded acquisition and importer are reproducible, original/source JSON ignored. Native exact/name/hierarchy lookup used in real bakery and dairy questions (4 free generations/3 tools,19,872 input/538 output,$0 estimate). Initial output child sentences were withheld because per-child evidence was omitted; fixed source handoff, not model prompt/semantic gate, and replay retained original output. Later dairy case returned answer-ready. Detailed category endpoint timed out, so provision/condition/legal gates remain incomplete. Source coverage matrix18 partitions. No OCR/image-first switch, browser/session mutation, worktree or new build directory. Receipts .data/sources/codex/ and readable codex-category-transfer-20261025.md.
+
+
+### 25 October — publication detail utilization
+
+Completed bounded Europe PMC detail path and discovery detail links. Real metadata reads across a sodium review and fibre trial; failed live source-case contract caused six generations and irrelevant fallback search. Normalize source identifiers and document bare IDs; repeated meaningful run uses two generations/one tool, genuine study evidence rather than generic fallback. Derived 21+21 population sum withheld and unsupported supervised-setting wording recorded; no special answer repair. Track A remains active; source data and model traces ignored.
+
+Source-fidelity follow-through: original API markup demonstrated that the shared broad HTML stripper removed a literal statistical comparison and the following BMI result. Tag-shaped stripping now preserves `p < 0.001` and numeric comparisons; actual original-core replay retains both. Four focused tests cover markup, inequalities, complete passage paging, metadata, source-case normalization, ID mismatch and upstream errors. This is objective data preservation, not clinical reasoning or prompt tuning. No additional provider call for the fidelity replay.
