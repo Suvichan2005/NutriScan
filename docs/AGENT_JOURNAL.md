@@ -919,3 +919,8 @@ Source-fidelity follow-through: original API markup demonstrated that the shared
 ### 25 October — JECFA dated assessment utilization
 
 Track A JECFA source utilization implemented. Initial source probe exposed autocomplete cap returning substituted benzoic-acid derivatives; official full filtered API gives 37 matches including exact identity. Structural paging/ranking fixed that boundary before model acceptance. Two live tasks selected correct dated records/history and produced scoped answers without repairs or rejected quantities. Eight free generations/46,582 input/753 output/$0 estimate. Four source/native/security/negative/paging tests pass. Source aliases/CAS now handed to cross-source queries; actual cross-source effect not live-claimed. Source tools/fields remain bounded; final corpus/appraisal gates open.
+
+
+### 25 October — complete selected WHO guideline documents
+
+WHO corpus continuation acquired three complete permitted non-commercial guidelines, built 316-page FTS store and source reader, visually checked primary pages, and verified complete text-layer roundtrip. First live questions exposed undocumented document IDs and page bounds; fixed SDK enums/validation feedback without aliases or more rounds. Three corrected live cases retrieved full pages. Original child response exposed formatting/explicit-age boundary; narrow numeric representation fix retains provider prose in replay, negative quantity/time/comparator tests pass. Fat response includes unsupported ratio wording; retained as model-quality failure, not a parser patch. All raw PDFs, extracted store and detailed transcripts ignored. No browser/session mutation or OCR change.

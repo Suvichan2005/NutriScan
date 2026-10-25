@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "declaredScope": "Complete PDF text layer of three pinned English WHO guidelines; recommendations/rationale page ranges separately reviewed. Figures and table semantics are not reconstructed.",
+  "license": "CC BY-NC-SA 3.0 IGO; WHO attribution/no endorsement. Commercial reuse requires WHO permission. Original/full extracted texts excluded from Git.",
+  "sources": [
+    {
+      "id": "carbohydrate-2023",
+      "title": "Carbohydrate intake for adults and children: WHO guideline",
+      "filename": "carbohydrate-2023.pdf",
+      "url": "https://www.who.int/publications/i/item/9789240073593",
+      "downloadUrl": "https://iris.who.int/server/api/core/bitstreams/6c31b739-c2e8-4515-970d-d9e42346c7f4/content",
+      "publishedAt": "2023-07-17",
+      "expectedPages": 100,
+      "recommendationPages": [
+        36,
+        40
+      ],
+      "sha256": "81548c804ebf031aa06a71f762c4ed72f680d4cb2caba44b011459fe5c841cd0",
+      "retrievedAt": "2026-10-25"
+    },
+    {
+      "id": "fat-quality-2023",
+      "title": "Saturated fatty acid and trans-fatty acid intake for adults and children: WHO guideline",
+      "filename": "fat-quality-2023.pdf",
+      "url": "https://www.who.int/publications/i/item/9789240073630",
+      "downloadUrl": "https://iris.who.int/server/api/core/bitstreams/463fa93e-6c17-4e5b-a4d7-928354ea34c3/content",
+      "publishedAt": "2023-07-17",
+      "expectedPages": 134,
+      "recommendationPages": [
+        46,
+        52
+      ],
+      "sha256": "767c24d20e90357e71831e3e19813f79c84457c8a24ddbca931237a58bd3d503",
+      "retrievedAt": "2026-10-25"
+    },
+    {
+      "id": "salt-substitutes-2025",
+      "title": "Use of lower-sodium salt substitutes: WHO guideline",
+      "filename": "salt-substitutes-2025.pdf",
+      "url": "https://www.who.int/publications/i/item/9789240105591",
+      "downloadUrl": "https://iris.who.int/server/api/core/bitstreams/31fad89a-d7c2-450c-9b74-cd2a8752e60f/content",
+      "publishedAt": "2025-01-27",
+      "expectedPages": 82,
+      "recommendationPages": [
+        39,
+        43
+      ],
+      "sha256": "e7111969908bbf588c20b457b6f5f26ce16e6d9e023e7e179d8a9c1b54a318a0",
+      "retrievedAt": "2026-10-25"
+    }
+  ]
+}

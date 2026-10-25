@@ -178,6 +178,19 @@ if category_path.exists():
     c['gates'].update(A_acquisition='VERIFIED_DECLARED_CATEGORY_PAGE',B_preservation='VERIFIED_265_IDENTITIES_LABELS_AND_249_PARENTS',C_access='EXACT_SEARCH_AND_HIERARCHY_PAGES_TESTED',D_agent='REAL_NATIVE_CATEGORY_LOOKUP',E_answer_utility='PARTIAL_LIVE_OUTPUT_AND_OFFLINE_HANDOFF_REPLAY')
     sources.append(c)
 
+guideline_db=ROOT/'.data/knowledge/guidelines.sqlite'
+if guideline_db.exists():
+    manifest=load('data/guideline-sources.json');receipt=load('.data/knowledge/guidelines.verification.json')
+    with closing(sqlite3.connect(f'{guideline_db.as_uri()}?mode=ro',uri=True))as db:
+        assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
+        for document in manifest['sources']:
+            count,characters,empty=db.execute('SELECT COUNT(*),SUM(LENGTH(text)),SUM(text="") FROM pages WHERE document_id=?',(document['id'],)).fetchone()
+            assert count==document['expectedPages'] and receipt['sourceHashes'][document['id']]==document['sha256']
+            item=source('who-guideline-'+document['id'],'Population nutrition guideline with original rationale/remarks',[document['url'],document['downloadUrl']],'Every PDF text-layer page of pinned English guideline; primary recommendation/remarks ranges reviewed, figures/table semantics not reconstructed.','search_guideline_documents + get_guideline_pages',['Independent clinical appraisal and final-answer distribution not established. One live fat answer included an unsupported total/HDL-ratio statement; child answer UI loss fixed by offline actual-response replay. No individual prescription.'],manifest['license'])
+            item.update(version=document['publishedAt'],expectedRecords=count,importedRecords=count,countUnit='PDF text-layer pages',statistics={'characters':characters,'emptyTextPages':empty,'recommendationPages':document['recommendationPages']},integrity={'sourceSha256':document['sha256'],'pageTextRoundtripVerified':True,'ftsAllPagesCompared':True},fieldsPreserved=['All page text/line breaks and page hashes, complete PDF retained privately','Primary recommendations, strength, population/age, scope/exclusions, rationale and references accessible by page'],fieldsNotExposed=['Figures and table semantics not reconstructed. Oversized pages/passages explicitly bounded; original PDF available.'],importCommand='npm exec -- tsx scripts/acquire-guideline-documents.mts; python src/modules/knowledge/import_guideline_documents.py; python src/modules/knowledge/import_guideline_documents.py --verify')
+            item['gates'].update(A_acquisition='VERIFIED_PINNED_COMPLETE_PDF',B_preservation='VERIFIED_COMPLETE_TEXT_LAYER_ONLY',C_access='CATALOG_FTS_EXACT_HASHED_PAGES',D_agent='REAL_NATIVE_PAGE_RETRIEVAL',E_answer_utility='PARTIAL_THREE_REAL_QUESTIONS_AND_REPLAY')
+            sources.append(item)
+
 index = load('data/semantic-index.json')
 curated = source('curated-semantic-and-identities','Original attributed explanatory summaries and reviewed identity relationships',['https://www.who.int/','https://www.fao.org/gsfaonline/'],'Finite app-authored records; not complete acquisition of their underlying source databases.','src/modules/knowledge/index.ts; BM25/MiniLM/native ingredient tools',['Source-specific breadth and independent relevance/answer utility remain incomplete; source count is not database completeness.'],'Per-record licenses; Health Canada reviewed ingredient-name extract has a non-commercial reuse restriction requiring product-distribution review.')
 curated.update(version=index.get('corpusVersion'),importedRecords=len(index['vectors']),countUnit='embedded app-authored source records',fieldsPreserved=['attribution/source URL/date/jurisdiction/limitations','reviewed exact ingredient-family names and source links'])

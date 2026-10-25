@@ -564,9 +564,9 @@ function containsOrderedEvidenceTokens(quote: string, words: string[]): boolean 
   return true;
 }
 
-type NumericDimension = 'mass' | 'energy' | 'volume' | 'percent' | 'unitless';
+type NumericDimension = 'mass' | 'energy' | 'volume' | 'percent' | 'unitless' | 'age-year';
 type NumericMention = { value: number; dimension: NumericDimension; rawValue: string; factor: number; decimalPlaces:number; localeAmbiguous: boolean };
-const numericMentionPattern = /(?<![\p{L}\p{N}_])(-?(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?|\.\d+))(?!\d)\s*(kcal|kilocalories?|kj|kilojoules?|mg|milligrams?|µg|μg|mcg|ug|micrograms?|kg|g|grams?|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|%|percent)?(?![\p{L}\p{N}_])/giu;
+const numericMentionPattern = /(?<![\p{L}\p{N}_])(-?(?:\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?|\.\d+))(?!\d)\s*(?:-\s*(?=years?-old))?(years?-old|kcal|kilocalories?|kj|kilojoules?|mg|milligrams?|µg|μg|mcg|ug|micrograms?|kg|g|grams?|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|%|percent)?(?![\p{L}\p{N}_])/giu;
 
 function parseNumericLiteral(value: string): { value: number; localeAmbiguous: boolean } {
   if (value.includes(',') && value.includes('.')) {
@@ -595,7 +595,8 @@ function numericMentions(text: string): NumericMention[] {
     const unit = (match[2] ?? '').toLocaleLowerCase().replace('μ', 'µ');
     let dimension: NumericDimension = 'unitless';
     let factor = 1;
-    if (/^(?:mg|milligrams?)$/.test(unit)) { dimension = 'mass'; factor = 0.001; }
+    if (/^years?-old$/.test(unit)) dimension = 'age-year';
+    else if (/^(?:mg|milligrams?)$/.test(unit)) { dimension = 'mass'; factor = 0.001; }
     else if (/^(?:µg|mcg|ug|micrograms?)$/.test(unit)) { dimension = 'mass'; factor = 0.000001; }
     else if (/^(?:kg)$/.test(unit)) { dimension = 'mass'; factor = 1000; }
     else if (/^(?:g|grams?)$/.test(unit)) dimension = 'mass';
@@ -763,6 +764,10 @@ export function validateNaturalAnswerText(
         .map(item=>`${item.printedText??''} ${item.quantity??''} ${item.unit??''} ${item.kind}`),
     ] : []),
     ...reconstructedBasisEvidence,
+    // Explicit age is user context, not package composition. Only this typed
+    // representation is admitted; question numbers never corroborate nutrients.
+    ...numericOccurrences(context.question??'').filter(item=>item.mention.dimension==='age-year'&&item.operator===null)
+      .map(item=>`${item.mention.rawValue} year-old`),
     ...(context.evidence ?? []).flatMap(source => [
       source.title, source.publisher, source.url, source.summary, source.limitations,
       // A publication year is bibliographic evidence, not a package quantity.
@@ -784,8 +789,11 @@ export function validateNaturalAnswerText(
     const sentences = content.slice(listPrefix.length).split(/(?<=[.!?])\s+(?=[\p{L}\p{N}"“])/u).filter(Boolean);
     for (const sentence of sentences) {
       // Markdown list numbering is presentation syntax, not a factual amount.
-      if (!numericMentionsAreSupported(sentence, evidenceTexts, calculatedResults)
-        || !basisMentionsAreSupported(sentence, evidenceTexts)) {
+      // Strong-emphasis delimiters are presentation, not part of an amount,
+      // comparator or basis. Keep the original prose for rendering.
+      const checkingText=sentence.replace(/\*\*([^*\n]+)\*\*/g,'$1').replace(/__([^_\n]+)__/g,'$1');
+      if (!numericMentionsAreSupported(checkingText, evidenceTexts, calculatedResults)
+        || !basisMentionsAreSupported(checkingText, evidenceTexts)) {
         withheldUnsupportedQuantitySentenceCount += 1;
         continue;
       }

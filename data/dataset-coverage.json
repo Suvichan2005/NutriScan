@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "auditedAt": "2026-10-25T13:05:55.578597+00:00",
+  "auditedAt": "2026-10-25T16:53:27.371436+00:00",
   "method": "Pinned local-source/hash/count audit plus explicit source dispositions; not independent scientific/legal validation.",
   "sources": [
     {
@@ -1066,6 +1066,150 @@
         "uniqueCodes": 265
       },
       "importCommand": "npm exec -- tsx scripts/acquire-codex-categories.mts; python src/modules/knowledge/import_codex_categories.py --source-html PINNED_HTML --output .data/knowledge/codex-categories.json --retrieved-at YYYY-MM-DD"
+    },
+    {
+      "id": "who-guideline-carbohydrate-2023",
+      "role": "Population nutrition guideline with original rationale/remarks",
+      "officialUrls": [
+        "https://www.who.int/publications/i/item/9789240073593",
+        "https://iris.who.int/server/api/core/bitstreams/6c31b739-c2e8-4515-970d-d9e42346c7f4/content"
+      ],
+      "declaredScope": "Every PDF text-layer page of pinned English guideline; primary recommendation/remarks ranges reviewed, figures/table semantics not reconstructed.",
+      "version": "2023-07-17",
+      "expectedRecords": 100,
+      "importedRecords": 100,
+      "countUnit": "PDF text-layer pages",
+      "license": "CC BY-NC-SA 3.0 IGO; WHO attribution/no endorsement. Commercial reuse requires WHO permission. Original/full extracted texts excluded from Git.",
+      "fieldsPreserved": [
+        "All page text/line breaks and page hashes, complete PDF retained privately",
+        "Primary recommendations, strength, population/age, scope/exclusions, rationale and references accessible by page"
+      ],
+      "fieldsNotExposed": [
+        "Figures and table semantics not reconstructed. Oversized pages/passages explicitly bounded; original PDF available."
+      ],
+      "integrity": {
+        "sourceSha256": "81548c804ebf031aa06a71f762c4ed72f680d4cb2caba44b011459fe5c841cd0",
+        "pageTextRoundtripVerified": true,
+        "ftsAllPagesCompared": true
+      },
+      "retrievalInterface": "search_guideline_documents + get_guideline_pages",
+      "gates": {
+        "A_acquisition": "VERIFIED_PINNED_COMPLETE_PDF",
+        "B_preservation": "VERIFIED_COMPLETE_TEXT_LAYER_ONLY",
+        "C_access": "CATALOG_FTS_EXACT_HASHED_PAGES",
+        "D_agent": "REAL_NATIVE_PAGE_RETRIEVAL",
+        "E_answer_utility": "PARTIAL_THREE_REAL_QUESTIONS_AND_REPLAY"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Independent clinical appraisal and final-answer distribution not established. One live fat answer included an unsupported total/HDL-ratio statement; child answer UI loss fixed by offline actual-response replay. No individual prescription."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "statistics": {
+        "characters": 263183,
+        "emptyTextPages": 4,
+        "recommendationPages": [
+          36,
+          40
+        ]
+      },
+      "importCommand": "npm exec -- tsx scripts/acquire-guideline-documents.mts; python src/modules/knowledge/import_guideline_documents.py; python src/modules/knowledge/import_guideline_documents.py --verify"
+    },
+    {
+      "id": "who-guideline-fat-quality-2023",
+      "role": "Population nutrition guideline with original rationale/remarks",
+      "officialUrls": [
+        "https://www.who.int/publications/i/item/9789240073630",
+        "https://iris.who.int/server/api/core/bitstreams/463fa93e-6c17-4e5b-a4d7-928354ea34c3/content"
+      ],
+      "declaredScope": "Every PDF text-layer page of pinned English guideline; primary recommendation/remarks ranges reviewed, figures/table semantics not reconstructed.",
+      "version": "2023-07-17",
+      "expectedRecords": 134,
+      "importedRecords": 134,
+      "countUnit": "PDF text-layer pages",
+      "license": "CC BY-NC-SA 3.0 IGO; WHO attribution/no endorsement. Commercial reuse requires WHO permission. Original/full extracted texts excluded from Git.",
+      "fieldsPreserved": [
+        "All page text/line breaks and page hashes, complete PDF retained privately",
+        "Primary recommendations, strength, population/age, scope/exclusions, rationale and references accessible by page"
+      ],
+      "fieldsNotExposed": [
+        "Figures and table semantics not reconstructed. Oversized pages/passages explicitly bounded; original PDF available."
+      ],
+      "integrity": {
+        "sourceSha256": "767c24d20e90357e71831e3e19813f79c84457c8a24ddbca931237a58bd3d503",
+        "pageTextRoundtripVerified": true,
+        "ftsAllPagesCompared": true
+      },
+      "retrievalInterface": "search_guideline_documents + get_guideline_pages",
+      "gates": {
+        "A_acquisition": "VERIFIED_PINNED_COMPLETE_PDF",
+        "B_preservation": "VERIFIED_COMPLETE_TEXT_LAYER_ONLY",
+        "C_access": "CATALOG_FTS_EXACT_HASHED_PAGES",
+        "D_agent": "REAL_NATIVE_PAGE_RETRIEVAL",
+        "E_answer_utility": "PARTIAL_THREE_REAL_QUESTIONS_AND_REPLAY"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Independent clinical appraisal and final-answer distribution not established. One live fat answer included an unsupported total/HDL-ratio statement; child answer UI loss fixed by offline actual-response replay. No individual prescription."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "statistics": {
+        "characters": 418661,
+        "emptyTextPages": 3,
+        "recommendationPages": [
+          46,
+          52
+        ]
+      },
+      "importCommand": "npm exec -- tsx scripts/acquire-guideline-documents.mts; python src/modules/knowledge/import_guideline_documents.py; python src/modules/knowledge/import_guideline_documents.py --verify"
+    },
+    {
+      "id": "who-guideline-salt-substitutes-2025",
+      "role": "Population nutrition guideline with original rationale/remarks",
+      "officialUrls": [
+        "https://www.who.int/publications/i/item/9789240105591",
+        "https://iris.who.int/server/api/core/bitstreams/31fad89a-d7c2-450c-9b74-cd2a8752e60f/content"
+      ],
+      "declaredScope": "Every PDF text-layer page of pinned English guideline; primary recommendation/remarks ranges reviewed, figures/table semantics not reconstructed.",
+      "version": "2025-01-27",
+      "expectedRecords": 82,
+      "importedRecords": 82,
+      "countUnit": "PDF text-layer pages",
+      "license": "CC BY-NC-SA 3.0 IGO; WHO attribution/no endorsement. Commercial reuse requires WHO permission. Original/full extracted texts excluded from Git.",
+      "fieldsPreserved": [
+        "All page text/line breaks and page hashes, complete PDF retained privately",
+        "Primary recommendations, strength, population/age, scope/exclusions, rationale and references accessible by page"
+      ],
+      "fieldsNotExposed": [
+        "Figures and table semantics not reconstructed. Oversized pages/passages explicitly bounded; original PDF available."
+      ],
+      "integrity": {
+        "sourceSha256": "e7111969908bbf588c20b457b6f5f26ce16e6d9e023e7e179d8a9c1b54a318a0",
+        "pageTextRoundtripVerified": true,
+        "ftsAllPagesCompared": true
+      },
+      "retrievalInterface": "search_guideline_documents + get_guideline_pages",
+      "gates": {
+        "A_acquisition": "VERIFIED_PINNED_COMPLETE_PDF",
+        "B_preservation": "VERIFIED_COMPLETE_TEXT_LAYER_ONLY",
+        "C_access": "CATALOG_FTS_EXACT_HASHED_PAGES",
+        "D_agent": "REAL_NATIVE_PAGE_RETRIEVAL",
+        "E_answer_utility": "PARTIAL_THREE_REAL_QUESTIONS_AND_REPLAY"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Independent clinical appraisal and final-answer distribution not established. One live fat answer included an unsupported total/HDL-ratio statement; child answer UI loss fixed by offline actual-response replay. No individual prescription."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "statistics": {
+        "characters": 218054,
+        "emptyTextPages": 4,
+        "recommendationPages": [
+          39,
+          43
+        ]
+      },
+      "importCommand": "npm exec -- tsx scripts/acquire-guideline-documents.mts; python src/modules/knowledge/import_guideline_documents.py; python src/modules/knowledge/import_guideline_documents.py --verify"
     },
     {
       "id": "curated-semantic-and-identities",

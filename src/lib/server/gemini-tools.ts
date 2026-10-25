@@ -30,6 +30,7 @@ import {readProductRecord,productRecordInput} from './product-records';
 import {readCodexCategories,codexCategoryInput} from './codex-categories';
 import {readResearchRecord,researchRecordInput,abstractChunks} from './research-records';
 import {searchJecfa,readJecfaRecord,jecfaSearchInput,jecfaRecordInput} from './jecfa-records';
+import {searchGuidelines,readGuidelinePages,guidelineSearchInput,guidelinePageInput,guidelineCatalog} from './guideline-documents';
 import { researchInput, research } from './research';
 import { fixedFetch } from './http';
 import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutrition-guidance';
@@ -72,6 +73,8 @@ const toolArgs = {
   get_assessment_records: openFoodToxDetailInput,
   get_ingredient_concept:foodOnConceptInput,
   get_food_composition_record:fdcRecordInput,
+  search_guideline_documents:guidelineSearchInput,
+  get_guideline_pages:guidelinePageInput,
   search_jecfa:jecfaSearchInput,
   get_jecfa_record:jecfaRecordInput,
   get_research_record:researchRecordInput,
@@ -94,6 +97,8 @@ const cropParameters = {
 };
 
 export const geminiToolDeclarations: FunctionDeclaration[] = [
+ {name:'search_guideline_documents',description:'Search complete pinned WHO guideline text locally: carbohydrate quality (2023), saturated/trans-fat quality and replacement (2023), lower-sodium salt substitutes (2025). No query lists the catalog. Default recommendations scope includes primary recommendations and remarks; all scope includes the full document. Navigation previews are incomplete: use get_guideline_pages for complete population, strength, exceptions and numeric context. This is general guidance, not individualized treatment.',parameters:{type:Type.OBJECT,properties:{query:{type:Type.STRING},documentId:{type:Type.STRING,enum:guidelineCatalog.map(d=>d.id),description:'Exact catalog machine ID, not the document title.'},scope:{type:Type.STRING,enum:['recommendations','all']},limit:{type:Type.INTEGER}}}},
+ {name:'get_guideline_pages',description:'Read 1–3 complete PDF text-layer pages from a selected local WHO guideline. Retains source hash, publication, rights, PDF page and full passage attribution. Read adjoining scope/remarks before applying a number. Differentiate adult/child targets, strong/conditional advice, naturally occurring fibre versus extracts, discretionary salt versus manufactured-food salt, and excluded populations. No automatic personal target.',parameters:{type:Type.OBJECT,properties:{documentId:{type:Type.STRING,enum:guidelineCatalog.map(d=>d.id),description:'Exact catalog machine ID, not the document title.'},pages:{type:Type.ARRAY,minItems:'1',maxItems:'3',items:{type:Type.INTEGER},description:'One to three PDF page numbers returned by search/catalog, not printed page labels.'}},required:['documentId','pages']}},
  {name:'search_jecfa',description:'Search WHO JECFA by a substance name or CAS number. Returns identity candidates and record IDs, not personal safety or Indian authorization. Resolve similar salts/mixtures carefully.',parameters:{type:Type.OBJECT,properties:{query:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['query']}},
  {name:'get_jecfa_record',description:'Read one WHO JECFA chemical ID and its latest or explicitly selected evaluation year. Preserves original ADI/TDI text, comments, intake, meeting, report/monograph links, history years and qualifiers. Page fields when nextOffset exists. Never convert a body-weight exposure reference into a package allowance without measured additive amounts.',parameters:{type:Type.OBJECT,properties:{id:{type:Type.INTEGER},year:{type:Type.INTEGER},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['id']}},
  {name:'get_research_record',description:'Inspect one exact Europe PMC publication source/id returned by research discovery or explicitly supplied. Returns original publication-type/retraction/correction metadata where supplied and complete bounded abstract passages with pagination. Use these to inspect populations, exposures, outcomes and limitations before scientific synthesis. Not full-text appraisal or clinical guidance; missing status/abstract is unknown.',parameters:{type:Type.OBJECT,properties:{source:{type:Type.STRING,enum:['MED','PMC','PPR','AGR','CBA','PAT'],description:'Publication database source, normally MED for a PubMed identifier.'},id:{type:Type.STRING,description:'Identifier only, without source prefix; for MED 12345678 use id 12345678.'},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['id']}},
@@ -452,6 +457,7 @@ function retrieveNutritionGuidance(args: z.infer<typeof toolArgs.get_nutrition_g
       message: evidence.length
         ? 'Local source-linked summaries only. Treat population guidance as context, not an individualized target or a verdict about one package.'
         : 'No sufficiently relevant local guidance summary matched. Do not invent a target; use an explicitly authorized current research lookup if the user needs a current source.',
+      fullGuidelineAccess:{tool:'search_guideline_documents',catalog:guidelineCatalog,installation:'Optional local store; tool reports availability. Inspect complete pages and scope.'},
       externalRequestMade: false,
     },
   };
@@ -1097,6 +1103,14 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
     case 'calculate_nutrition': {
       const parsed = toolArgs.calculate_nutrition.safeParse(args);
       return parsed.success ? calculateNutrition(parsed.data, context) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The nutrition calculation arguments were invalid.' } };
+    }
+    case 'search_guideline_documents': {
+      const parsed=toolArgs.search_guideline_documents.safeParse(args);if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments',issues:parsed.error.issues.slice(0,4).map(issue=>({field:issue.path.join('.'),message:issue.message})),availableDocuments:guidelineCatalog,message:'Use an exact catalog documentId (not title), or omit the search documentId; request at most three distinct PDF pages.'}};const result=await searchGuidelines(parsed.data);return{status:result.status==='ok'?'ok':result.status==='empty'?'empty':'unavailable',resultCount:result.results.length,output:result};
+    }
+    case 'get_guideline_pages': {
+      const parsed=toolArgs.get_guideline_pages.safeParse(args);if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments',issues:parsed.error.issues.slice(0,4).map(issue=>({field:issue.path.join('.'),message:issue.message})),availableDocuments:guidelineCatalog,message:'Use an exact catalog documentId (not title), or omit the search documentId; request at most three distinct PDF pages.'}};const result=await readGuidelinePages(parsed.data);if(result.status!=='ok')return{status:result.status==='no_document'?'empty':'unavailable',resultCount:0,output:result};
+      const evidence=result.pages.flatMap(page=>abstractChunks(page.text).chunks.flatMap((chunk,i)=>{const source=asEvidenceSource({id:`guideline-${result.source.id}-p${page.page}-${i}`,title:`${result.source.title} — PDF page ${page.page}`.slice(0,300),publisher:'World Health Organization',url:`${result.source.downloadUrl}#page=${page.page}`,category:'guideline',jurisdiction:'Global population guidance; applicability and individual clinical context require interpretation',publishedAt:result.source.publishedAt,effectiveAt:null,retrievedAt:result.source.retrievedAt,summary:chunk,limitations:result.limitations,license:result.source.license});return source?[source]:[];}));
+      return{status:result.pages.length?'ok':'empty',resultCount:result.pages.length,output:result,evidence};
     }
     case 'search_jecfa': {
       const parsed=toolArgs.search_jecfa.safeParse(args);if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments'}};

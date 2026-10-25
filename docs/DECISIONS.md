@@ -1173,3 +1173,8 @@ Source-fidelity follow-through: original API markup demonstrated that the shared
 ### 25 October — JECFA dated assessment utilization
 
 Use WHO site full filtered-results API, not autocomplete, for pageable name/CAS identity candidates; no silent first-hit selection or stale search-preview ADI authority. Date every reference to its evaluation and retain original units, comments, intake and report links. Select assessment year independently from specifications-only history. Keep exact-name/CAS prioritization structural; Gemini interprets scope, code does not manufacture personal safe amounts or Indian approval. Original WHO responses stay outside Git; no blanket bulk redistribution right asserted.
+
+
+### 25 October — complete selected WHO guideline documents
+
+Preserve complete selected guideline text-layer releases locally instead of indefinitely extending tiny source summaries. Keep original PDFs/hashes, source rights, all page text and original page numbers; expose bounded search and complete pages with adjoining rationale/remarks. No indiscriminate embedding, clinical intent classifier or patient-target engine. Model chooses and interprets guidance; code verifies input/source integrity and numerical representation. Paired strong-emphasis markers cannot change quantity/comparator meaning. Explicit compound year-old user context is typed separately and cannot corroborate food amounts or study duration; unrelated question numbers remain excluded. Scientific entailment still needs evaluation.

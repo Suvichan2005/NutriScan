@@ -81,3 +81,22 @@ Contributor changes belong under `src/modules/knowledge/**`. Shared contracts, `
 FoodOn exact detail access: `readFoodOnConcept({id, relation, offset, limit})` supports `parents`, `children` and `ancestors` (paths retained), exposed to the agent as `get_ingredient_concept`. Full typed English aliases and all eligible direct parent edges are preserved without the old 180-character/24-alias truncation. `python scripts/audit-dataset-coverage.py` compares source class, typed alias and direct parent sets exactly. Taxonomy does not establish nutrients, package presence, allergen relationships or clinical suitability. OWL restrictions/imported ontologies/non-taxonomic relations remain outside this declared projection.
 
 USDA owner integration: `python scripts/import-fdc-source-records.py` builds the ignored complete-source store from both existing pinned releases; `python scripts/audit-dataset-coverage.py` compares every parsed food object. Native `get_food_composition_record` selects exact release, FDC ID, field and optional nutrient ID with bounded complete-object pages. Existing normalized search/index remains unchanged apart from optional exact release selection. Source attribution, quantities, portions, nested analytical/recipe provenance and missing values survive; this is a generic reference, not package truth. Large individual source objects are explicitly withheld rather than clipped.
+
+
+## Pinned WHO guideline documents
+
+The source manifest is `data/guideline-sources.json`. It declares three complete English PDFs and reviewed recommendation/remarks page ranges. Original PDFs and the generated SQLite text/FTS store stay under ignored `.data/`. This is a complete text-layer projection, not reconstructed figures/tables or independently appraised clinical advice. Sources are CC BY-NC-SA 3.0 IGO; commercial reuse requires permission/review.
+
+From the repository root:
+
+```powershell
+python -m pip install -r src/modules/knowledge/requirements-guidelines.txt
+npm exec -- tsx scripts/acquire-guideline-documents.mts
+python src/modules/knowledge/import_guideline_documents.py
+python src/modules/knowledge/import_guideline_documents.py --verify
+python scripts/audit-dataset-coverage.py
+```
+
+Acquisition verifies existing/pinned bytes and refuses changed sources without overwriting them. Verification regenerates every page, compares stored text and FTS entries, checks integrity, and writes `.data/knowledge/guidelines.verification.json`. Import updates only selected document IDs in one transaction. A failed import preserves previous committed database contents.
+
+Native `search_guideline_documents` returns catalog/navigation results; `get_guideline_pages` supplies complete, hash-checked pages and precise original-PDF page links. The server can override the store using `NUTRISCAN_GUIDELINES_DATABASE`; no consumer-controlled path or external URL is accepted. Empty, missing, corrupt and oversized pages remain explicit. Model answers still require scientific-applicability evaluation.
