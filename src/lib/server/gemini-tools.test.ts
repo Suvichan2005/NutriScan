@@ -6,8 +6,13 @@ import { assistInput, assistPromptPayload, toolResultForModel } from './gemini';
 import { calculateSavedServing, executeGeminiTool, type GeminiToolContext } from './gemini-tools';
 import { applyNutrientCorrection } from '../correction';
 
-const mocks = vi.hoisted(() => ({ semanticRetrieve: vi.fn(), searchOpenFoodTox: vi.fn(), research: vi.fn() }));
+const mocks = vi.hoisted(() => ({ semanticRetrieve: vi.fn(), searchOpenFoodTox: vi.fn(), research: vi.fn(), readOpenFoodToxRecords:vi.fn() }));
 vi.mock('../semantic', () => ({ semanticRetrieve: mocks.semanticRetrieve, searchOpenFoodTox: mocks.searchOpenFoodTox }));
+vi.mock('../../modules/knowledge/server',async importOriginal=>{
+  const actual=await importOriginal<typeof import('../../modules/knowledge/server')>();
+  mocks.readOpenFoodToxRecords.mockResolvedValue({status:'unavailable',reason:'not-imported',results:[]});
+  return{...actual,readOpenFoodToxRecords:mocks.readOpenFoodToxRecords};
+});
 vi.mock('./research', async importOriginal => {
   const actual = await importOriginal<typeof import('./research')>();
   mocks.research.mockImplementation((args: Parameters<typeof actual.research>[0]) => actual.research(args));
@@ -29,6 +34,17 @@ function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019
 }
 
 describe('Gemini tool retrieval boundaries', () => {
+  it('hands full selected assessment fields, record provenance and declared literature terms into the native tool loop',async()=>{
+    const sourceId='11111111-1111-4111-8111-111111111111';
+    mocks.readOpenFoodToxRecords.mockResolvedValueOnce({status:'ok',source:{releaseDate:'2026-04-30'},results:[{recordId:'LIT:2',documentId:'source-document',parentId:null,section:'LIT',endpoint:null,fields:{'GeneralInfo.Name':'Fictional source title','GeneralInfo.Author':'Developer fixture author','GeneralInfo.Source':'doi:10.0000/developer-fixture'},availableFields:['GeneralInfo.Name'],truncatedFields:[],selectedFieldsComplete:true,links:[],otherRowsForDocument:0}]});
+    const result=await executeGeminiTool('get_assessment_records',{substanceId:sourceId,recordId:'LIT:2'},context('Inspect the linked assessment.'));
+    expect(result.status).toBe('ok');
+    expect(result.searchTerms).toEqual(['Fictional source title','Developer fixture author','doi:10.0000/developer-fixture']);
+    expect(result.evidence?.[0]).toMatchObject({id:'openfoodtox-record-LIT-2',category:'assessment',summary:expect.stringContaining('Fictional source title')});
+    expect(toolResultForModel(result.output,result.evidence).citationEvidence).toHaveLength(1);
+    expect((await executeGeminiTool('get_assessment_records',{substanceId:sourceId,limit:6},context('Inspect the linked assessment.'))).status).toBe('error');
+    expect(mocks.readOpenFoodToxRecords).toHaveBeenCalledTimes(1);
+  });
   it.each([
     ['sodium caseinate', 'milk'], ['tofu', 'soy'], ['atta', 'wheat'], ['ovalbumin', 'egg'], ['ground nuts', 'peanut'],
   ])('hands source relationships and attribution for %s to the agent alongside identity resolution', async (query, family) => {

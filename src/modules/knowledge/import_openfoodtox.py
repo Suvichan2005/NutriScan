@@ -12,6 +12,9 @@ import hashlib
 import json
 import math
 import os
+import re
+import sqlite3
+from contextlib import closing
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable
@@ -27,6 +30,73 @@ SOURCE_LICENSE = "CC BY-ND 4.0"
 SOURCE_LICENSE_URL = "https://creativecommons.org/licenses/by-nd/4.0/"
 RELEASE_DATE = "2026-04-30"
 SOURCE_NAME = "OpenFoodTox 3.0: EFSA's chemical hazards database"
+
+
+def build_full_store(workbook: openpyxl.Workbook, output_path: Path) -> dict[str, Any]:
+    """Preserve every nonempty source cell, row and declared UUID relationship.
+
+    Sparse column/value pairs retain unnamed/duplicate columns without turning
+    flattened workbook rows into falsely independent studies or assessments.
+    This local store complements the small identity index; it is not shipped.
+    """
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output_path.with_suffix(output_path.suffix + ".tmp")
+    if temporary.exists():
+        raise ValueError(f"An unfinished import already exists; inspect it before retrying: {temporary}")
+    references: dict[tuple[str, str], str] = {}
+    for row in rows(workbook, "DATA_DICTIONARY"):
+        if row.get("Referenced IUCLID document"):
+            table = str(row.get("Table name") or "").split(" (", 1)[0]
+            references[(table, str(row.get("Field name") or ""))] = str(row["Referenced IUCLID document"])
+    uuid = re.compile(r"\b[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\b")
+    statistics: dict[str, Any] = {"sheets": [], "sourceSha256": SOURCE_SHA256, "schemaVersion": 1}
+    with closing(sqlite3.connect(temporary)) as db, db:
+        db.executescript("""
+          CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+          CREATE TABLE sheets(name TEXT PRIMARY KEY,headers_json TEXT NOT NULL,source_rows INTEGER NOT NULL,imported_rows INTEGER NOT NULL,blank_rows INTEGER NOT NULL,nonempty_cells INTEGER NOT NULL);
+          CREATE TABLE records(sheet TEXT NOT NULL,source_row INTEGER NOT NULL,document_id TEXT,parent_id TEXT,endpoint TEXT,cells_json TEXT NOT NULL,PRIMARY KEY(sheet,source_row)) WITHOUT ROWID;
+          CREATE TABLE links(sheet TEXT NOT NULL,source_row INTEGER NOT NULL,field TEXT NOT NULL,target_id TEXT NOT NULL,target_type TEXT NOT NULL,PRIMARY KEY(sheet,source_row,field,target_id)) WITHOUT ROWID;
+        """)
+        for sheet in workbook:
+            iterator = sheet.iter_rows(values_only=True)
+            headers = list(next(iterator))
+            imported = blank = cell_count = 0
+            for ordinal, raw in enumerate(iterator, 2):
+                cells = [[i, safe_value(value)] for i, value in enumerate(raw) if value is not None and value != ""]
+                if not cells:
+                    blank += 1
+                    continue
+                values = {str(headers[i]): value for i, value in cells if headers[i] is not None}
+                document_id = values.get("Document UUID")
+                parent_id = values.get("Parent UUID")
+                db.execute("INSERT INTO records VALUES(?,?,?,?,?,?)", (sheet.title, ordinal, document_id, parent_id, values.get("AdministrativeData.Endpoint"), json.dumps(cells, ensure_ascii=False, separators=(",", ":"))))
+                for field, value in values.items():
+                    target_type = references.get((sheet.title, field))
+                    if sheet.title == "DOSSIER_DOCS" and field in ("DOSSIER UUID", "DOCUMENT UUID"):
+                        target_type = "DOSSIER" if field == "DOSSIER UUID" else str(values.get("DOCUMENT TYPE") or "DOCUMENT")
+                    if target_type:
+                        for target in set(uuid.findall(str(value))):
+                            db.execute("INSERT INTO links VALUES(?,?,?,?,?)", (sheet.title, ordinal, field, target.lower(), target_type))
+                imported += 1
+                cell_count += len(cells)
+            if imported + blank != sheet.max_row - 1:
+                raise ValueError(f"Source row accounting failed for {sheet.title}")
+            db.execute("INSERT INTO sheets VALUES(?,?,?,?,?,?)", (sheet.title, json.dumps(headers), sheet.max_row - 1, imported, blank, cell_count))
+            distinct = db.execute("SELECT COUNT(DISTINCT document_id) FROM records WHERE sheet=?", (sheet.title,)).fetchone()[0]
+            statistics["sheets"].append({"name": sheet.title, "sourceRows": sheet.max_row - 1, "importedRows": imported, "blankRows": blank, "nonemptyCells": cell_count, "distinctDocumentIds": distinct, "columns": len(headers)})
+        db.executescript("CREATE INDEX records_document ON records(document_id); CREATE INDEX records_parent_sheet ON records(parent_id,sheet,source_row); CREATE INDEX links_target ON links(target_id); CREATE INDEX links_source ON links(sheet,source_row);")
+        statistics["records"] = db.execute("SELECT COUNT(*) FROM records").fetchone()[0]
+        statistics["links"] = db.execute("SELECT COUNT(*) FROM links").fetchone()[0]
+        statistics["distinctStudyDocuments"] = db.execute("SELECT COUNT(DISTINCT document_id) FROM records WHERE sheet LIKE 'END_STUDY_REC.%'").fetchone()[0]
+        statistics["distinctReferenceValueDocuments"] = db.execute("SELECT COUNT(DISTINCT document_id) FROM records WHERE sheet='FLEX_SUM.ToxRefValues'").fetchone()[0]
+        db.execute("INSERT INTO metadata VALUES('manifest',?)", (json.dumps(statistics),))
+        db.execute("INSERT INTO metadata VALUES('source',?)", (json.dumps({"name": SOURCE_NAME, "version": "3.0", "releaseDate": RELEASE_DATE, "url": SOURCE_DOI, "sha256": SOURCE_SHA256, "license": SOURCE_LICENSE, "useNotice": "Local internal research only; extracted store is not redistributed. Original EFSA scientific outputs take precedence."}),))
+        if db.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+            raise ValueError("SQLite integrity check failed.")
+    temporary.replace(output_path)
+    manifest_path = output_path.with_suffix(".manifest.json")
+    manifest_path.write_text(json.dumps(statistics, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return statistics
 
 ADI_PREFIX = "HumanHealthHazardCharacteristics.AcceptableDailyIntake."
 ARFD_PREFIX = "HumanHealthHazardCharacteristics.AcuteReferenceDose."
@@ -92,13 +162,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, help="Pinned EFSA xlsx file (defaults to .data/sources/openfoodtox/)")
     parser.add_argument("--output", type=Path, help="Local generated index (must remain under .data/)")
+    parser.add_argument("--records-output", type=Path, help="Full local workbook store (defaults to .data/knowledge/openfoodtox-3.0.sqlite)")
     args = parser.parse_args()
 
     repo = Path(__file__).resolve().parents[3]
     source_path = (args.source or repo / ".data/sources/openfoodtox/OFT3.0-export-repository.xlsx").resolve()
     output_path = (args.output or repo / ".data/knowledge/openfoodtox-3.0.json").resolve()
+    records_path = (args.records_output or repo / ".data/knowledge/openfoodtox-3.0.sqlite").resolve()
     data_root = (repo / ".data").resolve()
-    if data_root not in source_path.parents or data_root not in output_path.parents:
+    if data_root not in source_path.parents or data_root not in output_path.parents or data_root not in records_path.parents:
         raise SystemExit("The source workbook and generated index must remain under the ignored .data/ directory.")
     verify_source(source_path)
 
@@ -204,6 +276,7 @@ def main() -> None:
         adi_count += int(values["adi"] is not None)
         arfd_count += int(values["acuteReferenceDose"] is not None)
 
+    full_store = build_full_store(workbook, records_path)
     workbook.close()
     payload = {
         "schemaVersion": 1,
@@ -239,7 +312,7 @@ def main() -> None:
         output.flush()
         os.fsync(output.fileno())
     temporary.replace(output_path)
-    print(json.dumps({"output": str(output_path), "bytes": output_path.stat().st_size, "dataset": payload["statistics"]}, ensure_ascii=False))
+    print(json.dumps({"output": str(output_path), "bytes": output_path.stat().st_size, "dataset": payload["statistics"], "fullStore": {"path": str(records_path), "bytes": records_path.stat().st_size, **full_store}}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

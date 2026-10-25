@@ -5,6 +5,7 @@ import type { FeatureExtractionPipeline } from '@huggingface/transformers';
 import { z } from 'zod';
 import { corpusVersion, evidenceSources, lookupAdditive, lookupExplicitAdditiveMention } from './index';
 import type { EvidenceSource } from '../../lib/contracts';
+export { readOpenFoodToxRecords, openFoodToxDetailInput } from './openfoodtox-records';
 
 /** Node.js-only entry point. Client modules must import the static `index.ts` entry instead. */
 

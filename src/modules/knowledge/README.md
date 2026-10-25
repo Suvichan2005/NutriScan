@@ -35,9 +35,20 @@ To reproduce the local OpenFoodTox snapshot, install the pinned workbook depende
 ```powershell
 python -m pip install -r src/modules/knowledge/requirements-openfoodtox.txt
 python src/modules/knowledge/import_openfoodtox.py
+python src/modules/knowledge/verify_openfoodtox.py
 ```
 
 The importer verifies the pinned file size and hashes before writing the local-only index. A missing workbook or dependency is an explicit setup condition; application queries do not download or transmit data.
+
+The same command also creates the ignored `openfoodtox-3.0.sqlite` full-workbook store (about 395 MB for this release) and its sheet/count manifest. The separate verifier compares every nonempty cell and complete worksheet header against the pinned original. All 18 sheets, 261,183 flattened rows and 2,513,078 nonempty cells are retained; 506,177 source-declared links are indexed. Raw rows are not independent studies. Document UUID counts differ from the landing page's headline result/value totals and must not be relabelled as equivalent scientific counts.
+
+`readOpenFoodToxRecords` is a Node-only public server operation. It reads one exact substance's section counts, pages of reference/study/summary/composition records, exact fields and source-declared related records. Long fields are omitted explicitly from compact pages rather than clipped into incomplete evidence; request their record ID/field for detail. The native agent uses `get_substance_assessments` for lookup and `get_assessment_records` for detail. Preserve endpoint, species/population, dose/unit/qualifier and citation context; these are not package exposure, Indian permission or personal targets. Final-answer utility remains partially verified, with real failure receipts retained. No extracted EFSA database is committed or authorized for redistribution.
+
+```powershell
+python -m unittest discover -s src/modules/knowledge -p test_import_openfoodtox.py
+npm test -- src/modules/knowledge/openfoodtox-records.test.ts
+python scripts/audit-dataset-coverage.py
+```
 
 To reproduce the bundled FoodOn index, obtain the two official files at the exact pinned repository commit, then run the importer:
 

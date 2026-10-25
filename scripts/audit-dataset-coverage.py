@@ -1,0 +1,143 @@
+"""Reconcile selected source assets and emit the single knowledge coverage matrix.
+
+No downloads, provider calls, source-text copying or sensitive data inspection.
+Counts refer to declared release units; unknown upstream universes stay unknown.
+"""
+import hashlib
+import json
+import sqlite3
+import csv
+import re
+import runpy
+from contextlib import closing
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def load(relative):
+    return json.loads((ROOT / relative).read_text(encoding='utf-8'))
+
+
+def digest(relative):
+    h = hashlib.sha256()
+    with (ROOT / relative).open('rb') as source:
+        for block in iter(lambda: source.read(1024 * 1024), b''):
+            h.update(block)
+    return h.hexdigest()
+
+
+def source(identifier, role, urls, scope, access, gaps, license_status='Source-specific reuse review pending; do not infer permission from availability.'):
+    return {'id': identifier, 'role': role, 'officialUrls': urls, 'declaredScope': scope,
+            'version': None, 'expectedRecords': None, 'importedRecords': None, 'countUnit': None,
+            'license': license_status, 'fieldsPreserved': [], 'fieldsNotExposed': [], 'integrity': {},
+            'retrievalInterface': access, 'gates': {'A_acquisition': 'NOT_VERIFIED', 'B_preservation': 'NOT_VERIFIED', 'C_access': 'PARTIAL', 'D_agent': 'PARTIAL', 'E_answer_utility': 'NOT_INDEPENDENTLY_VERIFIED'},
+            'verifiedCapabilities': [], 'remainingGaps': gaps, 'refresh': 'Explicit versioned source refresh and validation; never silently replace evaluation inputs.'}
+
+
+sources = []
+for release in ['foundation-2026-04', 'fndds-2021-2023']:
+    prefix = f'.data/food-composition/fdc-{release}'
+    catalog = load(prefix + '.catalog.json')
+    metadata, stats = catalog['dataset'], catalog['statistics']
+    raw_directory = '.data/fdc-foundation-source-2026-04' if 'foundation' in release else '.data/fdc-fndds-source-2024-10'
+    raw_path = raw_directory + '/' + metadata['sourceFile']
+    raw = load(raw_path)
+    raw_foods = next(value for value in raw.values() if isinstance(value, list))
+    eligible = [food for food in raw_foods if isinstance(food, dict) and food.get('fdcId')]
+    assert len(raw_foods) == stats['sourceFoodSlots']
+    assert {food['fdcId'] for food in eligible} == {food['fdcId'] for food in catalog['foods']}
+    assert digest(raw_path) == metadata['sourceSha256']
+    assert digest(prefix + '.records.jsonl') == metadata['recordsSha256']
+    entry = source(metadata['id'], 'Generic nutritional composition; not branded package truth', [metadata['sourceUrl'], metadata['documentationUrl']], 'Every eligible food in the pinned official JSON release; null slots and unavailable amounts explicitly excluded.', 'src/lib/server/food-composition.ts; search_food_composition native tool', ['Audit full analytical/derivation/portion metadata against raw source; quantify source-field exclusions and demonstrate broader quantitative use.'], metadata['license'])
+    entry.update(version=metadata['releaseDate'], expectedRecords=len(eligible), importedRecords=len(catalog['foods']), countUnit='eligible foods', fieldsPreserved=['food IDs/name/category/date/type', 'numeric nutrient IDs/names/units/amounts/data-points/min/max/median/LOQ/derivation', 'usable portions and gram weights'], fieldsNotExposed=['Full raw source remains local; not all analytical/sample/relationship metadata is exposed by the normalized adapter.'], statistics=stats, integrity={'sourceSha256': metadata['sourceSha256'], 'recordsSha256': metadata['recordsSha256'], 'rawHashVerified': True, 'recordsHashVerified': True, 'eligibleIdSetEqual': True}, importCommand=f'npm exec -- tsx scripts/import-fdc-{"foundation" if "foundation" in release else "fndds"}.mts')
+    entry['gates'].update(A_acquisition='VERIFIED_DEFINED_RELEASE', B_preservation='PARTIAL_RICH_RAW_SOURCE_RETAINED', C_access='IMPLEMENTED_STRUCTURED_SEARCH', D_agent='IMPLEMENTED_EXISTING_LIVE_EVIDENCE')
+    sources.append(entry)
+
+foodon = load('data/foodon-index.json')
+foodon_importer=runpy.run_path(str(ROOT/'src/modules/knowledge/import_foodon.py'))
+_,deprecated=foodon_importer['source_version_and_deprecated'](ROOT/'.data/knowledge/foodon.owl')
+source_terms={}
+with (ROOT/'.data/knowledge/foodon-synonyms.tsv').open(encoding='utf-8',newline='') as handle:
+    rows=csv.reader(handle,delimiter='\t');next(rows)
+    for row in rows:
+        if len(row)<4: continue
+        identifier=re.search(r'FOODON_[0-9]{8}',row[0])
+        if not identifier or identifier[0] in deprecated: continue
+        value=row[3].strip()
+        if not value or (foodon_importer['LANGUAGE_SUFFIX'].search(value) and not foodon_importer['ENGLISH_SUFFIX'].search(value)): continue
+        value=foodon_importer['ENGLISH_SUFFIX'].sub('',value).strip()
+        if len(value)>=2 and value[0]==value[-1]=='"': value=value[1:-1]
+        value=re.sub(r'\s+',' ',value.replace('\\"','"').replace('\\\\','\\')).strip()
+        term=source_terms.setdefault(identifier[0],{'labels':set(),'aliases':set()})
+        if row[2].strip()=='label': term['labels'].add(value.casefold())
+        elif row[2].strip() in {'synonym','synonym (exact)','synonym (narrow)','synonym (broad)','label (alternative)'}: term['aliases'].add(value.casefold())
+source_terms={key:value for key,value in source_terms.items() if value['labels']}
+indexed_terms={term['id']:term for term in foodon['terms']}
+assert set(source_terms)==set(indexed_terms)
+foodon_accounting={'activeLabeledSourceClasses':len(source_terms),'classIdSetEqual':True,'deprecatedOwnClasses':len(deprecated),'uniqueEnglishAliasesBeforeCaps':sum(len(t['aliases']-t['labels']) for t in source_terms.values()),'aliasTextsAbsentFromCompactIndex':sum(len((t['aliases']-t['labels'])-{a['text'].casefold() for a in indexed_terms[key]['aliases']}) for key,t in source_terms.items()),'sourceAliasesOver180Characters':sum(sum(len(a)>180 for a in t['aliases']-t['labels']) for t in source_terms.values()),'classesExceeding24Aliases':sum(len(t['aliases']-t['labels'])>24 for t in source_terms.values()),'scope':'Pinned TSV active labelled own-namespace English terms. Complete OWL restriction/relationship projection is not asserted.'}
+f = source('foodon', 'Food/ingredient ontology identity and hierarchy; no health or composition authority', [foodon['source']['ontologyUrl'], foodon['source']['synonymExportUrl']], 'Pinned own-namespace active labelled FoodOn classes, English aliases and internal direct parents; original OWL/TSV retained.', 'src/modules/knowledge/server.ts searchFoodOn; resolve_ingredient native tool', ['Reconcile source class/alias totals and exclusions; compact aliases cap 24 and text cap 180; other useful OWL relationships are not navigable yet.'], foodon['source']['license'])
+f.update(version=foodon['source']['version'], importedRecords=len(foodon['terms']), countUnit='active labelled classes', fieldsPreserved=['stable FOODON IDs', 'English labels and typed synonyms', 'direct internal parent IDs', 'full original OWL/TSV locally'], statistics={'indexedAliases': sum(len(t['aliases']) for t in foodon['terms']), 'indexedParentEdges': sum(len(t['parents']) for t in foodon['terms'])}, integrity={'ontologySha256': digest('.data/knowledge/foodon.owl'), 'synonymExportSha256': digest('.data/knowledge/foodon-synonyms.tsv')}, importCommand='python src/modules/knowledge/import_foodon.py')
+assert f['integrity']['ontologySha256'] == foodon['source']['ontologySha256']
+assert f['integrity']['synonymExportSha256'] == foodon['source']['synonymExportSha256']
+f['gates'].update(A_acquisition='VERIFIED_PINNED_SOURCE_FILES', B_preservation='PARTIAL_INDEX_SCOPE', C_access='IMPLEMENTED_IDENTITY_AND_DIRECT_PARENTS', D_agent='IMPLEMENTED_IDENTITY_TOOL')
+f['statistics']['sourceAccounting']=foodon_accounting
+sources.append(f)
+
+oft = load('.data/knowledge/openfoodtox-3.0.manifest.json')
+receipt = load('.data/knowledge/openfoodtox-3.0.verification.json')
+assert receipt['sourceSha256'] == oft['sourceSha256'] and receipt['rows'] == oft['records']
+with closing(sqlite3.connect(f'{(ROOT / ".data/knowledge/openfoodtox-3.0.sqlite").as_uri()}?mode=ro', uri=True)) as db:
+    assert db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
+    absent = db.execute('SELECT COUNT(DISTINCT target_id) FROM links l WHERE NOT EXISTS(SELECT 1 FROM records r WHERE r.document_id=l.target_id)').fetchone()[0]
+o = source('efsa-openfoodtox-3', 'Substance hazard/assessment/study context; not dietary exposure or Indian authorization', ['https://doi.org/10.5281/zenodo.19388272'], 'Every nonempty cell and worksheet header in the pinned official workbook; flattened rows and unique documents counted separately.', 'readOpenFoodToxRecords; get_substance_assessments + get_assessment_records native tools', ['Final-answer quality remains partial: initial sodium-benzoate run skipped source detail; initial caffeine answer lost qualifications. Later detail flow improved sodium context but caffeine quantity was withheld. Independent applicability evaluation remains missing. Public headline totals use counting definitions not reconciled with workbook document counts.'], 'CC BY-ND 4.0; local internal research extraction only. Do not redistribute altered/extracted database; deployable redistribution design remains unresolved.')
+o.update(version='3.0 / official workbook published 2026-04-30', expectedRecords=oft['records'], importedRecords=oft['records'], countUnit='nonempty workbook rows across 18 sheets', statistics={**oft, 'nonemptySourceCellsVerified': receipt['nonemptySourceCells'], 'unresolvedReferencedDocumentIds': absent}, integrity={'sourceSha256': oft['sourceSha256'], 'cellByCellVerified': True, 'sqliteIntegrity': 'ok'}, fieldsPreserved=['all original worksheet headers and sparse cells, including unnamed/duplicate columns', 'all original UUIDs, parent IDs, declared reference links', 'all reference-value families/units/qualifiers/populations/comments', 'study endpoints, methods, species/exposure, results, summaries, literature and dossiers'], fieldsNotExposed=['Original cells remain in the local store. Bounded exact-record/field access can omit oversized text; consult the original output. Citation previews are also bounded, and not every relationship has a specialized semantic operation.'], importCommand='python src/modules/knowledge/import_openfoodtox.py', verifyCommand='python src/modules/knowledge/verify_openfoodtox.py', verifiedCapabilities=['All 261183 rows / 2513078 nonempty cells match the original workbook.', 'Local caffeine/lead/sodium-benzoate lookup, section counts and rich fields.', 'Actual agent selected detailed sodium-benzoate records; caffeine detail/quantity utility incomplete.'])
+o['gates'].update(A_acquisition='VERIFIED_PINNED_WORKBOOK', B_preservation='VERIFIED_ALL_SOURCE_CELLS_AND_DECLARED_LINKS', C_access='VERIFIED_LOCAL_RECORD_AND_RELATION_ACCESS', D_agent='REAL_TOOL_USE_VERIFIED', E_answer_utility='PARTIAL_REAL_FAILURES_RETAINED')
+sources.append(o)
+
+descriptors = [
+ ('open-food-facts','Community branded-product catalog','https://world.openfoodfacts.org/data','Official India-tagged bulk partition not acquired; current supported v3 and Search-a-licious are on-demand only.','src/lib/server/products.ts; lookup_product',['Establish official snapshot size/version/rights and streaming India filter. No completeness claim for live catalog; preserve ODbL obligations and separate image rights.']),
+ ('codex-gsfa','International additive identity/functions/category provisions','https://www.fao.org/gsfaonline/','Bounded official INS lookup plus small local identities; no full provision/category release imported.','resolve_ingredient / official Codex API adapter',['Acquire permitted complete tables or close explicit on-demand coverage; expose category conditions/notes without implying Indian authorization.']),
+ ('fssai','Indian food regulation/label/claim instruments','https://www.fssai.gov.in/cms/food-safety-and-standards-regulations.php','Dated source-linked summaries and bounded official PDF research; not a consolidated current-law database.','get_nutrition_guidance / search_research(regulation)',['Inventory compendia/amendments/effective dates, permission and category/exception coverage; no package legal verdict from a generic rule.']),
+ ('who-jecfa','Additive evaluations, identities and assessment histories','https://apps.who.int/food-additives-contaminants-jecfa-database/','Small selected source references; comprehensive dedicated access not yet implemented.','Existing source summaries/research tools',['Audit official searchable/export access and rights; preserve assessment history, dose, endpoint and qualifiers.']),
+ ('pubchem','Chemical registry identity and linked chemistry','https://pubchem.ncbi.nlm.nih.gov/docs/pug-rest','Supported bounded official PUG REST identity/property lookup; no universe bulk import selected.','lookup_chemical_identity',['Current property tool exposes CID/title/formula/IUPAC/InChIKey; review synonym and linked-reference operations and demonstrate multi-entity use.']),
+ ('europe-pmc-pubmed','Scientific evidence discovery, not clinical recommendation authority','https://europepmc.org/RestfulWebService','Bounded live literature search; no full literature acquisition selected.','search_research(science)',['Audit abstract/detail access and population/intervention/dose/outcome/source applicability handoff; independently judge relevance and answer use.']),
+ ('who-clinical-guidance','Population and condition-scoped dietary guidance','https://www.who.int/publications/who-guidelines','Specific source-linked summaries/typed numeric references, not complete WHO/ADA/KDIGO/AHA guideline corpora.','src/lib/server/nutrition-guidance.ts; get_nutrition_guidance',['Inventory every selected guideline/version/rights scope; preserve population, dose, recommendation strength and individualization limits; expand missing applicable guidance.']),
+ ('ifct-icmr-nin','Indian food composition and dietary reference material','https://www.nin.res.in/','No composition dataset licensed/imported for the application; source-access and electronic reuse review outstanding.','Source links / permitted dietary summaries only',['Verify actual IFCT/ICMR-NIN terms and electronic-use permission; public PDF access alone does not authorize database extraction/distribution.']),
+ ('indian-nutrient-databank','India-relevant composition source candidate','https://www.anuvaad.org.in/indian-nutrient-databank/','No imported release; source scope/rights/dependencies not yet verified.','Not integrated',['Verify authoritative distribution and permissions; select an authorized release or record explicit alternative.']),
+ ('foodb','Food compound source candidate','https://foodb.ca/','Not selected for bulk import pending actual product need and rights review.','Not integrated',['Decide source relevance/permissions; do not download world chemistry merely for count.']),
+ ('usda-sr-legacy','Generic reference composition candidate','https://fdc.nal.usda.gov/download-datasets/','2018 official partition not imported; relevance decision pending.','No local SR Legacy adapter',['Official page lists 12.3 MB JSON archive / 205 MB uncompressed; decide incremental food coverage against current Foundation/FNDDS.']),
+ ('usda-branded','Mostly US branded-product catalog','https://fdc.nal.usda.gov/download-datasets/','Not selected for full local import: India-first incremental value not demonstrated.','Use appropriate existing live/product sources',['Official April 2026 JSON archive listed 195 MB / 3.1 GB uncompressed. Prefer OFF India relevance; reconsider only with demonstrated need.']),
+]
+for identifier,role,url,scope,access,gaps in descriptors:
+    entry=source(identifier,role,[url],scope,access,gaps)
+    if identifier=='indian-nutrient-databank':
+        entry.update(expectedRecords=1014,countUnit='recipes reported by the official portal; workbook not yet reconciled',version='2024 publication / portal; release bytes not pinned')
+        entry['remainingGaps'].append('Official portal states per-100-g and per-serving values, derived using IFCT/NVIF/CoFID/USDA sources; reuse/dependency terms must be reviewed before integration.')
+    if identifier=='foodb':
+        entry['license']='Official compliance page states CC BY-NC 4.0; commercial product reuse needs permission/review.'
+        entry['officialUrls'].append('https://foodb.ca/compliance')
+    if identifier in ('usda-sr-legacy','usda-branded'):
+        entry['license']='USDA FoodData Central CC0; attribution requested. No local release imported for this partition.'
+    if identifier=='open-food-facts':
+        entry['license']='ODbL database; source-image rights separate. No bulk snapshot is redistributed by this audit.'
+        entry['officialUrls'].append('https://github.com/openfoodfacts/openfoodfacts-exports')
+        entry['remainingGaps'].append('Official organization also publishes Hugging Face bulk exports. The older JSONL mirror reports 7.68 GB; inspect current Parquet release/filter options before a major transfer. No mass API crawl.')
+    sources.append(entry)
+
+index = load('data/semantic-index.json')
+curated = source('curated-semantic-and-identities','Original attributed explanatory summaries and reviewed identity relationships',['https://www.who.int/','https://www.fao.org/gsfaonline/'],'Finite app-authored records; not complete acquisition of their underlying source databases.','src/modules/knowledge/index.ts; BM25/MiniLM/native ingredient tools',['Source-specific breadth and independent relevance/answer utility remain incomplete; source count is not database completeness.'],'Per-record licenses; Health Canada reviewed ingredient-name extract has a non-commercial reuse restriction requiring product-distribution review.')
+curated.update(version=index.get('corpusVersion'),importedRecords=len(index['vectors']),countUnit='embedded app-authored source records',fieldsPreserved=['attribution/source URL/date/jurisdiction/limitations','reviewed exact ingredient-family names and source links'])
+sources.append(curated)
+
+output = {'schemaVersion':1,'auditedAt':datetime.now(timezone.utc).isoformat(),'method':'Pinned local-source/hash/count audit plus explicit source dispositions; not independent scientific/legal validation.','sources':sources}
+(ROOT/'data/dataset-coverage.json').write_text(json.dumps(output,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+lines=['# Dataset coverage and knowledge capability matrix','','Generated by `python scripts/audit-dataset-coverage.py`. This is the source inventory; `COMPLETION_QUEUE.md` owns execution priorities. Acquisition, preservation, access, agent use and answer utility are distinct gates. No source below is claimed operationally complete merely because its records exist.','','| Dataset | Defined/imported coverage | A / B / C / D / E | Access and agent utilization | Remaining gaps |','|---|---|---|---|---|']
+for item in sources:
+    count=f"{item['importedRecords']} {item['countUnit']}" if item['importedRecords'] is not None else 'No bulk completeness claim'
+    gates=' / '.join(item['gates'].values())
+    lines.append(f"| {item['id']} | {count}. {item['declaredScope']} | {gates} | {item['retrievalInterface']} | {' '.join(item['remainingGaps'])} |")
+lines += ['','Full URLs, versions, hashes, counts, exclusions, retained fields, rights and reproducible commands are in `data/dataset-coverage.json`. EFSA raw/extracted records remain ignored and are not redistributed. Live interfaces do not imply comprehensive upstream acquisition. Unknown expected record counts remain null.','', 'The April 2026 EFSA landing-page headline totals (45,682 study results / 19,452 reference values) are not equated with the workbook’s 46,168 distinct study-document UUIDs / 19,743 reference-value-document UUIDs. The exact workbook-cell scope is verified; the differing counting definitions require clarification before a release-wide scientific-count claim.','']
+(ROOT/'docs/DATASET_COVERAGE.md').write_text('\n'.join(lines),encoding='utf-8')
+print(json.dumps({'sources':len(sources),'output':'data/dataset-coverage.json','matrix':'docs/DATASET_COVERAGE.md','operationallyCompleteSources':0}))

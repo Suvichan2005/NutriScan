@@ -1,0 +1,1025 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-10-25T10:10:19.146328+00:00",
+  "method": "Pinned local-source/hash/count audit plus explicit source dispositions; not independent scientific/legal validation.",
+  "sources": [
+    {
+      "id": "fdc-foundation-2026-04",
+      "role": "Generic nutritional composition; not branded package truth",
+      "officialUrls": [
+        "https://fdc.nal.usda.gov/download-datasets/",
+        "https://fdc.nal.usda.gov/Foundation_Foods_Documentation/"
+      ],
+      "declaredScope": "Every eligible food in the pinned official JSON release; null slots and unavailable amounts explicitly excluded.",
+      "version": "2026-04-30",
+      "expectedRecords": 363,
+      "importedRecords": 363,
+      "countUnit": "eligible foods",
+      "license": "CC0 1.0 Universal; USDA requests FoodData Central attribution",
+      "fieldsPreserved": [
+        "food IDs/name/category/date/type",
+        "numeric nutrient IDs/names/units/amounts/data-points/min/max/median/LOQ/derivation",
+        "usable portions and gram weights"
+      ],
+      "fieldsNotExposed": [
+        "Full raw source remains local; not all analytical/sample/relationship metadata is exposed by the normalized adapter."
+      ],
+      "integrity": {
+        "sourceSha256": "27d1fe3fd89edfbe528ed915da5619320e1d004d4594603a1b19bdb1511590cc",
+        "recordsSha256": "57fc123c8fb0ba794de488e10abd74be38fdcdb29fc7a2ccb7159a59d4f2051a",
+        "rawHashVerified": true,
+        "recordsHashVerified": true,
+        "eligibleIdSetEqual": true
+      },
+      "retrievalInterface": "src/lib/server/food-composition.ts; search_food_composition native tool",
+      "gates": {
+        "A_acquisition": "VERIFIED_DEFINED_RELEASE",
+        "B_preservation": "PARTIAL_RICH_RAW_SOURCE_RETAINED",
+        "C_access": "IMPLEMENTED_STRUCTURED_SEARCH",
+        "D_agent": "IMPLEMENTED_EXISTING_LIVE_EVIDENCE",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Audit full analytical/derivation/portion metadata against raw source; quantify source-field exclusions and demonstrate broader quantitative use."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "statistics": {
+        "sourceFoodSlots": 395,
+        "indexedFoods": 363,
+        "excludedNullFoodSlots": [
+          363,
+          364,
+          365,
+          366,
+          367,
+          368,
+          369,
+          370,
+          371,
+          372,
+          373,
+          374,
+          375,
+          376,
+          377,
+          378,
+          379,
+          380,
+          381,
+          382,
+          383,
+          384,
+          385,
+          386,
+          387,
+          388,
+          389,
+          390,
+          391,
+          392,
+          393,
+          394
+        ],
+        "excludedNutrientRows": [
+          {
+            "fdcId": 321360,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2257044,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2257045,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2257046,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2259792,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2259793,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2259794,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2259795,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2259796,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2346384,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2346385,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2346386,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2346387,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2647437,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2647438,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2647439,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2647440,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2647441,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2647442,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2647443,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2684440,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2684441,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2684442,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2684443,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2684444,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2684445,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2684446,
+            "nutrientId": 2066,
+            "name": "Vitamin A",
+            "reason": "source amount missing; preserved as unavailable, not zero"
+          },
+          {
+            "fdcId": 2727566,
+            "nutrientId": 1005,
+            "name": "Carbohydrate, by difference",
+            "reason": "source amount is not a finite nonnegative number"
+          },
+          {
+            "fdcId": 2727567,
+            "nutrientId": 1005,
+            "name": "Carbohydrate, by difference",
+            "reason": "source amount is not a finite nonnegative number"
+          },
+          {
+            "fdcId": 2727568,
+            "nutrientId": 1005,
+            "name": "Carbohydrate, by difference",
+            "reason": "source amount is not a finite nonnegative number"
+          },
+          {
+            "fdcId": 2727569,
+            "nutrientId": 1005,
+            "name": "Carbohydrate, by difference",
+            "reason": "source amount is not a finite nonnegative number"
+          },
+          {
+            "fdcId": 2727570,
+            "nutrientId": 1005,
+            "name": "Carbohydrate, by difference",
+            "reason": "source amount is not a finite nonnegative number"
+          },
+          {
+            "fdcId": 2727571,
+            "nutrientId": 1005,
+            "name": "Carbohydrate, by difference",
+            "reason": "source amount is not a finite nonnegative number"
+          },
+          {
+            "fdcId": 2727575,
+            "nutrientId": 1005,
+            "name": "Carbohydrate, by difference",
+            "reason": "source amount is not a finite nonnegative number"
+          },
+          {
+            "fdcId": 2727576,
+            "nutrientId": 1005,
+            "name": "Carbohydrate, by difference",
+            "reason": "source amount is not a finite nonnegative number"
+          },
+          {
+            "fdcId": 2747656,
+            "nutrientId": 1005,
+            "name": "Carbohydrate, by difference",
+            "reason": "source amount is not a finite nonnegative number"
+          },
+          {
+            "fdcId": 2747673,
+            "nutrientId": 1005,
+            "name": "Carbohydrate, by difference",
+            "reason": "source amount is not a finite nonnegative number"
+          }
+        ],
+        "excludedPortionRows": 0,
+        "nutrientRowsIndexed": 15156,
+        "foodsWithPortions": 285
+      },
+      "importCommand": "npm exec -- tsx scripts/import-fdc-foundation.mts"
+    },
+    {
+      "id": "fdc-fndds-2021-2023",
+      "role": "Generic nutritional composition; not branded package truth",
+      "officialUrls": [
+        "https://fdc.nal.usda.gov/download-datasets/",
+        "https://www.ars.usda.gov/ARSUserFiles/80400530/pdf/fndds/2021_2023_FNDDS_Doc.pdf"
+      ],
+      "declaredScope": "Every eligible food in the pinned official JSON release; null slots and unavailable amounts explicitly excluded.",
+      "version": "2024-10-31",
+      "expectedRecords": 5432,
+      "importedRecords": 5432,
+      "countUnit": "eligible foods",
+      "license": "CC0 1.0 Universal; USDA requests FoodData Central attribution",
+      "fieldsPreserved": [
+        "food IDs/name/category/date/type",
+        "numeric nutrient IDs/names/units/amounts/data-points/min/max/median/LOQ/derivation",
+        "usable portions and gram weights"
+      ],
+      "fieldsNotExposed": [
+        "Full raw source remains local; not all analytical/sample/relationship metadata is exposed by the normalized adapter."
+      ],
+      "integrity": {
+        "sourceSha256": "2e7eb9fda92adf1d4d784dba5eaa3a7fd4418cd86ccff383c7c9294d79e9b808",
+        "recordsSha256": "2f856849dd767fcb599936682e6710f1d726e1eba1f064faa7c3837dabfb4a04",
+        "rawHashVerified": true,
+        "recordsHashVerified": true,
+        "eligibleIdSetEqual": true
+      },
+      "retrievalInterface": "src/lib/server/food-composition.ts; search_food_composition native tool",
+      "gates": {
+        "A_acquisition": "VERIFIED_DEFINED_RELEASE",
+        "B_preservation": "PARTIAL_RICH_RAW_SOURCE_RETAINED",
+        "C_access": "IMPLEMENTED_STRUCTURED_SEARCH",
+        "D_agent": "IMPLEMENTED_EXISTING_LIVE_EVIDENCE",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Audit full analytical/derivation/portion metadata against raw source; quantify source-field exclusions and demonstrate broader quantitative use."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "statistics": {
+        "sourceFoodSlots": 5432,
+        "indexedFoods": 5432,
+        "excludedNullFoodSlots": [],
+        "excludedNutrientRows": [],
+        "excludedPortionRows": 1,
+        "nutrientRowsIndexed": 353015,
+        "foodsWithPortions": 5432
+      },
+      "importCommand": "npm exec -- tsx scripts/import-fdc-fndds.mts"
+    },
+    {
+      "id": "foodon",
+      "role": "Food/ingredient ontology identity and hierarchy; no health or composition authority",
+      "officialUrls": [
+        "https://raw.githubusercontent.com/FoodOntology/foodon/cd73540243a84bcd511a500d9a497d12d7dc02f6/foodon.owl",
+        "https://raw.githubusercontent.com/FoodOntology/foodon/cd73540243a84bcd511a500d9a497d12d7dc02f6/foodon-synonyms.tsv"
+      ],
+      "declaredScope": "Pinned own-namespace active labelled FoodOn classes, English aliases and internal direct parents; original OWL/TSV retained.",
+      "version": "2026-09-20",
+      "expectedRecords": null,
+      "importedRecords": 25143,
+      "countUnit": "active labelled classes",
+      "license": "CC BY 4.0",
+      "fieldsPreserved": [
+        "stable FOODON IDs",
+        "English labels and typed synonyms",
+        "direct internal parent IDs",
+        "full original OWL/TSV locally"
+      ],
+      "fieldsNotExposed": [],
+      "integrity": {
+        "ontologySha256": "b897bf64c1b265c422db9ee01e1235c10c0b809e7f02326ef810a52068347edf",
+        "synonymExportSha256": "1900fb2c80d834287cfdd0b52a98957b18269e86c197617711bc3a5d8541deb2"
+      },
+      "retrievalInterface": "src/modules/knowledge/server.ts searchFoodOn; resolve_ingredient native tool",
+      "gates": {
+        "A_acquisition": "VERIFIED_PINNED_SOURCE_FILES",
+        "B_preservation": "PARTIAL_INDEX_SCOPE",
+        "C_access": "IMPLEMENTED_IDENTITY_AND_DIRECT_PARENTS",
+        "D_agent": "IMPLEMENTED_IDENTITY_TOOL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Reconcile source class/alias totals and exclusions; compact aliases cap 24 and text cap 180; other useful OWL relationships are not navigable yet."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "statistics": {
+        "indexedAliases": 13002,
+        "indexedParentEdges": 29601,
+        "sourceAccounting": {
+          "activeLabeledSourceClasses": 25143,
+          "classIdSetEqual": true,
+          "deprecatedOwnClasses": 571,
+          "uniqueEnglishAliasesBeforeCaps": 13001,
+          "aliasTextsAbsentFromCompactIndex": 5,
+          "sourceAliasesOver180Characters": 5,
+          "classesExceeding24Aliases": 0,
+          "scope": "Pinned TSV active labelled own-namespace English terms. Complete OWL restriction/relationship projection is not asserted."
+        }
+      },
+      "importCommand": "python src/modules/knowledge/import_foodon.py"
+    },
+    {
+      "id": "efsa-openfoodtox-3",
+      "role": "Substance hazard/assessment/study context; not dietary exposure or Indian authorization",
+      "officialUrls": [
+        "https://doi.org/10.5281/zenodo.19388272"
+      ],
+      "declaredScope": "Every nonempty cell and worksheet header in the pinned official workbook; flattened rows and unique documents counted separately.",
+      "version": "3.0 / official workbook published 2026-04-30",
+      "expectedRecords": 261183,
+      "importedRecords": 261183,
+      "countUnit": "nonempty workbook rows across 18 sheets",
+      "license": "CC BY-ND 4.0; local internal research extraction only. Do not redistribute altered/extracted database; deployable redistribution design remains unresolved.",
+      "fieldsPreserved": [
+        "all original worksheet headers and sparse cells, including unnamed/duplicate columns",
+        "all original UUIDs, parent IDs, declared reference links",
+        "all reference-value families/units/qualifiers/populations/comments",
+        "study endpoints, methods, species/exposure, results, summaries, literature and dossiers"
+      ],
+      "fieldsNotExposed": [
+        "Original cells remain in the local store. Bounded exact-record/field access can omit oversized text; consult the original output. Citation previews are also bounded, and not every relationship has a specialized semantic operation."
+      ],
+      "integrity": {
+        "sourceSha256": "5181661e921651d4087b544981e1e5a63b99532844eac0112732806a00a85eda",
+        "cellByCellVerified": true,
+        "sqliteIntegrity": "ok"
+      },
+      "retrievalInterface": "readOpenFoodToxRecords; get_substance_assessments + get_assessment_records native tools",
+      "gates": {
+        "A_acquisition": "VERIFIED_PINNED_WORKBOOK",
+        "B_preservation": "VERIFIED_ALL_SOURCE_CELLS_AND_DECLARED_LINKS",
+        "C_access": "VERIFIED_LOCAL_RECORD_AND_RELATION_ACCESS",
+        "D_agent": "REAL_TOOL_USE_VERIFIED",
+        "E_answer_utility": "PARTIAL_REAL_FAILURES_RETAINED"
+      },
+      "verifiedCapabilities": [
+        "All 261183 rows / 2513078 nonempty cells match the original workbook.",
+        "Local caffeine/lead/sodium-benzoate lookup, section counts and rich fields.",
+        "Actual agent selected detailed sodium-benzoate records; caffeine detail/quantity utility incomplete."
+      ],
+      "remainingGaps": [
+        "Final-answer quality remains partial: initial sodium-benzoate run skipped source detail; initial caffeine answer lost qualifications. Later detail flow improved sodium context but caffeine quantity was withheld. Independent applicability evaluation remains missing. Public headline totals use counting definitions not reconciled with workbook document counts."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "statistics": {
+        "sheets": [
+          {
+            "name": "DATA_DICTIONARY",
+            "sourceRows": 721,
+            "importedRows": 721,
+            "blankRows": 0,
+            "nonemptyCells": 5374,
+            "distinctDocumentIds": 0,
+            "columns": 10
+          },
+          {
+            "name": "DOSSIER",
+            "sourceRows": 11613,
+            "importedRows": 11613,
+            "blankRows": 0,
+            "nonemptyCells": 192232,
+            "distinctDocumentIds": 11613,
+            "columns": 19
+          },
+          {
+            "name": "DOSSIER_DOCS",
+            "sourceRows": 106408,
+            "importedRows": 106408,
+            "blankRows": 0,
+            "nonemptyCells": 520427,
+            "distinctDocumentIds": 0,
+            "columns": 5
+          },
+          {
+            "name": "REF_SUB",
+            "sourceRows": 7890,
+            "importedRows": 7890,
+            "blankRows": 0,
+            "nonemptyCells": 82233,
+            "distinctDocumentIds": 7890,
+            "columns": 26
+          },
+          {
+            "name": "SUB",
+            "sourceRows": 7880,
+            "importedRows": 7880,
+            "blankRows": 0,
+            "nonemptyCells": 59432,
+            "distinctDocumentIds": 7880,
+            "columns": 11
+          },
+          {
+            "name": "FLEX_REC",
+            "sourceRows": 4578,
+            "importedRows": 4578,
+            "blankRows": 0,
+            "nonemptyCells": 37060,
+            "distinctDocumentIds": 907,
+            "columns": 27
+          },
+          {
+            "name": "LIT",
+            "sourceRows": 3185,
+            "importedRows": 3185,
+            "blankRows": 0,
+            "nonemptyCells": 30534,
+            "distinctDocumentIds": 3185,
+            "columns": 12
+          },
+          {
+            "name": "FLEX_SUM.ToxRefValues",
+            "sourceRows": 19747,
+            "importedRows": 19747,
+            "blankRows": 0,
+            "nonemptyCells": 230558,
+            "distinctDocumentIds": 19743,
+            "columns": 80
+          },
+          {
+            "name": "FLEX_SUM.Metabolites",
+            "sourceRows": 1373,
+            "importedRows": 1373,
+            "blankRows": 0,
+            "nonemptyCells": 8046,
+            "distinctDocumentIds": 437,
+            "columns": 8
+          },
+          {
+            "name": "END_STUDY_REC.HumanHealth",
+            "sourceRows": 38808,
+            "importedRows": 38808,
+            "blankRows": 0,
+            "nonemptyCells": 699692,
+            "distinctDocumentIds": 16089,
+            "columns": 200
+          },
+          {
+            "name": "END_STUDY_REC.AnimalHealth",
+            "sourceRows": 382,
+            "importedRows": 382,
+            "blankRows": 0,
+            "nonemptyCells": 9672,
+            "distinctDocumentIds": 296,
+            "columns": 49
+          },
+          {
+            "name": "END_STUDY_REC.TerrestEcotox",
+            "sourceRows": 5450,
+            "importedRows": 5450,
+            "blankRows": 0,
+            "nonemptyCells": 109908,
+            "distinctDocumentIds": 5250,
+            "columns": 92
+          },
+          {
+            "name": "END_STUDY_REC.AquaticEcotox",
+            "sourceRows": 3497,
+            "importedRows": 3497,
+            "blankRows": 0,
+            "nonemptyCells": 71590,
+            "distinctDocumentIds": 3424,
+            "columns": 47
+          },
+          {
+            "name": "END_STUDY_REC.EnvFateBehaviour",
+            "sourceRows": 930,
+            "importedRows": 930,
+            "blankRows": 0,
+            "nonemptyCells": 5579,
+            "distinctDocumentIds": 930,
+            "columns": 6
+          },
+          {
+            "name": "END_STUDY_REC.PhysChemProps",
+            "sourceRows": 25147,
+            "importedRows": 25147,
+            "blankRows": 0,
+            "nonemptyCells": 308852,
+            "distinctDocumentIds": 20179,
+            "columns": 130
+          },
+          {
+            "name": "END_SUM",
+            "sourceRows": 23566,
+            "importedRows": 23566,
+            "blankRows": 0,
+            "nonemptyCells": 141852,
+            "distinctDocumentIds": 23486,
+            "columns": 16
+          },
+          {
+            "name": "FLEX_SUM.ExpectedExposure",
+            "sourceRows": 1,
+            "importedRows": 1,
+            "blankRows": 0,
+            "nonemptyCells": 4,
+            "distinctDocumentIds": 1,
+            "columns": 4
+          },
+          {
+            "name": "LEGAL",
+            "sourceRows": 7,
+            "importedRows": 7,
+            "blankRows": 0,
+            "nonemptyCells": 33,
+            "distinctDocumentIds": 7,
+            "columns": 6
+          }
+        ],
+        "sourceSha256": "5181661e921651d4087b544981e1e5a63b99532844eac0112732806a00a85eda",
+        "schemaVersion": 1,
+        "records": 261183,
+        "links": 506177,
+        "distinctStudyDocuments": 46168,
+        "distinctReferenceValueDocuments": 19743,
+        "nonemptySourceCellsVerified": 2513078,
+        "unresolvedReferencedDocumentIds": 96
+      },
+      "importCommand": "python src/modules/knowledge/import_openfoodtox.py",
+      "verifyCommand": "python src/modules/knowledge/verify_openfoodtox.py"
+    },
+    {
+      "id": "open-food-facts",
+      "role": "Community branded-product catalog",
+      "officialUrls": [
+        "https://world.openfoodfacts.org/data",
+        "https://github.com/openfoodfacts/openfoodfacts-exports"
+      ],
+      "declaredScope": "Official India-tagged bulk partition not acquired; current supported v3 and Search-a-licious are on-demand only.",
+      "version": null,
+      "expectedRecords": null,
+      "importedRecords": null,
+      "countUnit": null,
+      "license": "ODbL database; source-image rights separate. No bulk snapshot is redistributed by this audit.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "src/lib/server/products.ts; lookup_product",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Establish official snapshot size/version/rights and streaming India filter. No completeness claim for live catalog; preserve ODbL obligations and separate image rights.",
+        "Official organization also publishes Hugging Face bulk exports. The older JSONL mirror reports 7.68 GB; inspect current Parquet release/filter options before a major transfer. No mass API crawl."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "codex-gsfa",
+      "role": "International additive identity/functions/category provisions",
+      "officialUrls": [
+        "https://www.fao.org/gsfaonline/"
+      ],
+      "declaredScope": "Bounded official INS lookup plus small local identities; no full provision/category release imported.",
+      "version": null,
+      "expectedRecords": null,
+      "importedRecords": null,
+      "countUnit": null,
+      "license": "Source-specific reuse review pending; do not infer permission from availability.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "resolve_ingredient / official Codex API adapter",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Acquire permitted complete tables or close explicit on-demand coverage; expose category conditions/notes without implying Indian authorization."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "fssai",
+      "role": "Indian food regulation/label/claim instruments",
+      "officialUrls": [
+        "https://www.fssai.gov.in/cms/food-safety-and-standards-regulations.php"
+      ],
+      "declaredScope": "Dated source-linked summaries and bounded official PDF research; not a consolidated current-law database.",
+      "version": null,
+      "expectedRecords": null,
+      "importedRecords": null,
+      "countUnit": null,
+      "license": "Source-specific reuse review pending; do not infer permission from availability.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "get_nutrition_guidance / search_research(regulation)",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Inventory compendia/amendments/effective dates, permission and category/exception coverage; no package legal verdict from a generic rule."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "who-jecfa",
+      "role": "Additive evaluations, identities and assessment histories",
+      "officialUrls": [
+        "https://apps.who.int/food-additives-contaminants-jecfa-database/"
+      ],
+      "declaredScope": "Small selected source references; comprehensive dedicated access not yet implemented.",
+      "version": null,
+      "expectedRecords": null,
+      "importedRecords": null,
+      "countUnit": null,
+      "license": "Source-specific reuse review pending; do not infer permission from availability.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "Existing source summaries/research tools",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Audit official searchable/export access and rights; preserve assessment history, dose, endpoint and qualifiers."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "pubchem",
+      "role": "Chemical registry identity and linked chemistry",
+      "officialUrls": [
+        "https://pubchem.ncbi.nlm.nih.gov/docs/pug-rest"
+      ],
+      "declaredScope": "Supported bounded official PUG REST identity/property lookup; no universe bulk import selected.",
+      "version": null,
+      "expectedRecords": null,
+      "importedRecords": null,
+      "countUnit": null,
+      "license": "Source-specific reuse review pending; do not infer permission from availability.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "lookup_chemical_identity",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Current property tool exposes CID/title/formula/IUPAC/InChIKey; review synonym and linked-reference operations and demonstrate multi-entity use."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "europe-pmc-pubmed",
+      "role": "Scientific evidence discovery, not clinical recommendation authority",
+      "officialUrls": [
+        "https://europepmc.org/RestfulWebService"
+      ],
+      "declaredScope": "Bounded live literature search; no full literature acquisition selected.",
+      "version": null,
+      "expectedRecords": null,
+      "importedRecords": null,
+      "countUnit": null,
+      "license": "Source-specific reuse review pending; do not infer permission from availability.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "search_research(science)",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Audit abstract/detail access and population/intervention/dose/outcome/source applicability handoff; independently judge relevance and answer use."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "who-clinical-guidance",
+      "role": "Population and condition-scoped dietary guidance",
+      "officialUrls": [
+        "https://www.who.int/publications/who-guidelines"
+      ],
+      "declaredScope": "Specific source-linked summaries/typed numeric references, not complete WHO/ADA/KDIGO/AHA guideline corpora.",
+      "version": null,
+      "expectedRecords": null,
+      "importedRecords": null,
+      "countUnit": null,
+      "license": "Source-specific reuse review pending; do not infer permission from availability.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "src/lib/server/nutrition-guidance.ts; get_nutrition_guidance",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Inventory every selected guideline/version/rights scope; preserve population, dose, recommendation strength and individualization limits; expand missing applicable guidance."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "ifct-icmr-nin",
+      "role": "Indian food composition and dietary reference material",
+      "officialUrls": [
+        "https://www.nin.res.in/"
+      ],
+      "declaredScope": "No composition dataset licensed/imported for the application; source-access and electronic reuse review outstanding.",
+      "version": null,
+      "expectedRecords": null,
+      "importedRecords": null,
+      "countUnit": null,
+      "license": "Source-specific reuse review pending; do not infer permission from availability.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "Source links / permitted dietary summaries only",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Verify actual IFCT/ICMR-NIN terms and electronic-use permission; public PDF access alone does not authorize database extraction/distribution."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "indian-nutrient-databank",
+      "role": "India-relevant composition source candidate",
+      "officialUrls": [
+        "https://www.anuvaad.org.in/indian-nutrient-databank/"
+      ],
+      "declaredScope": "No imported release; source scope/rights/dependencies not yet verified.",
+      "version": "2024 publication / portal; release bytes not pinned",
+      "expectedRecords": 1014,
+      "importedRecords": null,
+      "countUnit": "recipes reported by the official portal; workbook not yet reconciled",
+      "license": "Source-specific reuse review pending; do not infer permission from availability.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "Not integrated",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Verify authoritative distribution and permissions; select an authorized release or record explicit alternative.",
+        "Official portal states per-100-g and per-serving values, derived using IFCT/NVIF/CoFID/USDA sources; reuse/dependency terms must be reviewed before integration."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "foodb",
+      "role": "Food compound source candidate",
+      "officialUrls": [
+        "https://foodb.ca/",
+        "https://foodb.ca/compliance"
+      ],
+      "declaredScope": "Not selected for bulk import pending actual product need and rights review.",
+      "version": null,
+      "expectedRecords": null,
+      "importedRecords": null,
+      "countUnit": null,
+      "license": "Official compliance page states CC BY-NC 4.0; commercial product reuse needs permission/review.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "Not integrated",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Decide source relevance/permissions; do not download world chemistry merely for count."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "usda-sr-legacy",
+      "role": "Generic reference composition candidate",
+      "officialUrls": [
+        "https://fdc.nal.usda.gov/download-datasets/"
+      ],
+      "declaredScope": "2018 official partition not imported; relevance decision pending.",
+      "version": null,
+      "expectedRecords": null,
+      "importedRecords": null,
+      "countUnit": null,
+      "license": "USDA FoodData Central CC0; attribution requested. No local release imported for this partition.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "No local SR Legacy adapter",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Official page lists 12.3 MB JSON archive / 205 MB uncompressed; decide incremental food coverage against current Foundation/FNDDS."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "usda-branded",
+      "role": "Mostly US branded-product catalog",
+      "officialUrls": [
+        "https://fdc.nal.usda.gov/download-datasets/"
+      ],
+      "declaredScope": "Not selected for full local import: India-first incremental value not demonstrated.",
+      "version": null,
+      "expectedRecords": null,
+      "importedRecords": null,
+      "countUnit": null,
+      "license": "USDA FoodData Central CC0; attribution requested. No local release imported for this partition.",
+      "fieldsPreserved": [],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "Use appropriate existing live/product sources",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Official April 2026 JSON archive listed 195 MB / 3.1 GB uncompressed. Prefer OFF India relevance; reconsider only with demonstrated need."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "curated-semantic-and-identities",
+      "role": "Original attributed explanatory summaries and reviewed identity relationships",
+      "officialUrls": [
+        "https://www.who.int/",
+        "https://www.fao.org/gsfaonline/"
+      ],
+      "declaredScope": "Finite app-authored records; not complete acquisition of their underlying source databases.",
+      "version": "2026-10-24.2",
+      "expectedRecords": null,
+      "importedRecords": 29,
+      "countUnit": "embedded app-authored source records",
+      "license": "Per-record licenses; Health Canada reviewed ingredient-name extract has a non-commercial reuse restriction requiring product-distribution review.",
+      "fieldsPreserved": [
+        "attribution/source URL/date/jurisdiction/limitations",
+        "reviewed exact ingredient-family names and source links"
+      ],
+      "fieldsNotExposed": [],
+      "integrity": {},
+      "retrievalInterface": "src/modules/knowledge/index.ts; BM25/MiniLM/native ingredient tools",
+      "gates": {
+        "A_acquisition": "NOT_VERIFIED",
+        "B_preservation": "NOT_VERIFIED",
+        "C_access": "PARTIAL",
+        "D_agent": "PARTIAL",
+        "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Source-specific breadth and independent relevance/answer utility remain incomplete; source count is not database completeness."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    }
+  ]
+}
