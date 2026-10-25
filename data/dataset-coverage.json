@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "auditedAt": "2026-10-25T12:04:50.943445+00:00",
+  "auditedAt": "2026-10-25T12:29:06.461475+00:00",
   "method": "Pinned local-source/hash/count audit plus explicit source dispositions; not independent scientific/legal validation.",
   "sources": [
     {
@@ -693,7 +693,7 @@
       "officialUrls": [
         "https://www.fao.org/gsfaonline/"
       ],
-      "declaredScope": "Bounded official INS lookup plus small local identities; no full provision/category release imported.",
+      "declaredScope": "Complete pinned English hierarchy: 265 category identities/labels, 249 DOM parent links, raw Table3 attributes preserved and independently parsed; additive provisions/notes/details not imported. Bounded official INS lookup retained.",
       "version": null,
       "expectedRecords": null,
       "importedRecords": null,
@@ -702,7 +702,7 @@
       "fieldsPreserved": [],
       "fieldsNotExposed": [],
       "integrity": {},
-      "retrievalInterface": "resolve_ingredient / official Codex API adapter",
+      "retrievalInterface": "get_codex_category / resolve_ingredient / official Codex API adapter",
       "gates": {
         "A_acquisition": "NOT_VERIFIED",
         "B_preservation": "NOT_VERIFIED",
@@ -712,7 +712,7 @@
       },
       "verifiedCapabilities": [],
       "remainingGaps": [
-        "Acquire permitted complete tables or close explicit on-demand coverage; expose category conditions/notes without implying Indian authorization."
+        "Category detail endpoint timed out; provisions/notes and effective-date applicability remain unacquired. Hierarchy is not Indian authorization. Native source handoff retains child/ancestor facts; real first run plus offline replay, not independent scientific acceptance."
       ],
       "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
     },
@@ -1007,6 +1007,49 @@
         "Official April 2026 JSON archive listed 195 MB / 3.1 GB uncompressed. Prefer OFF India relevance; reconsider only with demonstrated need."
       ],
       "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs."
+    },
+    {
+      "id": "codex-gsfa-categories",
+      "role": "International food-category identities and hierarchy, not additive permission",
+      "officialUrls": [
+        "https://codex.fao.org/codex-texts/codex-online-databases/gsfa/food-categories",
+        "https://www.fao.org/contact-us/terms/"
+      ],
+      "declaredScope": "Every category-item in the pinned English category hierarchy page; no detail-page descriptions, additive provisions or notes.",
+      "version": "2026-10-25",
+      "expectedRecords": 265,
+      "importedRecords": 265,
+      "countUnit": "category-item elements in the pinned English hierarchy page",
+      "license": "Private study/research/teaching/non-commercial use with FAO acknowledgement; commercial reuse requires review. No FAO endorsement.",
+      "fieldsPreserved": [
+        "Every visible category code, UUID, label, DOM parent and raw Table3 attribute; source details URL"
+      ],
+      "fieldsNotExposed": [
+        "No category detail descriptions, additive provisions, exceptions, notes or effective dates."
+      ],
+      "integrity": {
+        "sourceSha256": "01aa8f7fa0187c01961fc132ad6c034a35e1b56af2a73858810b3c6224cf558b",
+        "allIdentityLabelParentAndRawTable3FieldsCompared": true
+      },
+      "retrievalInterface": "get_codex_category exact code/name search, ancestors and paged children",
+      "gates": {
+        "A_acquisition": "VERIFIED_DECLARED_CATEGORY_PAGE",
+        "B_preservation": "VERIFIED_265_IDENTITIES_LABELS_AND_249_PARENTS",
+        "C_access": "EXACT_SEARCH_AND_HIERARCHY_PAGES_TESTED",
+        "D_agent": "REAL_NATIVE_CATEGORY_LOOKUP",
+        "E_answer_utility": "PARTIAL_LIVE_OUTPUT_AND_OFFLINE_HANDOFF_REPLAY"
+      },
+      "verifiedCapabilities": [],
+      "remainingGaps": [
+        "Detail descriptions/provisions/notes are outside this partition; detail endpoint timed out. Final legal applicability and independent final-answer usefulness unverified."
+      ],
+      "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
+      "statistics": {
+        "categoryCount": 265,
+        "parentEdges": 249,
+        "uniqueCodes": 265
+      },
+      "importCommand": "npm exec -- tsx scripts/acquire-codex-categories.mts; python src/modules/knowledge/import_codex_categories.py --source-html PINNED_HTML --output .data/knowledge/codex-categories.json --retrieved-at YYYY-MM-DD"
     },
     {
       "id": "curated-semantic-and-identities",

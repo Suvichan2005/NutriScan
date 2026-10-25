@@ -27,6 +27,7 @@ import { readFoodOnConcept, foodOnConceptInput, readOpenFoodToxRecords, openFood
 import { isValidGtin, findOcrGtinCandidate } from '../barcode';
 import { productInput, lookupProducts } from './products';
 import {readProductRecord,productRecordInput} from './product-records';
+import {readCodexCategories,codexCategoryInput} from './codex-categories';
 import { researchInput, research } from './research';
 import { fixedFetch } from './http';
 import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutrition-guidance';
@@ -69,6 +70,7 @@ const toolArgs = {
   get_assessment_records: openFoodToxDetailInput,
   get_ingredient_concept:foodOnConceptInput,
   get_food_composition_record:fdcRecordInput,
+  get_codex_category: codexCategoryInput,
   get_product_record:productRecordInput,
   calculate_nutrition: z.object({ nutrient: z.preprocess(value=>value===null?undefined:value,z.enum(nutrientKeys).optional()), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml', 'pieces', 'servings', 'package']), candidateId:z.preprocess(value=>value===null?undefined:value,z.string().min(1).max(120).optional()) }).strict().refine(value=>!!value.nutrient||!!value.candidateId,{message:'Select a standard nutrient or an exact saved nutrition row.'}),
   lookup_product: z.object({ query: z.string().trim().min(2).max(80).optional(), barcode: z.string().regex(/^\d{8,14}$/).optional() }).strict().refine(value => Number(Boolean(value.query)) + Number(Boolean(value.barcode)) === 1),
@@ -87,6 +89,7 @@ const cropParameters = {
 };
 
 export const geminiToolDeclarations: FunctionDeclaration[] = [
+ { name: 'get_codex_category', description: 'Search the locally pinned complete English Codex food-category hierarchy or inspect one exact code, its ancestors and paged direct children. This is international taxonomy, not a food classification decision, additive permission, maximum dose or Indian law. Category-specific provisions/notes must be investigated separately.', parameters: {type:Type.OBJECT,properties:{code:{type:Type.STRING},query:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}}} },
  {name:'get_product_record',description:'Inspect the original Open Food Facts record for an exact GTIN already in the question/package or returned by lookup_product. Start with section identity, ingredients, nutrition, claims or quality to list present/missing fields; request one field and optional exact entryKey for a nutrient/source object. Bounded original fields preserve ingredient tree/percentages, allergen versus precautionary traces, serving basis, as-sold versus prepared nutrients, qualifiers and source quality. This is external community data, never confirmed package facts or local stock.',parameters:{type:Type.OBJECT,properties:{barcode:{type:Type.STRING},section:{type:Type.STRING,enum:['identity','ingredients','nutrition','claims','quality']},field:{type:Type.STRING},entryKey:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['barcode']}},
   {name:'get_food_composition_record',description:'Inspect an exact local USDA food returned by search_food_composition. Start with release and fdcId to list available source fields, then request a field such as foodNutrients, foodPortions, inputFoods or nutrientConversionFactors with offset/limit. For a specific nutrient, select field foodNutrients and nutrientId from the search result to retrieve its complete original object. Preserves original measurement, derivation and recipe/sample context. These are generic references, never photographed package truth. Missing source amounts are not zero; do not invent conversions.',parameters:{type:Type.OBJECT,properties:{release:{type:Type.STRING,enum:['fdc-foundation-2026-04','fdc-fndds-2021-2023']},fdcId:{type:Type.INTEGER},nutrientId:{type:Type.INTEGER,description:'Exact FDC nutrient ID (for example 1003 for protein), only with field foodNutrients.'},field:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER,description:'One to ten complete source items.'}},required:['release','fdcId']}},
   {name:'get_ingredient_concept',description:'Inspect one exact FoodOn ingredient concept returned by resolve_ingredient. Read complete English synonyms, direct parents, children or ancestor paths with pagination. These are ontology classifications, not evidence of allergens, nutrient composition, health effects, package presence or legal permission. Do not infer those relationships from taxonomy.',parameters:{type:Type.OBJECT,properties:{id:{type:Type.STRING,description:'Exact FOODON_ plus eight-digit identifier.'},relation:{type:Type.STRING,enum:['parents','children','ancestors']},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER,description:'One to twenty related concepts per page.'}},required:['id']}},
@@ -1086,6 +1089,16 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
     case 'calculate_nutrition': {
       const parsed = toolArgs.calculate_nutrition.safeParse(args);
       return parsed.success ? calculateNutrition(parsed.data, context) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The nutrition calculation arguments were invalid.' } };
+    }
+    case 'get_codex_category': {
+      const parsed=toolArgs.get_codex_category.safeParse(args);if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments'}};
+      const result=await readCodexCategories(parsed.data);if(result.status==='unavailable'||result.status==='invalid_source')return{status:'unavailable',resultCount:0,output:result};
+      if(result.status==='empty')return{status:'empty',resultCount:0,output:result};
+      // Every returned row retains its own complete compact attribution; a
+      // clipped overview must not erase child/ancestor evidence after the tool.
+      const rows='record'in result?[result.record,...result.ancestors,...result.children]:result.results;
+      const evidence=rows.flatMap(row=>{const source=asEvidenceSource({id:`codex-category-${row.code}`,title:`Codex GSFA category ${row.code}: ${row.label}`.slice(0,300),publisher:'Codex Alimentarius Commission (FAO/WHO)',url:row.sourceUrl,category:'registry',jurisdiction:'International Codex taxonomy; not Indian authorization or final food-category applicability',publishedAt:null,effectiveAt:null,retrievedAt:result.retrievedAt,summary:JSON.stringify({code:row.code,label:row.label,parentCode:row.parentCode}),limitations:result.limitations.join(' '),license:result.rights.status});return source?[source]:[];});
+      return{status:'ok',resultCount:'record'in result?1:result.results.length,output:result,evidence};
     }
     case 'get_product_record': {
       const parsed=toolArgs.get_product_record.safeParse(args);
