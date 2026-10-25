@@ -301,7 +301,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   if(pkg.synthetic)limitations.unshift('Synthetic example data: this audit does not demonstrate real-photo OCR or provider acceptance.');
   const primary=[carbs,sugars,sodiumCalc].filter((c):c is Calculation=>!!c);
   const overview=primary.length?primary:calculations.slice(0,3);
-  const important=overview.map(c=>`${amountText(c.result)} ${c.unit} ${display[c.nutrient].toLowerCase()}`);
+  const important=overview.map(c=>`${amountText(c.result)} ${c.unit} ${(c.nutrient?display[c.nutrient]:c.nutrientLabel??'nutrient').toLowerCase()}`);
   const conflict=findings.some(f=>f.status==='conflict');
   let answer=important.length?`For ${amountText(portion)} ${portionUnit}: ${important.join(', ')} from the readable label values.`:`A reliable ${amountText(portion)} ${portionUnit} calculation needs readable nutrient amounts, units and a matching basis.`;
   let answerIntent='label overview';

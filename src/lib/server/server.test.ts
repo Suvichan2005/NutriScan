@@ -906,6 +906,25 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculatorAmount:scenario.requested,calculatorUnit:scenario.unit}));
     expect(result.agentDiagnostics.generationCount).toBe(2);
   });
+  it('carries an unmapped nutrient through native calculation, natural answer and interactive presentation',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const answer='Based on the provisional label reading, 75 ml provides 71 mg calcium.';
+    const fetcher=vi.fn()
+      .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('calcium','calculate_nutrition',{candidateId:'calcium-row',amount:75,unit:'ml'})]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const evidence={observationIds:['label-calcium'],imageRegions:[]};
+    const reconstruction={identity:{brand:null,name:null,variant:null,status:'unreadable',evidence},serving:null,
+      nutritionRows:[{rowId:'calcium-row',nutrient:'Calcium',nutrientKey:null,printedLabel:'Calcium',printedValue:'142 mg',value:142,unit:'mg',columnLabel:'per 150 ml',basisText:'per 150 ml',basisAmount:150,basisUnit:'ml',qualifier:null,status:'provisional',evidence}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Developer fixture.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};
+    const data=assistInput.parse({consent:true,question:'How much calcium is in 75 ml?',package:{id:'custom-nutrient',name:'Example drink',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[{id:'label-calcium',field:'label-note',text:'Calcium 142 mg per 150 ml',side:'text',origin:'user',confidence:null}],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString(),reconstruction}});
+    const result=await assist(data);
+    expect(result.answer).toBe(answer);
+    expect(result.calculations).toContainEqual(expect.objectContaining({nutrient:null,nutrientLabel:'Calcium',result:71,unit:'mg',interpretationIds:['calcium-row']}));
+    expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculatorAmount:75,calculatorUnit:'ml'}));
+    expect(result.agentDiagnostics.generationCount).toBe(2);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
   it('rejects malformed package reconstruction once and does not run schema repair', async () => {
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([toolCallPart('bad-reconstruct','submit_package_reconstruction',{identity:{brand:'BISK FARM'}})]),{status:200,headers:{'content-type':'application/json'}}));

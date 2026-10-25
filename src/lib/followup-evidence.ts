@@ -211,11 +211,11 @@ export function buildLocalPackageFallbackReply(audit: Audit, question: string, p
   const requestedKey = requested ? nutrientAliases[requested] ?? requested : undefined;
   const defaultOrder = ['carbohydrate', 'sugars', 'sodium', 'salt', 'protein', 'fat', 'fiber', 'energy'];
   const uniqueOrder = requestedKey ? [requestedKey, ...defaultOrder.filter(key => key !== requestedKey)] : defaultOrder;
-  const calculations = [...audit.calculations].sort((a, b) => uniqueOrder.indexOf(a.nutrient) - uniqueOrder.indexOf(b.nutrient))
-    .filter(calculation => uniqueOrder.includes(calculation.nutrient)).slice(0, foodChoice ? 2 : 1);
+  const calculations = [...audit.calculations].sort((a, b) => uniqueOrder.indexOf(a.nutrient??'') - uniqueOrder.indexOf(b.nutrient??''))
+    .filter(calculation => uniqueOrder.includes(calculation.nutrient??'')).slice(0, foodChoice ? 2 : 1);
   if (calculations.length) {
     const details = calculations.map(calculation => {
-      const nutrient = calculation.nutrient.replace(/([A-Z])/g, ' $1').toLocaleLowerCase('en-IN');
+      const nutrient = (calculation.nutrientLabel??calculation.nutrient??'nutrient').replace(/([A-Z])/g, ' $1').toLocaleLowerCase('en-IN');
       const result = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(calculation.result);
       const input = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(calculation.input);
       const basis = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(calculation.basisAmount);

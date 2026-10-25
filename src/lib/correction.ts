@@ -9,6 +9,10 @@ export function reconstructionRowIsSuperseded(pkg: PackageData, row: NonNullable
 
 /** A current user correction takes precedence over earlier model/OCR inputs. */
 export function calculationRespectsCorrections(pkg: PackageData, calculation: Calculation): boolean {
+  if(calculation.nutrient===null){
+    const superseded=new Set(pkg.observations.filter(row=>row.origin==='user').flatMap(row=>row.supersedesObservationIds??[]));
+    return !calculation.observationIds.some(id=>superseded.has(id));
+  }
   const corrections = pkg.nutrients.filter(row => row.key === calculation.nutrient && row.status === 'corrected');
   if (!corrections.length) return true;
   const equal = (left: number, right: number) => Math.abs(left - right) <= Number.EPSILON * Math.max(1, Math.abs(left), Math.abs(right)) * 16;

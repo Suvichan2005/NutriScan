@@ -60,6 +60,55 @@ describe('Gemini tool retrieval boundaries', () => {
       ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Developer fixture.'};
     return toolContext;
   }
+  it.each([
+    {name:'Calcium',value:142,nutrientUnit:'mg',basis:150,unit:'ml' as const,amount:75,expected:71},
+    {name:'Iron',value:4,nutrientUnit:'mg',basis:100,unit:'g' as const,amount:30,expected:1.2},
+    {name:'Vitamin B12',value:2.5,nutrientUnit:'µg',basis:100,unit:'g' as const,amount:40,expected:1},
+    {name:'Soluble fibre',value:4.4,nutrientUnit:'g',basis:100,unit:'g' as const,amount:50,expected:2.2},
+  ])('calculates the exact $name row without assigning a standard nutrient identity',async scenario=>{
+    const toolContext=countedContext();
+    const row=toolContext.package.reconstruction!.nutritionRows[0];
+    Object.assign(row,{rowId:'custom-row',nutrient:scenario.name,nutrientKey:null,printedLabel:scenario.name,value:scenario.value,unit:scenario.nutrientUnit,basisAmount:scenario.basis,basisUnit:scenario.unit});
+    const before=structuredClone(toolContext.package);
+    const result=await executeGeminiTool('calculate_nutrition',{candidateId:row.rowId,amount:scenario.amount,unit:scenario.unit},toolContext);
+    expect(result.status).toBe('ok');
+    expect(result.calculations?.[0]).toMatchObject({nutrient:null,nutrientLabel:scenario.name,input:scenario.value,result:scenario.expected,unit:scenario.nutrientUnit,interpretationIds:['custom-row']});
+    const request={consent:true,question:`Calculate ${scenario.name}.`,package:toolContext.package,calculations:result.calculations};
+    expect(assistInput.safeParse(request).success).toBe(true);
+    expect(assistInput.safeParse({...request,calculations:[{...result.calculations![0],nutrientLabel:'A different nutrient'}]}).success).toBe(false);
+    expect(calculationSchema.safeParse({...result.calculations![0],nutrient:'protein',nutrientLabel:scenario.name}).success).toBe(false);
+    expect(calculationSchema.safeParse({...result.calculations![0],inputUnit:'%RDA',unit:'%RDA'}).success).toBe(false);
+    expect(assistInput.safeParse({...request,calculations:[{...result.calculations![0],input:scenario.value+1,result:(scenario.value+1)*scenario.amount/scenario.basis}]}).success).toBe(false);
+    expect(toolContext.package).toEqual(before);
+  });
+  it('keeps arbitrary-row count and package conversions linked and rejects stale or non-absolute readings',async()=>{
+    const toolContext=packageContentContext();
+    const row=toolContext.package.reconstruction!.nutritionRows[0];
+    Object.assign(row,{nutrient:'Iron',nutrientKey:null,printedLabel:'Iron',value:4,unit:'mg'});
+    const pieces=await executeGeminiTool('calculate_nutrition',{candidateId:row.rowId,amount:3,unit:'pieces'},toolContext);
+    const pack=await executeGeminiTool('calculate_nutrition',{candidateId:row.rowId,amount:0.5,unit:'package'},toolContext);
+    expect(pieces.calculations?.[0]).toMatchObject({nutrient:null,result:1.8,countedPortion:{amount:3,unit:'pieces'}});
+    expect(pack.calculations?.[0]).toMatchObject({nutrient:null,result:5,packagePortion:{packageCount:0.5}});
+    expect(assistInput.safeParse({consent:true,question:'Half the package',package:toolContext.package,calculations:pack.calculations}).success).toBe(true);
+    for(const change of [{qualifier:'<'},{status:'conflict'},{unit:'%RDA'},{basisUnit:'ml'}]){
+      const altered={...toolContext,package:structuredClone(toolContext.package)};Object.assign(altered.package.reconstruction!.nutritionRows[0],change);
+      expect((await executeGeminiTool('calculate_nutrition',{candidateId:row.rowId,amount:30,unit:'g'},altered)).status).toBe('withheld');
+    }
+    const stale=structuredClone(toolContext.package);stale.reconstruction!.nutritionRows[0].value=5;
+    expect(assistInput.safeParse({consent:true,question:'Half the package',package:stale,calculations:pack.calculations}).success).toBe(false);
+    const corrected={...toolContext,package:structuredClone(toolContext.package)};
+    corrected.package.observations.push({id:'human-replacement',field:'label-note',text:'A correction supersedes the original reading.',origin:'user',side:'text',confidence:null,supersedesObservationIds:['ocr-1']});
+    expect((await executeGeminiTool('calculate_nutrition',{candidateId:row.rowId,amount:30,unit:'g'},corrected)).status).toBe('withheld');
+    expect(assistInput.safeParse({consent:true,question:'Half the package',package:corrected.package,calculations:pack.calculations}).success).toBe(false);
+    toolContext.package.reconstruction!.current=false;
+    expect((await executeGeminiTool('calculate_nutrition',{candidateId:row.rowId,amount:30,unit:'g'},toolContext)).status).toBe('withheld');
+  });
+  it('uses the current standard-nutrient correction when a row-only request omits its key',async()=>{
+    const toolContext=countedContext();
+    toolContext.package=applyNutrientCorrection(toolContext.package,{key:'carbohydrate',value:25,unit:'g',basisAmount:100,basisUnit:'g'});
+    const result=await executeGeminiTool('calculate_nutrition',{candidateId:'count-carb',amount:40,unit:'g'},toolContext);
+    expect(result.calculations?.[0]).toMatchObject({nutrient:'carbohydrate',input:25,result:10});
+  });
   function packageContentContext(unit:'g'|'ml'='g',quantity=250){
     const toolContext=countedContext();
     const row=toolContext.package.reconstruction!.nutritionRows[0];

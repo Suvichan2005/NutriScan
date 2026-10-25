@@ -122,8 +122,10 @@ function calculationHasPackageEvidence(calculation:Calculation,data:{package:z.i
   }
   const hasMatchingInterpretation=(data.package.reconstruction?.current?data.package.reconstruction.nutritionRows:[]).some(row=>
     (!(calculation.interpretationIds?.length)||calculation.interpretationIds.includes(row.rowId))
-    &&['clear','provisional'].includes(row.status)
-    &&(row.nutrientKey===undefined?calculationLabelMatches(calculation.nutrient,`${row.nutrient} ${row.printedLabel}`):row.nutrientKey===calculation.nutrient)
+    &&['clear','provisional'].includes(row.status)&&!row.qualifier
+    &&(calculation.nutrient===null
+      ?row.nutrientKey==null&&calculation.interpretationIds?.length===1&&calculation.nutrientLabel===row.nutrient
+      :row.nutrientKey===undefined?calculationLabelMatches(calculation.nutrient,`${row.nutrient} ${row.printedLabel}`):row.nutrientKey===calculation.nutrient)
     &&row.value!==null&&numericFieldMatches(calculation.input,row.value)
     &&row.unit===calculation.inputUnit&&numericFieldMatches(calculation.basisAmount,row.basisAmount??Number.NaN)
     &&row.basisUnit===calculation.portionUnit&&calculation.unit===calculation.inputUnit
@@ -132,7 +134,7 @@ function calculationHasPackageEvidence(calculation:Calculation,data:{package:z.i
 
   const hasMatchingCandidate=(data.interpretedCandidates??[]).some(candidate=>
     (calculation.interpretationIds??[]).includes(candidate.candidateId)
-    &&candidate.kind==='nutrient'&&calculationLabelMatches(calculation.nutrient,candidate.field)
+    &&candidate.kind==='nutrient'&&calculation.nutrient!==null&&calculationLabelMatches(calculation.nutrient,candidate.field)
     &&candidate.numericValue!==null&&numericFieldMatches(calculation.input,candidate.numericValue)
     &&candidate.unit===calculation.inputUnit&&candidate.basis?.unit===calculation.portionUnit
     &&!!candidate.basis&&numericFieldMatches(calculation.basisAmount,candidate.basis.amount)
@@ -2058,7 +2060,7 @@ export function assistPromptPayload(data:z.infer<typeof assistInput>, referenceA
     package:compactPackage,
     packageFacts,
     evidence:(data.evidence??[]).map(source=>({...source,summary:source.summary.slice(0,900),limitations:source.limitations.slice(0,350)})),
-    calculations:(data.calculations??[]).map(calculation=>({id:calculation.id,nutrient:calculation.nutrient,input:calculation.input,inputUnit:calculation.inputUnit,basisAmount:calculation.basisAmount,portion:calculation.portion,portionUnit:calculation.portionUnit,result:calculation.result,unit:calculation.unit,formula:calculation.formula,observationIds:calculation.observationIds,imageIds:calculation.imageIds??[],interpretationIds:calculation.interpretationIds??[],assumptions:calculation.assumptions})),
+    calculations:(data.calculations??[]).map(calculation=>({id:calculation.id,nutrient:calculation.nutrient,nutrientLabel:calculation.nutrientLabel,input:calculation.input,inputUnit:calculation.inputUnit,basisAmount:calculation.basisAmount,portion:calculation.portion,portionUnit:calculation.portionUnit,result:calculation.result,unit:calculation.unit,formula:calculation.formula,observationIds:calculation.observationIds,imageIds:calculation.imageIds??[],interpretationIds:calculation.interpretationIds??[],assumptions:calculation.assumptions})),
     images:(data.images??[]).map(image=>({handle:image.handle,side:image.side,width:image.width,height:image.height,role:image.role??'unknown',...(image.description?{description:image.description.slice(0,80)}:{})})),
     conversationContext:data.conversationContext?.slice(-6).map(turn=>({question:turn.question.slice(0,1000),answer:turn.answer.slice(0,1400)})),
     ...(visualImages?.length?{visualImages:visualImages.map(({base64:_base64,...image})=>image)}:{}),
@@ -2186,7 +2188,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       const requestedPortion=resolveQuestionPortion(data.question,defaultPortion(activePackage),activePackage.netWeight,serving);
       const correctedNutrients=new Set(activePackage.nutrients.filter(nutrient=>nutrient.status==='corrected').map(nutrient=>nutrient.key));
       const reconstructionCalculations=calculationsFromReconstruction(activePackage,requestedPortion.value,requestedPortion.unit)
-        .filter(calculation=>!correctedNutrients.has(calculation.nutrient))
+        .filter(calculation=>(!calculation.nutrient||!correctedNutrients.has(calculation.nutrient)))
         .map(calculation=>({...calculation,evidenceText:calculationEvidenceText(calculation)}));
       const combined=new Map<string,Calculation>();
       for(const calculation of [...(data.calculations??[]),...reconstructionCalculations])if(!combined.has(calculation.id))combined.set(calculation.id,calculation);

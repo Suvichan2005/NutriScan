@@ -2,6 +2,14 @@
 
 Updated: 2026-10-25. This is a local development application and research workspace. Feature levels below describe evidence available in this checkout; they do not imply clinical or production acceptance.
 
+## Current checkpoint — 25 October 2026: calculate any complete saved nutrition row
+
+- Native `calculate_nutrition` can select an exact reconstructed row without forcing it into the ten standard nutrient keys. A nullable calculation key plus an exact saved label/row pointer retains calcium, iron, vitamin B12 and separately printed components. Standard nutrient corrections still take precedence. Supported absolute units are preserved without unit conversion; qualifiers, %RDA, incomplete/conflicting rows, stale values and altered labels are rejected.
+- A real saved-package follow-up selected the previously photographed Amul calcium row and returned 71 mg in 75 ml from 142 mg per 150 ml. Two free Flash-Lite generations, one calculation tool call, no photos/profile/reconstruction/repair: 10,945 input / 73 output SDK tokens, 2,018 cached tokens reported, thinking absent, 7.70 s summed provider latency / 21.09 s route wall time, local estimate ₹0. Google billing was not queried. This verifies calculation/tool selection, not fresh photo accuracy.
+- Replayed that actual answer and calculation through isolated desktop/mobile browser sessions, saved history and the ordinary Thread UI. Calcium retained its label and provisional provenance; changing 75 ml to 150 ml changed 71 mg to 142 mg, without another model request. No page errors or horizontal overflow; screenshots inspected. Owner browser storage and the primary server were preserved.
+- Readable run: `.data/gemini-evaluations/83f67727-cd60-45d1-9e26-387f56229734/`; tested export: `.data/gemini-evaluations/exports/saved-row-calcium-20261025.md`. Browser receipts/screenshots and exact usage: `.data/general-nutrient-acceptance/`. Offline cases cover volume/mass, micrograms, piece/package conversion, correction precedence, stale rows, forged labels and unsupported percentage units. Full suite 709 passed / 1 skipped serially; final two focused suites 150 passed / 1 skipped after absolute-unit hardening; TypeScript passed.
+- Limit: general non-standard-row correction controls remain incomplete, and the live transfer case is one saved dairy package. Broader package accuracy and clinical/outcome knowledge remain open.
+
 ## Current checkpoint — 25 October 2026: India-first multimodal OCR pilot
 
 - Removed the client-side minimum-character OCR rejection: with cloud analysis consented, a package photo can reach Gemini even when local OCR returns no usable text. The three-arm image-only Bisk route returned a structured reconstruction; the application change and zero-OCR request contract are covered offline. Browser upload acceptance for an empty OCR result remains unverified.

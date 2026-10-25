@@ -103,7 +103,7 @@ export function ThreadGenerativeUI(props: Props) {
         <ul className="thread-ui-calculations">{rows.map(row => {
           const scaled = scaleCalculationToPortion(row, calculatorPortion, calculatorUnit);
           const sourceRow=reconstructedRows.find(candidate=>row.interpretationIds?.includes(candidate.rowId));
-          const nutrient = sourceRow?readableReconstructedNutrient(sourceRow.printedLabel||sourceRow.nutrient):nutrientLabels[row.nutrient];
+          const nutrient = sourceRow?readableReconstructedNutrient(sourceRow.printedLabel||sourceRow.nutrient):row.nutrient?nutrientLabels[row.nutrient]:row.nutrientLabel??'Nutrient';
           const originalPackageAmount=row.packagePortion&&calculatorUnit===row.packagePortion.unit&&Math.abs(calculatorPortion-row.portion)<=Number.EPSILON*Math.max(1,calculatorPortion,row.portion)*8;
           const amountDescription=originalPackageAmount?`For ${formatNumber(row.packagePortion!.packageCount)} package${row.packagePortion!.packageCount===1?'':'s'} · printed net contents ${formatNumber(row.packagePortion!.netContentPerPackage)} ${row.packagePortion!.unit} each`:scaled===null?`Recorded for ${formatNumber(row.portion)} ${row.portionUnit}; mass and volume are not converted.`:`For ${formatNumber(calculatorPortion)} ${calculatorUnit}`;
           return <li key={row.id}><span>{nutrient}<small>{amountDescription}</small>{row.interpretationIds?.length || row.countedPortion || row.packagePortion ? <small>Based on an unverified interpretation</small> : null}</span><strong>{formatNumber(scaled ?? row.result)} {row.unit}</strong></li>;

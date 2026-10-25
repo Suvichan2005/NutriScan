@@ -3,17 +3,20 @@ import { z } from 'zod';
 import {
   calculationEvidenceText,
   calculationSchema,
+  calculableNutrientUnits,
   nutrientKeys,
   normalizedCropSchema,
   profileSchema,
   sourceSchema,
   type Calculation,
+  type NutrientKey,
   type EvidenceSource,
   type PackageData,
   type TentativeStructuredCandidate,
 } from '../contracts';
 import { matchesPackageRows, reconcileInterpretedNutrition } from '../interpreted-nutrients';
 import { calculationsFromReconstruction } from '../portion';
+import { calculationRespectsCorrections } from '../correction';
 import { isGuidanceEvidenceInScope, isLocalEvidenceTopicallyRelevant } from '../followup-evidence';
 import { evidenceSources, findIngredientEvidence, ingredientFamilySources, lookupIngredientFamilies, indianStapleIdentitySources, lookupAdditive, lookupExplicitAdditiveMention, lookupIndianStapleIngredientIdentity, resolveTentativeAdditiveIdentity } from '../../modules/knowledge';
 import { searchOpenFoodTox, semanticRetrieve } from '../semantic';
@@ -60,7 +63,7 @@ const toolArgs = {
   resolve_ingredient: z.object({ query: querySchema }).strict(),
   lookup_chemical_identity: z.object({ query: querySchema }).strict(),
   get_substance_assessments: z.object({ query: querySchema }).strict(),
-  calculate_nutrition: z.object({ nutrient: z.enum(nutrientKeys), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml', 'pieces', 'servings', 'package']), candidateId:z.preprocess(value=>value===null?undefined:value,z.string().min(1).max(120).optional()) }).strict(),
+  calculate_nutrition: z.object({ nutrient: z.preprocess(value=>value===null?undefined:value,z.enum(nutrientKeys).optional()), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml', 'pieces', 'servings', 'package']), candidateId:z.preprocess(value=>value===null?undefined:value,z.string().min(1).max(120).optional()) }).strict().refine(value=>!!value.nutrient||!!value.candidateId,{message:'Select a standard nutrient or an exact saved nutrition row.'}),
   lookup_product: z.object({ query: z.string().trim().min(2).max(80).optional(), barcode: z.string().regex(/^\d{8,14}$/).optional() }).strict().refine(value => Number(Boolean(value.query)) + Number(Boolean(value.barcode)) === 1),
   search_research: z.object({ query: querySchema, topic: z.enum(['science', 'regulation', 'claims']) }).strict(),
 };
@@ -84,7 +87,7 @@ export const geminiToolDeclarations: FunctionDeclaration[] = [
   { name: 'resolve_ingredient', description: 'Look up one observed ingredient or additive. Returns exact source-attributed Indian terminology, FoodOn identity candidates, reviewed ingredient-source/allergen name relationships, and linked outcome evidence when available. Explicit INS codes may query Codex and exact EFSA records. Relationships retain provenance and limitations: identity is not package presence, dose, personal safety or Indian authorization. No photos/profile are sent to external identity services.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'One observed ingredient name or additive identifier, not the entire ingredient list.' } }, required: ['query'] } },
   { name: 'lookup_chemical_identity', description: 'Read-only PubChem PUG REST lookup of a chemical name already present in the user question/package text or returned by exact local ingredient or assessment lookup. Returns registry identity candidates only, not food-use authorization, dose, hazard assessment or personal safety. Sends only the name; never photos or profile data.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A specific chemical name from the question, printed package text or an exact local identity result, not a numeric value or general food question.' } }, required: ['query'] } },
   { name: 'get_substance_assessments', description: 'Search the locally imported EFSA OpenFoodTox 3.0 assessment snapshot for a named substance or exact identifier. Returns attributed EFSA assessment records and toxicological reference values when available. The local snapshot may only link a scientific output without its conclusion; if the user asks what the linked assessment found, follow that title with search_research using the exact local identity returned. Use to distinguish hazard assessments from package exposure; this does not establish Indian authorization, package dose, product presence or personal safety. No network request is made.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A substance name, synonym, CAS number or PubChem CID from the question, package text or a locally resolved ingredient identity.' } }, required: ['query'] } },
-  { name: 'calculate_nutrition', description: 'Use deterministic results already supplied with the package when they cover the requested nutrient and exact portion; do not repeat those calculations. Call this tool for missing portion results, including comparisons between piece counts, servings, or a whole/partial package. Never perform package arithmetic in answer text. Pieces and servings use the saved evidence-linked printed serving definition; package amounts use only one current, evidence-linked printed net-content declaration and a compatible nutrient basis. Do not derive net contents from an item count or serving size. Calculate from an unconflicted user-confirmed package nutrient, a currently attached evidence-linked interpretation, or an exact rowId from the saved package reconstruction. Interpretation-based arithmetic remains provisional and never confirms or changes the package. Missing or conflicting definitions withhold the calculation.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Requested amount in the selected unit. For package, this is the number of packages (for example 1 for one package or 0.5 for half a package); otherwise grams, millilitres, pieces or declared servings.' }, unit: { type: Type.STRING, enum: ['g', 'ml', 'pieces', 'servings', 'package'] }, candidateId:{type:Type.STRING,description:'Optional exact candidateId from supplied interpretations or exact rowId from the saved package reconstruction.'} }, required: ['nutrient', 'amount', 'unit'] } },
+  { name: 'calculate_nutrition', description: 'Use deterministic results already supplied with the package when they cover the requested nutrient and exact portion; do not repeat those calculations. Call this tool for missing portion results, including comparisons between piece counts, servings, or a whole/partial package. To calculate any other printed nutrient (including micronutrients and separately printed subcomponents), provide its exact saved nutrition rowId as candidateId and omit nutrient. Do not assign an unrelated standard nutrient key. Never perform package arithmetic in answer text. Pieces and servings use the saved evidence-linked printed serving definition; package amounts use only one current, evidence-linked printed net-content declaration and a compatible nutrient basis. Do not derive net contents from an item count or serving size. Calculate from an unconflicted user-confirmed package nutrient, a currently attached evidence-linked interpretation, or an exact rowId from the saved package reconstruction. Interpretation-based arithmetic remains provisional and never confirms or changes the package. Missing or conflicting definitions withhold the calculation.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Requested amount in the selected unit. For package, this is the number of packages (for example 1 for one package or 0.5 for half a package); otherwise grams, millilitres, pieces or declared servings.' }, unit: { type: Type.STRING, enum: ['g', 'ml', 'pieces', 'servings', 'package'] }, candidateId:{type:Type.STRING,description:'Exact candidateId or saved rowId. Required when nutrient is omitted; selects any complete printed nutrient row without guessing a standard identity.'} }, required: ['amount', 'unit'] } },
   { name: 'lookup_product', description: 'Read-only Open Food Facts search by an exact barcode or product text explicitly present in the user question or package observations. Sends only that query to the public catalog; never sends images or profile data. Results are community candidates, not confirmed package facts.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A product name or brand present in the question or visible package OCR.' }, barcode: { type: Type.STRING, description: 'An exact 8–14 digit barcode present in the question or package OCR.' } } } },
   { name: 'search_research', description: 'Read-only search of Europe PMC or NutriScan’s fixed official India regulation sources. External query terms must be present in the user question/package OCR or a successful exact local identity lookup. If a local registry supplies only publication links and the user asks for the assessment finding, search the linked entity/topic rather than inferring the finding from metadata. Search results are candidates, not an evidence synthesis.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'Focused terms drawn from the explicit question, package OCR or successful exact local identity results.' }, topic: { type: Type.STRING, enum: ['science', 'regulation', 'claims'] } }, required: ['query', 'topic'] } },
 ];
@@ -686,6 +689,27 @@ async function lookupChemicalIdentity(args: z.infer<typeof toolArgs.lookup_chemi
   }
 }
 
+/** Scale one exact reconstructed row without assigning it an inferred nutrient identity. */
+function calculateReconstructedRow(row:NonNullable<PackageData['reconstruction']>['nutritionRows'][number],nutrient:NutrientKey|null,args:{amount:number;unit:'g'|'ml'},context:GeminiToolContext):GeminiToolResult{
+  const withheld=(message:string):GeminiToolResult=>({status:'withheld',resultCount:0,output:{status:'withheld',message}});
+  const imageIds=[...new Set(row.evidence.imageRegions.map(item=>item.imageId))];
+  if(!context.package.reconstruction?.current||!['clear','provisional'].includes(row.status)||row.qualifier||row.value===null||!row.unit||!row.basisAmount||!row.basisUnit||row.basisUnit!==args.unit||(!row.evidence.observationIds.length&&!imageIds.length))return withheld('The saved row needs an exact, current, evidence-linked value, unqualified unit and matching mass or volume basis.');
+  if(!calculableNutrientUnits.some(unit=>unit===row.unit))return withheld('The saved row does not use a supported absolute nutrient unit. Percentages and reference-intake percentages are not nutrient quantities.');
+  const result=row.value*args.amount/row.basisAmount;
+  if(!Number.isFinite(result)||result>100000)return withheld('The requested calculation exceeds validated numeric limits.');
+  const calculation=calculationSchema.parse({
+    id:`reconcalc-r${context.package.reconstruction.revision}-${row.rowId.replace(/[^a-z0-9_-]/gi,'').slice(0,42)}-${args.amount}-${args.unit}`,
+    label:`${row.nutrient} in ${args.amount} ${args.unit} (provisional package reading)`,nutrient,...(nutrient===null?{nutrientLabel:row.nutrient}:{}),
+    input:row.value,inputUnit:row.unit,basisAmount:row.basisAmount,portion:args.amount,portionUnit:args.unit,result,unit:row.unit,
+    formula:`${row.value} ${row.unit} × ${args.amount} ${args.unit} ÷ ${row.basisAmount} ${row.basisUnit}`,
+    observationIds:row.evidence.observationIds,...(imageIds.length?{imageIds}:{}),interpretationIds:[row.rowId],
+    assumptions:['Deterministic arithmetic from the saved Gemini package interpretation. The printed value and basis remain provisional and are not independently verified.'],
+  });
+  if(!calculationRespectsCorrections(context.package,calculation))return withheld('A user correction supersedes the evidence for this saved row. Recheck the current reading before calculating.');
+  const linked={...calculation,evidenceText:calculationEvidenceText(calculation)};
+  return{status:'ok',resultCount:1,calculations:[linked],output:{status:'ok',calculation:linked,note:'Calculated from the exact saved nutrition row. This estimate remains provisional; it does not confirm or overwrite the package reading.'}};
+}
+
 function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, context: GeminiToolContext): GeminiToolResult {
   if(args.unit==='package'){
     const reconstruction=context.package.reconstruction;
@@ -745,6 +769,12 @@ function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, 
     });
     return{...result,calculations,output:{...result.output,calculation:calculations[0],portionConversion:{requestedAmount:args.amount,requestedUnit:args.unit,normalizedAmount:amount,normalizedUnit:serving.unit,printedServing:serving.printedText,revision:reconstruction.revision}}};
   }
+  if(!args.nutrient){
+    const row=context.package.reconstruction?.current?context.package.reconstruction.nutritionRows.find(row=>row.rowId===args.candidateId):undefined;
+    if(!row)return{status:'withheld',resultCount:0,output:{status:'withheld',message:'Select an exact rowId from the current saved package reconstruction.'}};
+    if(row.nutrientKey)return calculateNutrition({...args,nutrient:row.nutrientKey},context);
+    return calculateReconstructedRow(row,null,{amount:args.amount,unit:args.unit},context);
+  }
   if (args.candidateId && context.package.nutrients.some(row => row.key === args.nutrient && row.status === 'corrected')) {
     // The row identifier may come from the model's saved reconstruction, but
     // an explicit user correction is now the application's current input.
@@ -755,23 +785,9 @@ function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, 
   if (args.candidateId) {
     const candidate = context.interpretedCandidates?.find(item => item.candidateId === args.candidateId && item.kind === 'nutrient' && item.field === args.nutrient);
     if (!candidate) {
-      const reconstructed=context.package.reconstruction?.nutritionRows.find(row=>row.rowId===args.candidateId&&(row.nutrientKey===undefined?reconstructionRowMatches(row.nutrient,args.nutrient):row.nutrientKey===args.nutrient));
+      const reconstructed=context.package.reconstruction?.nutritionRows.find(row=>row.rowId===args.candidateId&&(row.nutrientKey===undefined?reconstructionRowMatches(row.nutrient,args.nutrient!):row.nutrientKey===args.nutrient));
       if(!reconstructed)return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'The requested interpretation is not among the supplied candidates or saved package rows.' } };
-      const imageIds=[...new Set(reconstructed.evidence.imageRegions.map(item=>item.imageId))];
-      if(!['clear','provisional'].includes(reconstructed.status)||reconstructed.value===null||!reconstructed.unit||!reconstructed.basisAmount||!reconstructed.basisUnit||reconstructed.basisUnit!==args.unit||(!reconstructed.evidence.observationIds.length&&!imageIds.length))return {status:'withheld',resultCount:0,output:{status:'withheld',message:'The saved package interpretation does not contain one complete, evidence-linked value and matching mass or volume basis.'}};
-      if(!['g','mg','kcal','kJ'].includes(reconstructed.unit))return {status:'withheld',resultCount:0,output:{status:'withheld',message:'The saved package row uses a unit this calculator cannot safely normalize.'}};
-      const resultValue=reconstructed.value*args.amount/reconstructed.basisAmount;
-      if(!Number.isFinite(resultValue)||resultValue>100000)return {status:'withheld',resultCount:0,output:{status:'withheld',message:'The requested calculation exceeds validated numeric limits.'}};
-      const calculation=calculationSchema.parse({
-        id:`reconcalc-r${context.package.reconstruction?.revision??0}-${args.candidateId.replace(/[^a-z0-9_-]/gi,'').slice(0,42)}-${args.amount}-${args.unit}`,
-        label:`${reconstructed.nutrient.trim().replace(/[_-]+/g,' ').replace(/^\p{L}/u,letter=>letter.toLocaleUpperCase('en-IN'))||reconstructed.printedLabel} in ${args.amount} ${args.unit} (provisional package reading)`,nutrient:args.nutrient,
-        input:reconstructed.value,inputUnit:reconstructed.unit,basisAmount:reconstructed.basisAmount,portion:args.amount,portionUnit:args.unit,
-        result:resultValue,unit:reconstructed.unit,formula:`${reconstructed.value} ${reconstructed.unit} × ${args.amount} ${args.unit} ÷ ${reconstructed.basisAmount} ${reconstructed.basisUnit}`,
-        observationIds:reconstructed.evidence.observationIds,...(imageIds.length?{imageIds}:{}),interpretationIds:[reconstructed.rowId],
-        assumptions:['Deterministic arithmetic from the saved Gemini package interpretation. The printed value and basis remain provisional and are not independently verified.'],
-      });
-      const provisionalCalculation={...calculation,evidenceText:calculationEvidenceText(calculation)};
-      return {status:'ok',resultCount:1,calculations:[provisionalCalculation],output:{status:'ok',calculation:provisionalCalculation,note:'Deterministic arithmetic from the saved Gemini package interpretation. This estimate remains provisional; it does not confirm or overwrite the package reading.'}};
+      return calculateReconstructedRow(reconstructed,args.nutrient,{amount:args.amount,unit:args.unit},context);
     }
     const rows = context.package.nutrients.filter(item => item.key === args.nutrient);
     if (rows.some(row => row.status === 'corrected')) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'A user correction takes precedence over the model candidate.' } };

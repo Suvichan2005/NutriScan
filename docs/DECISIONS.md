@@ -1,5 +1,10 @@
 # Chronological decisions
 
+## 25 October 2026 — let exact saved rows identify non-standard nutrition calculations
+
+- Keep model semantic interpretation separate from arithmetic: a native calculation can identify a current reconstructed row by its exact rowId, omitting a standard nutrient key. Preserve its printed/interpreted name, source identity, absolute unit, basis and uncertainty. Do not expand ingredient/nutrient keyword rules to make calcium or other unenumerated rows calculable.
+- For these calculations the shared contract requires one saved-row pointer and its exact label, validates arithmetic, rejects %RDA/qualified readings and rechecks the current value/unit/basis/provenance. A standard key cannot carry a competing display identity. Explicit user-superseded observations invalidate the old custom-row calculation; standard-key corrections retain their existing precedence. Ordinary React calculator/history presentation consumes the same persisted calculation.
+
 ## 25 October 2026 — keep Paddle OCR off the default scan path
 
 - A one-pass, three-arm pilot across an English cracker label, oats panel and dairy drink found no net increase in complete reference-field coverage from adding Paddle to Tesseract before Gemini. The oats arm matched the same 16/16 single-review reference with or without Paddle; the cracker arm retained the same wrong carbohydrate readings and lost serving-basis amounts; the drink arm corrected one sugar value but omitted calcium.

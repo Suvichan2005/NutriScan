@@ -119,7 +119,7 @@ export function prepareAssistantTurnPresentation(
   const correctedNutrients = new Set(pkg.nutrients.filter(nutrient => nutrient.status === 'corrected').map(nutrient => nutrient.key));
   const savedServingCalculations = serving?.quantity && serving.unit
     ? calculationsFromReconstruction(pkg, serving.quantity, serving.unit)
-      .filter(calculation => !correctedNutrients.has(calculation.nutrient))
+      .filter(calculation => (!calculation.nutrient||!correctedNutrients.has(calculation.nutrient)))
     : [];
   const byBasis = new Map<string, Calculation>();
   for (const calculation of [...providerCalculations.filter(calculation => calculationRespectsCorrections(pkg, calculation)), ...savedServingCalculations]) {
