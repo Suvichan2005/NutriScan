@@ -768,8 +768,10 @@ export function validateNaturalAnswerText(
   for (const line of normalized.split('\n')) {
     const acceptedSentences: string[] = [];
     const trimmed=line.trim();
-    const listPrefix=trimmed.match(/^(?:\d+[.)]|[-*+])\s+/)?.[0]??'';
-    const sentences = trimmed.slice(listPrefix.length).split(/(?<=[.!?])\s+(?=[\p{L}\p{N}"“])/u).filter(Boolean);
+    const headingPrefix=trimmed.match(/^#{1,6}\s+/)?.[0]??'';
+    const content=trimmed.slice(headingPrefix.length);
+    const listPrefix=content.match(/^(?:\d+[.)]|[-*+])\s+/)?.[0]??'';
+    const sentences = content.slice(listPrefix.length).split(/(?<=[.!?])\s+(?=[\p{L}\p{N}"“])/u).filter(Boolean);
     for (const sentence of sentences) {
       // Markdown list numbering is presentation syntax, not a factual amount.
       if (!numericMentionsAreSupported(sentence, evidenceTexts, calculatedResults)
@@ -780,7 +782,7 @@ export function validateNaturalAnswerText(
       acceptedSentences.push(sentence);
       acceptedSentenceCount += 1;
     }
-    if (acceptedSentences.length) acceptedLines.push(listPrefix+acceptedSentences.join(' '));
+    if (acceptedSentences.length) acceptedLines.push(headingPrefix+listPrefix+acceptedSentences.join(' '));
   }
   const acceptedAnswer = acceptedLines.join('\n').trim();
   if (withheldUnsupportedQuantitySentenceCount && acceptedAnswer) {

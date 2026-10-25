@@ -29,6 +29,26 @@ function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019
 }
 
 describe('Gemini tool retrieval boundaries', () => {
+  it.each([
+    ['sodium caseinate', 'milk'], ['tofu', 'soy'], ['atta', 'wheat'], ['ovalbumin', 'egg'], ['ground nuts', 'peanut'],
+  ])('hands source relationships and attribution for %s to the agent alongside identity resolution', async (query, family) => {
+    const toolContext = context(`Explain ${query} in this ingredient list.`, `INGREDIENTS: ${query}; salt`);
+    const before = structuredClone(toolContext.package);
+    const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher);
+    const result = await executeGeminiTool('resolve_ingredient', { query }, toolContext);
+    expect(result.status).toBe('ok');
+    expect(result.output).toMatchObject({ ingredientSourceRelationships: [{ family, sourceId: `health-canada-allergen-${family}` }] });
+    expect(result.evidence).toContainEqual(expect.objectContaining({ id: `health-canada-allergen-${family}`, publisher: 'Health Canada' }));
+    expect(result.output.caveat).toContain('not an automatic allergen declaration');
+    expect(toolContext.package).toEqual(before);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('does not add ingredient-source relationships for an unsupported tool query', async () => {
+    const result = await executeGeminiTool('resolve_ingredient', { query: 'sodium caseinate' }, context('What are these ingredients?', 'INGREDIENTS: rice; salt'));
+    expect(result.status).toBe('withheld');
+    expect(result.output.ingredientSourceRelationships).toBeUndefined();
+  });
   function countedContext(){
     const toolContext=context('Compare five pieces with one serving.');
     toolContext.package.observations.push({...toolContext.package.observations[0],id:'serving-ocr',readingOrder:{runId:'run-1',blockIndex:0,paragraphIndex:0,lineIndex:1}});

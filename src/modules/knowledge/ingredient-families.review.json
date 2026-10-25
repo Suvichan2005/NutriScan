@@ -1,0 +1,144 @@
+{
+  "reviewedAt": "2026-10-25",
+  "policyUrl": "https://www.canada.ca/en/transparency/terms.html",
+  "reuse": "Non-commercial reproduction with attribution under Canada.ca terms. Commercial redistribution requires a separate rights review/permission. No logos or complete articles are reproduced.",
+  "families": [
+    {
+      "family": "milk",
+      "slug": "milk-priority-food-allergen",
+      "title": "Milk - A priority food allergen",
+      "sections": {
+        "Other names for milk": [
+          "beta-lactoglobulin",
+          "casein",
+          "rennet casein",
+          "caseinate",
+          "ammonium caseinate",
+          "calcium caseinate",
+          "magnesium caseinate",
+          "potassium caseinate",
+          "sodium caseinate",
+          "demineralized whey",
+          "hydrolyzed casein",
+          "lactalbumin",
+          "lactalbumin phosphate",
+          "lactoferrin",
+          "lactoglobulin",
+          "whey",
+          "whey protein concentrate"
+        ],
+        "Common sources of milk": [
+          "butter",
+          "buttermilk",
+          "cheese",
+          "curds",
+          "cream",
+          "ice cream",
+          "ghee",
+          "butter fat",
+          "kefir",
+          "kumiss",
+          "sour cream",
+          "yogurt"
+        ]
+      },
+      "sectionHashes": {
+        "Other names for milk": "789f759042aaa264b4c6961b148f93c60e8546c54381994108199c62b6610b3e",
+        "Common sources of milk": "69be32561089c3e97ee51ad006b5af66cadeabf29fdf0ba1abbe90c639d6f800"
+      }
+    },
+    {
+      "family": "soy",
+      "slug": "priority-food-allergen",
+      "title": "Soy - A priority food allergen",
+      "sections": {
+        "Other names for soy": [
+          "bean curd",
+          "dofu",
+          "kori-dofu",
+          "soybean curds",
+          "tofu",
+          "edamame",
+          "kinako",
+          "natto",
+          "nimame",
+          "okara",
+          "soya",
+          "soja",
+          "soybean",
+          "soyabeans",
+          "yuba"
+        ]
+      },
+      "sectionHashes": {
+        "Other names for soy": "a91d58e3e43f3ab666f9a5734161fc28a4c091f1961f9809672fb6c2c1c7c46a"
+      }
+    },
+    {
+      "family": "wheat",
+      "slug": "wheat-priority-food-allergen",
+      "title": "Wheat & Triticale - Priority food allergens",
+      "sections": {
+        "Other names for wheat": [
+          "atta",
+          "bulgur",
+          "couscous",
+          "durum",
+          "einkorn",
+          "emmer",
+          "farina",
+          "graham",
+          "high-protein flour",
+          "kamut",
+          "seitan",
+          "semolina",
+          "spelt",
+          "dinkel",
+          "farro"
+        ]
+      },
+      "sectionHashes": {
+        "Other names for wheat": "d1676bef21eeb204a1b6f75c15903800a34e281dfe229dfb5791fbf96bb47de2"
+      }
+    },
+    {
+      "family": "egg",
+      "slug": "eggs-priority-food-allergen",
+      "title": "Eggs - A priority food allergen",
+      "sections": {
+        "Other names for eggs": [
+          "albumen",
+          "conalbumin",
+          "livetin",
+          "ovalbumin",
+          "ovomucin",
+          "ovotransferrin",
+          "silico-albuminate",
+          "vitellin"
+        ]
+      },
+      "sectionHashes": {
+        "Other names for eggs": "9deb72208dab988dbb3b5066487070737dd457c82727d7cb61d8227539d30636"
+      }
+    },
+    {
+      "family": "peanut",
+      "slug": "peanuts-priority-food-allergen",
+      "title": "Peanuts - A priority food allergen",
+      "sections": {
+        "Other names for peanuts": [
+          "arachis oil",
+          "beer nuts",
+          "goober nuts",
+          "goober peas",
+          "ground nuts",
+          "mandelonas",
+          "nu-nuts"
+        ]
+      },
+      "sectionHashes": {
+        "Other names for peanuts": "6f2e08f655a113ca839fc9ce41a7add2c82bccd66f30feacce0377e199a31f91"
+      }
+    }
+  ]
+}

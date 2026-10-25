@@ -151,6 +151,20 @@ describe('provider-independent inference output validation', () => {
     expect(validateNaturalAnswerText('The package lists 3 g fat per 100 g.',context).withheldUnsupportedQuantitySentenceCount).toBe(0);
   });
 
+  it('keeps numbered Markdown headings while checking quantities inside their content',()=>{
+    const checked=validateNaturalAnswerText([
+      '### 1. Ingredient origins',
+      '## 2) What remains uncertain',
+      '### 3. Contains 99 g protein.',
+      '# Source findings',
+    ].join('\n'),{package:fixturePackage});
+    expect(checked.answer).toContain('### 1. Ingredient origins');
+    expect(checked.answer).toContain('## 2) What remains uncertain');
+    expect(checked.answer).toContain('# Source findings');
+    expect(checked.answer).not.toContain('99 g');
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
+  });
+
   it('recognizes a source-linked declared serving as the basis for natural prose',()=>{
     const pkg=packageSchema.parse({...fixturePackage,reconstruction:{
       ...reconstructionFixture(),revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture-model',current:true,

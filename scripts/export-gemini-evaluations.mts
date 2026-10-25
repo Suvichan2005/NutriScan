@@ -13,15 +13,15 @@ const value = (name: string) => {
 const analysisId = value('--analysis');
 const followupId = value('--followup');
 const format = value('--format') ?? 'markdown';
-const name = value('--name') ?? `analysis-${analysisId ?? 'missing'}-followup-${followupId ?? 'missing'}`;
+const name = value('--name') ?? `analysis-${analysisId ?? 'missing'}${followupId ? `-followup-${followupId}` : ''}`;
 const comparisonMode = args.includes('--comparison');
-if (!analysisId || !followupId || !/^[0-9a-f-]{36}$/i.test(analysisId) || !/^[0-9a-f-]{36}$/i.test(followupId)) {
-  throw new Error('Usage: npm run gemini:evaluations:export -- --analysis <UUID> --followup <UUID> [--comparison] [--format markdown|json] [--name safe-file-name]');
+if (!analysisId || !/^[0-9a-f-]{36}$/i.test(analysisId) || (followupId && !/^[0-9a-f-]{36}$/i.test(followupId)) || (comparisonMode && !followupId)) {
+  throw new Error('Usage: npm run gemini:evaluations:export -- --analysis <UUID> [--followup <UUID>] [--comparison (requires two runs)] [--format markdown|json] [--name safe-file-name]');
 }
 if (format !== 'markdown' && format !== 'json') throw new Error('Format must be markdown or json.');
 if (!/^[A-Za-z0-9_-]{1,80}$/.test(name)) throw new Error('Export name must contain only letters, digits, underscores or hyphens.');
 
-const analyses = await Promise.all([readGeminiEvaluation(analysisId), readGeminiEvaluation(followupId)]);
+const analyses = await Promise.all([analysisId, ...(followupId ? [followupId] : [])].map(readGeminiEvaluation));
 const bundle = { format: 'nutriscan-sanitized-gemini-evaluation', version: 1, exportedAt: new Date().toISOString(), analyses };
 const directory = path.join(geminiEvaluationPaths.root, 'exports');
 await mkdir(directory, { recursive: true, mode: 0o700 });

@@ -1,0 +1,358 @@
+{
+  "version": "2026-10-25",
+  "policyUrl": "https://www.canada.ca/en/transparency/terms.html",
+  "reuse": "Non-commercial reproduction with attribution under Canada.ca terms. Commercial redistribution requires a separate rights review/permission. No logos or complete articles are reproduced.",
+  "records": [
+    {
+      "family": "milk",
+      "sourceId": "health-canada-allergen-milk",
+      "title": "Milk - A priority food allergen",
+      "url": "https://www.canada.ca/en/health-canada/services/food-nutrition/reports-publications/food-safety/milk-priority-food-allergen.html",
+      "pageModifiedAt": "2017-09-05",
+      "reviewedAt": "2026-10-25",
+      "sha256": "7c2e2fa4b0f840f92019cb6d2da15750a939afb9dd669874547f143be9fc5da5",
+      "aliases": [
+        {
+          "name": "beta-lactoglobulin",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "casein",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "rennet casein",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "caseinate",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "ammonium caseinate",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "calcium caseinate",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "magnesium caseinate",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "potassium caseinate",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "sodium caseinate",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "demineralized whey",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "hydrolyzed casein",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "lactalbumin",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "lactalbumin phosphate",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "lactoferrin",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "lactoglobulin",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "whey",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "whey protein concentrate",
+          "section": "Other names for milk"
+        },
+        {
+          "name": "butter",
+          "section": "Common sources of milk"
+        },
+        {
+          "name": "buttermilk",
+          "section": "Common sources of milk"
+        },
+        {
+          "name": "cheese",
+          "section": "Common sources of milk"
+        },
+        {
+          "name": "curds",
+          "section": "Common sources of milk"
+        },
+        {
+          "name": "cream",
+          "section": "Common sources of milk"
+        },
+        {
+          "name": "ice cream",
+          "section": "Common sources of milk"
+        },
+        {
+          "name": "ghee",
+          "section": "Common sources of milk"
+        },
+        {
+          "name": "butter fat",
+          "section": "Common sources of milk"
+        },
+        {
+          "name": "kefir",
+          "section": "Common sources of milk"
+        },
+        {
+          "name": "kumiss",
+          "section": "Common sources of milk"
+        },
+        {
+          "name": "sour cream",
+          "section": "Common sources of milk"
+        },
+        {
+          "name": "yogurt",
+          "section": "Common sources of milk"
+        }
+      ]
+    },
+    {
+      "family": "soy",
+      "sourceId": "health-canada-allergen-soy",
+      "title": "Soy - A priority food allergen",
+      "url": "https://www.canada.ca/en/health-canada/services/food-nutrition/reports-publications/food-safety/priority-food-allergen.html",
+      "pageModifiedAt": "2017-09-11",
+      "reviewedAt": "2026-10-25",
+      "sha256": "2c940287f9793cf2c644ff3736f3ebb053f9abfd0aad85a522d388c954b71268",
+      "aliases": [
+        {
+          "name": "bean curd",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "dofu",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "kori-dofu",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "soybean curds",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "tofu",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "edamame",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "kinako",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "natto",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "nimame",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "okara",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "soya",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "soja",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "soybean",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "soyabeans",
+          "section": "Other names for soy"
+        },
+        {
+          "name": "yuba",
+          "section": "Other names for soy"
+        }
+      ]
+    },
+    {
+      "family": "wheat",
+      "sourceId": "health-canada-allergen-wheat",
+      "title": "Wheat & Triticale - Priority food allergens",
+      "url": "https://www.canada.ca/en/health-canada/services/food-nutrition/reports-publications/food-safety/wheat-priority-food-allergen.html",
+      "pageModifiedAt": "2017-09-18",
+      "reviewedAt": "2026-10-25",
+      "sha256": "273a9362ee129b92bddda2a363c0762a2a697363de29ac1f31efd2f400d0219c",
+      "aliases": [
+        {
+          "name": "atta",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "bulgur",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "couscous",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "durum",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "einkorn",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "emmer",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "farina",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "graham",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "high-protein flour",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "kamut",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "seitan",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "semolina",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "spelt",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "dinkel",
+          "section": "Other names for wheat"
+        },
+        {
+          "name": "farro",
+          "section": "Other names for wheat"
+        }
+      ]
+    },
+    {
+      "family": "egg",
+      "sourceId": "health-canada-allergen-egg",
+      "title": "Eggs - A priority food allergen",
+      "url": "https://www.canada.ca/en/health-canada/services/food-nutrition/reports-publications/food-safety/eggs-priority-food-allergen.html",
+      "pageModifiedAt": "2017-09-06",
+      "reviewedAt": "2026-10-25",
+      "sha256": "19d34adf4431460f1052a883316c54f4d9f4e29d62b21ec2ab8a9daa4eb52e80",
+      "aliases": [
+        {
+          "name": "albumen",
+          "section": "Other names for eggs"
+        },
+        {
+          "name": "conalbumin",
+          "section": "Other names for eggs"
+        },
+        {
+          "name": "livetin",
+          "section": "Other names for eggs"
+        },
+        {
+          "name": "ovalbumin",
+          "section": "Other names for eggs"
+        },
+        {
+          "name": "ovomucin",
+          "section": "Other names for eggs"
+        },
+        {
+          "name": "ovotransferrin",
+          "section": "Other names for eggs"
+        },
+        {
+          "name": "silico-albuminate",
+          "section": "Other names for eggs"
+        },
+        {
+          "name": "vitellin",
+          "section": "Other names for eggs"
+        }
+      ]
+    },
+    {
+      "family": "peanut",
+      "sourceId": "health-canada-allergen-peanut",
+      "title": "Peanuts - A priority food allergen",
+      "url": "https://www.canada.ca/en/health-canada/services/food-nutrition/reports-publications/food-safety/peanuts-priority-food-allergen.html",
+      "pageModifiedAt": "2017-09-05",
+      "reviewedAt": "2026-10-25",
+      "sha256": "cdde5edc3ee84f2bce4264af457fab9b6ada6d5145d7083cfd6d1d22d2a926da",
+      "aliases": [
+        {
+          "name": "arachis oil",
+          "section": "Other names for peanuts"
+        },
+        {
+          "name": "beer nuts",
+          "section": "Other names for peanuts"
+        },
+        {
+          "name": "goober nuts",
+          "section": "Other names for peanuts"
+        },
+        {
+          "name": "goober peas",
+          "section": "Other names for peanuts"
+        },
+        {
+          "name": "ground nuts",
+          "section": "Other names for peanuts"
+        },
+        {
+          "name": "mandelonas",
+          "section": "Other names for peanuts"
+        },
+        {
+          "name": "nu-nuts",
+          "section": "Other names for peanuts"
+        }
+      ]
+    }
+  ]
+}

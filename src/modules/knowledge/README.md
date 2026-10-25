@@ -52,4 +52,17 @@ The upstream source files remain in ignored `.data/`; only the compact attribute
 
 ## Contribution boundary
 
+### Ingredient-source relationships
+
+`ingredient-families.review.json` records reviewed names and exact section hashes from five Health Canada allergen fact sheets. `ingredient-families.data.json` contains 74 name/source relationships with page dates, original URLs and acquisition hashes. These are reference associations, not package allergen detection, exposure, clinical advice or Indian law. Generic possible-source lists and ambiguous terms such as kernels/vegetable protein are excluded. Lookup is exact on a single normalized ingredient name; missing matches prove no absence. Canadian terms permit the current non-commercial reproduction with attribution; commercial redistribution requires a fresh rights review/permission.
+
+```powershell
+python src/modules/knowledge/import_ingredient_families.py --fetch
+python src/modules/knowledge/import_ingredient_families.py
+python -m unittest discover -s src/modules/knowledge -p test_import_ingredient_families.py
+npm test -- src/modules/knowledge/ingredient-families.test.ts
+```
+
+The first command downloads small official HTML pages into ignored `.data/sources/ingredient-families/`; the second rebuilds from those same cached bytes. Changed reviewed sections fail closed before output is written. Review changed source content and rights before updating hashes. No scientific effect or allergen relationship is inferred from FoodOn ancestry.
+
 Contributor changes belong under `src/modules/knowledge/**`. Shared contracts, `src/lib/` facades, parser/engine integration, root scripts/configuration, API routes, network policy, UI, and cross-module behavior require an owner-authored integration change. A useful change includes offline module tests, source provenance/licensing notes for new records, and independent relevance or abstention labels kept separate from tuning cases.

@@ -318,3 +318,4 @@ export function retrieveEvidence(query:string,limit=4):RetrievalHit[] {
     return {source:s,score,semanticScore,lexicalScore,method:hasTentativeCandidate?'local-concept-keyword+lexical+exact+tentative-additive-candidate' as const:'local-concept-keyword+lexical+exact' as const,corpusVersion,...(hasTentativeCandidate?{tentativeAdditiveCandidate:tentativeAdditive,tentativeCandidateScore}:{})};
   }).filter(hit=>hit.score > .05).sort((a,b)=>b.score-a.score).slice(0,limit);
 }
+export { lookupIngredientFamilies, ingredientFamilySources, ingredientFamilyManifest, type IngredientFamilyMatch } from './ingredient-families';
