@@ -56,7 +56,7 @@ describe('Gemini tool retrieval boundaries', () => {
     toolContext.package.reconstruction={revision:2,updatedAt:new Date().toISOString(),model:'fixture',current:true,
       identity:{brand:null,name:null,variant:null,status:'unreadable',evidence:{observationIds:[],imageRegions:[]}},
       serving:{printedText:'3 crackers (45 g)',quantity:45,unit:'g',pieceCount:3,pieceDescription:'crackers',status:'provisional',evidence:{observationIds:['serving-ocr'],imageRegions:[]}},
-      nutritionRows:[{rowId:'count-carb',nutrient:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'20',value:20,unit:'g',columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}}],
+      nutritionRows:[{rowId:'count-carb',nutrient:'carbohydrate',nutrientKey:'carbohydrate',printedLabel:'Carbohydrate',printedValue:'20',value:20,unit:'g',columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}}],
       ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Developer fixture.'};
     return toolContext;
   }
@@ -198,8 +198,8 @@ describe('Gemini tool retrieval boundaries', () => {
       identity:{brand:'BISK FARM',name:'Cream Cracker',variant:null,status:'clear',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
       serving:{printedText:'2 biscuits approx. 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'clear',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
       nutritionRows:[
-        {rowId:'carb-r4',nutrient:'carbohydrates',printedLabel:'CARBOHYDRATES',printedValue:'69.29',value:69.29,unit:'g',columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
-        {rowId:'sugar-r4',nutrient:'total sugars',printedLabel:'TOTAL SUGARS',printedValue:'<0.5',value:0.5,unit:'g',columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:'<',status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
+        {rowId:'carb-r4',nutrient:'carbohydrates',nutrientKey:'carbohydrate',printedLabel:'CARBOHYDRATES',printedValue:'69.29',value:69.29,unit:'g',columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
+        {rowId:'sugar-r4',nutrient:'total sugars',nutrientKey:'sugars',printedLabel:'TOTAL SUGARS',printedValue:'<0.5',value:0.5,unit:'g',columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:'<',status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
         {rowId:'missing-unit',nutrient:'protein',printedLabel:'PROTEIN',printedValue:'11.4',value:11.4,unit:null,columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
       ],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional interpretation.',
     };
@@ -217,7 +217,7 @@ describe('Gemini tool retrieval boundaries', () => {
       revision:5,updatedAt:new Date().toISOString(),model:'Gemini',current:true,
       identity:{brand:'BISK FARM',name:'Cream Cracker',variant:'Sugar Free',status:'provisional',evidence:{observationIds:[],imageRegions:[imageRegion]}},
       serving:{printedText:'2 biscuits approx. 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:[],imageRegions:[imageRegion]}},
-      nutritionRows:[{rowId:'carb-image-r5',nutrient:'carbohydrates',printedLabel:'CARBOHYDRATES',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[imageRegion]}}],
+      nutritionRows:[{rowId:'carb-image-r5',nutrient:'carbohydrates',nutrientKey:'carbohydrate',printedLabel:'CARBOHYDRATES',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[imageRegion]}}],
       ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Image-linked provisional interpretation.',
     };
 
@@ -226,6 +226,24 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(calculations).toHaveLength(1);
     expect(calculations[0]).toMatchObject({nutrient:'carbohydrate',input:69.29,basisAmount:100,portion:13.4,result:69.29*13.4/100,imageIds:['image-1'],observationIds:[],interpretationIds:['carb-image-r5']});
     expect(calculations[0].assumptions.join(' ')).toMatch(/remain provisional/i);
+  });
+  it('uses semantic nutrient keys to separate added sugars from total sugars in saved-serving calculations', () => {
+    const packageData=context('What is the sugar in one serving?').package;
+    packageData.ocrCaptures=[{runId:'run-1',imageId:'image-1',side:'back',sourceImage:{width:900,height:600},preparedImage:{width:900,height:600},bboxCoordinateSpace:'prepared-image-pixels',engine:{name:'fixture',version:'1',language:'eng',confidenceScale:'0-100',segmentationMode:'auto'},processing:{rotation:0,contrast:false,invert:false,cropPercent:null}}];
+    packageData.reconstruction={
+      revision:8,updatedAt:new Date().toISOString(),model:'gemini-3.5-flash-lite',current:true,
+      identity:{brand:null,name:'Package',variant:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
+      serving:{printedText:'13.4 g serving',quantity:13.4,unit:'g',pieceCount:null,pieceDescription:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
+      nutritionRows:[
+        {rowId:'added-sugar',nutrient:'Sugars added',nutrientKey:'addedSugars',printedLabel:'Sugars added',printedValue:'0 g',value:0,unit:'g',columnLabel:'per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
+        {rowId:'total-sugar',nutrient:'Total sugars',nutrientKey:'sugars',printedLabel:'Total sugars',printedValue:'0.5 g',value:0.5,unit:'g',columnLabel:'per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['ocr-1'],imageRegions:[]}},
+      ],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Semantic identities are retained separately from printed labels.',
+    };
+
+    const calculations=calculateSavedServing(packageData);
+    expect(calculations.map(item=>[item.nutrient,item.result])).toEqual([['addedSugars',0],['sugars',0.5*13.4/100]]);
+    const parsed=assistInput.safeParse({consent:true,question:'What is the sugar in one serving?',package:packageData,calculations});
+    expect(parsed.success,JSON.stringify(parsed.error?.issues)).toBe(true);
   });
   it('filters out-of-scope country guidance from semantic retrieval before returning it to Gemini', async () => {
     const usGuidance = evidenceSources.find(source => source.id === 'niddk-meals')!;

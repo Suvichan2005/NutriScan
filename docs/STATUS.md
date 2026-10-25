@@ -2,6 +2,23 @@
 
 Updated: 2026-10-25. This is a local development application and research workspace. Feature levels below describe evidence available in this checkout; they do not imply clinical or production acceptance.
 
+## Current checkpoint — 25 October 2026: India-first multimodal OCR pilot
+
+- Removed the client-side minimum-character OCR rejection: with cloud analysis consented, a package photo can reach Gemini even when local OCR returns no usable text. The three-arm image-only Bisk route returned a structured reconstruction; the application change and zero-OCR request contract are covered offline. Browser upload acceptance for an empty OCR result remains unverified.
+- Ran one controlled pass of Tesseract+Gemini, Tesseract+Paddle+Gemini and Gemini-only on three English package groups: Bisk Farm crackers, Bagrry's oats and Amul Rose Lassi. Each arm used the same package photos and route. Bisk and Amul used free Flash-Lite; Bagrry's exhausted the free route and used the authorized paid Flash fallback. This is a small exploratory comparison, not held-out or population accuracy.
+
+| Package / scored reference | Tesseract + Gemini | Tesseract + Paddle + Gemini | Gemini-only |
+|---|---|---|---|
+| Bisk: 8 clear core cells (carbohydrate, added sugars, protein and fat at both printed bases) | 6 correct, 2 wrong | 3 correct, 2 wrong, 3 unusable because serving amount was lost | 7 correct, 1 wrong |
+| Bagrry's: 16 previously annotated value-unit-basis cells | 16/16 exact | 16/16 exact | 16/16 exact |
+| Amul: 11 cells visually readable in the supplied label | 10 correct, 1 wrong | 10 correct, 1 omitted | 10 correct, 1 wrong |
+
+- Bisk's printed saturated-fat row was absent from all outputs and its two cells are not included in the scored denominator; tiny total-sugar values/qualifier are also unscored. In the Amul photograph, Paddle changed total sugars from 22.4 g to the visually printed 22.5 g but omitted visible calcium (142 mg): correct-field count stayed 10. Bagrry's reference is a single visual read, not independent adjudication; the other products are developer visual checks. Bagrry's 14 additional rows and all ingredient exactness outside the visible Amul list are unscored.
+- Across the nine completed arms: 248,217 input and 41,225 output SDK tokens, 25 provider attempts (24 successful responses; one free 429), and about $0.1662 locally estimated paid usage. Twelve paid generations were confined to the Bagrry's arms; Google billing was not read. Route elapsed times ranged 11.7–66.0 s and are noisy across tool rounds/model routing.
+- Paddle increased combined input tokens from 66,637 to 92,133 (+38.3%), yielded no additional Bagrry's reference fields, did not correct Bisk carbohydrate, and lost four core per-serving bases on Bisk; its one Amul sugar correction offset by a calcium omission. Default scanning therefore leaves Paddle off; its reader remains available as an opt-in local recovery path via `NEXT_PUBLIC_NUTRISCAN_PADDLE_RECOVERY=1`. The default remains Tesseract plus authorized Gemini Vision, with direct-photo analysis available when OCR is sparse.
+- All pilot images were English. The local development collection contains no Indian English/Hindi or Devanagari label, so Gemini's direct Hindi reading/translation is unverified and no Hindi OCR model is on the default path. Acquire an actual bilingual package example before evaluating it.
+- Verification on this checkout: `npm run typecheck` passed; the complete Vitest suite passed serially with 702 tests / 1 skipped. The default 50-worker run timed out two local semantic-retrieval tests under concurrent load; it was not counted as green. The consented zero-OCR photo path has contract/route evidence, but not a new browser upload acceptance run.
+
 ## Current checkpoint — 25 October 2026: FSSAI RDA guidance reaches the live agent
 
 - Added dated FSSAI label-reference records and jurisdiction-scoped lookup to the existing nutrition-guidance tool. A controlled text-only synthetic follow-up then asked what per-serving %RDA means and whether it is an individual's target. The live free `gemini-3.5-flash-lite` route selected the FSSAI Version VIII record and returned a direct answer: it is a standardized average-adult label comparison, not a personalized daily target. The cited source ID was present in the response.

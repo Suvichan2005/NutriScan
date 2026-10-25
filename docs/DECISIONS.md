@@ -1,5 +1,17 @@
 # Chronological decisions
 
+## 25 October 2026 — keep Paddle OCR off the default scan path
+
+- A one-pass, three-arm pilot across an English cracker label, oats panel and dairy drink found no net increase in complete reference-field coverage from adding Paddle to Tesseract before Gemini. The oats arm matched the same 16/16 single-review reference with or without Paddle; the cracker arm retained the same wrong carbohydrate readings and lost serving-basis amounts; the drink arm corrected one sugar value but omitted calcium.
+- Paddle increased total prompt tokens by 38.3% over the Tesseract arms in this pilot. Its reader stays available for explicitly enabled local recovery/evaluation (`NEXT_PUBLIC_NUTRISCAN_PADDLE_RECOVERY=1`), but it is off by default. Keep the default photo path as Tesseract plus authorized Gemini Vision; sparse OCR must not block the photos.
+- This is an exploratory routing decision from three developer products, not a general accuracy conclusion. Hindi/Devanagari is deferred until a real Indian bilingual package is available; no Hindi model is required in the default path.
+
+## 25 October 2026 — require explicit nutrient identity for new calculations
+
+- Gemini supplies a canonical nutrient key separately from the printed row label. Use that typed identity for row merges, serving calculations and evidence validation; do not reinterpret a model-selected row using English label patterns. Preserve the printed label unchanged and allow unknown/non-standard rows with a null key.
+- A real route returned a syntactically valid reconstruction but the calculation adapter inferred the wrong standard nutrient from its display text, causing the request to fail before returning analysis. The typed key fixes that shared semantic-to-calculation boundary. Legacy rows without a key remain viewable and do not generate new automatic calculations until re-read or corrected.
+- Offline regressions cover misleading labels and conflicting same-column recovery; one post-fix real Bisk route completed. The controlled modality pilot is exploratory and did not establish independent extraction accuracy.
+
 ## 25 October 2026 — honor scoped clinical retrieval operations
 
 - The authorized user context establishes which condition may be used, but must not overwrite the agent's focused lookup query. When a condition is explicitly authorized, rank the supplied topic and exclude records for other conditions; keep applicable general-population records labelled as such. Do not invent a diagnosis or cross-apply kidney-specific or foreign-jurisdiction targets.

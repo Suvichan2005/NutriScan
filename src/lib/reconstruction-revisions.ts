@@ -15,9 +15,9 @@ function nutrientKey(value: string): string {
   if (/\bcarbohydrate|\bcarbs?\b/.test(text)) return 'carbohydrate';
   if (/\bprotein\b/.test(text)) return 'protein';
   if (/\b(?:total )?fat\b/.test(text)) return 'fat';
-  if (/\badded sugars?\b/.test(text)) return 'added sugars';
+  if (/\badded sugars?\b/.test(text)) return 'addedSugars';
   if (/\b(?:total )?sugars?\b/.test(text)) return 'sugars';
-  if (/\b(?:dietary )?fib(?:re|er)\b/.test(text)) return 'fibre';
+  if (/\b(?:dietary )?fib(?:re|er)\b/.test(text)) return 'fiber';
   if (/\bsodium\b/.test(text)) return 'sodium';
   if (/\bsalt\b/.test(text)) return 'salt';
   if (/\benergy|calories\b/.test(text)) return 'energy';
@@ -40,7 +40,7 @@ function normalizedBasis(row: PackageReconstructionContent['nutritionRows'][numb
 }
 
 function rowKey(row: PackageReconstructionContent['nutritionRows'][number]): string {
-  const nutrient = nutrientKey(row.nutrient || row.printedLabel);
+  const nutrient = row.nutrientKey === undefined ? nutrientKey(row.nutrient || row.printedLabel) : row.nutrientKey ?? `unmapped:${row.rowId}`;
   const basis = normalizedBasis(row);
   return `${nutrient}|${basis}`;
 }

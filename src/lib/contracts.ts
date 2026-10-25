@@ -48,7 +48,7 @@ export const reconstructedQuantityDeclarationSchema=z.object({kind:z.enum(['net-
   if(declaration.unit&&!allowedUnits.includes(declaration.unit))context.addIssue({code:'custom',path:['unit'],message:`${declaration.kind} must use ${allowedUnits.join(' or ')}.`});
 });
 export const reconstructedNutritionRowSchema=z.object({
-  rowId:z.string().min(1).max(100),nutrient:z.string().min(1).max(120),printedLabel:z.string().max(160),
+  rowId:z.string().min(1).max(100),nutrient:z.string().min(1).max(120),nutrientKey:z.enum(nutrientKeys).nullable().optional(),printedLabel:z.string().max(160),
   printedValue:z.string().max(80).nullable(),value:z.number().finite().nonnegative().max(100000).nullable(),unit:z.string().max(24).nullable(),
   columnLabel:z.string().max(160).nullable(),basisText:z.string().max(160).nullable(),basisAmount:z.number().positive().max(10000).nullable(),basisUnit:z.enum(['g','ml']).nullable(),qualifier:z.string().max(300).nullable(),
   status:reconstructionStatusSchema,evidence:reconstructionEvidenceSchema

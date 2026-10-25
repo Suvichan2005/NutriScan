@@ -123,7 +123,7 @@ function calculationHasPackageEvidence(calculation:Calculation,data:{package:z.i
   const hasMatchingInterpretation=(data.package.reconstruction?.current?data.package.reconstruction.nutritionRows:[]).some(row=>
     (!(calculation.interpretationIds?.length)||calculation.interpretationIds.includes(row.rowId))
     &&['clear','provisional'].includes(row.status)
-    &&calculationLabelMatches(calculation.nutrient,`${row.nutrient} ${row.printedLabel}`)
+    &&(row.nutrientKey===undefined?calculationLabelMatches(calculation.nutrient,`${row.nutrient} ${row.printedLabel}`):row.nutrientKey===calculation.nutrient)
     &&row.value!==null&&numericFieldMatches(calculation.input,row.value)
     &&row.unit===calculation.inputUnit&&numericFieldMatches(calculation.basisAmount,row.basisAmount??Number.NaN)
     &&row.basisUnit===calculation.portionUnit&&calculation.unit===calculation.inputUnit
@@ -267,7 +267,7 @@ export function sanitizePackageReconstruction(value:unknown,data:z.infer<typeof 
   const identity=hasEvidence(identityWithEvidence.evidence)?identityWithEvidence:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:identityWithEvidence.evidence};
   const serving=parsed.data.serving?withEvidence(parsed.data.serving):null;
   const quantityDeclarations=(parsed.data.quantityDeclarations??[]).map(withEvidence).filter(item=>hasEvidence(item.evidence));
-  const cleanRows=parsed.data.nutritionRows.map(withEvidence).filter(row=>hasEvidence(row.evidence));
+  const cleanRows=parsed.data.nutritionRows.map(row=>withEvidence({...row,nutrientKey:row.nutrientKey??null})).filter(row=>hasEvidence(row.evidence));
   const unresolved=parsed.data.unresolved.map(item=>{
     const linked=linkEvidence(item.evidence);
     return{...item,evidence:linked.evidence};
@@ -1085,11 +1085,13 @@ export function selectIngredientRecoveryRegion(
 
 function nutritionSlotKey(row:PackageReconstructionContent['nutritionRows'][number]){
   const nutrientText=row.nutrient.normalize('NFKC').toLocaleLowerCase('en').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
-  const nutrient=/\b(?:carbohydrates?|carbs?)\b/.test(nutrientText)?'carbohydrate'
-    :/\badded sugars?\b/.test(nutrientText)?'added sugars'
+  const inferredNutrient=/\b(?:carbohydrates?|carbs?)\b/.test(nutrientText)?'carbohydrate'
+    :/\badded sugars?\b/.test(nutrientText)?'addedSugars'
     :/\b(?:total )?sugars?\b/.test(nutrientText)?'sugars'
     :/\bproteins?\b/.test(nutrientText)?'protein'
-    :/^(?:total )?fat$/.test(nutrientText)?'fat':nutrientText;
+    :/^(?:total )?fat$/.test(nutrientText)?'fat'
+    :/^(?:dietary )?fib(?:re|er)$/.test(nutrientText)?'fiber':nutrientText;
+  const nutrient=row.nutrientKey===undefined?inferredNutrient:row.nutrientKey??`unmapped:${nutrientText}`;
   const label=(row.basisText||row.columnLabel||'').normalize('NFKC').toLocaleLowerCase('en').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
   const labelQuantity=/\b(\d+(?:\.\d+)?)\s*(g|ml)\b/.exec(label);
   const basis=/\bserv(?:ing|ings)\b/.test(label)?'basis:serving'
@@ -1138,6 +1140,7 @@ export function mergeFocusedLabelRecovery(
   for(const [index,candidate] of recoveredNutritionRows.entries()){
     const candidateWithEvidence={
       ...candidate,
+      nutrientKey:candidate.nutrientKey??null,
       rowId:`recovery-${createHash('sha256').update(`${imageId}|${JSON.stringify(crop)}|${index}|${candidate.nutrient}|${candidate.printedValue}|${candidate.value}`).digest('hex').slice(0,24)}`,
       status:'provisional' as const,
       evidence:{observationIds:candidate.evidence.observationIds.filter(id=>validObservationIds.has(id)),...imageEvidence},
@@ -1293,12 +1296,12 @@ const packageReconstructionSystemInstruction=[
   'Interpret the supplied package evidence into a reusable structured description of what is printed. Do not answer the user’s food or health question. The original attached photographs are primary evidence; OCR is an imperfect, ordered set of observations with geometry and reader provenance.',
   'Each OCR observation’s readingOrder.runId links to the ocrCaptures entry with the same runId. Use that link to identify which reader produced a line and compare readers. Repeated OCR readings are not independent visual confirmation, and confidence scores alone do not resolve disagreement.',
   'First separate each image into visible package regions. For a nutrition panel, use image geometry to identify headings, row labels, subrows and value columns, then associate each cell with its printed column heading and serving basis. Keep adjacent ingredient text separate even when OCR merged the regions. Preserve parent and subrows as printed.',
-  'Interpret ingredients in printed order and keep percentages, additive codes, allergen statements, claims, serving declarations, printed net contents, physical unit counts and servings-per-package distinct. Use quantityDeclarations only for quantities explicitly printed on the package; do not calculate a net pack amount from an inner-unit count or infer servings per package from a serving size. Link every interpretation to exact supplied OCR observation IDs and/or the relevant image region. Normalize spelling separately from printed text.',
+  'Interpret ingredients in printed order and keep percentages, additive codes, allergen statements, claims, serving declarations, printed net contents, physical unit counts and servings-per-package distinct. Use quantityDeclarations only for quantities explicitly printed on the package; do not calculate a net pack amount from an inner-unit count or infer servings per package from a serving size. Link every interpretation to exact supplied OCR observation IDs and/or the relevant image region. Normalize spelling separately from printed text. For each nutrition row, set nutrientKey to the matching canonical key when the row clearly represents energy, carbohydrate, sugars, added sugars, protein, fat, saturated fat, fiber, sodium, or salt; set it to null for other or semantically unresolved nutrients. Keep nutrient and printedLabel as the human-readable interpretation and original label. Do not assign nutrientKey from units, nearby numbers, or a guessed convention.',
   'Do not invent or arithmetic-correct printed digits, units, identities or bases. Cross-column arithmetic can flag a reading for review but cannot prove or choose a printed value. Keep unsupported, conflicting and unreadable details unresolved; return only evidence-linked interpretations.'
 ].join(' ');
 const packageReconstructionTool:FunctionDeclaration={
   name:'submit_package_reconstruction',
-  description:'On a new scan or explicit recheck, interpret the complete package from supplied photos and ordered OCR/text. When photos are present, separate visual regions such as front identity, nutrition table, ingredients, serving declaration, allergens, claims and warnings. Reconstruct each nutrient row and printed column as a separate cell with its own value, unit, heading and basis. Preserve ingredient order and percentages. Keep a printed net-content quantity, physical unit count and servings-per-package as separate quantityDeclarations; do not derive one from another. Treat merged OCR from adjacent regions as a layout artifact, not automatically as a conflict. Use exact supplied observation/image identifiers as evidence. Every image region uses the Gemini 0-1000 visual coordinate grid: x/y start at the top-left, width/height are extents, and all values must stay within 0..1000. The application converts these coordinates to normalized original-image coordinates. Keep unresolved details unknown. Arithmetic may flag a possible mismatch but must never create or choose printed digits. Submit provisional interpretations for the application to validate and persist; do not claim visual confirmation when no photo is attached.',
+  description:'On a new scan or explicit recheck, interpret the complete package from supplied photos and ordered OCR/text. When photos are present, separate visual regions such as front identity, nutrition table, ingredients, serving declaration, allergens, claims and warnings. Reconstruct each nutrient row and printed column as a separate cell with its own value, unit, heading and basis. For recognized standard nutrients include the matching canonical nutrientKey; set it to null when the row identity is unknown or ambiguous, and preserve the printed label separately. Preserve ingredient order and percentages. Keep a printed net-content quantity, physical unit count and servings-per-package as separate quantityDeclarations; do not derive one from another. Treat merged OCR from adjacent regions as a layout artifact, not automatically as a conflict. Use exact supplied observation/image identifiers as evidence. Every image region uses the Gemini 0-1000 visual coordinate grid: x/y start at the top-left, width/height are extents, and all values must stay within 0..1000. The application converts these coordinates to normalized original-image coordinates. Keep unresolved details unknown. Arithmetic may flag a possible mismatch but must never create or choose printed digits. Submit provisional interpretations for the application to validate and persist; do not claim visual confirmation when no photo is attached.',
   parametersJsonSchema:packageReconstructionProviderToolSchema(),
 };
 
@@ -1644,7 +1647,7 @@ function canonicalizeReconstructionRows(content:PackageReconstructionContent):Pa
   return packageReconstructionContentSchema.parse({
     ...content,
     nutritionRows:content.nutritionRows.map((row,index)=>{
-      const identity=[row.nutrient,row.printedLabel,row.columnLabel??'',row.basisText??'',row.basisAmount??'',row.basisUnit??'',index].join('|');
+      const identity=[row.nutrientKey??'',row.nutrient,row.printedLabel,row.columnLabel??'',row.basisText??'',row.basisAmount??'',row.basisUnit??'',index].join('|');
       const rowId='nutrition-'+createHash('sha256').update(identity).digest('hex').slice(0,20);
       return{...row,rowId};
     }),

@@ -755,7 +755,7 @@ function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, 
   if (args.candidateId) {
     const candidate = context.interpretedCandidates?.find(item => item.candidateId === args.candidateId && item.kind === 'nutrient' && item.field === args.nutrient);
     if (!candidate) {
-      const reconstructed=context.package.reconstruction?.nutritionRows.find(row=>row.rowId===args.candidateId&&reconstructionRowMatches(row.nutrient,args.nutrient));
+      const reconstructed=context.package.reconstruction?.nutritionRows.find(row=>row.rowId===args.candidateId&&(row.nutrientKey===undefined?reconstructionRowMatches(row.nutrient,args.nutrient):row.nutrientKey===args.nutrient));
       if(!reconstructed)return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'The requested interpretation is not among the supplied candidates or saved package rows.' } };
       const imageIds=[...new Set(reconstructed.evidence.imageRegions.map(item=>item.imageId))];
       if(!['clear','provisional'].includes(reconstructed.status)||reconstructed.value===null||!reconstructed.unit||!reconstructed.basisAmount||!reconstructed.basisUnit||reconstructed.basisUnit!==args.unit||(!reconstructed.evidence.observationIds.length&&!imageIds.length))return {status:'withheld',resultCount:0,output:{status:'withheld',message:'The saved package interpretation does not contain one complete, evidence-linked value and matching mass or volume basis.'}};
@@ -860,7 +860,10 @@ export function calculateSavedServing(packageData:PackageData):Calculation[]{
     // A qualifier such as "<" or "trace" changes the arithmetic semantics;
     // keep it available for interpretation instead of treating its boundary as an exact value.
     if(row.qualifier||row.value===null||!row.unit||!row.basisAmount||!row.basisUnit||row.basisUnit!==serving.unit||row.basisAmount===serving.quantity)continue;
-    const nutrient=nutrientKeys.find(key=>reconstructionRowMatches(row.nutrient,key));
+    // New reconstructions carry a semantic key from Gemini. Do not guess it
+    // from the printed label; legacy revisions without the field remain viewable
+    // but are not used to create new automatic calculations.
+    const nutrient=row.nutrientKey;
     if(!nutrient||correctedNutrients.has(nutrient))continue;
     const result=calculateNutrition({nutrient,amount:serving.quantity,unit:serving.unit,candidateId:row.rowId},context);
     if(result.status==='ok')calculations.push(...(result.calculations??[]).map(calculation=>{

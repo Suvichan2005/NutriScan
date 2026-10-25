@@ -639,7 +639,7 @@ describe('focused nutrition-region recovery',()=>{
   const base=packageReconstructionContentSchema.parse({
     identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:'Sugar Free',status:'provisional',evidence:{observationIds:[],imageRegions:[]}},
     serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:[],imageRegions:[]}},
-    nutritionRows:[{rowId:'carb-serving',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g',columnLabel:'Per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[]}}],
+    nutritionRows:[{rowId:'carb-serving',nutrient:'Carbohydrates',nutrientKey:'carbohydrate',printedLabel:'Carbohydrates',printedValue:'9.28 g',value:9.28,unit:'g',columnLabel:'Per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:[],imageRegions:[]}}],
     ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:[],imageRegions:[]}}],
     additives:[],statements:[],regions:[{imageId:'back-1',role:'nutrition-table',region:crop,observationIds:[]}],unresolved:[],interpretationNote:'Initial interpretation.',
   });
@@ -746,8 +746,8 @@ describe('focused nutrition-region recovery',()=>{
     const recovery={
       serving:null,
       nutritionRows:[
-        {rowId:'model-carb',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'9.82 g',value:9.82,unit:'g',columnLabel:'Per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g' as const,qualifier:null,status:'clear' as const,evidence:{observationIds:['known-line','not-known']}},
-        {rowId:'model-protein',nutrient:'Protein',printedLabel:'Protein',printedValue:'1.53 g',value:1.53,unit:'g',columnLabel:'Per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g' as const,qualifier:null,status:'clear' as const,evidence:{observationIds:[]}},
+        {rowId:'model-carb',nutrient:'Carbohydrates',nutrientKey:'carbohydrate',printedLabel:'Carbohydrates',printedValue:'9.82 g',value:9.82,unit:'g',columnLabel:'Per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g' as const,qualifier:null,status:'clear' as const,evidence:{observationIds:['known-line','not-known']}},
+        {rowId:'model-protein',nutrient:'Protein',nutrientKey:'protein',printedLabel:'Protein',printedValue:'1.53 g',value:1.53,unit:'g',columnLabel:'Per serving',basisText:'per serving',basisAmount:13.4,basisUnit:'g' as const,qualifier:null,status:'clear' as const,evidence:{observationIds:[]}},
       ],
     };
     const parsed=focusedLabelRecoverySchema.safeParse(recovery);

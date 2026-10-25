@@ -72,6 +72,29 @@ describe('OCR-to-assist evidence contract',()=>{
     expect(assistInput.safeParse({...base,images:[{...matching,height:1801}]}).success).toBe(false);
   });
 
+  it('accepts a consented package photo for Gemini Vision when local OCR returns no text',()=>{
+    const photoId='photo-with-empty-ocr';
+    const emptyPackage=parseLabel('',{origin:'ocr',observations:[],ocrCaptures:[]});
+    const request=assistInput.safeParse({
+      consent:true,
+      question:'Please identify and interpret this package from the photo.',
+      package:emptyPackage,
+      images:[{handle:photoId,side:'back',width:900,height:363}],
+      visualImages:[{
+        imageId:photoId,mimeType:'image/jpeg',base64:'A'.repeat(32),side:'back',
+        sourceImage:{width:900,height:363},
+        preprocessing:{rotation:0,contrast:false,invert:false,crop:null},
+        regionRole:'full-image'
+      }]
+    });
+
+    expect(request.success).toBe(true);
+    if(request.success){
+      expect(request.data.package.observations).toHaveLength(0);
+      expect(request.data.visualImages?.map(image=>image.imageId)).toEqual([photoId]);
+    }
+  });
+
   it('keeps word text, recognition scores, layout and order inside each original OCR line',()=>{
     const pkg=makePackage();
     const rawLine=pkg.observations.find(item=>item.id==='line-2')!;

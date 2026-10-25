@@ -926,7 +926,7 @@ describe('provider validation, independent of provider invocation', () => {
       {id:'input-2',field:'label-note',text:'2 biscuits approximately 13.4 g; carbohydrates 69.29 g per 100 g',side:'text' as const,confidence:null,origin:'user' as const},
       {id:'input-3',field:'label-note',text:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',side:'text' as const,confidence:null,origin:'user' as const},
     ];
-    const reconstruction={identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:null,status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[]}},serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['OBS_2'],imageRegions:[]}},nutritionRows:[{rowId:'carbs-100',nutrient:'Carbohydrates',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['OBS_2'],imageRegions:[]}}],ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['OBS_3'],imageRegions:[]}}],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction from supplied text.'};
+    const reconstruction={identity:{brand:'Bisk Farm',name:'Cream Cracker',variant:null,status:'provisional',evidence:{observationIds:['OBS_1'],imageRegions:[]}},serving:{printedText:'2 biscuits, approximately 13.4 g',quantity:13.4,unit:'g',pieceCount:2,pieceDescription:'biscuits',status:'provisional',evidence:{observationIds:['OBS_2'],imageRegions:[]}},nutritionRows:[{rowId:'carbs-100',nutrient:'Carbohydrates',nutrientKey:'carbohydrate',printedLabel:'Carbohydrates',printedValue:'69.29 g',value:69.29,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence:{observationIds:['OBS_2'],imageRegions:[]}}],ingredients:[{position:0,name:'Refined wheat flour',printedText:'REFINED WHEAT FLOUR (MAIDA) (89.98%)',printedPercentage:89.98,normalizedName:'refined wheat flour',status:'provisional',evidence:{observationIds:['OBS_3'],imageRegions:[]}}],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Provisional reconstruction from supplied text.'};
     const answer='The package reads Bisk Farm Cream Cracker. A two-biscuit serving provides about 9.28 g of carbohydrate.';
     const fetcher=vi.fn()
       .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('reconstruct-text','submit_package_reconstruction',reconstruction)]),{status:200,headers:{'content-type':'application/json'}}))
@@ -1079,6 +1079,7 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.answer).toContain('can’t establish a reliable answer');
     expect(sanitized!.content.ingredients[0].name).toBe('whole wheat flour');
     expect(sanitized!.content.nutritionRows[0].value).toBe(8);
+    expect(sanitized!.content.nutritionRows[0].nutrientKey).toBeNull();
   });
   it('keeps image interpretation and OCR observations separate when columns are merged',()=>{
     const imageId='recovery-evidence-photo';
