@@ -50,9 +50,19 @@ for release in ['foundation-2026-04', 'fndds-2021-2023']:
     assert {food['fdcId'] for food in eligible} == {food['fdcId'] for food in catalog['foods']}
     assert digest(raw_path) == metadata['sourceSha256']
     assert digest(prefix + '.records.jsonl') == metadata['recordsSha256']
-    entry = source(metadata['id'], 'Generic nutritional composition; not branded package truth', [metadata['sourceUrl'], metadata['documentationUrl']], 'Every eligible food in the pinned official JSON release; null slots and unavailable amounts explicitly excluded.', 'src/lib/server/food-composition.ts; search_food_composition native tool', ['Audit full analytical/derivation/portion metadata against raw source; quantify source-field exclusions and demonstrate broader quantitative use.'], metadata['license'])
+    entry = source(metadata['id'], 'Generic nutritional composition; not branded package truth', [metadata['sourceUrl'], metadata['documentationUrl']], 'Every eligible food in the pinned official JSON release; null food slots accounted separately. Complete source records preserve unavailable amounts; normalized numeric projection excludes nonnumeric amounts.', 'src/lib/server/food-composition.ts; search_food_composition native tool', ['Audit full analytical/derivation/portion metadata against raw source; quantify source-field exclusions and demonstrate broader quantitative use.'], metadata['license'])
     entry.update(version=metadata['releaseDate'], expectedRecords=len(eligible), importedRecords=len(catalog['foods']), countUnit='eligible foods', fieldsPreserved=['food IDs/name/category/date/type', 'numeric nutrient IDs/names/units/amounts/data-points/min/max/median/LOQ/derivation', 'usable portions and gram weights'], fieldsNotExposed=['Full raw source remains local; not all analytical/sample/relationship metadata is exposed by the normalized adapter.'], statistics=stats, integrity={'sourceSha256': metadata['sourceSha256'], 'recordsSha256': metadata['recordsSha256'], 'rawHashVerified': True, 'recordsHashVerified': True, 'eligibleIdSetEqual': True}, importCommand=f'npm exec -- tsx scripts/import-fdc-{"foundation" if "foundation" in release else "fndds"}.mts')
     entry['gates'].update(A_acquisition='VERIFIED_DEFINED_RELEASE', B_preservation='PARTIAL_RICH_RAW_SOURCE_RETAINED', C_access='IMPLEMENTED_STRUCTURED_SEARCH', D_agent='IMPLEMENTED_EXISTING_LIVE_EVIDENCE')
+    with sqlite3.connect(ROOT/'.data/food-composition/fdc-source-records.sqlite') as store:
+        saved={row[0]:json.loads(row[1]) for row in store.execute('SELECT fdc_id,record_json FROM records WHERE release=?',(metadata['id'],))}
+        assert saved=={food['fdcId']:food for food in eligible}
+    entry['integrity']['completeSourceObjectEqualityVerified']=True
+    entry['fieldsPreserved'].append('Every original source object field, nested nutrient derivation, input-food relation, attributes and portion context in exact detail store')
+    entry['fieldsNotExposed']=['Responses are paged; individual source items over 24k characters explicitly require original-source inspection.']
+    entry['retrievalInterface']+='; get_food_composition_record exact ID/release/field/page access'
+    entry['gates'].update(B_preservation='VERIFIED_COMPLETE_SOURCE_OBJECTS',C_access='IMPLEMENTED_SEARCH_EXACT_PAGED_FIELDS',D_agent='LIVE_SEARCH_AND_DETAIL_TOOLS')
+    entry['remainingGaps']=['Final-answer utility partial: live roti detail correctly distinguishes survey recipe from package identity; pre-filter Foundation query returned survey records. Corrected scoped Foundation/nutrient-ID live run reported the original protein value, range and NC derivation. Independently adjudicated answer utility remains pending.']
+    entry['importCommand']+='; python scripts/import-fdc-source-records.py'
     sources.append(entry)
 
 foodon = load('data/foodon-index.json')

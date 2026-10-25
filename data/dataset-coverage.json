@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "auditedAt": "2026-10-25T10:19:44.569098+00:00",
+  "auditedAt": "2026-10-25T10:31:37.960550+00:00",
   "method": "Pinned local-source/hash/count audit plus explicit source dispositions; not independent scientific/legal validation.",
   "sources": [
     {
@@ -10,7 +10,7 @@
         "https://fdc.nal.usda.gov/download-datasets/",
         "https://fdc.nal.usda.gov/Foundation_Foods_Documentation/"
       ],
-      "declaredScope": "Every eligible food in the pinned official JSON release; null slots and unavailable amounts explicitly excluded.",
+      "declaredScope": "Every eligible food in the pinned official JSON release; null food slots accounted separately. Complete source records preserve unavailable amounts; normalized numeric projection excludes nonnumeric amounts.",
       "version": "2026-04-30",
       "expectedRecords": 363,
       "importedRecords": 363,
@@ -19,29 +19,31 @@
       "fieldsPreserved": [
         "food IDs/name/category/date/type",
         "numeric nutrient IDs/names/units/amounts/data-points/min/max/median/LOQ/derivation",
-        "usable portions and gram weights"
+        "usable portions and gram weights",
+        "Every original source object field, nested nutrient derivation, input-food relation, attributes and portion context in exact detail store"
       ],
       "fieldsNotExposed": [
-        "Full raw source remains local; not all analytical/sample/relationship metadata is exposed by the normalized adapter."
+        "Responses are paged; individual source items over 24k characters explicitly require original-source inspection."
       ],
       "integrity": {
         "sourceSha256": "27d1fe3fd89edfbe528ed915da5619320e1d004d4594603a1b19bdb1511590cc",
         "recordsSha256": "57fc123c8fb0ba794de488e10abd74be38fdcdb29fc7a2ccb7159a59d4f2051a",
         "rawHashVerified": true,
         "recordsHashVerified": true,
-        "eligibleIdSetEqual": true
+        "eligibleIdSetEqual": true,
+        "completeSourceObjectEqualityVerified": true
       },
-      "retrievalInterface": "src/lib/server/food-composition.ts; search_food_composition native tool",
+      "retrievalInterface": "src/lib/server/food-composition.ts; search_food_composition native tool; get_food_composition_record exact ID/release/field/page access",
       "gates": {
         "A_acquisition": "VERIFIED_DEFINED_RELEASE",
-        "B_preservation": "PARTIAL_RICH_RAW_SOURCE_RETAINED",
-        "C_access": "IMPLEMENTED_STRUCTURED_SEARCH",
-        "D_agent": "IMPLEMENTED_EXISTING_LIVE_EVIDENCE",
+        "B_preservation": "VERIFIED_COMPLETE_SOURCE_OBJECTS",
+        "C_access": "IMPLEMENTED_SEARCH_EXACT_PAGED_FIELDS",
+        "D_agent": "LIVE_SEARCH_AND_DETAIL_TOOLS",
         "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
       },
       "verifiedCapabilities": [],
       "remainingGaps": [
-        "Audit full analytical/derivation/portion metadata against raw source; quantify source-field exclusions and demonstrate broader quantitative use."
+        "Final-answer utility partial: live roti detail correctly distinguishes survey recipe from package identity; pre-filter Foundation query returned survey records. Corrected scoped Foundation/nutrient-ID live run reported the original protein value, range and NC derivation. Independently adjudicated answer utility remains pending."
       ],
       "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
       "statistics": {
@@ -309,7 +311,7 @@
         "nutrientRowsIndexed": 15156,
         "foodsWithPortions": 285
       },
-      "importCommand": "npm exec -- tsx scripts/import-fdc-foundation.mts"
+      "importCommand": "npm exec -- tsx scripts/import-fdc-foundation.mts; python scripts/import-fdc-source-records.py"
     },
     {
       "id": "fdc-fndds-2021-2023",
@@ -318,7 +320,7 @@
         "https://fdc.nal.usda.gov/download-datasets/",
         "https://www.ars.usda.gov/ARSUserFiles/80400530/pdf/fndds/2021_2023_FNDDS_Doc.pdf"
       ],
-      "declaredScope": "Every eligible food in the pinned official JSON release; null slots and unavailable amounts explicitly excluded.",
+      "declaredScope": "Every eligible food in the pinned official JSON release; null food slots accounted separately. Complete source records preserve unavailable amounts; normalized numeric projection excludes nonnumeric amounts.",
       "version": "2024-10-31",
       "expectedRecords": 5432,
       "importedRecords": 5432,
@@ -327,29 +329,31 @@
       "fieldsPreserved": [
         "food IDs/name/category/date/type",
         "numeric nutrient IDs/names/units/amounts/data-points/min/max/median/LOQ/derivation",
-        "usable portions and gram weights"
+        "usable portions and gram weights",
+        "Every original source object field, nested nutrient derivation, input-food relation, attributes and portion context in exact detail store"
       ],
       "fieldsNotExposed": [
-        "Full raw source remains local; not all analytical/sample/relationship metadata is exposed by the normalized adapter."
+        "Responses are paged; individual source items over 24k characters explicitly require original-source inspection."
       ],
       "integrity": {
         "sourceSha256": "2e7eb9fda92adf1d4d784dba5eaa3a7fd4418cd86ccff383c7c9294d79e9b808",
         "recordsSha256": "2f856849dd767fcb599936682e6710f1d726e1eba1f064faa7c3837dabfb4a04",
         "rawHashVerified": true,
         "recordsHashVerified": true,
-        "eligibleIdSetEqual": true
+        "eligibleIdSetEqual": true,
+        "completeSourceObjectEqualityVerified": true
       },
-      "retrievalInterface": "src/lib/server/food-composition.ts; search_food_composition native tool",
+      "retrievalInterface": "src/lib/server/food-composition.ts; search_food_composition native tool; get_food_composition_record exact ID/release/field/page access",
       "gates": {
         "A_acquisition": "VERIFIED_DEFINED_RELEASE",
-        "B_preservation": "PARTIAL_RICH_RAW_SOURCE_RETAINED",
-        "C_access": "IMPLEMENTED_STRUCTURED_SEARCH",
-        "D_agent": "IMPLEMENTED_EXISTING_LIVE_EVIDENCE",
+        "B_preservation": "VERIFIED_COMPLETE_SOURCE_OBJECTS",
+        "C_access": "IMPLEMENTED_SEARCH_EXACT_PAGED_FIELDS",
+        "D_agent": "LIVE_SEARCH_AND_DETAIL_TOOLS",
         "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
       },
       "verifiedCapabilities": [],
       "remainingGaps": [
-        "Audit full analytical/derivation/portion metadata against raw source; quantify source-field exclusions and demonstrate broader quantitative use."
+        "Final-answer utility partial: live roti detail correctly distinguishes survey recipe from package identity; pre-filter Foundation query returned survey records. Corrected scoped Foundation/nutrient-ID live run reported the original protein value, range and NC derivation. Independently adjudicated answer utility remains pending."
       ],
       "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
       "statistics": {
@@ -361,7 +365,7 @@
         "nutrientRowsIndexed": 353015,
         "foodsWithPortions": 5432
       },
-      "importCommand": "npm exec -- tsx scripts/import-fdc-fndds.mts"
+      "importCommand": "npm exec -- tsx scripts/import-fdc-fndds.mts; python scripts/import-fdc-source-records.py"
     },
     {
       "id": "foodon",

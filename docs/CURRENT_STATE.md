@@ -83,3 +83,5 @@ Photos and local OCR/layout observations feed a typed multimodal Gemini reconstr
 ## Settled constraints
 
 Free Gemini is preferred. Controlled paid development fallback is authorized within spending controls; consumer free mode is not unrestricted paid consent. Keep photos/profile local until the disclosed authorized action. Do not expose secrets, publish private assets, invite collaborators, force-push or deploy publicly. Preserve the natural-agent architecture and standard interactive components. Do not resume product-specific prompt, keyword or answer-template patches.
+
+Latest Track A continuation: complete USDA source-object preservation and paged exact native inspection implemented; search release isolation closes Foundation/FNDDS substitution. A2-USDA VALIDATING; final-answer utility remains partial. FoodOn checkpoint published `5c72763681b581739f199bf9f584a2e387a1295b`. Next READY source work: OFF India/Codex-FSSAI source-scope and relationship audit using existing adapters, then cross-source answer utility. No new bulk download or worktree.

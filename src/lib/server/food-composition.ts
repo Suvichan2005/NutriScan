@@ -156,18 +156,19 @@ async function readFoodRecord(dataset: LoadedDataset, item: CatalogFood): Promis
   } finally { await handle.close(); }
 }
 
-export async function searchFoodComposition(query: string, limit = 3) {
+export async function searchFoodComposition(query: string, limit = 3, release?: string) {
   try {
     const datasets = await loadDatasets();
     if (!datasets.length) return { status: 'unavailable' as const, reason: 'not-imported' as const };
-    const catalogFoods = datasets.flatMap(dataset => dataset.catalog.foods.map(food => ({ food, dataset })));
+    const selectedDatasets=release?datasets.filter(dataset=>dataset.catalog.dataset.id===release):datasets;
+    const catalogFoods = selectedDatasets.flatMap(dataset => dataset.catalog.foods.map(food => ({ food, dataset })));
     const ranked = rankFoodCompositionFoods(query, catalogFoods.map(item => item.food), limit);
     const datasetByFood = new Map(catalogFoods.map(item => [`${item.food.dataType}:${item.food.fdcId}`, item.dataset]));
     const results = await Promise.all(ranked.map(async hit => {
       const dataset = datasetByFood.get(`${hit.food.dataType}:${hit.food.fdcId}`)!;
       return { food: await readFoodRecord(dataset, hit.food as CatalogFood), score: hit.score, source: publicSource(dataset.catalog.dataset) };
     }));
-    return { status: results.length ? 'ok' as const : 'no_match' as const, results, sources: datasets.map(dataset => publicSource(dataset.catalog.dataset)) };
+    return { status: results.length ? 'ok' as const : 'no_match' as const, results, sources: selectedDatasets.map(dataset => publicSource(dataset.catalog.dataset)) };
   } catch {
     return { status: 'unavailable' as const, reason: 'invalid-index' as const };
   }
