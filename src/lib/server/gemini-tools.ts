@@ -21,7 +21,7 @@ import { isGuidanceEvidenceInScope, isLocalEvidenceTopicallyRelevant } from '../
 import { evidenceSources, findIngredientEvidence, ingredientFamilySources, lookupIngredientFamilies, indianStapleIdentitySources, lookupAdditive, lookupExplicitAdditiveMention, lookupIndianStapleIngredientIdentity, resolveTentativeAdditiveIdentity } from '../../modules/knowledge';
 import { searchOpenFoodTox, semanticRetrieve } from '../semantic';
 import { searchFoodComposition, type FoodCompositionFood } from './food-composition';
-import { readOpenFoodToxRecords, openFoodToxDetailInput, searchFoodOn, type FoodOnHit, type FoodOnSearch, type OpenFoodToxHit, type OpenFoodToxSearch } from '../../modules/knowledge/server';
+import { readFoodOnConcept, foodOnConceptInput, readOpenFoodToxRecords, openFoodToxDetailInput, searchFoodOn, type FoodOnHit, type FoodOnSearch, type OpenFoodToxHit, type OpenFoodToxSearch } from '../../modules/knowledge/server';
 import { isValidGtin, findOcrGtinCandidate } from '../barcode';
 import { productInput, lookupProducts } from './products';
 import { researchInput, research } from './research';
@@ -64,6 +64,7 @@ const toolArgs = {
   lookup_chemical_identity: z.object({ query: querySchema }).strict(),
   get_substance_assessments: z.object({ query: querySchema }).strict(),
   get_assessment_records: openFoodToxDetailInput,
+  get_ingredient_concept:foodOnConceptInput,
   calculate_nutrition: z.object({ nutrient: z.preprocess(value=>value===null?undefined:value,z.enum(nutrientKeys).optional()), amount: z.number().finite().positive().max(10000), unit: z.enum(['g', 'ml', 'pieces', 'servings', 'package']), candidateId:z.preprocess(value=>value===null?undefined:value,z.string().min(1).max(120).optional()) }).strict().refine(value=>!!value.nutrient||!!value.candidateId,{message:'Select a standard nutrient or an exact saved nutrition row.'}),
   lookup_product: z.object({ query: z.string().trim().min(2).max(80).optional(), barcode: z.string().regex(/^\d{8,14}$/).optional() }).strict().refine(value => Number(Boolean(value.query)) + Number(Boolean(value.barcode)) === 1),
   search_research: z.object({ query: querySchema, topic: z.enum(['science', 'regulation', 'claims']) }).strict(),
@@ -81,6 +82,7 @@ const cropParameters = {
 };
 
 export const geminiToolDeclarations: FunctionDeclaration[] = [
+  {name:'get_ingredient_concept',description:'Inspect one exact FoodOn ingredient concept returned by resolve_ingredient. Read complete English synonyms, direct parents, children or ancestor paths with pagination. These are ontology classifications, not evidence of allergens, nutrient composition, health effects, package presence or legal permission. Do not infer those relationships from taxonomy.',parameters:{type:Type.OBJECT,properties:{id:{type:Type.STRING,description:'Exact FOODON_ plus eight-digit identifier.'},relation:{type:Type.STRING,enum:['parents','children','ancestors']},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER,description:'One to twenty related concepts per page.'}},required:['id']}},
   {name:'get_assessment_records',description:'Read detailed EFSA OpenFoodTox source records after get_substance_assessments returns an exact substanceId. Human-health and animal-health are assessment domains, not study-subject declarations; inspect species/population. Select a section, then an exact recordId for richer fields or source-declared literature/dossier/registry links. Preserves endpoints, dose and units, species/populations, methods, uncertainty and citations when present. Flattened rows can belong to one document. Animal, occupational and environmental endpoints are not human dietary limits; lack of an ADI is not proof of danger. Records do not establish package exposure, Indian authorization or personal safety.',parameters:{type:Type.OBJECT,properties:{substanceId:{type:Type.STRING,description:'Exact substance UUID from the identity/assessment lookup.'},section:{type:Type.STRING,enum:['overview','reference-values','human-health','animal-health','environment','properties','summaries','composition','metabolites']},recordId:{type:Type.STRING,description:'Exact recordId returned by this tool or its source-declared links.'},fields:{type:Type.ARRAY,items:{type:Type.STRING},description:'Up to six exact available field names; requires recordId.'},offset:{type:Type.INTEGER,description:'Zero-based page offset.'},limit:{type:Type.INTEGER,description:'One to five source rows per page.'}},required:['substanceId']}},
   { name: 'inspect_package_image', description: 'Inspect an attached original package photo or a focused crop using your visual understanding. Use when OCR merges adjacent label regions or a small/dense nutrition table is not fully readable at full-photo scale; for a table, inspect one crop that keeps the complete panel, row labels and column headings together. Select bounds from the attached image geometry, not remembered product coordinates. Do not crop isolated digits, and treat a crop as the same image evidence rather than independent corroboration. The photo must already be attached to this request.', parameters: { type: Type.OBJECT, properties: { imageId: { type: Type.STRING, description: 'Exact imageId from the attached package images.' }, crop: cropParameters }, required: ['imageId'] } },
   { name: 'search_knowledge', description: 'Search NutriScan’s local, attributed food and ingredient evidence index. This does not make a network request.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A focused food, nutrient, ingredient, or guidance query.' } }, required: ['query'] } },
@@ -545,7 +547,7 @@ async function resolveIngredient(args: z.infer<typeof toolArgs.resolve_ingredien
     ? identityHits.map(hit => foodOnEvidence(hit, response.source)).filter((item): item is EvidenceSource => item !== null)
     : [];
   const allEvidence = [...candidateEvidence, ...relatedSources];
-  const identityCandidates = identityHits.slice(0, candidateEvidence.length).map(hit => ({ sourceId: `foodon-${hit.term.id.toLowerCase()}`, title: `${hit.term.label} (${hit.term.id})`, matchedBy: hit.matchedBy, matchedText: hit.matchedText, parents: hit.parents }));
+  const identityCandidates = identityHits.slice(0, candidateEvidence.length).map(hit => ({ conceptId:hit.term.id, detailTool:'get_ingredient_concept', sourceId: `foodon-${hit.term.id.toLowerCase()}`, title: `${hit.term.label} (${hit.term.id})`, matchedBy: hit.matchedBy, matchedText: hit.matchedText, parents: hit.parents }));
   return {
     status: allEvidence.length ? 'ok' : 'empty',
     resultCount: allEvidence.length,
@@ -1022,6 +1024,14 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
     case 'search_food_composition': {
       const parsed = toolArgs.search_food_composition.safeParse(args);
       return parsed.success ? searchFoodCompositionTool(parsed.data) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The USDA food-composition query was invalid.' } };
+    }
+    case 'get_ingredient_concept': {
+      const parsed=toolArgs.get_ingredient_concept.safeParse(args);
+      if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments'}};
+      const detail=await readFoodOnConcept(parsed.data);
+      if(detail.status!=='ok')return{status:detail.status==='no_match'?'empty':'unavailable',resultCount:0,output:detail};
+      const evidence=asEvidenceSource({id:`foodon-${detail.concept.id.toLowerCase()}`,title:`FoodOn: ${detail.concept.label}`,publisher:'FoodOn Food Ontology',url:detail.source.ontologyUrl,category:'registry',jurisdiction:'Ontology terminology; no legal jurisdiction',publishedAt:detail.source.version,effectiveAt:null,retrievedAt:new Date().toISOString(),summary:JSON.stringify({concept:detail.concept.label,relation:detail.relation,related:detail.results}).slice(0,1600),limitations:detail.limitations,license:'CC BY 4.0; FoodOn attribution and pinned release retained.'});
+      return{status:'ok',resultCount:1,output:detail,evidence:evidence?[evidence]:[],searchTerms:[detail.concept.label]};
     }
     case 'resolve_ingredient': {
       const parsed = toolArgs.resolve_ingredient.safeParse(args);

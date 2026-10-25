@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { rankFoodOnTerms, searchFoodOn } from './server';
+import { rankFoodOnTerms, searchFoodOn, readFoodOnConcept } from './server';
 
 describe('pinned local FoodOn ingredient index', () => {
+  it('traverses asserted parents and inverse children with paths and honest missing identities',async()=>{
+    const lookup=await searchFoodOn('besan');
+    if(lookup.status!=='ok')throw new Error('Pinned source missing');
+    const id=lookup.results[0].term.id;
+    const detail=await readFoodOnConcept({id,relation:'ancestors',limit:20});
+    expect(detail.status).toBe('ok');if(detail.status!=='ok')return;
+    expect(detail.concept.aliases.some(alias=>alias.text==='besan')).toBe(true);
+    expect(detail.results.length).toBeGreaterThan(0);
+    for(const ancestor of detail.results){expect(ancestor.path[0]).toBe(id);expect(ancestor.path.at(-1)).toBe(ancestor.id);expect(new Set(ancestor.path).size).toBe(ancestor.path.length);}
+    const parent=detail.concept.parents[0];
+    const children=await readFoodOnConcept({id:parent,relation:'children',limit:20});
+    expect(children.status).toBe('ok');if(children.status==='ok')expect(children.total).toBeGreaterThan(0);
+    expect(await readFoodOnConcept({id:'FOODON_99999999'})).toMatchObject({status:'no_match'});
+    await expect(readFoodOnConcept({id,limit:21})).rejects.toThrow();
+  });
   it('loads the attributed 2026-09-20 release and retrieves a real exact synonym with hierarchy', async () => {
     const result = await searchFoodOn('white flour');
 

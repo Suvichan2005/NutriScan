@@ -85,7 +85,7 @@ def english_literal(value: str) -> str | None:
         value = value[1:-1]
     value = value.replace('\\"', '"').replace("\\\\", "\\")
     value = re.sub(r"\s+", " ", value).strip()
-    return value[:180] or None
+    return value or None
 
 
 def build() -> dict:
@@ -134,16 +134,14 @@ def build() -> dict:
         label = record["label"]
         if not label:
             continue
-        seen = {label.casefold()}
+        seen = set()
         aliases = []
         for alias in sorted(record["aliases"], key=lambda item: (item["kind"], item["text"].casefold())):
-            key = alias["text"].casefold()
+            key = (alias["kind"], alias["text"].casefold())
             if key in seen:
                 continue
             seen.add(key)
             aliases.append(alias)
-            if len(aliases) == 24:
-                break
         terms.append({
             "id": identifier,
             "label": label,

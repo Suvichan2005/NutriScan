@@ -34,6 +34,13 @@ function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019
 }
 
 describe('Gemini tool retrieval boundaries', () => {
+  it('makes exact ontology relationships and attribution accessible without treating taxonomy as health evidence',async()=>{
+    const result=await executeGeminiTool('get_ingredient_concept',{id:'FOODON_03601071',relation:'ancestors'},context('How is besan classified?'));
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.[0]).toMatchObject({category:'registry',limitations:expect.stringContaining('clinical suitability')});
+    expect(result.output).toMatchObject({concept:{id:'FOODON_03601071',label:'gram flour'},relation:'ancestors'});
+    expect((await executeGeminiTool('get_ingredient_concept',{id:'FOODON_99999999'},context('Unknown ingredient'))).status).toBe('empty');
+  });
   it('hands full selected assessment fields, record provenance and declared literature terms into the native tool loop',async()=>{
     const sourceId='11111111-1111-4111-8111-111111111111';
     mocks.readOpenFoodToxRecords.mockResolvedValueOnce({status:'ok',source:{releaseDate:'2026-04-30'},results:[{recordId:'LIT:2',documentId:'source-document',parentId:null,section:'LIT',endpoint:null,fields:{'GeneralInfo.Name':'Fictional source title','GeneralInfo.Author':'Developer fixture author','GeneralInfo.Source':'doi:10.0000/developer-fixture'},availableFields:['GeneralInfo.Name'],truncatedFields:[],selectedFieldsComplete:true,links:[],otherRowsForDocument:0}]});

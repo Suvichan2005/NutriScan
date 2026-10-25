@@ -65,24 +65,36 @@ with (ROOT/'.data/knowledge/foodon-synonyms.tsv').open(encoding='utf-8',newline=
         if len(row)<4: continue
         identifier=re.search(r'FOODON_[0-9]{8}',row[0])
         if not identifier or identifier[0] in deprecated: continue
+        term=source_terms.setdefault(identifier[0],{'labels':set(),'aliases':set(),'typedAliases':set(),'parents':set()})
+        parent=re.search(r'FOODON_[0-9]{8}',row[1])
+        if parent and parent[0] not in deprecated: term['parents'].add(parent[0])
         value=row[3].strip()
         if not value or (foodon_importer['LANGUAGE_SUFFIX'].search(value) and not foodon_importer['ENGLISH_SUFFIX'].search(value)): continue
         value=foodon_importer['ENGLISH_SUFFIX'].sub('',value).strip()
         if len(value)>=2 and value[0]==value[-1]=='"': value=value[1:-1]
         value=re.sub(r'\s+',' ',value.replace('\\"','"').replace('\\\\','\\')).strip()
-        term=source_terms.setdefault(identifier[0],{'labels':set(),'aliases':set()})
         if row[2].strip()=='label': term['labels'].add(value.casefold())
-        elif row[2].strip() in {'synonym','synonym (exact)','synonym (narrow)','synonym (broad)','label (alternative)'}: term['aliases'].add(value.casefold())
+        elif row[2].strip() in {'synonym','synonym (exact)','synonym (narrow)','synonym (broad)','label (alternative)'}:
+            term['aliases'].add(value.casefold())
+            kind={'synonym':'synonym','synonym (exact)':'exact','synonym (narrow)':'narrow','synonym (broad)':'broad','label (alternative)':'alternative-label'}[row[2].strip()]
+            term['typedAliases'].add((kind,value.casefold()))
 source_terms={key:value for key,value in source_terms.items() if value['labels']}
 indexed_terms={term['id']:term for term in foodon['terms']}
-assert set(source_terms)==set(indexed_terms)
+eligible_ids=set(source_terms)
+assert eligible_ids==set(indexed_terms)
+for identifier,term in source_terms.items():
+    assert term['typedAliases']=={(alias['kind'],alias['text'].casefold()) for alias in indexed_terms[identifier]['aliases']},identifier
+    assert term['parents']&eligible_ids==set(indexed_terms[identifier]['parents']),identifier
 foodon_accounting={'activeLabeledSourceClasses':len(source_terms),'classIdSetEqual':True,'deprecatedOwnClasses':len(deprecated),'uniqueEnglishAliasesBeforeCaps':sum(len(t['aliases']-t['labels']) for t in source_terms.values()),'aliasTextsAbsentFromCompactIndex':sum(len((t['aliases']-t['labels'])-{a['text'].casefold() for a in indexed_terms[key]['aliases']}) for key,t in source_terms.items()),'sourceAliasesOver180Characters':sum(sum(len(a)>180 for a in t['aliases']-t['labels']) for t in source_terms.values()),'classesExceeding24Aliases':sum(len(t['aliases']-t['labels'])>24 for t in source_terms.values()),'scope':'Pinned TSV active labelled own-namespace English terms. Complete OWL restriction/relationship projection is not asserted.'}
-f = source('foodon', 'Food/ingredient ontology identity and hierarchy; no health or composition authority', [foodon['source']['ontologyUrl'], foodon['source']['synonymExportUrl']], 'Pinned own-namespace active labelled FoodOn classes, English aliases and internal direct parents; original OWL/TSV retained.', 'src/modules/knowledge/server.ts searchFoodOn; resolve_ingredient native tool', ['Reconcile source class/alias totals and exclusions; compact aliases cap 24 and text cap 180; other useful OWL relationships are not navigable yet.'], foodon['source']['license'])
+f = source('foodon', 'Food/ingredient ontology identity and hierarchy; no health or composition authority', [foodon['source']['ontologyUrl'], foodon['source']['synonymExportUrl']], 'Pinned own-namespace active labelled FoodOn classes, English aliases and internal direct parents; original OWL/TSV retained.', 'searchFoodOn + readFoodOnConcept; resolve_ingredient + get_ingredient_concept native tools', ['Declared class, typed alias and direct-edge sets reconcile exactly. OWL restrictions/non-taxonomic relations remain outside the projection; final answer had one withheld quantity and broad outcome utility is unverified.'], foodon['source']['license'])
 f.update(version=foodon['source']['version'], importedRecords=len(foodon['terms']), countUnit='active labelled classes', fieldsPreserved=['stable FOODON IDs', 'English labels and typed synonyms', 'direct internal parent IDs', 'full original OWL/TSV locally'], statistics={'indexedAliases': sum(len(t['aliases']) for t in foodon['terms']), 'indexedParentEdges': sum(len(t['parents']) for t in foodon['terms'])}, integrity={'ontologySha256': digest('.data/knowledge/foodon.owl'), 'synonymExportSha256': digest('.data/knowledge/foodon-synonyms.tsv')}, importCommand='python src/modules/knowledge/import_foodon.py')
 assert f['integrity']['ontologySha256'] == foodon['source']['ontologySha256']
 assert f['integrity']['synonymExportSha256'] == foodon['source']['synonymExportSha256']
-f['gates'].update(A_acquisition='VERIFIED_PINNED_SOURCE_FILES', B_preservation='PARTIAL_INDEX_SCOPE', C_access='IMPLEMENTED_IDENTITY_AND_DIRECT_PARENTS', D_agent='IMPLEMENTED_IDENTITY_TOOL')
+f['gates'].update(A_acquisition='VERIFIED_PINNED_SOURCE_FILES', B_preservation='VERIFIED_DECLARED_TAXONOMY_ALIAS_PROJECTION', C_access='IMPLEMENTED_EXACT_AND_PAGED_TAXONOMY', D_agent='LIVE_IDENTITY_AND_CONCEPT_TOOL')
 f['statistics']['sourceAccounting']=foodon_accounting
+f['statistics']['sourceAccounting'].update(typedAliasSetEqual=True,directEligibleParentEdgeSetEqual=True,typedAliases=sum(len(t['typedAliases']) for t in source_terms.values()))
+f['verifiedCapabilities']=['Live besan/atta question used FoodOn and existing regional reference sources; separated taxonomy from nutrients/clinical suitability.', 'Live palm-oil question selected exact concept tool after ingredient lookup; correct parent and taxonomy limits; one numerical sentence withheld.', 'Five free Flash-Lite generations, 17117 input / 490 output tokens, 13391 ms provider time, estimated $0. Developer acceptance is not independent scientific evaluation.']
+assert foodon_accounting['aliasTextsAbsentFromCompactIndex']==0
 sources.append(f)
 
 oft = load('.data/knowledge/openfoodtox-3.0.manifest.json')

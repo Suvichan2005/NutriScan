@@ -64,11 +64,11 @@ export type OpenFoodToxSearch =
   | { status: 'no_match'; source: OpenFoodToxSnapshot['dataset']; results: [] }
   | { status: 'unavailable'; reason: 'not-imported' | 'invalid-index'; results: [] };
 
-const foodOnAliasSchema = z.object({ text: z.string().min(1).max(180), kind: z.enum(['exact', 'synonym', 'narrow', 'broad', 'alternative-label']) }).strict();
+const foodOnAliasSchema = z.object({ text: z.string().min(1).max(4000), kind: z.enum(['exact', 'synonym', 'narrow', 'broad', 'alternative-label']) }).strict();
 const foodOnTermSchema = z.object({
   id: z.string().regex(/^FOODON_[0-9]{8}$/),
   label: z.string().min(1).max(180),
-  aliases: z.array(foodOnAliasSchema).max(24),
+  aliases: z.array(foodOnAliasSchema).max(200),
   parents: z.array(z.string().regex(/^FOODON_[0-9]{8}$/)).max(100),
 }).strict();
 const foodOnSnapshotSchema = z.object({
@@ -168,6 +168,31 @@ export async function searchFoodOn(query: string, limit = 5): Promise<FoodOnSear
   catch { return { status: 'unavailable', reason: 'invalid-index', results: [] }; }
   const results = rankFoodOnTerms(query, snapshot.terms, limit);
   return results.length ? { status: 'ok', source: snapshot.source, results } : { status: 'no_match', source: snapshot.source, results: [] };
+}
+
+export const foodOnConceptInput=z.object({id:z.string().regex(/^FOODON_[0-9]{8}$/),relation:z.enum(['parents','children','ancestors']).default('parents'),offset:z.number().int().min(0).max(35000).default(0),limit:z.number().int().min(1).max(20).default(10)}).strict();
+
+/** Asserted FoodOn taxonomy only. Ancestors retain paths; no allergy or health inference. */
+export async function readFoodOnConcept(input:z.input<typeof foodOnConceptInput>){
+  const args=foodOnConceptInput.parse(input);
+  let snapshot:FoodOnSnapshot;
+  try{snapshot=await loadFoodOnSnapshot();}catch{return{status:'unavailable' as const,reason:'invalid-index',results:[]};}
+  const byId=new Map(snapshot.terms.map(term=>[term.id,term]));
+  const term=byId.get(args.id);
+  if(!term)return{status:'no_match' as const,source:snapshot.source,results:[]};
+  const related:Array<{id:string;label:string;path:string[]}>=[];
+  if(args.relation==='children'){
+    for(const child of snapshot.terms)if(child.parents.includes(term.id))related.push({id:child.id,label:child.label,path:[child.id,term.id]});
+  }else{
+    const pending=term.parents.map(id=>({id,path:[term.id,id]})),seen=new Set([term.id]);
+    for(let cursor=0;cursor<pending.length&&cursor<35000;cursor++){
+      const next=pending[cursor];if(seen.has(next.id))continue;seen.add(next.id);
+      const parent=byId.get(next.id);if(!parent)continue;
+      related.push({id:parent.id,label:parent.label,path:next.path});
+      if(args.relation==='ancestors')for(const id of parent.parents)if(!seen.has(id))pending.push({id,path:[...next.path,id]});
+    }
+  }
+  return{status:'ok' as const,source:snapshot.source,concept:term,relation:args.relation,total:related.length,offset:args.offset,nextOffset:args.offset+args.limit<related.length?args.offset+args.limit:null,results:related.slice(args.offset,args.offset+args.limit),limitations:'Asserted active FoodOn class taxonomy and English synonyms only; imported ontologies, OWL restrictions and non-taxonomic relationships are outside this declared projection. Taxonomy does not establish package presence, nutrient content, allergen cross-contact, clinical suitability or legal authorization.'};
 }
 
 let openFoodToxSnapshotPromise: Promise<OpenFoodToxSnapshot | null> | undefined;

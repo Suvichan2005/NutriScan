@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "auditedAt": "2026-10-25T10:10:19.146328+00:00",
+  "auditedAt": "2026-10-25T10:19:44.569098+00:00",
   "method": "Pinned local-source/hash/count audit plus explicit source dispositions; not independent scientific/legal validation.",
   "sources": [
     {
@@ -387,31 +387,38 @@
         "ontologySha256": "b897bf64c1b265c422db9ee01e1235c10c0b809e7f02326ef810a52068347edf",
         "synonymExportSha256": "1900fb2c80d834287cfdd0b52a98957b18269e86c197617711bc3a5d8541deb2"
       },
-      "retrievalInterface": "src/modules/knowledge/server.ts searchFoodOn; resolve_ingredient native tool",
+      "retrievalInterface": "searchFoodOn + readFoodOnConcept; resolve_ingredient + get_ingredient_concept native tools",
       "gates": {
         "A_acquisition": "VERIFIED_PINNED_SOURCE_FILES",
-        "B_preservation": "PARTIAL_INDEX_SCOPE",
-        "C_access": "IMPLEMENTED_IDENTITY_AND_DIRECT_PARENTS",
-        "D_agent": "IMPLEMENTED_IDENTITY_TOOL",
+        "B_preservation": "VERIFIED_DECLARED_TAXONOMY_ALIAS_PROJECTION",
+        "C_access": "IMPLEMENTED_EXACT_AND_PAGED_TAXONOMY",
+        "D_agent": "LIVE_IDENTITY_AND_CONCEPT_TOOL",
         "E_answer_utility": "NOT_INDEPENDENTLY_VERIFIED"
       },
-      "verifiedCapabilities": [],
+      "verifiedCapabilities": [
+        "Live besan/atta question used FoodOn and existing regional reference sources; separated taxonomy from nutrients/clinical suitability.",
+        "Live palm-oil question selected exact concept tool after ingredient lookup; correct parent and taxonomy limits; one numerical sentence withheld.",
+        "Five free Flash-Lite generations, 17117 input / 490 output tokens, 13391 ms provider time, estimated $0. Developer acceptance is not independent scientific evaluation."
+      ],
       "remainingGaps": [
-        "Reconcile source class/alias totals and exclusions; compact aliases cap 24 and text cap 180; other useful OWL relationships are not navigable yet."
+        "Declared class, typed alias and direct-edge sets reconcile exactly. OWL restrictions/non-taxonomic relations remain outside the projection; final answer had one withheld quantity and broad outcome utility is unverified."
       ],
       "refresh": "Explicit versioned source refresh and validation; never silently replace evaluation inputs.",
       "statistics": {
-        "indexedAliases": 13002,
+        "indexedAliases": 13566,
         "indexedParentEdges": 29601,
         "sourceAccounting": {
           "activeLabeledSourceClasses": 25143,
           "classIdSetEqual": true,
           "deprecatedOwnClasses": 571,
           "uniqueEnglishAliasesBeforeCaps": 13001,
-          "aliasTextsAbsentFromCompactIndex": 5,
+          "aliasTextsAbsentFromCompactIndex": 0,
           "sourceAliasesOver180Characters": 5,
           "classesExceeding24Aliases": 0,
-          "scope": "Pinned TSV active labelled own-namespace English terms. Complete OWL restriction/relationship projection is not asserted."
+          "scope": "Pinned TSV active labelled own-namespace English terms. Complete OWL restriction/relationship projection is not asserted.",
+          "typedAliasSetEqual": true,
+          "directEligibleParentEdgeSetEqual": true,
+          "typedAliases": 13566
         }
       },
       "importCommand": "python src/modules/knowledge/import_foodon.py"
