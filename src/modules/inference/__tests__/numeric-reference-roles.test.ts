@@ -31,19 +31,19 @@ it('does not treat evidence handles as factual quantities',()=>{
 
 const source:EvidenceSource={id:'developer-reference',title:'Developer source',publisher:'Developer',url:'https://example.test/reference',category:'guideline',jurisdiction:'Synthetic',publishedAt:null,effectiveAt:null,retrievedAt:'2026-10-26',summary:'A source amount is 12 g per serving. The source reference is at least 25 g per day.',limitations:'Developer numerical fixture, not dietary guidance.'};
 it('keeps the printed basis mandatory when an actual amount is asserted',()=>{
- const ctx={...context,evidence:[source]};
+ const ctx={...context,evidence:[source],sourceIdsForSentence:()=>[source.id]};
  expect(validateNaturalAnswerText('The amount is 12 g per serving.',ctx).withheldUnsupportedQuantitySentenceCount).toBe(0);
  for(const text of ['The amount is 12 g per 100 g.','The amount is 12 g per 100ml.','The amount is 12 g per pack.','The amount is 12 per 100 g.'])expect(validateNaturalAnswerText(text,ctx).withheldUnsupportedQuantitySentenceCount).toBeGreaterThan(0);
 });
 it('recognizes a prefixed daily rate without dropping the comparator or accepting a changed denominator',()=>{
- const ctx={...context,evidence:[source]};
+ const ctx={...context,evidence:[source],sourceIdsForSentence:()=>[source.id]};
  expect(validateNaturalAnswerText('The daily intake reference is at least 25 g.',ctx).withheldUnsupportedQuantitySentenceCount).toBe(0);
  for(const text of ['The daily intake reference is more than 25 g.','The intake reference is at least 25 g per week.','The daily intake reference is at least 250 g.'])expect(validateNaturalAnswerText(text,ctx).withheldUnsupportedQuantitySentenceCount).toBeGreaterThan(0);
 });
 
 it('matches unitless study counts to the same named subject despite changed sentence connectors',()=>{
  const review:EvidenceSource={...source,id:'review-counts',title:'Review',summary:'The meta-analysis included 13 trials with 927 participants.',publishedAt:'2022-05-13'};
- const ctx={...context,evidence:[review]};
+ const ctx={...context,evidence:[review],sourceIdsForSentence:()=>[review.id]};
  const supported='A 2022 systematic review included 13 trials and 927 participants.';
  expect(validateNaturalAnswerText(supported,ctx).answer).toBe(supported);
  const full='Clinical research and meta-analyses (such as a 2022 systematic review published in Clinical Nutrition ESPEN evaluating 13 trials and 927 participants) indicate that sufficient daily intakes can affect lipids.';
@@ -55,13 +55,13 @@ it('matches unitless study counts to the same named subject despite changed sent
 it('retains the saved PubMed study-count sentence without admitting adjacent unsupported quantities',()=>{
  const review=evidenceSources.find(item=>item.id==='pubmed-oat-beta-glucan-lipids-2022')!;
  const answer='Clinical research and meta-analyses (such as a 2022 systematic review published in *Clinical Nutrition ESPEN* evaluating 13 trials and 927 participants) indicate that sufficient daily intakes of oat beta-glucan can help reduce total and LDL cholesterol.';
- const result=validateNaturalAnswerText(answer,{...context,evidence:[review]});
+ const result=validateNaturalAnswerText(answer,{...context,evidence:[review],sourceIdsForSentence:()=>[review.id]});
  expect(result.withheldUnsupportedQuantitySentenceCount).toBe(0);
  expect(result.answer).toBe(answer);
  for(const unsupported of [
   'The reading is 12.4 g per 100 g, or approximately 4.7 g per 38 g serving.',
   'A cholesterol-lowering claim typically requires at least 1 g of beta-glucan per serving.',
- ])expect(validateNaturalAnswerText(unsupported,{...context,evidence:[review]}).withheldUnsupportedQuantitySentenceCount).toBe(1);
+ ])expect(validateNaturalAnswerText(unsupported,{...context,evidence:[review],sourceIdsForSentence:()=>[review.id]}).withheldUnsupportedQuantitySentenceCount).toBe(1);
 });
 
 it('replays the saved study sentence beside unsupported package and claim-rule amounts',()=>{
@@ -73,7 +73,7 @@ it('replays the saved study sentence beside unsupported package and claim-rule a
   'A cholesterol-lowering claim typically requires at least 1 g of beta-glucan per serving.',
  ].join(' ');
 
- const result=validateNaturalAnswerText(answer,{...context,evidence:[review]});
+ const result=validateNaturalAnswerText(answer,{...context,evidence:[review],sourceIdsForSentence:()=>[review.id]});
  expect(result.answer).toContain(study);
  expect(result.answer).toContain('I omitted one or more numerical statements');
  expect(result.answer).not.toContain('4.7 g per 38 g');

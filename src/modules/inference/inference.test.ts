@@ -144,7 +144,7 @@ describe('provider-independent inference output validation', () => {
       '2. The label does not establish the studied dose.',
       '3. The product contains 99 g protein.',
       '* A different review was published in 2021.',
-    ].join('\n'),{package:fixturePackage,question:'Explain the review.',evidence:[source]});
+    ].join('\n'),{package:fixturePackage,question:'Explain the review.',evidence:[source],sourceIdsForSentence:()=>[source.id]});
     expect(checked.answer).toContain('1. What the review found');
     expect(checked.answer).toContain('Source: Example intervention review (2022).');
     expect(checked.answer).toContain('2. The label does not establish the studied dose.');
@@ -153,7 +153,7 @@ describe('provider-independent inference output validation', () => {
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(2);
     const withoutDate=validateNaturalAnswerText('Source: Example intervention review (2022).',{package:fixturePackage,evidence:[{...source,publishedAt:null}]});
     expect(withoutDate.answer).toBe('');
-    const identifier=validateNaturalAnswerText('The review record is 35631184.',{package:fixturePackage,evidence:[source]});
+    const identifier=validateNaturalAnswerText('The review record is 35631184.',{package:fixturePackage,evidence:[source],sourceIdsForSentence:()=>[source.id]});
     expect(identifier.withheldUnsupportedQuantitySentenceCount).toBe(0);
     const inventedIdentifier=validateNaturalAnswerText('The review record is 35631185.',{package:fixturePackage,question:'Is record 35631185 relevant?',evidence:[source]});
     expect(inventedIdentifier.answer).toBe('');
@@ -162,7 +162,7 @@ describe('provider-independent inference output validation', () => {
   it('keeps dose time bases with quantities instead of borrowing package amounts or requested doses',()=>{
     const source={id:'dose-trial',title:'Example human intervention trial',publisher:'Example scientific journal',url:'https://example.org/trial',category:'literature' as const,jurisdiction:'Trial population',publishedAt:'2022',effectiveAt:null,retrievedAt:'2026-10-25',summary:'The intervention used 6 grams/day of the studied fibre.',limitations:'This trial dose is not a personal target.'};
     const pkg=packageSchema.parse({...fixturePackage,observations:[...fixturePackage.observations,{id:'user-fat',field:'fat',text:'Fat 3 g per 100 g',origin:'user',side:'text',confidence:null}]});
-    const context={package:pkg,question:'Does the evidence support 3 g/day?',evidence:[source]};
+    const context={package:pkg,question:'Does the evidence support 3 g/day?',evidence:[source],sourceIdsForSentence:()=>[source.id]};
     for(const answer of ['The trial used 6 g/day.','The trial used 6000 mg per day.']){
       expect(validateNaturalAnswerText(answer,context).withheldUnsupportedQuantitySentenceCount).toBe(0);
     }
@@ -172,6 +172,14 @@ describe('provider-independent inference output validation', () => {
       expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
     }
     expect(validateNaturalAnswerText('The package lists 3 g fat per 100 g.',context).withheldUnsupportedQuantitySentenceCount).toBe(0);
+  });
+
+  it('requires a sentence to identify a retrieved source before its quantities can support it',()=>{
+    const source={id:'sodium-guideline',title:'Example sodium guidance',publisher:'Example health organization',url:'https://example.org/sodium',category:'guideline' as const,jurisdiction:'General',publishedAt:'2024',effectiveAt:null,retrievedAt:'2026-10-25',summary:'The guideline advises adults to stay below 2000 mg sodium per day.',limitations:'Not a personal clinical target.'};
+    const context={package:fixturePackage,question:'What does the source say?',evidence:[source]};
+    expect(validateNaturalAnswerText('Adults should stay below 2000 mg sodium per day.',context).withheldUnsupportedQuantitySentenceCount).toBe(1);
+    expect(validateNaturalAnswerText('Example sodium guidance advises adults to stay below 2000 mg sodium per day.',{...context,sourceIdsForSentence:()=>[source.id]}).withheldUnsupportedQuantitySentenceCount).toBe(0);
+    expect(validateNaturalAnswerText('Example sodium guidance advises adults to stay below 2500 mg sodium per day.',{...context,sourceIdsForSentence:()=>[source.id]}).withheldUnsupportedQuantitySentenceCount).toBe(1);
   });
 
   it('keeps numbered Markdown headings while checking quantities inside their content',()=>{

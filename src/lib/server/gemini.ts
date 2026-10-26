@@ -2251,6 +2251,14 @@ export async function assist(data: z.infer<typeof assistInput>) {
       question:data.question,
       evidence:effectiveEvidence,
       calculations:effectiveCalculations,
+      sourceIdsForSentence:sentence=>{
+        const ids=new Set(selectCitedEvidence(sentence,effectiveEvidence).map(source=>source.id));
+        for(const [handle,id] of referenceAliases.fromModel){
+          const escaped=handle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+          if(new RegExp(`\\b${escaped}\\b`,'i').test(sentence))ids.add(id);
+        }
+        return [...ids];
+      },
       onWithheldSentence:decision=>withheldSpans.push(decision),
     });
     const answerStatus=sourceScopeCheck.withheldSentenceCount&&answerCheck.withheldUnsupportedQuantitySentenceCount?'answer-with-evidence-withheld'

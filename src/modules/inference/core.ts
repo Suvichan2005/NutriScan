@@ -812,6 +812,8 @@ function numericMentionsAreSupported(
 export function validateNaturalAnswerText(
   answer: string,
   context: Pick<AssistValidationContext, 'package' | 'question' | 'evidence' | 'calculations'> & {
+    /** Source-derived numbers may support only sentences that cite that source. */
+    sourceIdsForSentence?: (sentence: string) => readonly string[];
     onWithheldSentence?: (decision: { text: string; reason: 'unsupported-quantity' | 'unsupported-basis' }) => void;
   },
 ): { answer: string; acceptedSentenceCount: number; withheldUnsupportedQuantitySentenceCount: number; calculationIds:string[] } {
@@ -865,14 +867,12 @@ export function validateNaturalAnswerText(
     // representation is admitted; question numbers never corroborate nutrients.
     ...numericOccurrences(context.question??'').filter(item=>item.mention.dimension==='age-year'&&item.operator===null)
       .map(item=>`${item.mention.rawValue} year-old`),
-    ...(context.evidence ?? []).flatMap(source => [
-      source.title, source.publisher, source.url, source.summary, source.limitations,
-      // A publication year is bibliographic evidence, not a package quantity.
-      // Preserve it only when it comes from a retrieved source's dated metadata.
-      ...(source.publishedAt?.match(/^\d{4}(?:-|$)/) ? [source.publishedAt.slice(0, 4)] : []),
-    ]),
     ...currentCalculations.map(calculation => calculationEvidenceText(calculation)),
   ].filter(Boolean);
+  const sourceEvidenceById=new Map((context.evidence??[]).map(source=>[source.id,[
+    source.title,source.publisher,source.url,source.summary,source.limitations,
+    ...(source.publishedAt?.match(/^\d{4}(?:-|$)/)?[source.publishedAt.slice(0,4)]:[]),
+  ].filter(Boolean).join(' ')]));
   const calculatedResults = currentCalculations.map(item => ({ id:item.id,value: item.result, unit: item.unit }));
   const contextText=numericPresentationText(context.question??'');
   const contextIdentifiers=new Set(numericOccurrences(contextText).flatMap(item=>{
@@ -896,8 +896,10 @@ export function validateNaturalAnswerText(
       // comparator or basis. Keep the original prose for rendering.
       const checkingText=numericPresentationText(sentence);
       const sentenceCalculationIds=new Set<string>();
-      const quantitySupported = numericMentionsAreSupported(checkingText, evidenceTexts, calculatedResults,contextIdentifiers,id=>sentenceCalculationIds.add(id));
-      const basisSupported = quantitySupported && basisMentionsAreSupported(checkingText, evidenceTexts,contextIdentifiers,currentCalculations);
+      const citedSourceTexts=(context.sourceIdsForSentence?.(sentence)??[]).flatMap(id=>sourceEvidenceById.has(id)?[sourceEvidenceById.get(id)!]:[]);
+      const sentenceEvidenceTexts=[...evidenceTexts,...citedSourceTexts];
+      const quantitySupported = numericMentionsAreSupported(checkingText, sentenceEvidenceTexts, calculatedResults,contextIdentifiers,id=>sentenceCalculationIds.add(id));
+      const basisSupported = quantitySupported && basisMentionsAreSupported(checkingText, sentenceEvidenceTexts,contextIdentifiers,currentCalculations);
       if (!quantitySupported || !basisSupported) {
         withheldUnsupportedQuantitySentenceCount += 1;
         context.onWithheldSentence?.({ text: sentence, reason: quantitySupported ? 'unsupported-basis' : 'unsupported-quantity' });
