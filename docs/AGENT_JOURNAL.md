@@ -1254,4 +1254,4 @@ Reviewed the exact-source-summary quote requirement introduced at `e7114e4`. The
 
 - Browser review on synthetic pasted-label input exposed a general provenance issue: an arbitrary parser `name` could be a precautionary-allergen line and was promoted into the package header. The shared identity selector now requires user correction/detail, active reconstruction, confidence-qualified photo-linked OCR, or a clearly marked Gemini suggestion; otherwise the title remains generic.
 - The same review found repetitive allergy copy. Findings now quote the matched label line once and distinguish precautionary wording from direct mentions while preserving uncertainty. Updated tests and the existing browser acceptance contract.
-- Verification: 845 tests passed, 2 skipped; TypeScript clean; local-only Playwright journey passed at 390×844 and 1440×900. No Gemini/provider calls, scientific validation or human accuracy review.
+- Verification: 845 tests passed, 2 skipped; TypeScript and optimized production build clean; local-only Playwright journey passed at 390×844 and 1440×900. No Gemini/provider calls, scientific validation or human accuracy review.

@@ -1,7 +1,7 @@
 # NutriScan current runtime handoff
 ## M6 presentation correction — 27 October 2026
 
-Unlinked parser/OCR `name` and `brand` values no longer become the package header. Display identity now requires explicit user correction/description, active reconstruction, a sufficiently confident OCR observation linked to a photo, or a marked provisional model identity; otherwise it resolves to “Unidentified food package.” Allergy findings preserve the label evidence and distinguish precautionary “May contain” wording from a direct mention without duplicate disclaimers. Verified on branch `codex/m2-subject-scope-20261027`: full suite 845 passed/2 skipped, TypeScript clean, and provider-free browser acceptance passed at 390×844 / 1440×900. No live Gemini or scientific accuracy claim. Continue M2 source use and broad conversational quality work.
+Unlinked parser/OCR `name` and `brand` values no longer become the package header. Display identity now requires explicit user correction/description, active reconstruction, a sufficiently confident OCR observation linked to a photo, or a marked provisional model identity; otherwise it resolves to “Unidentified food package.” Allergy findings preserve the label evidence and distinguish precautionary “May contain” wording from a direct mention without duplicate disclaimers. Verified on the integrated feature branch: full suite 845 passed/2 skipped, TypeScript and optimized production build clean, and provider-free browser acceptance passed at 390×844 / 1440×900. No live Gemini or scientific accuracy claim. Continue M2 source use and broad conversational quality work.
 
 ## Current integration checkpoint — M6 photo-free text scan clarity (27 October 2026)
 

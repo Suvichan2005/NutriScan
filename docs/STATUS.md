@@ -1,7 +1,7 @@
 # Current engineering status
 ## M6 package identity and local finding copy (27 October 2026)
 
-Header identity is no longer taken from arbitrary parser `name`/`brand`: it requires an explicit correction, active Gemini reconstruction, user-provided product detail, high-confidence photo-linked OCR field, or clearly marked provisional model suggestion. Otherwise the header is generic. Local allergy findings retain evidence and uncertainty in shorter, non-repetitive wording. Full suite: 845 passed/2 skipped; `tsc --noEmit` clean; provider-free Playwright acceptance passed at mobile 390×844 and desktop 1440×900 with no provider/external calls, page errors, Axe violations or overflow. It used synthetic pasted-label input and establishes presentation/local behavior only. Real Gemini source use and scientific answer quality remain unverified M2 work.
+Header identity is no longer taken from arbitrary parser `name`/`brand`: it requires an explicit correction, active Gemini reconstruction, user-provided product detail, high-confidence photo-linked OCR field, or clearly marked provisional model suggestion. Otherwise the header is generic. Local allergy findings retain evidence and uncertainty in shorter, non-repetitive wording. Full suite: 845 passed/2 skipped; `tsc --noEmit` clean; optimized production build passed; provider-free Playwright acceptance passed at mobile 390×844 and desktop 1440×900 with no provider/external calls, page errors, Axe violations or overflow. It used synthetic pasted-label input and establishes presentation/local behavior only. Real Gemini source use and scientific answer quality remain unverified M2 work.
 
 ## M6 clarify photo-free label-text investigations (27 October 2026)
 
