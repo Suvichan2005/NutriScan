@@ -1446,6 +1446,10 @@ When a user asks a referential follow-up with a new explicit mass or volume afte
 
 Do not hardcode a paid-fallback warning in the consumer composer. Render the existing server-derived tier disclosure so free mode with paid fallback disabled does not imply a possible paid charge. Preserve the user's selected cloud/local mode and keep provider-routing diagnostics out of normal chat. Browser assertions cover the free-mode text and omission of the paid warning; saved-response rendering does not establish live provider behavior.
 
+# 27 October 2026 — Treat scoped global jurisdiction labels as global
+
+When no jurisdiction is supplied, accept a source whose normalized jurisdiction begins with `Global` or `International`, including population-scoped labels such as `Global; general adult population`. Do not require an exact jurisdiction string. Continue to reject unrelated country-specific guidance unless that source is explicitly requested and authorized. Keep population scope and non-individual limitations attached to the source.
+
 # 27 October 2026 — align each cited answer sentence to source topic text
 
 A source selected for the user's question cannot support every sentence in the generated answer. For each cited sentence, require an independent topic match against the source's title, summary and limitations; strip publisher identity and self-attribution first so mentioning an acronym such as WHO is not treated as evidence. Keep question-level relevance, jurisdiction and supplied-source inspection behavior. This is a topic-alignment check, not semantic entailment. During quantity validation, ignore internal evidence handles such as `SRC_1` and `CALC_2`; their digits are identifiers, not food measurements.

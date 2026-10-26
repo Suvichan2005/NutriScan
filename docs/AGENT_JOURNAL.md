@@ -1308,6 +1308,12 @@ Reviewed the exact-source-summary quote requirement introduced at `e7114e4`. The
 - The UI fixture remapped only the saved package evidence identifier to a synthetic package observation to satisfy the route contract. Model answer text and source record identities were unchanged. This is saved-provider-response UI integration evidence, not a new live provider, real package reconstruction, scientific entailment or human accuracy result. Ignored screenshots/receipt/runner: `.data/m2-source-acceptance-20261027/rendered-source-citations/` and `.data/m2-source-acceptance-20261027/render-source-citations.mts`.
 - The replay caught static consumer copy claiming paid fallback may charge despite effective free mode with fallback disabled. Both composer disclosures now use the server-derived tier disclosure; browser assertions confirm the free-tier wording and absence of the paid warning. TypeScript passed; focused Gemini/conversation suites89 passed; optimized production build passed. No provider requests were made.
 
+## 2026-10-27 — Restore scoped global guidance when jurisdiction is omitted
+
+- A provider-free typed-tool transfer found an India-first/high-blood-pressure sodium query returned no local guidance when the user had not explicitly supplied a country. `who-sodium` already existed, but `jurisdictionCompatible` required exact `Global`/`International`; the stored source scope is `Global; general adult population`.
+- Changed the general comparison to accept a normalized global/international prefix, preserving the source's full population scope and non-individual limitations. A synthetic model condition `hypertension` is not treated as user-authorized when the actual question only says “high blood pressure”; retrieval falls back to the full question and still returns the global WHO source. The U.S.-only AHA source remains excluded. Real tool execution: `who-sodium`, `externalRequestMade:false`.
+- Added positive/default and negative jurisdiction coverage. Focused tool suite80 passed/1 skipped; full suite861/2 skipped; `npm run typecheck` and optimized build passed. No model/provider request, scientific-entailment assertion or human evaluation.
+
 # 2026-10-27 — prevent cited sources from being borrowed across answer sentences
 
 - Replayed a source-matched sodium question with a supported population-scope statement followed by an unrelated scientific assertion citing the same record. The existing question-level topic guard accepted both; the cited publisher acronym also appeared in the source's own summary.

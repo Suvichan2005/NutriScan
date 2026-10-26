@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## M2 global-guidance jurisdiction fallback — 27 October 2026
+
+When no jurisdiction was supplied, `getNutritionGuidance` accepted only records whose entire jurisdiction string equaled `Global` or `International`. That excluded the existing WHO sodium record labelled `Global; general adult population` for a high-blood-pressure question when the user omitted country. It now accepts records whose normalized jurisdiction begins with `Global` or `International`, matching the existing explicit-jurisdiction behavior. Provider-free execution of the actual Gemini tool contract now returns `who-sodium`, its whole-diet/population limitation, and no external request; a model-normalized `hypertension` argument is safely ignored when only “high blood pressure” was stated, and the grounded question still retrieves the global source. US-only AHA guidance remains excluded. Full suite861 passed/2 skipped, TypeScript and optimized build pass. This is source-tool integration evidence, not Gemini selection, clinical advice accuracy or a live provider result.
+
 ## M2 source rendering and tier disclosure — 27 October 2026
 
 This UI correction is now integrated with remote branch `codex/generalized-package-intelligence-wip` through `1f34dbe` (sentence-to-source alignment and separate Open Food Facts allergen-trace display). The resulting combined checkout passes all 860 tests (2 skipped), `npm run typecheck`, and the optimized `npm run build`; this supersedes earlier intermediate notes that typecheck was still failing on Vitest `.not` matcher declarations.

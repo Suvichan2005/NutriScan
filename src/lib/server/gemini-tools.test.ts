@@ -815,7 +815,7 @@ describe('Gemini tool retrieval boundaries', () => {
       condition: 'CKD',
     }, context('How should adults with CKD handle sodium and potassium?'));
 
-    expect(general.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium']);
+    expect(general.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium', 'who-sodium']);
 
     const explicit = await executeGeminiTool('get_nutrition_guidance', {
       query: 'What does NIDDK say about potassium in CKD?',
@@ -823,6 +823,22 @@ describe('Gemini tool retrieval boundaries', () => {
 
     expect(explicit.evidence?.map(source => source.id)).toEqual(['niddk-ckd-adult-eating', 'kdigo-ckd-2024-sodium']);
     expect(explicit.evidence?.some(source => source.id === 'niddk-celiac-eating-2020')).toBe(false);
+  });
+
+  it('uses scoped global guidance without a supplied jurisdiction and excludes US-only advice', async () => {
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'sodium',
+      // The model may normalize the user's wording; an ungrounded condition
+      // argument is discarded and retrieval falls back to the actual question.
+      condition: 'hypertension',
+    }, context('How should an adult with high blood pressure think about sodium in this food?'));
+
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.map(source => source.id)).toEqual(['who-sodium']);
+    expect(result.evidence?.[0].jurisdiction).toBe('Global; general adult population');
+    expect(result.evidence?.[0].limitations).toMatch(/not an individualized prescription/i);
+    expect(result.evidence?.map(source => source.id)).not.toContain('aha-sodium-guidance');
+    expect(result.output).toMatchObject({ externalRequestMade: false });
   });
 
   it('uses only the user question or explicitly supplied profile, not invented tool arguments', async () => {
