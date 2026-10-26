@@ -57,3 +57,7 @@ Knowledge stores, browser interactions and remote auth/proxy remain unverified. 
 ## Offline runtime-source acceptance checkpoint
 
 Actual source readers from the study worktree successfully queried original ThinkBook FoodOn/WHO/USDA stores using explicit read-only original-root selection.25 checks passed including negative unknown/missing-store paths, six pinned model hashes, seven source/store hashes unchanged before/after and zero fetch attempts. No embedding/model/provider execution or corpus copies.304025780 bytes of selected store/catalog/source inputs inventoried, model hashes separate. Sanitized receipt committed; raw record text not logged. Runtime asset readability is verified locally only; hosted mount policy, scientific applicability, Gemini source selection and final human review remain separate.
+
+## Primary bibliography verification checkpoint
+
+Verified accessible primary metadata/documentation for8/9 existing entries, recording depth. L02 publisher429/PubMed unusable extraction remains access-limited, not upgraded to full-method verification. Proposed2 Unicode author corrections in a hash-bound overlay/private copy; original owner bibliography/scientific result fields unchanged. Primary-source URLs and boundaries retained.40 structural tests pass. Integration remote moved to3dceade; existing evaluation definitions/runners unchanged from this branch's0bfe794 base. No merge or production edit.
