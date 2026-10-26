@@ -1389,3 +1389,5 @@ Reuse bounded sources actually cited in non-outdated turns as model context; do 
 27 October: after a failed remote turn, enabling Gemini from local-only mode must not send the package by itself. Offer a separate explicit retry after the mode change, preserve the active scan and replace the existing turn instead of duplicating it.
 
 27 October: keep the report-facing architecture diagram aligned with the natural plain-text answer route and its actual evidence boundaries. Link implementation to acceptance receipts, label mock/provider-free evidence as such, and do not imply semantic entailment, live model acceptance or a replacement for the private report template.
+
+27 October: exact curated ingredient→outcome relations may backfill a missed semantic-index result, but only when both the subject and outcome occur in package ingredients or current user-authorized context. The model-authored search query alone cannot authorize a relation. Preserve separate source IDs/endpoints and limitations; do not force lookups for unrelated questions. Offline tests establish tool-contract behavior only.

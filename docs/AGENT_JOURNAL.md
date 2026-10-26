@@ -1178,6 +1178,12 @@ Checkpoint checks:756 passed/one skipped with four workers, TypeScript and final
 - Searched the owner-designated Drive handoff folder and exact `NutriScan-knowledge-runtime-20261026.zip` name. The manifest, checksum sidecar and restore/licensing notes are present, but the ZIP itself is missing from the folder listing and exact-name searches return no result. The migration directory has the manifest but no matching archive.
 - In the active checkout `.data/knowledge` and `.data/food-composition` are absent; pinned MiniLM model files are already present. Did not attempt extraction, download a substitute, or overwrite existing source data. Archive-backed source-store acceptance remains unavailable; proceed with M2 work that uses currently available sources.
 
+## 2026-10-27 — backfill exact source-linked ingredient outcomes
+
+- A shared M2 recall gap remained: a curated ingredient→outcome source could be withheld when semantic retrieval returned only unrelated candidates, even when the package and user context established the linked subject/outcome.
+- `search_knowledge` now merges exact source-linked relations independently of semantic rank. It requires the subject and outcome to appear in the active package/current question/authorized profile; an agent-authored retrieval query cannot authorize an unrelated subject. Distinct EFSA endpoints stay separate and carry source IDs, population, exposure and limitations.
+- Regression set includes semantic miss recovery, relevant package and explicit research cases, and negative model-query-only attempts. Focused suites91/1 skipped; full suite840/2 skipped; TypeScript passes. Source commit `7b25688` is on `codex/m2-subject-scope-20261027`. No live provider or human scientific evaluation.
+
 ## 2026-10-26 — verify saved portion comparison at mobile and desktop widths
 
 - Browser replay first exposed that the existing local server was serving a stale Next manifest/chunk pairing: the page chunk returned500 and the error boundary replaced the app shell. The existing `next start` process was restarted against its intact configured build directory; app shell then loaded normally. No source changes were needed for this environment mismatch.
