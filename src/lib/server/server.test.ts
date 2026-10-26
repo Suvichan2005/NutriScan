@@ -846,19 +846,35 @@ describe('provider validation, independent of provider invocation', () => {
   });
   it('accepts a natural paraphrase with a topic-matched source while preserving source attribution',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const source=getNutritionGuidance({query:'sodium blood pressure',jurisdiction:'India',maxResults:3})[0];
+    const source=getNutritionGuidance({query:'sodium blood pressure',jurisdiction:'India',maxResults:3}).find(item=>item.id==='who-sodium');
     expect(source).toBeDefined();
     const question='What does WHO say about sodium and blood pressure for this product?';
-    const answer='The supplied label lists sodium in its nutrition panel. WHO guidance discusses sodium intake in relation to blood pressure at a population level SRC_1.';
+    const answer='The supplied label lists sodium in its nutrition panel. WHO describes sodium reduction as population guidance for the whole diet, not an individual prescription SRC_1.';
     const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
     vi.stubGlobal('fetch',fetcher);
     const observation={id:'sodium-line',field:'sodium',text:'Sodium is listed on the nutrition panel.',side:'back' as const,confidence:100,origin:'user' as const};
     const reconstruction={identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Synthetic package summary.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};
     const data=assistInput.parse({consent:true,question,evidence:[source!],package:{id:'unsupported-source-claim',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,observations:[observation],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
     const result=await assist(data);
-    expect(result.answer).toContain('WHO guidance discusses sodium intake in relation to blood pressure at a population level');
+    expect(result.answer).toContain('WHO describes sodium reduction as population guidance for the whole diet, not an individual prescription');
     expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-ready',acceptedSentences:2,withheldSourceScopeSentences:0});
     expect(result.agentEvidence.map(item=>item.id)).toContain(source!.id);
+    expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[source!.id],calculationIds:[]});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it('withholds an off-topic scientific assertion even when its source matches the question',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const source=getNutritionGuidance({query:'sodium blood pressure',jurisdiction:'India',maxResults:3}).find(item=>item.id==='who-sodium');
+    expect(source).toBeDefined();
+    const question='What does WHO say about sodium and blood pressure for this product?';
+    const supported='WHO describes sodium reduction as population guidance for the whole diet, not an individual prescription SRC_1.';
+    const answer=`${supported} The same WHO source says dietary fibre prevents heart attacks SRC_1.`;
+    const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question,evidence:[source!],package:{id:'source-claim-sentence-scope',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
+    const result=await assist(data);
+    expect(result.answer).toBe(`WHO describes sodium reduction as population guidance for the whole diet, not an individual prescription ${source!.title}.\n\nI left out one or more statements because their cited record was unavailable, unrelated to this question, or outside the stated scope.`);
+    expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-with-source-scope-withheld',acceptedSentences:1,withheldSourceScopeSentences:1});
     expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[source!.id],calculationIds:[]});
     expect(fetcher).toHaveBeenCalledTimes(1);
   });

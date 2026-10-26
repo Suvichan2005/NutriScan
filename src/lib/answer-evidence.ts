@@ -28,6 +28,16 @@ export function renderAnswerEvidenceReferences(
 }
 const normalized = (text:string) => text.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 const includesIdentity = (text:string,identity:string) => !!identity && ` ${text} `.includes(` ${identity} `);
+function sourceTopicMatchesSentence(source:Pick<EvidenceSource,'title'|'publisher'|'summary'|'limitations'>,sentence:string){
+  // Publisher names and self-attribution (for example, "WHO says") establish
+  // where a statement came from, not whether that record covers its topic.
+  const publisher=source.publisher.split(';',1)[0].replace(/\([^)]*\)/g,'').trim();
+  const publisherWords=publisher.match(/[\p{L}\p{N}]+/gu)??[];
+  const acronym=publisherWords.length>=3?publisherWords.filter(word=>!['and','of','the','for'].includes(word.toLowerCase())).map(word=>word[0]).join(''):'';
+  const identities=[publisher,...(acronym.length>=3&&acronym.length<=8?[acronym]:[])].filter(Boolean);
+  const removeIdentity=(text:string)=>identities.reduce((value,identity)=>value.replace(new RegExp(`\\b${identity.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'gi'),' '),text);
+  return isLocalEvidenceTopicallyRelevant({title:source.title,publisher:'',summary:removeIdentity(`${source.summary} ${source.limitations}`)},sentence);
+}
 const contextualFollowupPattern=/^(?:(?:(?:and|also)\s+)?(?:what|how)\s+about\s+(?:that|it|this|them|those|the same|(?:just\s+|only\s+)?(?:\d|one\b|two\b|three\b|four\b|five\b|half\b|whole\b|a portion\b|a serving\b))|(?:(?:and|also)\s+)?(?:does|is|can|should|would)\s+(?:that|it)\b|(?:and\s+)?for\s+(?:that|it|the same|(?:just\s+|only\s+)?(?:\d|one\b|two\b|three\b|four\b|five\b|half\b|whole\b|a portion\b|a serving\b)))|\b(?:same as before|does that apply|what does that mean)\b/i;
 const isContextDependentFollowup=(question:string)=>contextualFollowupPattern.test(question.trim());
 
@@ -145,6 +155,7 @@ export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<Eviden
       const referenced = [...new Map([...handleSources, ...identitySources].map(source => [source.id, source])).values()];
       const invalidSource = referenced.some(source => !inspectingSuppliedSource
         && (!isLocalEvidenceTopicallyRelevant(source, topicalQuestion)
+          || !sourceTopicMatchesSentence(source, sentence)
           || !isGuidanceEvidenceInScope(source, topicalQuestion, explicitlySharedCountry)));
       if (!unresolvedHandle && !invalidSource) return true;
       withheldSentenceCount += 1;

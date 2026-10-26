@@ -570,7 +570,8 @@ const numericMentionPattern = /(?<![\p{L}\p{N}_])(-?(?:\d{1,3}(?:[.,]\d{3})+(?:[
 
 /** Flatten presentation syntax only: never evaluate model-authored mathematics. */
 function numericPresentationText(text: string): string {
-  return text.replace(/\*\*([^*\n]+)\*\*/g, '$1').replace(/__([^_\n]+)__/g, '$1')
+  return text.replace(/\b(?:OBS|IMG|SRC|CALC|CAND|ROW)_[A-Z0-9]+\b/gi, '')
+    .replace(/\*\*([^*\n]+)\*\*/g, '$1').replace(/__([^_\n]+)__/g, '$1')
     .replace(/\\(?:text|mathrm)\{([^{}\\\n]*)\}/g, '$1')
     .replace(/\\%/g, '%')
     .replace(/\\(?:leq|le)(?![a-z])/g, '≤')
