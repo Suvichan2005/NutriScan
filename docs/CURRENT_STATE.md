@@ -2,7 +2,7 @@
 
 **As of:** 27 October 2026
 **Active checkout:** `C:\Users\KIIT0001\Documents\Seventh Semester Project NutriScan\NutriScan-study-ops`
-**Branch / HEAD:** `codex/m2-subject-scope-20261027` / `0e079cdec25b7ad8f3697f8f68cc45bded787ff4` (pushed; includes integration through `c7eb429`).
+**Branch / HEAD:** `codex/m2-subject-scope-20261027` / `86bb79a403de3cc89d253d44f5ae6073368fc9e3` (implementation checkpoint; includes integration through `c7eb429`).
 **Other checkout:** the original `NutriScan` worktree remains separate and untouched by this work. Two registered worktrees are present.
 **Working tree:** tracked files clean; a pre-existing untracked `scripts/evaluation/__pycache__/` remains. No dev server is running.
 
