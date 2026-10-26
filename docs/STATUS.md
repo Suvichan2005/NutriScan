@@ -1443,3 +1443,5 @@ Removed the final-answer exact-summary-quote gate because source summaries are N
 ## 27 October — source-bearing answer rendering and tier disclosure
 
 Saved free-provider guidance output renders linked WHO source cards in the conversation at mobile and desktop sizes. A 50 g follow-up reuses package/context, sends no photos, and shows no stale citation. The UI replay uses saved provider output and a synthetic UI observation mapping; no new provider request or scientific accuracy claim. Also replaced static “Paid fallback may charge” text with the effective server-tier disclosure. TypeScript, 89 focused tests and optimized build pass. Private receipt/screenshots: `.data/m2-source-acceptance-20261027/rendered-source-citations/`.
+
+After merging integration through `1f34dbe`, the complete repository suite passes 860 tests with 2 skipped, `npm run typecheck` passes, and the optimized production build passes. This is the current verification state; it supersedes the earlier intermediate typecheck warning in the sentence-alignment entry.
