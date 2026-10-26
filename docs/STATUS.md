@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 calculation relevance contract (26 October 2026)
+
+Reinforced the calculator tool declaration after a saved real transfer explicitly calculated an unrequested nutrient. Focused tool-instruction suite50/50 and optimized production build/TypeScript pass. This does not enforce result filtering or establish fresh-model adherence; M2 answer usefulness remains active.
+
 ## M2 neutral-user answer transfer (26 October 2026)
 
 Current UI replay of saved actual answer `3d7e5cc6-1519-475e-ab04-9b0efbc8a70f` at390×844 and1440×900 retains all requested portion results, keeps milk unknown without label evidence and visibly marks provisional readings. No profile/photos or external/provider requests; no page errors. This is presentation/continuity evidence, not new model or extraction accuracy. An unrequested fat calculation is also present in the card.

@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## M2 tool-selection clarification — 26 October 2026
+
+Saved real trace `3d7e5cc6-1519-475e-ab04-9b0efbc8a70f` recorded four calculator calls, including fat beyond the requested energy/fibre/sodium. The general assistant contract already says calculate only requested/necessary values; the tool declaration now repeats this relevance constraint and explicitly says not to calculate other rows just to populate UI. Focused `gemini-agent.test.ts`50/50 and optimized production build/TypeScript pass. Five protected owner-file hashes are unchanged. This is a model-visible contract adjustment; it has not yet shown adherence in a fresh answer. Do not retry after the recorded free-route failures until availability changes.
+
 ## M2 neutral-query UI transfer replay (26 October 2026)
 
 Replayed exact saved real answer `3d7e5cc6-1519-475e-ab04-9b0efbc8a70f` through the current production UI from its saved package reconstruction. For the neutral-user45 g travel question, the answer shows169.2 kcal,5.58 g fibre,1027.35 mg sodium and keeps milk unknown because no ingredient/allergen statement was available. Visible calculation cards say “Based on an unverified interpretation”; the assistant footer also marks provisional package figures. At390×844 and1440×900, browser assertions passed with no page errors, profile, photos or outbound requests. Receipts/screenshots: `.data/m2-answer-usefulness-20261026/neutral-45g-transfer-*`. This replays an actual model answer; the API response was intercepted, so it is not fresh provider or label-accuracy evidence. The model also invoked/displayed an unrequested fat calculation; log as a minor question-scope issue for broader transfer review, without adding a nutrient keyword rule.

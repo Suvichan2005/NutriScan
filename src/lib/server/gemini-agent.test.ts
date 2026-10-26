@@ -488,6 +488,7 @@ describe('natural NutriScan agent contract', () => {
     expect(instruction.length).toBeLessThan(2_000);
     expect(tools.map(tool => tool.name)).toContain('calculate_nutrition');
     expect(tools.find(tool => tool.name === 'calculate_nutrition')?.description).toContain('do not repeat those calculations');
+    expect(tools.find(tool => tool.name === 'calculate_nutrition')?.description).toContain('Calculate only nutrients the user asks about or that are necessary to answer the request; do not calculate other package rows just to populate UI');
     expect(tools.find(tool => tool.name === 'search_knowledge')?.description).toContain('Use for explicit research/source requests');
     expect(JSON.stringify(tools.find(tool => tool.name === 'get_nutrition_guidance'))).toContain('Omit unrelated package details');
     expect(tools.map(tool => tool.name)).not.toContain('show_nutrition_table');

@@ -1,4 +1,9 @@
 # Sanitized engineering journal
+## 2026-10-26 — constrain native calculator calls to the request
+
+- Review of actual trace `3d7e5cc6-1519-475e-ab04-9b0efbc8a70f` showed the model requested energy, fibre, fat and sodium calculations, although the neutral-user question asked only for energy, fibre and sodium.
+- The general agent instruction already says to calculate requested/necessary values only. Repeated this rule at the calculator tool declaration and clarified that other rows must not be calculated just to fill the UI; no result filtering was introduced.
+- Focused `gemini-agent.test.ts`50/50; optimized production build and TypeScript pass; owner hashes preserved. Fresh free-model adherence is unverified and will wait for changed provider availability.
 ## 2026-10-26 — replay neutral-user quantity and unknown-allergen transfer
 
 - Located the distinct 45 g travel question in saved real-provider trace `3d7e5cc6-1519-475e-ab04-9b0efbc8a70f`; it requested energy, fibre, sodium and whether milk could be confirmed, with earlier health discussion explicitly out of scope.

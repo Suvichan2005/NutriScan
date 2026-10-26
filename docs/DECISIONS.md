@@ -1,4 +1,8 @@
 # Chronological decisions
+## 26 October 2026 — keep native calculations scoped to the question
+
+An actual neutral-user answer asked the native calculator for an extra nutrient outside the question. Repeat the general requested-or-necessary constraint in the calculator tool declaration so the model sees it at selection time. Keep deterministic result validation intact and do not hide calculations with a keyword filter. A prompt contract is not proof of adherence; defer provider verification until free-model availability changes.
+
 ## 26 October 2026 — verify free-route exhaustion in the client
 
 Keep configured-free-model exhaustion distinct from project spend guards and ordinary provider failures. State only that the current package/conversation remain available in the scan; do not imply the user opted into persistent history or imply paid fallback. Intercepted local UI replay confirms the wording and retry control at mobile and desktop sizes while making no provider request. This is presentation evidence, not evidence that Google failed for a particular reason in fresh runtime traffic.
