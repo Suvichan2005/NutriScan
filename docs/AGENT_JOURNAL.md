@@ -1,4 +1,11 @@
 # Sanitized engineering journal
+## 2026-10-26 — make incomplete label recovery reachable and local
+
+- A local Tesseract run on the exploratory two-photo Amul Lassi package kept label text for review but did not establish ingredient/allergen details; sodium remained unknown. The UI already promised that pasted label text stays in the browser, but its handler could call Gemini when cloud mode was enabled, and the text-entry control disappeared after a scan.
+- Added “Add label text” to active investigations and made text entry/merge always local. A separate future analysis/follow-up remains the explicit remote action. Added keyboard focusability to the conversation scroll region after Axe found the missing focus target.
+- Provider-free browser acceptance on the real development photos reproduced the unknown field, added visible ingredient and allergen wording as user-entered evidence, then answered separate ingredient and allergen follow-ups with an unverified-reading caveat. At390×844: no `/api/assist`, no external origins, no page errors or horizontal overflow, Axe0 violations. The only POSTs were same-origin `/api/evidence` lookups. Synthetic typed-label transfer at390×844 and1440×900 confirmed the active-scan entry point, preservation of the previous600 mg/100 g reading and added evidence, with no assist/external calls, errors or overflow. Receipts/screenshots remain ignored under `.data/local-text-recovery-acceptance/` and `.data/amul-lassi-local-text-recovery/`.
+- `tsc --noEmit` via the installed TypeScript binary and `git diff --check` pass. The interrupted pnpm wrapper was stopped and its moved packages restored; no build/package-manager migration was run afterward. Five owner files were hash-verified against their saved snapshots. Images are exploratory development material only, not human-reviewed truth or held-out evaluation.
+
 ## 2026-10-26 — audit source flow and qualitative-claim validation
 
 - Traced the natural follow-up route: request/tool evidence is merged into the effective source set; numeric and printed-basis claims are checked against package evidence, eligible sources and typed calculations; accepted prose resolves native references and source cards from source identities it names. Unused retrieval candidates do not become citations automatically.

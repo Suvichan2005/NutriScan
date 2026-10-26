@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M3/M6 recover incomplete photo readings locally (26 October 2026)
+
+Made local label-text supplementation reachable from active scans and ensured “Read label text” does not call Gemini despite the modal's browser-only promise. A provider-free real-photo journey on exploratory Amul Lassi images showed the OCR gap, added user-supplied ingredient/allergen wording, and answered follow-ups with entered-text provenance and caveats. Mobile Axe is clean; no remote/Gemini request, page error or overflow. A scroller focus issue found by Axe was fixed. Synthetic transfer at mobile/desktop retained the original sodium reading after supplemental text. This verifies recovery UX, not OCR or nutrition accuracy. Five protected owner files remain unchanged.
+
 ## M2 source-to-answer audit and M6 report diagram (26 October 2026)
 
 Added a traceable diagram for the production natural-answer path. Code inspection confirms supplied and tool-returned records enter the effective evidence set, precise quantities/bases are checked against current evidence and typed calculations, and consumer source cards follow sources identified in accepted prose. It also identifies an open functional gap: non-numeric scientific assertions are not deterministically rejected when unsupported. Retrieved-source presence or a citation card does not establish entailment. Next engineering work should address this boundedly and accept it across distinct development scenarios. This is not provider or human-study evidence and does not replace the unavailable private KIIT report/template.

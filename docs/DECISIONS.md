@@ -1,4 +1,8 @@
 # Chronological decisions
+## 26 October 2026 — keep explicit label-text entry local and available after scan
+
+The label-text dialog tells users that entered text stays in the browser, so submitting it must not initiate Gemini. Keep the merge and immediate answer local regardless of the selected cloud mode; users can choose a separately disclosed Gemini analysis or follow-up afterward. Expose the same correction path from an active package so unreadable OCR fields can be supplied without discarding existing scan evidence. Preserve user-entered provenance and uncertainty. Browser acceptance on exploratory photos establishes the interaction and privacy boundary, not label truth or OCR accuracy.
+
 ## 26 October 2026 — rebuild local fallback for explicit portions
 
 When a provider failure returns an answer for a follow-up, do not reuse the active audit if the question explicitly asks for a different portion. Resolve that amount against the current package and rebuild the local audit so fallback calculations reflect the user's request. Preserve the current fallback boundary and evidence provenance. Browser acceptance verifies this for corrected package observations at mobile and desktop sizes; it does not establish Gemini behavior or scientific accuracy.

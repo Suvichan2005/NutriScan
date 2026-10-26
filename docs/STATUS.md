@@ -1,4 +1,8 @@
 # Current engineering status
+## M3/M6 incomplete-label recovery (26 October 2026)
+
+Pasting label text now remains local and can supplement an active scan. The new footer action is reachable after OCR; user-entered ingredient/allergen text appears with entered-text provenance and supports separate natural follow-ups. Real exploratory Amul Lassi photos reproduced a local OCR gap; user-supplied wording resolved the interaction while remaining explicitly unverified. Mobile acceptance: zero Gemini/external calls, page errors, horizontal overflow or Axe violations. A keyboard focus target was added to the conversation scroller. Synthetic text transfer at mobile/desktop retained the original600 mg/100 g reading. `tsc --noEmit` and diff check pass. This is recovery UX evidence, not OCR accuracy, independent truth or Gemini behavior.
+
 ## M2 production source-use audit (26 October 2026)
 
 The natural follow-up route merges supplied and tool-returned source records into its effective evidence set, checks numeric values and printed bases against current package evidence/sources/calculations, and builds source cards from named source identities in accepted prose. This provides traceable retrieval/citation presentation but does not semantically validate qualitative scientific assertions. Unsupported non-numeric scientific claim rejection is an open implementation and acceptance gap. A code-grounded flow diagram is at `docs/diagrams/production-answer-evidence-flow.md`; no provider response or human evaluation was used.
