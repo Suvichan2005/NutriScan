@@ -79,6 +79,22 @@ function numericFieldMatches(value:number,expected:number):boolean{
   return Math.abs(value-expected)<=Number.EPSILON*Math.max(1,Math.abs(value),Math.abs(expected))*16;
 }
 
+function calculationOperationKey(calculation:Calculation):string{
+  return JSON.stringify([
+    calculation.nutrient,
+    calculation.input,calculation.inputUnit,calculation.basisAmount,
+    calculation.portion,calculation.portionUnit,calculation.result,calculation.unit,
+    calculation.countedPortion??null,calculation.packagePortion??null,
+  ]);
+}
+
+function equivalentCalculationOperations(left:Calculation,right:Calculation):boolean{
+  if(calculationOperationKey(left)!==calculationOperationKey(right))return false;
+  const leftRows=[...(left.interpretationIds??[])].sort();
+  const rightRows=[...(right.interpretationIds??[])].sort();
+  return !leftRows.length||!rightRows.length||leftRows.join('|')===rightRows.join('|');
+}
+
 export const assistInput = z.object({ analysisMethod:analysisMethodSchema.optional(), toolAccess:toolAccessInput.optional(), consent: z.literal(true), question: z.string().trim().min(1).max(2000), workspacePortion:workspacePortionSchema.optional(), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
   const observations=new Set(data.package.observations.map(observation=>observation.id));
   const visualImageIds=new Set(data.visualImages?.map(image=>image.imageId)??[]);
@@ -2233,6 +2249,22 @@ export async function assist(data: z.infer<typeof assistInput>) {
       :'I could not verify the precise quantities in that response, so I have not used them. The reconstructed package remains available to inspect.';
     const parsedComponents=assistantUiComponentSchema.array().max(6).safeParse(generated.uiComponents);
     let uiComponents=parsedComponents.success?parsedComponents.data:[];
+    const answerCalculationIds=new Set(answerCheck.calculationIds);
+    for(const match of answerCheck.answer.matchAll(/\bCALC_[A-Z0-9]+\b/g)){
+      const id=referenceAliases.fromModel.get(match[0]);
+      if(id)answerCalculationIds.add(id);
+    }
+    // If the accepted prose uses some of this turn's typed results, keep the
+    // interactive card aligned to those results. When the prose contains no
+    // calculation-backed value (or only cites a comparison portion), preserve
+    // the app-requested portion set so useful calculator output is not lost.
+    uiComponents=uiComponents.map(component=>{
+      if(component.type!=='portion-calculator')return component;
+      const used=component.calculationIds.filter(id=>answerCalculationIds.has(id));
+      return used.length&&used.length<component.calculationIds.length
+        ?{...component,calculationIds:used}
+        :component;
+    });
     const citedEvidence=selectCitedEvidence(answer,effectiveEvidence);
     uiComponents=uiComponents.filter(component=>component.type!=='source-reference-cards');
     if(citedEvidence.length){
@@ -2240,12 +2272,22 @@ export async function assist(data: z.infer<typeof assistInput>) {
       if(sourceCard.success)uiComponents=[...uiComponents,sourceCard.data].slice(0,6);
     }
     const referencedCalculationIds=new Set(uiComponents.flatMap(component=>component.calculationIds));
+    const representedCalculations=effectiveCalculations
+      .filter(calculation=>referencedCalculationIds.has(calculation.id))
+      ;
     // A natural answer can explicitly reuse a supplied historical operation
     // without requesting a new calculator. Preserve that typed provenance on
     // the saved turn, but only when its reference survived quantity validation.
     for(const match of answerCheck.answer.matchAll(/\bCALC_[A-Z0-9]+\b/g)){
       const id=referenceAliases.fromModel.get(match[0]);
       if(id)referencedCalculationIds.add(id);
+    }
+    for(const id of answerCheck.calculationIds){
+      const calculation=effectiveCalculations.find(item=>item.id===id);
+      if(!calculation)continue;
+      if(representedCalculations.some(represented=>equivalentCalculationOperations(represented,calculation)))continue;
+      referencedCalculationIds.add(id);
+      representedCalculations.push(calculation);
     }
     const responseCalculations=effectiveCalculations.filter(calculation=>referencedCalculationIds.has(calculation.id)).slice(0,20);
     const agentEvidence=effectiveEvidence

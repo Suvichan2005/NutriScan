@@ -845,13 +845,14 @@ describe('provider validation, independent of provider invocation', () => {
   });
   it('renders a requested-portion calculator from saved reconstruction without a redundant model tool call',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const observation={id:'nutrition-line',field:'label-note',text:'Carbohydrate 66 g per 100 g; dietary fibre 10.2 g per 100 g',side:'back' as const,confidence:null,origin:'user' as const};
+    const observation={id:'nutrition-line',field:'label-note',text:'Carbohydrate 66 g per 100 g; dietary fibre 10.2 g per 100 g; total fat 8 g per 100 g',side:'back' as const,confidence:null,origin:'user' as const};
     const reconstruction={
       identity:{brand:null,name:'Example oats',variant:null,status:'provisional' as const,evidence:{observationIds:['nutrition-line'],imageRegions:[]}},
       serving:null,
       nutritionRows:[
         {rowId:'carbohydrate-r1',nutrient:'Carbohydrate',printedLabel:'Carbohydrate',printedValue:'66 g',value:66,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['nutrition-line'],imageRegions:[]}},
         {rowId:'fibre-r1',nutrient:'Dietary fibre',printedLabel:'Dietary fibre',printedValue:'10.2 g',value:10.2,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['nutrition-line'],imageRegions:[]}},
+        {rowId:'fat-r1',nutrient:'Total fat',printedLabel:'Total fat',printedValue:'8 g',value:8,unit:'g',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:['nutrition-line'],imageRegions:[]}},
       ],
       ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'A saved, evidence-linked interpretation.',
       revision:2,updatedAt:new Date().toISOString(),model:'gemini-3.6-flash',current:true,
@@ -872,6 +873,7 @@ describe('provider validation, independent of provider invocation', () => {
       expect.objectContaining({nutrient:'fiber',portion:70,result:7.14,unit:'g'}),
     ]));
     expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculationIds:result.calculations.map(calculation=>calculation.id)}));
+    expect(result.calculations.some(calculation=>calculation.nutrient==='fat')).toBe(false);
     const requestBody=JSON.parse(String(fetcher.mock.calls[0][1]?.body));
     expect(requestBody.generationConfig).not.toHaveProperty('responseJsonSchema');
     const supplied=JSON.parse(requestBody.contents[0].parts[0].text) as {calculations:Array<{portion:number;nutrient:string;result:number}>};

@@ -733,7 +733,13 @@ function numericIdentifier(text:string,index:number,rawValue:string){
     :word?`${word.toLocaleLowerCase('en')} ${rawValue}`:null;
 }
 
-function numericMentionsAreSupported(claim: string, citedSpans: string[],calculatedResults:{value:number;unit:string}[]=[],contextIdentifiers:ReadonlySet<string>=new Set()): boolean {
+function numericMentionsAreSupported(
+  claim: string,
+  citedSpans: string[],
+  calculatedResults:{value:number;unit:string;id?:string}[]=[],
+  contextIdentifiers:ReadonlySet<string>=new Set(),
+  onCalculationMatch?:(id:string)=>void,
+): boolean {
   claim = numericPresentationText(claim);
   const claimed = numericOccurrences(claim);
   if (!claimed.length) return true;
@@ -745,7 +751,7 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[],calcula
   // A value such as 4.712 can look locale-ambiguous when parsed back from text,
   // which incorrectly rejects normal display rounding to 4.7. Keep the
   // unit-derived dimension and trust the structured numeric value.
-  const calculated=calculatedResults.flatMap(item=>numericMentions(`${item.value} ${item.unit}`).map(mention=>({...mention,localeAmbiguous:false})));
+  const calculated=calculatedResults.flatMap(item=>numericMentions(`${item.value} ${item.unit}`).map(mention=>({...mention,localeAmbiguous:false,id:item.id})));
   const references=hasMeasuredAmount(claim,contextIdentifiers)?[]:referenceBasisRanges(claim);
   return claimed.every(({mention:value,operator,index,timeBasis})=>{
     if(operator===null&&timeBasis===null&&references.some(range=>index>=range.start&&index<range.end))return true;
@@ -782,7 +788,7 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[],calcula
       const roundingTolerance=0.5*10**(-value.decimalPlaces)*value.factor;
       return Math.abs(value.value-evidence.value)<=roundingTolerance+tolerance;
     });
-    const matchesCalculation=calculated.some(result=>{
+    const matchingCalculations=calculated.filter(result=>{
       if(timeBasis!==null||operator!==null||value.dimension!==result.dimension||value.literalUnit!==result.literalUnit||value.localeAmbiguous||result.localeAmbiguous)return false;
       // Do not let rounding turn a small non-zero amount into an asserted zero.
       if(value.value===0||result.value===0)return value.value===result.value;
@@ -790,7 +796,8 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[],calcula
       const floatingTolerance=Number.EPSILON*Math.max(1,Math.abs(value.value),Math.abs(result.value))*8;
       return Math.abs(value.value-result.value)<=roundingTolerance+floatingTolerance;
     });
-    return matchesEvidence||matchesCalculation;
+    for(const result of matchingCalculations)if(result.id)onCalculationMatch?.(result.id);
+    return matchesEvidence||matchingCalculations.length>0;
   });
 }
 
@@ -806,7 +813,7 @@ export function validateNaturalAnswerText(
   context: Pick<AssistValidationContext, 'package' | 'question' | 'evidence' | 'calculations'> & {
     onWithheldSentence?: (decision: { text: string; reason: 'unsupported-quantity' | 'unsupported-basis' }) => void;
   },
-): { answer: string; acceptedSentenceCount: number; withheldUnsupportedQuantitySentenceCount: number } {
+): { answer: string; acceptedSentenceCount: number; withheldUnsupportedQuantitySentenceCount: number; calculationIds:string[] } {
   const normalized = answer.replace(/\r\n?/g, '\n').trim().slice(0, 7000);
   const pkg = context.package;
   const supersededObservationIds=new Set(pkg.observations.flatMap(observation=>observation.supersedesObservationIds??[]));
@@ -865,13 +872,14 @@ export function validateNaturalAnswerText(
     ]),
     ...currentCalculations.map(calculation => calculationEvidenceText(calculation)),
   ].filter(Boolean);
-  const calculatedResults = currentCalculations.map(item => ({ value: item.result, unit: item.unit }));
+  const calculatedResults = currentCalculations.map(item => ({ id:item.id,value: item.result, unit: item.unit }));
   const contextText=numericPresentationText(context.question??'');
   const contextIdentifiers=new Set(numericOccurrences(contextText).flatMap(item=>{
     if(item.mention.dimension!=='unitless'||item.mention.literalUnit||item.operator!==null||item.timeBasis!==null)return[];
     const identifier=numericIdentifier(contextText,item.index,item.mention.rawValue);return identifier?[identifier]:[];
   }));
   const acceptedLines: string[] = [];
+  const acceptedCalculationIds=new Set<string>();
   let acceptedSentenceCount = 0;
   let withheldUnsupportedQuantitySentenceCount = 0;
   for (const line of normalized.split('\n')) {
@@ -886,13 +894,15 @@ export function validateNaturalAnswerText(
       // Strong-emphasis delimiters are presentation, not part of an amount,
       // comparator or basis. Keep the original prose for rendering.
       const checkingText=numericPresentationText(sentence);
-      const quantitySupported = numericMentionsAreSupported(checkingText, evidenceTexts, calculatedResults,contextIdentifiers);
+      const sentenceCalculationIds=new Set<string>();
+      const quantitySupported = numericMentionsAreSupported(checkingText, evidenceTexts, calculatedResults,contextIdentifiers,id=>sentenceCalculationIds.add(id));
       const basisSupported = quantitySupported && basisMentionsAreSupported(checkingText, evidenceTexts,contextIdentifiers,currentCalculations);
       if (!quantitySupported || !basisSupported) {
         withheldUnsupportedQuantitySentenceCount += 1;
         context.onWithheldSentence?.({ text: sentence, reason: quantitySupported ? 'unsupported-basis' : 'unsupported-quantity' });
         continue;
       }
+      for(const id of sentenceCalculationIds)acceptedCalculationIds.add(id);
       acceptedSentences.push(sentence);
       acceptedSentenceCount += 1;
     }
@@ -906,6 +916,7 @@ export function validateNaturalAnswerText(
     answer: acceptedLines.join('\n').trim(),
     acceptedSentenceCount,
     withheldUnsupportedQuantitySentenceCount,
+    calculationIds:[...acceptedCalculationIds],
   };
 }
 

@@ -65,6 +65,29 @@ function reconstructionFixture() {
 }
 
 describe('provider-independent inference output validation', () => {
+  it('returns only typed calculations that support accepted natural-answer quantities',()=>{
+    const makeCalculation=(id:string,nutrient:'energy'|'fiber'|'fat'|'sodium',result:number,unit:string):Calculation=>({
+      id,label:`${nutrient} in 45 g`,nutrient,input:result,inputUnit:unit,basisAmount:100,portion:45,portionUnit:'g',result,unit,
+      formula:'typed package calculation',observationIds:[],assumptions:[],
+    });
+    const calculations=[
+      makeCalculation('energy-45g','energy',169.2,'kcal'),
+      makeCalculation('fiber-45g','fiber',5.58,'g'),
+      makeCalculation('fat-45g','fat',4.455,'g'),
+      makeCalculation('sodium-45g','sodium',1027.35,'mg'),
+    ];
+    const checked=validateNaturalAnswerText('For 45 g: energy is 169.2 kcal, dietary fibre is 5.58 g, and sodium is 1027.35 mg.',{
+      package:fixturePackage,question:'How much energy, fibre and sodium in 45 g?',calculations,
+    });
+    expect(checked.answer).toContain('energy is 169.2 kcal');
+    expect(checked.calculationIds).toEqual(['energy-45g','fiber-45g','sodium-45g']);
+    const rejected=validateNaturalAnswerText('Energy is 169.2 kcal. Fat is 99 g.',{
+      package:fixturePackage,calculations,
+    });
+    expect(rejected.calculationIds).toEqual(['energy-45g']);
+    expect(rejected.answer).not.toContain('Fat is 99 g');
+  });
+
   it('does not let superseded model rows, original text or old calculations override a correction', () => {
     const pkg=packageSchema.parse({...fixturePackage,nutrients:[],observations:[{id:'drink-label',field:'label-note',text:'Protein 3.2 g per 100 ml',origin:'user',side:'text',confidence:null}],reconstruction:{
       ...reconstructionFixture(),revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture',current:true,serving:null,ingredients:[],statements:[],

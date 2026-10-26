@@ -1343,3 +1343,5 @@ Physical-mass protection must not remain confined to the historical local audit.
 
 
 26 October: isolate malformed repeated entries at the reconstruction boundary using the existing strict shared schemas, not new semantic validators or prompt repairs. Rejected quantities/ingredients/nutrition rows remain withheld, valid independent sections survive, raw output is preserved and validation decisions are recorded. Required singleton validation, array limits, source linkage and physical-mass safety are unchanged. Preserve frozen046e8d2 metrics and label current saved-output replay separately.
+
+26 October: scope calculator cards and persisted calculation evidence to the typed calculation IDs that support accepted natural-answer quantities. Keep cited comparison results and avoid saving duplicate representations of the same operation. Derive the linkage from numeric validation, never nutrient-name keyword matching. A saved-response transfer test is engineering evidence only; provider adherence, browser acceptance and independent answer usefulness remain separate M2 gates.
