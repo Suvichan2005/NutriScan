@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — withhold source-linked sentences that fail topic or jurisdiction checks
+
+Before quantitative validation, resolve source handles and named source identities against the current supplied-plus-tool evidence set. Withhold a sentence when its cited record is unavailable, does not match the active question/profile topic, or is guidance outside a user-named jurisdiction. Keep other useful sentences and package evidence, retain the record in the evidence inspector, and explain that the citation was omitted. An explicit request to inspect a supplied reference can show that record regardless of its topic or jurisdiction. This is a relevance/scope guard, not semantic entailment validation; it does not reject unsupported claims that lack source references or prove that a topical source supports the stated conclusion.
+
 ## 26 October 2026 — preserve missing nutrient and allergen meaning in local answers
 
 When a user requests a nutrient with no captured amount, say it is not recorded in the supplied label text, explicitly avoid implying zero or product absence, and suggest adding a clearer panel reading. When a question combines suitability/allergy context with package nutrition, preserve both the deterministic portion facts and the linked allergen finding/caveat; do not convert either into a personal-safety verdict. Source cards require topic relevance as well as jurisdiction fit. This improves the existing local answer path without changing the analysis method or remote prompt.

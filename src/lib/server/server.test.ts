@@ -767,6 +767,29 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.uiComponents.some(item=>item.type==='source-reference-cards')).toBe(false);
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
+  it('withholds a source-linked scientific sentence when its retrieved guidance is unrelated to the package question',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const source=getNutritionGuidance({query:'diabetes carbohydrate',jurisdiction:'India',maxResults:3}).find(item=>item.id==='idf-healthy-nutrition-diabetes-2024');
+    expect(source).toBeDefined();
+    const question='Does the package list peanuts?';
+    const answer='The entered label text lists peanuts. IDF guidance says carbohydrate choices should be individualized.';
+    const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const observation={id:'peanut-line',field:'ingredients',text:'INGREDIENTS: PEANUTS',side:'back' as const,confidence:100,origin:'user' as const};
+    const reconstruction={
+      identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},serving:null,nutritionRows:[],
+      ingredients:[{position:0,name:'Peanuts',printedText:'PEANUTS',printedPercentage:null,normalizedName:'peanuts',status:'clear' as const,evidence:{observationIds:['peanut-line'],imageRegions:[]}}],
+      additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Synthetic ingredient reading.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true,
+    };
+    const data=assistInput.parse({consent:true,question,evidence:[source!],package:{id:'source-scope-answer',name:'Unidentified package',ingredients:['Peanuts'],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,observations:[observation],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
+
+    const result=await assist(data);
+    expect(result.answer).toBe('The entered label text lists peanuts.\n\nI left out one or more source-linked statements because their reference was unavailable, off topic, or outside the stated jurisdiction.');
+    expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-with-source-scope-withheld',acceptedSentences:1,withheldSourceScopeSentences:1});
+    expect(result.agentEvidence.map(item=>item.id)).toContain(source!.id);
+    expect(result.uiComponents.some(item=>item.type==='source-reference-cards')).toBe(false);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it('accepts ordinary prose without a structured-answer repair generation',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const observation={id:'ingredient-line',field:'ingredients',text:'INGREDIENTS: REFINED WHEAT FLOUR (MAIDA)',side:'back' as const,confidence:82,origin:'user' as const};

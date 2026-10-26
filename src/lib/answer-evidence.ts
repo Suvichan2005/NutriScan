@@ -1,4 +1,5 @@
 import type { EvidenceSource } from './contracts';
+import { isGuidanceEvidenceInScope, isLocalEvidenceTopicallyRelevant } from './followup-evidence';
 
 type SourceIdentity = Pick<EvidenceSource, 'id'|'title'|'publisher'|'url'|'publishedAt'>;
 
@@ -56,4 +57,61 @@ export function selectCitedEvidence<T extends SourceIdentity>(answer:string,sour
         &&candidates.filter(item=>item.publishedAt?.startsWith(year)).length===1;
     });
   });
+}
+
+/**
+ * Withhold sentences that explicitly rely on a source record that is missing,
+ * off-topic for the current question, or outside the requested guidance scope.
+ * This is a source-selection guard, not a check that the record entails the
+ * sentence's scientific meaning.
+ */
+export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<EvidenceSource, 'summary' | 'category' | 'jurisdiction'>>(
+  answer: string,
+  sources: readonly T[],
+  aliases: ReadonlyMap<string, string>,
+  question: string,
+  explicitlySharedCountry = '',
+): { answer: string; withheldSentenceCount: number } {
+  const sourcesById = new Map(sources.map(source => [source.id, source]));
+  const acceptedLines: string[] = [];
+  const inspectingSuppliedSource = /\b(?:supplied|provided|selected)\s+(?:source|reference|guidance|evidence)\b/i.test(question);
+  let withheldSentenceCount = 0;
+
+  for (const line of answer.replace(/\r\n?/g, '\n').split('\n')) {
+    const trimmed = line.trim();
+    const headingPrefix = trimmed.match(/^#{1,6}\s+/)?.[0] ?? '';
+    const content = trimmed.slice(headingPrefix.length);
+    const listPrefix = content.match(/^(?:\d+[.)]|[-*+])\s+/)?.[0] ?? '';
+    const sentences = content.slice(listPrefix.length)
+      .split(/(?<=[.!?])\s+(?=[\p{L}\p{N}"“])/u)
+      .filter(Boolean);
+    const acceptedSentences = sentences.filter(sentence => {
+      const handles = sentence.match(/\bSRC_[A-Z0-9]+\b/gi) ?? [];
+      const handleSources: T[] = [];
+      let unresolvedHandle = false;
+      for (const handle of handles) {
+        const id = aliases.get(handle);
+        const source = id ? sourcesById.get(id) : undefined;
+        if (!source) unresolvedHandle = true;
+        else if (!handleSources.some(item => item.id === source.id)) handleSources.push(source);
+      }
+
+      const identitySources = selectCitedEvidence(sentence, sources);
+      const referenced = [...new Map([...handleSources, ...identitySources].map(source => [source.id, source])).values()];
+      const invalidSource = referenced.some(source =>
+        !inspectingSuppliedSource
+        && (!isLocalEvidenceTopicallyRelevant(source, question)
+          || !isGuidanceEvidenceInScope(source, question, explicitlySharedCountry)),
+      );
+      if (!unresolvedHandle && !invalidSource) return true;
+      withheldSentenceCount += 1;
+      return false;
+    });
+    if (acceptedSentences.length) acceptedLines.push(headingPrefix + listPrefix + acceptedSentences.join(' '));
+  }
+
+  return {
+    answer: acceptedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim(),
+    withheldSentenceCount,
+  };
 }

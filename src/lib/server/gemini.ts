@@ -16,7 +16,7 @@ import { ApiError } from './http';
 import { recordGeminiDiagnostic } from './gemini-diagnostics';
 import { finishGeminiEvaluation, recordGeminiEvaluationEvent, startGeminiEvaluation } from './gemini-evaluation-recorder';
 import { calculationsForSavedPortionDifferences, calculationsFromReconstruction, defaultPortion, hasExplicitPortionRequest, resolveQuestionPortion } from '../portion';
-import { renderAnswerEvidenceReferences, selectCitedEvidence } from '../answer-evidence';
+import { filterAnswerBySourceScope, renderAnswerEvidenceReferences, selectCitedEvidence } from '../answer-evidence';
 import { reconstructionRowIsSuperseded } from '../correction';
 import { workspacePortionSchema } from '../contracts';
 
@@ -2235,20 +2235,34 @@ export async function assist(data: z.infer<typeof assistInput>) {
     const allCalculations=new Map([...generated.calculations,...(data.calculations??[])].map(calculation=>[calculation.id,calculation]));
     const effectiveEvidence=[...allEvidence.values()].slice(0,30);
     const effectiveCalculations=[...allCalculations.values()].slice(0,20);
+    const sourceScopeCheck=filterAnswerBySourceScope(
+      generated.answer,
+      effectiveEvidence,
+      referenceAliases.fromModel,
+      [data.question,...Object.values(data.profile??{})].join(' '),
+      data.profile?.country??'',
+    );
     const withheldSpans: Array<{text:string;reason:'unsupported-quantity'|'unsupported-basis'}> = [];
-    const answerCheck=validateNaturalAnswerText(generated.answer,{
+    const answerCheck=validateNaturalAnswerText(sourceScopeCheck.answer,{
       package:activePackage,
       question:data.question,
       evidence:effectiveEvidence,
       calculations:effectiveCalculations,
       onWithheldSentence:decision=>withheldSpans.push(decision),
     });
-    const answerStatus=answerCheck.answer
-      ?answerCheck.withheldUnsupportedQuantitySentenceCount?'answer-with-quantity-withheld':'answer-ready'
-      :'answer-quantities-withheld';
-    const answer=answerCheck.answer
-      ?renderAnswerEvidenceReferences(answerCheck.answer,referenceAliases.fromModel,effectiveEvidence,effectiveCalculations)
-      :'I could not verify the precise quantities in that response, so I have not used them. The reconstructed package remains available to inspect.';
+    const answerStatus=sourceScopeCheck.withheldSentenceCount&&answerCheck.withheldUnsupportedQuantitySentenceCount?'answer-with-evidence-withheld'
+      :sourceScopeCheck.withheldSentenceCount?'answer-with-source-scope-withheld'
+        :answerCheck.answer
+          ?answerCheck.withheldUnsupportedQuantitySentenceCount?'answer-with-quantity-withheld':'answer-ready'
+          :'answer-quantities-withheld';
+    const answerNotices=[
+      ...(!answerCheck.answer&&answerCheck.withheldUnsupportedQuantitySentenceCount?['I could not verify the precise quantities in that response, so I have not used them. The reconstructed package remains available to inspect.']:[]),
+      ...(sourceScopeCheck.withheldSentenceCount?['I left out one or more source-linked statements because their reference was unavailable, off topic, or outside the stated jurisdiction.']:[]),
+    ];
+    const answer=[
+      ...(answerCheck.answer?[renderAnswerEvidenceReferences(answerCheck.answer,referenceAliases.fromModel,effectiveEvidence,effectiveCalculations)]:[]),
+      ...answerNotices,
+    ].join('\n\n');
     const parsedComponents=assistantUiComponentSchema.array().max(6).safeParse(generated.uiComponents);
     let uiComponents=parsedComponents.success?parsedComponents.data:[];
     const answerCalculationIds=new Set(answerCheck.calculationIds);
@@ -2302,6 +2316,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       answerStatus,
       acceptedSentences:answerCheck.acceptedSentenceCount,
       withheldQuantitySentences:answerCheck.withheldUnsupportedQuantitySentenceCount,
+      withheldSourceScopeSentences:sourceScopeCheck.withheldSentenceCount,
       generationCount:reconstructionGenerationCount+generated.generationCount,
       toolCallCount:reconstructionGenerationCount+generated.trace.filter(item=>item.name!=='google_search_server_round').length,
       packageReconstructionRevision:reconstructionRevision,
@@ -2318,8 +2333,9 @@ export async function assist(data: z.infer<typeof assistInput>) {
       decisions:{
         acceptedSentences:answerCheck.acceptedSentenceCount,
         withheldQuantitySentences:answerCheck.withheldUnsupportedQuantitySentenceCount,
+        withheldSourceScopeSentences:sourceScopeCheck.withheldSentenceCount,
         withheldSpans,
-        policy:'Only unsupported precise quantities or bases are withheld. Natural-language wording is not required to quote OCR or match lexical source spans.',
+        policy:'Unsupported quantities and source-linked statements with unavailable, off-topic or out-of-scope sources are withheld. Source-scope checks do not establish semantic entailment.',
       },
       summary:diagnostics,
       citedSourceIds:citedEvidence.map(source=>source.id),
@@ -2328,6 +2344,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       event:'natural_answer_validation',analysisId,status:answerStatus,
       acceptedSentences:answerCheck.acceptedSentenceCount,
       withheldQuantitySentences:answerCheck.withheldUnsupportedQuantitySentenceCount,
+      withheldSourceScopeSentences:sourceScopeCheck.withheldSentenceCount,
       generationCount:diagnostics.generationCount,toolCallCount:diagnostics.toolCallCount,
       retrievedSourceCount:generated.evidence.length,reconstructionRevision,
     });

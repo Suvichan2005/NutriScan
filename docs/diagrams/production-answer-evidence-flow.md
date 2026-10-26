@@ -8,23 +8,27 @@ flowchart TD
   R --> T[Typed calculations and returned evidence records]
   T --> M[Natural language answer]
   T --> E[Effective evidence set: supplied plus tool-returned records]
-  M --> V[Quantity and printed-basis validation]
-  E --> V
+  M --> S[Source-reference scope guard: availability, topic, guideline jurisdiction]
+  E --> S
+  Q --> S
+  S -->|eligible prose| V[Quantity and printed-basis validation]
   P[Current package observations and reconstruction] --> V
   C[Typed calculations] --> V
-  V -->|unsupported numeric sentence| W[Withhold sentence and explain omission]
+  S -->|unavailable, off-topic or out-of-scope citation| W[Withhold sentence and explain omission]
+  V -->|unsupported numeric sentence| W
   V -->|accepted prose| I[Resolve source handles and identify named sources]
   E --> I
   I --> U[Answer text and source-reference cards]
-  V -.-> L[No deterministic semantic check for non-numeric scientific claims]
+  I -.-> L[Topic and scope do not prove semantic entailment]
+  V -.-> L
 ```
 
 ## What the implementation establishes
 
-- The conversation route merges records supplied with the request and records returned by tools into the effective evidence set, then passes that set to `validateNaturalAnswerText`.
+- The conversation route merges records supplied with the request and records returned by tools into the effective evidence set. Before numeric validation, a sentence with an explicit source handle, URL, title or uniquely identifiable publisher is retained only if its source is in this set, topically relevant to the question and in jurisdictional scope when it is a guideline. A user asking to inspect a supplied reference can inspect it directly.
 - The natural answer validator verifies numeric values and printed bases against current package evidence, eligible source text and typed calculations. It withholds unsupported numeric sentences while preserving independently supported prose.
-- Native source handles resolve only against the effective evidence set. Consumer source cards are selected from source identities named in the accepted prose; unused retrieval candidates do not automatically become citations.
-- These checks establish data flow, numeric support and traceable reference presentation. They do not show that a source semantically entails every qualitative scientific statement in the natural answer.
+- Consumer source cards are selected from source identities named in the surviving prose; unused or scope-filtered retrieval candidates do not automatically become citations, though they remain available in the inspector.
+- These checks establish data flow, numeric support, traceable references and topical/jurisdiction scope. They do not show that a source semantically entails every qualitative scientific statement in the natural answer. Unreferenced assertions and incorrect claims linked to a merely topical source are still not deterministically rejected.
 
 ## Acceptance gap and evidence boundary
 

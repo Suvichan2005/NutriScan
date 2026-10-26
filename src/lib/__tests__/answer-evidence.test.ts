@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {renderAnswerEvidenceReferences,selectCitedEvidence} from '../answer-evidence';
+import {filterAnswerBySourceScope,renderAnswerEvidenceReferences,selectCitedEvidence} from '../answer-evidence';
 
 const source=(id:string,title:string,publisher:string,publishedAt:string|null)=>({id,title,publisher,publishedAt,url:`https://example.org/${id}`});
 
@@ -44,5 +44,25 @@ describe('conversation source identity linking',()=>{
     expect(selectCitedEvidence(`Read ${a.url}-unrelated for the source.`,[a,b])).toEqual([]);
     expect(selectCitedEvidence('WHO guidance is relevant.\n\nAnother publisher released a study in 2023.',[a,b])).toEqual([]);
     expect(selectCitedEvidence('Guideline on carbohydrate intake explains the population recommendation.',[a,b])).toEqual([b]);
+  });
+});
+
+describe('production answer source scope',()=>{
+  const peanut={...source('peanut-guidance','Peanut allergy and ingredient labels','Global Allergy Institute','2024'),category:'guideline' as const,jurisdiction:'Global',effectiveAt:null,retrievedAt:'2026-10-26T00:00:00.000Z',summary:'Food ingredient labels can identify peanuts and related allergen warnings.',limitations:'General label interpretation; it cannot establish individual suitability.'};
+  const salt={...source('salt-guidance','Population sodium guidance','World Health Organization','2023'),category:'guideline' as const,jurisdiction:'Global',effectiveAt:null,retrievedAt:'2026-10-26T00:00:00.000Z',summary:'Population recommendations discuss dietary sodium intake and blood pressure.',limitations:'Population guidance is not an individualized target.'};
+
+  it('keeps a relevant cited explanation and package prose while withholding a mismatched scientific citation',()=>{
+    const aliases=new Map([['SRC_1',peanut.id],['SRC_2',salt.id],['SRC_9','missing-source']]);
+    const answer='The label lists peanuts among its ingredients. Peanut guidance explains that ingredient warnings need context SRC_1. WHO guidance recommends limiting population sodium intake. Unknown reference SRC_9 is unavailable.';
+    const result=filterAnswerBySourceScope(answer,[peanut,salt],aliases,'Does the package list peanuts?');
+    expect(result.answer).toBe('The label lists peanuts among its ingredients. Peanut guidance explains that ingredient warnings need context SRC_1.');
+    expect(result.withheldSentenceCount).toBe(2);
+  });
+
+  it('withholds guidance outside a user-named jurisdiction but allows explicit source inspection',()=>{
+    const us={...peanut,id:'us-peanut-guidance',jurisdiction:'United States'};
+    const aliases=new Map([['SRC_1',us.id]]);
+    expect(filterAnswerBySourceScope('This US source says peanut warnings vary by product SRC_1.',[us],aliases,'How are peanut warnings handled in India?').withheldSentenceCount).toBe(1);
+    expect(filterAnswerBySourceScope('The supplied reference is SRC_1.',[us],aliases,'Explain the supplied reference.').answer).toBe('The supplied reference is SRC_1.');
   });
 });

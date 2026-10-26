@@ -1,0 +1,7 @@
+# M2 production source-scope guard — 27 October 2026
+
+Production natural answers now check every sentence that explicitly names a source or carries a native `SRC_` handle against the current supplied-plus-tool evidence set. The source must match the question and declared context; guideline records must also fit a user-named jurisdiction. Sentences with unknown, off-topic or out-of-scope references are withheld before quantity validation, a short omission note is returned, and separate useful prose remains. Records stay available in the inspector. A direct request to inspect a supplied reference remains available even when it is not topical to another question.
+
+Provider-free route replay with an IDF diabetes source and a peanut-label question retained the package text, withheld the unrelated cited sentence and omitted its source card. Existing relevant diabetes-guidance route acceptance still passes. Focused source and assist suites:102/102; scoped TypeScript and `git diff --check` pass. The five protected owner-file hashes match their saved snapshots.
+
+This is availability, topicality and jurisdiction filtering, not scientific entailment. Unreferenced claims and inaccurate assertions tied to a merely topical source remain unvalidated. No Gemini/provider call, browser acceptance, human reference or held-out case was used. The private KIIT report/template remains unavailable; no replacement was created.

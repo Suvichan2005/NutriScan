@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 production source-scope guard (27 October 2026)
+
+The production natural-answer path now withholds a sentence that explicitly cites an unavailable, off-topic or out-of-jurisdiction guidance record, while retaining separate package text and relevant in-scope explanation. The retrieved record remains in the inspector; the answer states when a source-linked sentence was left out. Provider-free mocked route and source-selection cases pass with the existing relevant IDF guidance case: 102/102 focused tests, scoped TypeScript and diff check. No provider, browser, human-reference or held-out evidence was used. This narrows source mismatch risk but does not establish scientific entailment; unreferenced qualitative assertions and incorrect claims tied to a merely topical source remain an open M2 gap.
+
 ## M2 local answer breadth (26 October 2026)
 
 Fixed a user-visible local fallback gap: missing calcium now reads as unrecorded in the provided label text (not zero or confirmed absence), and combined allergy/health-context answers retain relevant package quantities plus linked precautionary allergen uncertainty and the individual-suitability limit. Local source cards now require topical and jurisdiction relevance. The reusable provider-free acceptance script passed at390×844 and1440×900 with no provider or external requests, errors, overflow or Axe findings. Scoped app typecheck passes; focused suite13/13 passes. Next compile succeeded, while repo-wide typechecking remains blocked by `Assertion.not` errors in existing test files. No fresh Gemini, held-out or human evaluation. Local Gemini, paid fallback, search and transcript capture are disabled.
