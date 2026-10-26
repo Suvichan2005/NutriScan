@@ -4,6 +4,11 @@
 - The saved claim answer contained a PubMed-supported sentence with the review year and exact trial/participant counts; the same response also contained an unsupported portion conversion and a claim threshold from another jurisdiction.
 - Added a combined saved-answer replay with the real PubMed record: keep the supported 2022/13-trial/927-participant sentence while withholding the uncalculated package conversion and unsupported claim threshold, with an accurate plural notice.
 - Full assist replay of the exact saved answer retains the study sentence, withholds two unsupported statements and selects the PubMed source card. Intercepted local UI/API replay at1440×900 and390×844 shows the answer, notice and source card with no page errors. Inference suite61 passed, TypeScript and diff check pass. This is saved-output replay, not fresh model behavior or clinical review; no provider retry was made because availability had not changed.
+## 2026-10-26 — bounded synthetic specialized-source transfer
+
+- One consented, synthetic text-only request used specialized mode with no images/profile, paid fallback off, Search off and readable transcript capture off. A local-origin check first rejected a non-browser POST before provider work; the single browser-origin retry entered answer generation.
+- Trace `4ca7dc57-4ef2-4abb-bb55-859ddd80347a`: free 3.8/3.7 timed out, 3.6 completed one generation, 3.6 then timed out, 3.5 completed one generation, and a final 3.5 timeout ended the 110-second assist with HTTP502. Across the two completed generations the receipt reports 15,146 input, 110 output and 203 thinking tokens; cached-token metadata was absent. Estimated cost was $0; billing was not queried. No answer or final source cards were returned.
+- The model invoked `calculate_nutrition` and `search_research`; two research calls returned3 and2 candidates, another was withheld. This confirms the specialized tools can be reached but not that the answer contract works. Do not immediately retry this exhausted free route; wait for evidence of changed availability and keep future attempts bounded.
 ## 2026-10-26 — make unavailable evidence lookups actionable
 
 - Tool-profile inventory confirms ordinary mode does not include `search_research`; selected specialized mode is the existing user-controlled path to external research and official regulatory lookup.
