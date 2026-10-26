@@ -1,5 +1,9 @@
 # NutriScan final semester completion queue
 
+## M2 runtime verification — current build on 3400 (26 October 2026)
+
+Resolved local build drift that made the old uncited trace appear to use the curated FSSAI ID. Current 3400 build and live same-origin research endpoint return the distinct live source ID/date and bounded text; status is free tier with paid fallback/search off. No provider run occurred. Re-evaluate live answer citation only in a bounded free transfer run when available; continue other M2 work meanwhile.
+
 ## M2 continuation — dated claims source and uncited retrieval (26 October 2026)
 
 Added a bounded official FSSAI compendium source and authorized-term-only refusal guidance. Actual free retrieval demonstrates selectable text for two distinct claim rows, while the generated answer omitted the requested clinical study and did not cite the retrieved source; UI replay correctly showed no source card. This is partial retrieval evidence, not scientific/legal or answer-quality acceptance. Newly concise prompt asks for both evidence types, but provider quota exhaustion prevented verification. Continue with a bounded free run when available; do not use paid calls or change M4/M5 gates. Focused67 passed/one skipped.

@@ -1,5 +1,10 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — refresh the local runtime to the live FSSAI source build
+
+- Inspection of the saved uncited answer trace showed the process on 3400 was serving an older optimized build: its output carried the curated FSSAI source ID, while current source code assigns the new live-registry ID. This explains the identifier mismatch and means the prior answer trace does not evaluate the latest tool/source ID wiring.
+- Rebuilt current source into the existing checkpoint output, restored build-mutated Next config files, and verified the five protected owner files and restored evidence hashes. Refreshed the loopback 3400 server. Its same-origin research endpoint returned `fssai-advertising-claims-live-2022`, the 2022-12-14 date and bounded PDF text. Status confirms free/local mode, paid fallback off and search off. No Gemini call was made. This establishes runtime source wiring only; it does not close answer citation or evidence-usefulness questions.
+
 ## 2026-10-26 — add bounded FSSAI live source and safe query guidance
 
 - The actual free development trace `0e98bac0-192d-4001-9674-8651eddfd4a9` used two generations and one research call. The bounded official FSSAI Version IV PDF extraction returned the soluble-dietary-fibre/cholesterol row and a separate oat beta-glucan/blood-glucose row. It is dated 2022-12-14, not a current-law determination. The model preserved package total fibre and unknown beta-glucan and separated the topics, but omitted the requested clinical lipid study and failed to cite the retrieved source. Response replay at 1440×900 and 390×844 had no photos, profile, or page errors; no source card appeared because there was no explicit citation. Replay used saved provider text, not a fresh generation.
