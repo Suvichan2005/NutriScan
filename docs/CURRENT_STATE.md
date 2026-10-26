@@ -1,4 +1,7 @@
 # NutriScan current runtime handoff
+## M2 replay the saved study-count boundary (26 October 2026)
+
+Added an inference regression using the actual PubMed review record and the saved answer sentence naming its 2022 date, 13 trials and 927 participants. The validator retains that source-supported sentence, while still withholding the adjacent unsupported 12.4 g/100 g-to-4.7 g/38 g package conversion (no native calculation supplied) and the 1 g/serving claim threshold (not supported by that study record). Focused `numeric-reference-roles.test.ts`6/6, TypeScript and diff check pass. This validates the numeric boundary only; it does not establish fresh model citation, source-card rendering, user usefulness or an official India rule.
 ## M2 actionable missing source class (26 October 2026)
 
 Profile audit confirmed that ordinary mode exposes `search_knowledge` and the local guideline reader but not `search_research`; FSSAI/EURO PMC live research lookup requires the user-selected specialized profile. Kept tool selection explicit. Refined the general answer contract so when a requested source class is unavailable or returns no relevant record, the assistant names the gap, suggests specialized mode when needed, and does not fill the gap from memory. Focused `gemini-agent.test.ts`50/50, TypeScript and optimized Webpack production build pass; loopback3400 refreshed and health checked in free/local mode. Paid fallback, search and readable capture remain off. This improves next-step guidance but has not been verified against a fresh model answer.

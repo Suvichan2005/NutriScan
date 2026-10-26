@@ -1,4 +1,9 @@
 # Sanitized engineering journal
+## 2026-10-26 — preserve a source-supported study sentence
+
+- The saved claim answer contained a PubMed-supported sentence with the review year and exact trial/participant counts; the same response also contained an unsupported portion conversion and a claim threshold from another jurisdiction.
+- Added a boundary regression with the real PubMed source record and sentence form: keep the supported study statement, continue withholding the uncalculated package conversion and unsupported threshold.
+- Focused numeric suite6/6, TypeScript and diff check pass. This is validator coverage, not fresh model or source-card acceptance.
 ## 2026-10-26 — make unavailable evidence lookups actionable
 
 - Tool-profile inventory confirms ordinary mode does not include `search_research`; selected specialized mode is the existing user-controlled path to external research and official regulatory lookup.

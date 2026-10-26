@@ -2,6 +2,7 @@ import {it,expect} from 'vitest';
 import {parseLabel} from '../../../lib/parser';
 import {validateNaturalAnswerText} from '../core';
 import type {EvidenceSource} from '../../../lib/contracts';
+import {evidenceSources} from '../../knowledge';
 const context={package:parseLabel('Developer fixture; composition unknown.'),question:'For a fictional adult with type 2 diabetes, explain what is needed.',evidence:[]as EvidenceSource[],calculations:[]};
 
 it('retains measurement-basis explanations without turning denominators into food amounts',()=>{
@@ -40,4 +41,16 @@ it('matches unitless study counts to the same named subject despite changed sent
  expect(validateNaturalAnswerText(full,ctx).answer).toBe(full);
  for(const wrong of ['A 2022 systematic review included 13 participants and 927 trials.','A 2022 systematic review included 14 trials and 927 participants.','A 2022 systematic review included 13 trials and 928 participants.'])
   expect(validateNaturalAnswerText(wrong,ctx).withheldUnsupportedQuantitySentenceCount).toBe(1);
+});
+
+it('retains the saved PubMed study-count sentence without admitting adjacent unsupported quantities',()=>{
+ const review=evidenceSources.find(item=>item.id==='pubmed-oat-beta-glucan-lipids-2022')!;
+ const answer='Clinical research and meta-analyses (such as a 2022 systematic review published in *Clinical Nutrition ESPEN* evaluating 13 trials and 927 participants) indicate that sufficient daily intakes of oat beta-glucan can help reduce total and LDL cholesterol.';
+ const result=validateNaturalAnswerText(answer,{...context,evidence:[review]});
+ expect(result.withheldUnsupportedQuantitySentenceCount).toBe(0);
+ expect(result.answer).toBe(answer);
+ for(const unsupported of [
+  'The reading is 12.4 g per 100 g, or approximately 4.7 g per 38 g serving.',
+  'A cholesterol-lowering claim typically requires at least 1 g of beta-glucan per serving.',
+ ])expect(validateNaturalAnswerText(unsupported,{...context,evidence:[review]}).withheldUnsupportedQuantitySentenceCount).toBe(1);
 });
