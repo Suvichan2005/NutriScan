@@ -1,4 +1,8 @@
 # Current engineering status
+## M6 fallback recovery acceptance (26 October 2026)
+
+Fixed an actual stale-quantity failure: when Gemini is unavailable, explicit serving-size follow-ups now calculate from the current package instead of reusing the prior audit. Browser acceptance at390×844 and1440×900 verified corrected sodium of900 mg/100 g, yielding450 mg at50 g and225 mg at25 g after local save/reopen. Original observation and correction provenance persisted. The mode switch now has an accessible name containing its visible label. The single `/api/assist` request per viewport was intercepted in-browser before the server; no provider/external requests, profile/photos, browser errors, overflow or Axe findings. `tsc --noEmit` and diff check pass. Isolated build compiled with Next's type check skipped after interrupted dependency migration; standalone TypeScript passed. No fresh Gemini or independent science validation.
+
 ## M2 automatic typed portion-difference evidence (26 October 2026)
 
 When the active reconstruction has an evidence-linked row and a saved calculation for that same row at a different gram/millilitre amount, the server now derives the absolute difference calculation before answer generation. The value is recomputed from the current row; corrected nutrients, unrelated rows, counted portions, package portions and cross-unit comparisons do not qualify. A mocked server replay confirms the 40 g→30 g case gets a typed 10 g result, validates the 37.6 kcal sentence, and retains a single 30 g calculator card without a model calculator call. Server suite93/93, TypeScript and diff check pass. This is deterministic transfer evidence, not fresh Gemini behavior or independent package verification. M2 remains active.

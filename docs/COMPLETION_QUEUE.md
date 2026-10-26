@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M6 local failure-recovery journey (26 October 2026)
+
+Closed a user-visible fallback defect: explicit 25 g questions after provider failure now use a freshly rebuilt audit for the active package rather than the previous 50 g audit. At390×844 and1440×900 the corrected saved package produced450 mg sodium at50 g and225 mg at25 g; save/reopen retained the original observation and correction provenance. Intercepted `/api/assist` before the server once per viewport, with no provider/remote, profile/photo, error, overflow or Axe findings. The analysis-mode switch also passes accessible-name inspection. `tsc --noEmit` and diff check pass; isolated production build compiled with Next type validation skipped after the interrupted dependency migration. Fresh Gemini selection and scientific validation remain open.
+
 ## Selected knowledge archive availability (26 October 2026)
 
 Checked the owner-designated Drive handoff folder and exact archive name. The handoff README, detailed source/licensing notes, transfer manifest and ZIP hash sidecar are accessible, but the declared `NutriScan-knowledge-runtime-20261026.zip` is not present in the folder and exact-name search returned no file. The local migration directory also has the manifest without the archive; `.data/knowledge` and `.data/food-composition` remain absent here, while the pinned MiniLM model is already restored. No source download or extraction was made. Do not repeat broad migration; restore only if the ZIP becomes available. This does not block M2 work.

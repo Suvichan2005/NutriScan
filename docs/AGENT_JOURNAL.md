@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-26 — recalculate explicit portions after local fallback
+
+- Browser acceptance exposed a stale-answer bug: an unavailable Gemini follow-up for 25 g reused a saved 50 g audit (450 mg sodium). The local fallback now derives an explicit requested portion from the active package and rebuilds its audit before answering. A local 900 mg/100 g correction now yields 450 mg at50 g and225 mg at25 g after save/reopen; the original observation and correction provenance remain visible.
+- Acceptance passed at390×844 and1440×900. One `/api/assist` request per viewport was intercepted in-browser before the server; no profile/photos or external/provider calls, page errors, overflow or Axe violations. Also made the visible analysis-mode label part of its accessible name.
+- `tsc --noEmit` and `git diff --check` pass. Isolated production build succeeded with Next's built-in type check temporarily skipped because the interrupted package-manager migration left inconsistent test dependency types; standalone TypeScript passed. The five pre-existing owner files were hash-checked and preserved. No fresh Gemini selection or scientific validation is claimed.
+
 ## 2026-10-26 — make saved portion comparisons a typed path
 
 - The saved 40 g→30 g trace previously needed an additional model calculator call for the 10 g difference, even though the current interpretation row and a prior typed 40 g calculation were already available.

@@ -1,4 +1,8 @@
 # Chronological decisions
+## 26 October 2026 — rebuild local fallback for explicit portions
+
+When a provider failure returns an answer for a follow-up, do not reuse the active audit if the question explicitly asks for a different portion. Resolve that amount against the current package and rebuild the local audit so fallback calculations reflect the user's request. Preserve the current fallback boundary and evidence provenance. Browser acceptance verifies this for corrected package observations at mobile and desktop sizes; it does not establish Gemini behavior or scientific accuracy.
+
 ## 26 October 2026 — derive a portion delta from the current typed row
 
 When a saved typed calculation and the current explicit request use different gram/millilitre portions of the same active interpretation row, expose a deterministic calculation for their absolute portion difference before answer generation. Require matching row identity, input, basis, units and nutrient; exclude user-corrected, counted and package operations, and do not compare mass with volume. Recompute from the current row so the delta is revision-linked. The existing validator can then accept a model-referenced delta, while the interactive card remains scoped to the requested portion. This path supplies evidence without relying on model tool selection; it does not establish fresh-model adherence or independent label accuracy.
