@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M2 retain cited sources across answer-evidence caps (27 October 2026)
+
+A controlled production-route test with30 carried source records and a locally selected WHO sodium source showed the model could cite the retrieved source, but the final30-record evidence cap then removed it before validation. The sentence was withheld and no source card was returned. Source references in answer text now take priority before both the tool-result20 and final30 limits; topic, jurisdiction and numeric validation still run against the bounded set. The reproduced route now returns the supported explanation and `who-sodium` card. Validation:191 focused server/evidence/tool tests passed,1 skipped; TypeScript has existing Vitest `.not` typing errors but none in the changed implementation/new test lines. Gemini was mocked, retrieval was local, no browser or external request ran. This fixes source retention and traceability, not scientific entailment or live model selection.
+
 ## M6 restore original report draft from private archive (27 October 2026)
 
 Restored the existing `.data/academic-completion` artifact from the private Drive `.data.7z` into ignored local storage. The 16-page report DOCX matches the archived build manifest SHA-256; that manifest records `independentExperimentalResults: 0` and tested source commit `85ae0f7`. The archived `Project_Report-format.docx` is not present; only its PDF reference and inspection notes are included. No report/template replacement or edit was made. M6 remains open for current source-evidence anchors, experimental inputs/results and formal review; the original template DOCX blocker remains.

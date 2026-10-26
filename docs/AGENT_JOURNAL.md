@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — preserve tool-selected sources through answer bounds
+
+- Reproduced a production-route failure with30 carried records: the local `get_nutrition_guidance` tool selected WHO sodium guidance and the mocked model cited it, but the final evidence cap removed it before source-scope validation. NutriScan withheld the explanation and omitted the source card.
+- Source references now receive priority before both20-record agent evidence and30-record effective-answer bounds. The same route replay now retains the explanation, exact `who-sodium` record and source-card ID. Local retrieval only; Gemini endpoint mocked; no browser or external request.
+- Focused server/evidence/tool suites191 passed/1 skipped. Full TypeScript still has pre-existing Vitest `.not` matcher errors; changed implementation and new test lines are clear. This verifies bounded source handoff, not semantic entailment or live Gemini behavior.
+
 ## 2026-10-27 — restore the private report draft without replacing its template
 
 - The private Drive `.data.7z` contained `academic-completion`; restored that directory into ignored `.data` only. The DOCX SHA-256 exactly matches its archived build manifest. It is a 16-page draft with zero independent experimental results and was tested against source commit `85ae0f70`.

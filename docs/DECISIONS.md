@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — reserve bounded evidence slots for cited sources
+
+When carried conversation sources and newly selected tool records share a bounded evidence list, retain records the answer actually cites before unused candidates. Apply this at both agent and response boundaries, then keep existing source-topic, jurisdiction and quantity validation. A citation remains traceability, not proof of entailment.
+
 ## 27 October 2026 — preserve the restored private report as a historical draft
 
 Restore the exact owner report archive into ignored `.data` when available, but do not treat its older zero-result draft or its template PDF as a current accepted report/template. Verify its recorded hash, keep the original template DOCX blocker, and revalidate report-evidence anchors against current evidence before any future edit. Never replace the owner artifact with a reconstruction from memory.

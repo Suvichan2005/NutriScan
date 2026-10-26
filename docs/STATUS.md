@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 keep a cited tool result through bounded answer evidence (27 October 2026)
+
+A production `assist()` replay with30 carried source records reproduced a real integration bug: the local WHO sodium tool returned a source cited by the model, but the server’s30-record evidence cap dropped it, withheld the full sentence and produced no card. The server now prioritizes records referenced by native source handles or uniquely named in the answer before both the tool-response20 and final30 evidence limits, then runs the existing topic/jurisdiction and numeric checks. Route acceptance retains the answer, exact `who-sodium` evidence and source-card ID; the tool was local and the model endpoint mocked. Focused server/evidence/tool suites:191 passed,1 skipped. Full TypeScript still reports existing Vitest `.not` matcher typing errors; no diagnostics in the changed implementations or new test lines. No browser visual, live Gemini or semantic-entailment claim.
+
 ## M6 restore the original private evidence-report draft (27 October 2026)
 
 Drive’s `.data.7z` contained the original `academic-completion` archive. Restored its 13 files into ignored `.data/academic-completion` without touching tracked source. The 16-page DOCX SHA-256 matches `report-build.json` (`677a6a6d…163f93`); its manifest records zero independent experimental results and an older tested source commit (`85ae0f7`). The original `Project_Report-format.docx` itself is still absent; the archive contains its PDF reference and inspection metadata. No report was edited, and historical `report-evidence.json` anchors were not revalidated. M6 report completion remains blocked on the original template and current accepted evidence.
