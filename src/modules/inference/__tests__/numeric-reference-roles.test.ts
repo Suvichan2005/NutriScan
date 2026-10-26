@@ -54,3 +54,21 @@ it('retains the saved PubMed study-count sentence without admitting adjacent uns
   'A cholesterol-lowering claim typically requires at least 1 g of beta-glucan per serving.',
  ])expect(validateNaturalAnswerText(unsupported,{...context,evidence:[review]}).withheldUnsupportedQuantitySentenceCount).toBe(1);
 });
+
+it('replays the saved study sentence beside unsupported package and claim-rule amounts',()=>{
+ const review=evidenceSources.find(item=>item.id==='pubmed-oat-beta-glucan-lipids-2022')!;
+ const study='Clinical research and meta-analyses (such as a 2022 systematic review published in *Clinical Nutrition ESPEN* evaluating 13 trials and 927 participants) indicate that sufficient daily intakes of oat beta-glucan can help reduce total and LDL cholesterol.';
+ const answer=[
+  study,
+  'The reading is 12.4 g per 100 g, or approximately 4.7 g per 38 g serving.',
+  'A cholesterol-lowering claim typically requires at least 1 g of beta-glucan per serving.',
+ ].join(' ');
+
+ const result=validateNaturalAnswerText(answer,{...context,evidence:[review]});
+ expect(result.answer).toContain(study);
+ expect(result.answer).toContain('I omitted one or more numerical statements');
+ expect(result.answer).not.toContain('4.7 g per 38 g');
+ expect(result.answer).not.toContain('at least 1 g');
+ expect(result.acceptedSentenceCount).toBe(1);
+ expect(result.withheldUnsupportedQuantitySentenceCount).toBe(2);
+});
