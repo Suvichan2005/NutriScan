@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "local-nutrient-content-claim-browser-acceptance",
-  "generatedAt": "2026-10-26T21:48:33.313Z",
+  "generatedAt": "2026-10-26T23:20:29.882Z",
   "evidenceClass": "synthetic typed-label product-flow acceptance; not photo accuracy, held-out retrieval, current legal verification, or model behavior",
   "baseOrigin": "http://127.0.0.1:3400",
   "providerCalls": 0,
