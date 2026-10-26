@@ -1,0 +1,24 @@
+{
+  "kind": "local browser replay of a previously captured synthetic response",
+  "providerCalls": 0,
+  "apiAssistRoute": "intercepted response replay",
+  "fixtureSha256": "9AAE8B874EF9B63875FFCA073ADB91A9F7C5BBDB41E083D6F2530C05940D2131",
+  "privateCaptureDirectory": ".data/m2-retrieved-evidence-acceptance-20261027/",
+  "assertions": {
+    "retrievedRecords": 2,
+    "answerCitations": 0,
+    "uncitedLabelVisibleInInspector": true,
+    "oneAssistantTurn": true,
+    "externalRequests": 0,
+    "pageErrors": 0
+  },
+  "viewports": [
+    { "name": "mobile", "width": 390, "height": 844, "screenshot": "mobile-retrieved-not-cited.png" },
+    { "name": "desktop", "width": 1440, "height": 900, "screenshot": "desktop-retrieved-not-cited.png" }
+  ],
+  "limitations": [
+    "Synthetic text-only package and a previously captured Gemini response were used.",
+    "The provider response was intercepted; this does not demonstrate live Gemini behavior.",
+    "This verifies rendering and route-state handling, not scientific correctness or answer quality."
+  ]
+}

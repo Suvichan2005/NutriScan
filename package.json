@@ -30,6 +30,7 @@
     "acceptance:keyboard-dialog": "tsx scripts/evaluate-keyboard-dialog.mts",
     "acceptance:core-journey": "tsx scripts/audit-core-journey.mts",
     "acceptance:package-text-conversation": "tsx scripts/acceptance-package-text-conversation.mts",
+    "acceptance:retrieved-evidence": "tsx scripts/acceptance-retrieved-evidence.mts",
     "acceptance:nutrient-claims": "tsx scripts/acceptance-nutrient-claims.mts",
     "acceptance:trans-fat": "tsx scripts/acceptance-trans-fat.mts",
     "acceptance:ocr-annotation": "tsx scripts/acceptance-ocr-annotation.mts",
