@@ -467,8 +467,34 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.evidence?.[0].summary).toMatch(/below 2 g\/day/i);
     expect(result.evidence?.[0].limitations).toMatch(/sodium-wasting nephropathy/i);
     expect(result.evidence?.[0].limitations).toMatch(/provides no potassium target/i);
+    expect(result.output).toMatchObject({
+      guidanceCoverageFacts: expect.arrayContaining([expect.objectContaining({
+        sourceId: 'kdigo-ckd-2024-sodium',
+        requiredValuePatterns: ['\\b2\\s*g(?:rams?)?\\s*(?:\\/|per\\s+)day\\b'],
+      })]),
+    });
     expect(result.output).toMatchObject({ externalRequestMade: false });
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('returns the scoped KDIGO protein recommendation without borrowing its sodium coverage', async () => {
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'CKD protein guidance',
+      condition: 'CKD',
+      jurisdiction: 'India',
+    }, context('For a fictional adult in India with CKD, what should I know about protein in this food?'));
+
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium']);
+    expect(result.evidence?.[0].summary).toMatch(/adults with CKD stages G3–G5.*0\.8 g\/kg body weight\/day/i);
+    expect(result.evidence?.[0].limitations).toMatch(/not individualized consumer targets/i);
+    expect(result.output).toMatchObject({
+      externalRequestMade: false,
+      guidanceCoverageFacts: [{
+        sourceId: 'kdigo-ckd-2024-sodium',
+        requiredValuePatterns: ['\\b0\\.8\\s*g\\s*\/\\s*kg\\b', '\\b1\\.3\\s*g\\s*\/\\s*kg\\b'],
+      }],
+    });
   });
 
   it('does not return a sodium-only CKD source for an India potassium-only query', async () => {

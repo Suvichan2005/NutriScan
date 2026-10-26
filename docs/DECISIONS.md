@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — expose KDIGO CKD protein scope with topic-specific coverage
+
+The existing KDIGO 2024 record was deliberately gated to sodium after its local summary was found to cover only sodium. Review of the same official guideline established a second supported topic: it suggests 0.8 g/kg/day for adults with CKD G3–G5, advises avoiding intake above 1.3 g/kg/day in adults at risk of progression, and reserves very-low-protein diets for selected people under close supervision; it cautions against low/very-low-protein diets for metabolically unstable people. Expand the source-linked summary to include this bounded topic and require direct protein-topic overlap. Because the tool's answer-boundary coverage patterns are nutrient-specific, keep sodium and protein requirements in separate topic groups; a sodium query must not require protein values and vice versa. Preserve the explicit absence of a potassium target and all non-individualized, stage/nutritional-status limits. Source: [KDIGO 2024 CKD guideline, Chapter 3](https://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf).
+
 ## 26 October 2026 — require topic overlap for condition-scoped guidance
 
 Do not return a condition-scoped summary solely because a diagnosis/condition matches. Each such record declares the nutrition topics it actually summarizes; retrieval requires a direct topic match as well as the authorized condition and jurisdiction, except when the source itself is explicitly requested. Keep broader general-population sources under their existing relevance rule. This prevents adjacent-nutrient questions from inheriting irrelevant clinical text without building a clinical intent classifier.

@@ -13,6 +13,10 @@ type GuidanceEntry = {
   numericCoverage?: {
     queryTerms: readonly string[];
     requiredValuePatterns: readonly string[];
+    topicRequirements?: readonly {
+      queryTerms: readonly string[];
+      requiredValuePatterns: readonly string[];
+    }[];
   };
 };
 
@@ -64,14 +68,21 @@ const entries: readonly GuidanceEntry[] = [
       publishedAt: '2024',
       effectiveAt: null,
       retrievedAt: snapshotRetrievedAt,
-      summary: 'For people with CKD, KDIGO suggests dietary sodium below 2 g/day (equivalent to less than 5 g sodium chloride/day); the guideline notes that this restriction is usually inappropriate in sodium-wasting nephropathy.',
-      limitations: 'A conditional recommendation for people with CKD, not a universal consumer target. This summary addresses sodium and provides no potassium target. KDIGO notes this sodium restriction is usually inappropriate in sodium-wasting nephropathy. Individual clinical circumstances, age, nutritional status, climate, laboratory results, and treatment matter; a single package label cannot determine daily suitability.',
+      summary: 'KDIGO suggests dietary sodium below 2 g/day for people with CKD, equivalent to less than 5 g sodium chloride/day, and notes this restriction is usually inappropriate in sodium-wasting nephropathy. For adults with CKD stages G3–G5, it suggests maintaining protein intake at 0.8 g/kg body weight/day and avoiding intake above 1.3 g/kg/day when at risk of progression; lower-protein diets are only considered for selected people under close supervision.',
+      limitations: 'These are clinical recommendations for defined CKD populations, not individualized consumer targets or package-level pass/fail thresholds. The 0.8 g/kg/day protein recommendation is for adults with CKD G3–G5; it is not a general target for every person with kidney disease. Very-low-protein diets require close supervision and must not be prescribed for metabolically unstable people. Sodium restriction is usually inappropriate in sodium-wasting nephropathy. Age, CKD stage, nutritional status, treatment and comorbidities affect advice; a single package label cannot determine daily suitability. This summary provides no potassium target.',
       license: 'Source-linked, NutriScan-authored paraphrase only. Guideline text and figures are not redistributed.',
     }),
     terms: ['ckd', 'chronic kidney', 'kidney', 'renal', 'sodium', 'salt', 'blood pressure', 'hypertension'],
     conditions: ['ckd', 'chronic kidney disease', 'kidney disease', 'kidney', 'renal'],
-    topicTerms: ['sodium', 'salt'],
-    numericCoverage: { queryTerms: ['sodium', 'salt'], requiredValuePatterns: ['\\b2\\s*g(?:rams?)?\\s*(?:\\/|per\\s+)day\\b'] },
+    topicTerms: ['sodium', 'salt', 'protein'],
+    numericCoverage: {
+      queryTerms: ['sodium', 'salt', 'protein'],
+      requiredValuePatterns: [],
+      topicRequirements: [
+        { queryTerms: ['sodium', 'salt'], requiredValuePatterns: ['\\b2\\s*g(?:rams?)?\\s*(?:\\/|per\\s+)day\\b'] },
+        { queryTerms: ['protein'], requiredValuePatterns: ['\\b0\\.8\\s*g\\s*\/\\s*kg\\b', '\\b1\\.3\\s*g\\s*\/\\s*kg\\b'] },
+      ],
+    },
   },
   {
     source: guidanceSource({
@@ -332,12 +343,20 @@ export function getNutritionGuidanceCoverageFacts(query: string, sourceIds: read
   const selected = new Set(sourceIds);
   return entries.flatMap(entry => {
     const coverage = entry.numericCoverage;
-    if (!coverage || !selected.has(entry.source.id) || !coverage.queryTerms.some(term => mentions(query, term))) return [];
+    if (!coverage || !selected.has(entry.source.id)) return [];
+    const requiredValuePatterns = coverage.topicRequirements
+      ? coverage.topicRequirements
+        .filter(group => group.queryTerms.some(term => mentions(query, term)))
+        .flatMap(group => group.requiredValuePatterns)
+      : coverage.queryTerms.some(term => mentions(query, term))
+        ? coverage.requiredValuePatterns
+        : [];
+    if (requiredValuePatterns.length === 0) return [];
     return [{
       sourceId: entry.source.id,
       statement: entry.source.summary,
       supportingQuote: entry.source.summary,
-      requiredValuePatterns: coverage.requiredValuePatterns,
+      requiredValuePatterns,
     }];
   });
 }

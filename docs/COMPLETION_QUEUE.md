@@ -1,5 +1,9 @@
 # NutriScan final semester completion queue
 
+## M2 CKD protein guidance transfer (26 October 2026)
+
+A provider-free India/CKD query for protein returned no applicable local source because the existing KDIGO 2024 entry was scoped only to sodium, despite the same guideline also recommending 0.8 g/kg/day for adults with CKD G3–G5 and advising avoidance of >1.3 g/kg/day in adults at risk of progression. Expanded the existing source-linked summary and topical scope with those population/stage bounds, close-supervision limits and topic-specific answer-coverage patterns. Transfer now returns KDIGO for CKD protein, sodium-only patterns for sodium, protein-only patterns for protein, and no source for potassium. Focused tool suite72 passed/one skipped, TypeScript and optimized build passed; production3400 restarted in free/local mode with paid fallback/search/transcript capture off. This is retrieval/source-summary behavior, not generated medical advice or independent clinical review.
+
 ## M2 condition-topic applicability transfer (26 October 2026)
 
 A broader provider-free matrix found another false source match: “diabetes + potassium” returned general IDF nutrition guidance although its stored summary covers carbohydrate, meals and snack choices, not potassium. Added explicit topic-term applicability to the condition-scoped guidance entries so the disease match alone is insufficient. Transfer matrix now abstains on diabetes/potassium, hypertension/potassium and CKD/potassium; retains diabetes/carbohydrate and diabetes/snack, hypertension/sodium and CKD sodium with appropriate source sets. Full `gemini-tools.test.ts` passes (71 passed, 1 skipped), TypeScript and optimized build pass. Production3400 rebuilt in free/local mode, with paid fallback/search/transcript capture off; five owner files and27 evidence files verified. This is provider-free retrieval evidence, not answer-model or clinical validation.

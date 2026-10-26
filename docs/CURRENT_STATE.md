@@ -1,5 +1,9 @@
 # NutriScan current runtime handoff
 
+## M2 CKD protein guidance transfer — 26 October 2026
+
+Expanded the selected KDIGO 2024 CKD source summary from sodium-only to sodium plus the scoped adult protein recommendations: 0.8 g/kg/day for CKD G3–G5; avoid >1.3 g/kg/day for adults at risk of progression; lower-protein diets require close supervision. Added topic-specific numeric coverage so protein queries do not inherit sodium patterns, and vice versa. Provider-free matrix returns KDIGO for India CKD protein and sodium, but not potassium. Focused tool suite72 passed/one skipped, TypeScript and optimized reusable production build passed;3400 restarted and status checked healthy with free tier, paid fallback/search/capture off. Five pinned owner files remain preserved. No provider answer or independent clinical review.
+
 ## M2 condition-topic applicability transfer — 26 October 2026
 
 Condition-scoped guidance now requires direct topical overlap as well as an authorized condition and jurisdiction. This followed a real local probe where an India diabetes/potassium question returned general IDF diabetes nutrition guidance whose stored summary did not cover potassium. Matrix evidence: diabetes/potassium, hypertension/potassium and CKD/potassium abstain; diabetes/carbohydrate/snack, hypertension/sodium and CKD sodium retain applicable sources. Full tool suite71 passed/one skipped, TypeScript/build pass; production3400 rebuilt, free/local, paid fallback/search/capture off. Five owner files and27 preserved evidence files verified. Retrieval only; no provider response or independent clinical review.

@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — restore scoped KDIGO CKD protein retrieval
+
+- A provider-free India/CKD protein query returned no source even though the selected KDIGO 2024 guideline includes a scoped adult CKD G3–G5 protein recommendation. Verified the recommendation and its limits against the official KDIGO guideline before changing the summary.
+- Expanded the source-linked guidance summary to include 0.8 g/kg/day for adults with CKD G3–G5, avoiding >1.3 g/kg/day when at risk of progression, and close-supervision limits for lower-protein diets. Added separate nutrient-specific required-number patterns so protein queries do not inherit sodium patterns or vice versa; potassium-only remains abstinent.
+- Focused tool suite72 passed/one skipped, TypeScript passed, optimized production build passed and loopback3400 restarted/health checked in free/local mode. No Gemini response or clinical review. Build-generated changes to pinned `next-env.d.ts` and `tsconfig.json` were restored from the matching local archive; other three owner files remained byte-identical. Five owner files remain unstaged.
+
 ## 2026-10-26 — generalize source-topic matching across condition guidance
 
 - A provider-free retrieval matrix found that diabetes + potassium selected an IDF record whose stored summary is about carbohydrate portions, meal/snack choices and blood glucose; it contains no potassium guidance. Other sampled pairings showed the same condition-only eligibility rule could conflate a condition with an unrelated nutrient.
