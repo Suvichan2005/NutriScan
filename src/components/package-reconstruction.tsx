@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import {nutrientMassConflict} from '@/lib/nutrient-mass';
 import {analysisMethodPolicy} from '@/lib/analysis-method';
 import { correctionUnits, type ReconstructionRowEdit } from '@/lib/reconstruction-correction';
 import { ScanLine } from 'lucide-react';
@@ -62,7 +63,8 @@ function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
     setUnit(key ? allowedUnit(key, correction?.unit ?? row.unit) : 'g');
     setEditing(true);
   };
-  const canSave = Boolean(key && value.trim() && Number.isFinite(Number(value)) && Number(value) >= 0
+  const massConflict=nutrientMassConflict({nutrientKey:key,value:Number(value),unit,basisAmount:Number(basisAmount),basisUnit});
+  const canSave = Boolean(!massConflict && key && value.trim() && Number.isFinite(Number(value)) && Number(value) >= 0
     && basisAmount.trim() && Number.isFinite(Number(basisAmount)) && Number(basisAmount) > 0);
   return <article className="reconstruction-row" data-reconstruction-row={row.rowId}>
     <div className="reconstruction-row-main">
@@ -90,6 +92,7 @@ function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
       <label>Printed basis<input inputMode="decimal" value={basisAmount} onChange={event => setBasisAmount(event.target.value)} aria-label={`${row.nutrient} basis amount`}/></label>
       <label>Basis unit<select value={basisUnit} onChange={event => setBasisUnit(event.target.value as 'g' | 'ml')}><option value="g">g</option><option value="ml">ml</option></select></label>
       <div><button className="primary-button" disabled={!canSave} type="submit">Save as my correction</button><button className="text-button" type="button" onClick={() => setEditing(false)}>Cancel</button></div>
+      {massConflict&&<p className="reconstruction-caveat" role="alert">{massConflict}</p>}
       <small>This creates a user-confirmed reading with its own evidence link. It does not verify the model interpretation.</small>
     </form>}
   </article>;

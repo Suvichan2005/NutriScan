@@ -1213,3 +1213,8 @@ Do not discard ordinary measurement-basis explanations as though a reference den
 ### 26 October — explicit evidence methods share one reconstruction stage
 
 Make reader choice an execution boundary rather than a heuristic-reader cascade. All five methods invoke Gemini; no-image methods cannot inspect/cite unseen photos, and image-only starts with no OCR or earlier interpreted/corrected values. Original evidence/corrections remain application state and can be reused after the fresh interpretation. Persist method/model and valid photo lineage per revision. Preserve the existing combined default provisionally; one successful image-first task and one poor OCR-only task do not establish a general winner. Keep objective numerical plausibility separate from semantic understanding, and retain failed observations for research.
+
+
+### 26 October — extend objective invariants to the canonical path
+
+Physical-mass protection must not remain confined to the historical local audit. Known mass constituents exceeding their complete gram reference mass are conflicts, even when a model calls them clear/provisional. Preserve the original number/unit/basis/source and withhold calculation; never infer a missing decimal. Apply the same check to native/cached calculations and human confirmation. Respect inequality direction, unit conversion, unknown density/identity and equivalents. This objective bound is neither semantic medical reasoning nor proof that other readings are correct; independent reconstruction evaluation remains necessary.

@@ -1,3 +1,4 @@
+import {nutrientMassConflict} from './nutrient-mass';
 import { packageSchema, type Calculation, type Nutrient, type NutrientKey, type PackageData } from './contracts';
 import { reconstructedNutrientKey } from './portion';
 
@@ -9,6 +10,7 @@ export function reconstructionRowIsSuperseded(pkg: PackageData, row: NonNullable
 
 /** A current user correction takes precedence over earlier model/OCR inputs. */
 export function calculationRespectsCorrections(pkg: PackageData, calculation: Calculation): boolean {
+  if(nutrientMassConflict({nutrientKey:calculation.nutrient,value:calculation.input,unit:calculation.inputUnit,basisAmount:calculation.basisAmount,basisUnit:calculation.portionUnit}))return false;
   if(calculation.nutrient===null){
     const corrections=(pkg.reconstructionCorrections??[]).filter(item=>calculation.interpretationIds?.includes(item.rowId));
     if(corrections.length)return corrections.some(item=>item.reading.value===calculation.input&&item.reading.unit===calculation.inputUnit&&item.reading.unit===calculation.unit&&item.reading.basisAmount===calculation.basisAmount&&item.reading.basisUnit===calculation.portionUnit&&calculation.observationIds.includes(item.observationId)&&!item.reading.qualifier);
@@ -70,6 +72,8 @@ export function applyNutrientCorrection(pkg: PackageData, correction: NutrientCo
     || !Number.isFinite(correction.basisAmount) || correction.basisAmount <= 0 || correction.basisAmount > 10000) {
     throw new Error('The correction value or printed basis is outside supported ranges.');
   }
+  const massConflict=nutrientMassConflict({...correction,nutrientKey:correction.key});
+  if(massConflict)throw new Error(massConflict);
   const sourceObservationIds = [...new Set(correction.sourceObservationIds ?? [])];
   if (sourceObservationIds.length > 20 || sourceObservationIds.some(id => !pkg.observations.some(observation => observation.id === id))) {
     throw new Error('A correction must link to existing package evidence.');

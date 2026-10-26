@@ -1,3 +1,4 @@
+import {nutrientMassConflict} from './nutrient-mass';
 import type { Calculation, NutrientKey, PackageData, PackageReconstructionContent } from './contracts';
 
 export type PortionChoice = { value: number; unit: 'g' | 'ml' };
@@ -128,6 +129,7 @@ export function calculationsFromReconstruction(pkg: PackageData, portion: number
   for (const key of Object.keys(reconstructedNutrientLabels) as NutrientKey[]) {
     const eligible = reconstruction.nutritionRows.filter(row => {
       if (!['clear', 'provisional'].includes(row.status) || row.value === null || !row.unit || row.qualifier || !row.basisAmount || !row.basisUnit) return false;
+      if(nutrientMassConflict({...row,nutrientKey:key}))return false;
       if (row.basisUnit !== portionUnit || (reconstructedNutrientKey(row.nutrient)??reconstructedNutrientKey(row.printedLabel)) !== key) return false;
       return row.evidence.observationIds.some(id => observations.has(id))
         || row.evidence.imageRegions.some(region => retainedImages.has(region.imageId));

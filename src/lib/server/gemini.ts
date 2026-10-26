@@ -1,3 +1,4 @@
+import {checkReconstructionMasses} from '../nutrient-mass';
 import { createFunctionResponsePartFromBase64, createPartFromFunctionResponse, FunctionCallingConfigMode, ThinkingLevel, type Content, type FunctionCall, type FunctionDeclaration, type GroundingMetadata, type Part } from '@google/genai';
 import { z } from 'zod';
 import { createHash, randomUUID } from 'node:crypto';
@@ -1740,7 +1741,9 @@ async function reconstructPackage(
     await recordGeminiEvaluationEvent(analysisId,{event:'tool_result',stage:'package-reconstruction',round:0,toolCallId:call.id,name:call.name,status:'unlinked_evidence'});
     throw new ApiError(502,'package_reconstruction_unavailable','Gemini could not link its interpretation to the supplied scan evidence. Your photos and OCR remain available.');
   }
-  const content=canonicalizeReconstructionRows(sanitized.content);
+  const numericReview=checkReconstructionMasses(canonicalizeReconstructionRows(sanitized.content));
+  const content=numericReview.content;
+  if(numericReview.issues.length)await recordGeminiEvaluationEvent(analysisId,{event:'reconstruction_quantity_validation',issues:numericReview.issues,policy:'Impossible constituent masses are retained as conflicts, never corrected by guessing digits.'});
   await recordGeminiEvaluationEvent(analysisId,{
     event:'tool_result',
     stage:'package-reconstruction',

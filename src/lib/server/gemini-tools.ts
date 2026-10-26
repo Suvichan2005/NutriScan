@@ -1,3 +1,4 @@
+import {nutrientMassConflict} from '../nutrient-mass';
 import { packageWithRowCorrections } from '../reconstruction-correction';
 import { Type, type FunctionDeclaration } from '@google/genai';
 import { z } from 'zod';
@@ -741,6 +742,8 @@ function calculateReconstructedRow(row:NonNullable<PackageData['reconstruction']
   const imageIds=[...new Set(row.evidence.imageRegions.map(item=>item.imageId))];
   if(!context.package.reconstruction?.current||!['clear','provisional'].includes(row.status)||row.qualifier||row.value===null||!row.unit||!row.basisAmount||!row.basisUnit||row.basisUnit!==args.unit||(!row.evidence.observationIds.length&&!imageIds.length))return withheld('The saved row needs an exact, current, evidence-linked value, unqualified unit and matching mass or volume basis.');
   if(!calculableNutrientUnits.some(unit=>unit===row.unit))return withheld('The saved row does not use a supported absolute nutrient unit. Percentages and reference-intake percentages are not nutrient quantities.');
+  const massConflict=nutrientMassConflict({...row,nutrientKey:row.nutrientKey??nutrient});
+  if(massConflict)return withheld(massConflict);
   const corrected=context.package.reconstructionCorrections?.some(item=>item.rowId===row.rowId&&row.evidence.observationIds.includes(item.observationId));
   const result=row.value*args.amount/row.basisAmount;
   if(!Number.isFinite(result)||result>100000)return withheld('The requested calculation exceeds validated numeric limits.');
@@ -843,6 +846,8 @@ function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, 
     const reconciliation = reconcileInterpretedNutrition(context.package, [candidate], context.visualImages.map(image => image.imageId));
     const reading = reconciliation.readings.find(item => item.key === args.nutrient && item.candidateIds.includes(candidate.candidateId));
     if (!reading || !matchesPackageRows(reading, rows) || reading.basis.unit !== args.unit) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: reconciliation.withheld.find(item => item.candidateId === candidate.candidateId)?.reason ?? 'The interpretation does not have complete, attached evidence and a matching portion unit.' } };
+    const massConflict=nutrientMassConflict({nutrientKey:args.nutrient,value:reading.value,unit:reading.unit,basisAmount:reading.basis.amount,basisUnit:reading.basis.unit});
+    if(massConflict)return {status:'withheld',resultCount:0,output:{status:'withheld',message:massConflict}};
     const resultValue = reading.value * args.amount / reading.basis.amount;
     if (!Number.isFinite(resultValue) || resultValue > 100000) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'The requested calculation exceeds validated numeric limits.' } };
     const calculation = calculationSchema.parse({
@@ -877,6 +882,8 @@ function calculateNutrition(args: z.infer<typeof toolArgs.calculate_nutrition>, 
   if (reading.status === 'conflict' || !reading.basis || reading.basis.unit !== args.unit || !reading.observationIds.length) {
     return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'A confirmed, unconflicted reading with a matching known basis is required; no mass-volume conversion is assumed.' } };
   }
+  const massConflict=nutrientMassConflict({nutrientKey:args.nutrient,value:reading.value,unit:reading.unit,basisAmount:reading.basis.amount,basisUnit:reading.basis.unit});
+  if(massConflict)return {status:'withheld',resultCount:0,output:{status:'withheld',message:massConflict}};
   const resultValue = reading.value * args.amount / reading.basis.amount;
   if (!Number.isFinite(resultValue) || resultValue > 100000) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'The requested calculation exceeds validated numeric limits.' } };
   const calculation = calculationSchema.parse({
