@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — identify every dated claim source used in deterministic answers
+
+When the local FSSAI nutrient-claim explanation uses both the Version IV compendium and the amendments-index snapshot, include each catalogued source title in the answer so source selection produces two inspectable cards. Apply this to general claim criteria, package-claim questions and current-status abstentions. Keep the dated snapshot boundary explicit: these records do not decide current law or product compliance. Do not imply that a source is linked if its identity is absent from the answer.
+
 ## 27 October 2026 — scope curated outcome evidence by its linked subject
 
 For a source explicitly linked to an ingredient/outcome relationship, include that relationship in native knowledge-tool results only when the active package names the ingredient or the current question explicitly asks about it. Include its population, exposure, outcome, exact source IDs and limitations. A semantic similarity match alone must not make an ingredient-specific study appear applicable to another product. This gate does not establish source entailment or a package-specific effect; Gemini still interprets, and exposure/dose remains unproven unless supported independently.
@@ -1397,3 +1401,4 @@ Reuse bounded sources actually cited in non-outdated turns as model context; do 
 # 27 October 2026 — Retrieved summaries are not verbatim quotations
 
 Do not require ordinary assistant prose to reproduce exact spans from `EvidenceSource.summary` or `limitations`: these are NutriScan-prepared summaries and may paraphrase the linked publisher. Keep citations tied to uniquely resolved source identity and current-question/topic/jurisdiction scope, render the summary as NutriScan-authored text, and link the original record. Exact source spans may remain internal evidence metadata where contracts need provenance. Scope and citation identity still do not establish semantic entailment; preserve this as an explicit limitation instead of treating quotation matching as a truth test. Numeric and package-evidence validation are unchanged.
+27 October: when an audit has already selected a source for a direct topic, additional personal context in the same question may not hide that source card if the source still directly matches at least one substantive topic term. Personal context alone never authorizes a source; keep jurisdiction and applicability checks intact.

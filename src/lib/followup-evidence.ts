@@ -62,7 +62,12 @@ export function isLocalEvidenceTopicallyRelevant(
   if (matchedNamedEntityTokens.length && (namedEntityTokens.length < 2 || matchedNamedEntityTokens.length >= 2)) return true;
   const substantiveTopicTokens = queryTokens.filter(token => token.length >= 4 && !broadContextTerms.has(token) && !namedEntityTokens.includes(token));
   const matchedTopicTokens = substantiveTopicTokens.filter(token => sourceTokens.has(token));
-  if (namedEntityTokens.length) return matchedTopicTokens.length >= 2 || (namedEntityTokens.length >= 2 && matchedTopicTokens.length >= 1);
+  // A source selected for one explicit topic can remain useful when the user
+  // adds a second, personal-context term that the source does not discuss
+  // (for example, sodium guidance in a question that also mentions diabetes).
+  // The topic match still has to be direct; personal context alone is never
+  // enough to attach a source.
+  if (namedEntityTokens.length) return matchedTopicTokens.length >= 1;
   return queryTokens.some(token => sourceTokens.has(token));
 }
 

@@ -137,6 +137,13 @@ describe('local evidence follow-ups', () => {
     expect(parseLocalEvidenceResponse(retrievalResponse({ results: [
       { source: sodium, semanticScore: 0.7, lexicalScore: 0.6, score: 0.68, exactIdentity: false },
     ] }), query).hits.map(hit => hit.source.id)).toEqual(['who-sodium']);
+
+    const contextualQuestion = 'I have type 2 diabetes and hypertension. For this 75 g portion, what does the sodium mean, and what should I compare without a personal target?';
+    const pkg = parseLabel('Instant noodles\nNutrition information per 100 g\nSodium 1400 mg', { origin: 'user' });
+    const audit = buildAudit(pkg, 75, 'g', defaultProfile, contextualQuestion);
+    const reply = buildLocalAuditConversationReply(audit, contextualQuestion, pkg);
+    expect(reply.answer).toContain('1050 mg sodium');
+    expect(reply.evidence?.map(item => item.id)).toContain('who-sodium');
   });
 
   it('does not confuse an additive identity with a requested nutrition-panel value', () => {
