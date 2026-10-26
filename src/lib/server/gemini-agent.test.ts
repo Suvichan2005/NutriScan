@@ -476,6 +476,8 @@ describe('natural NutriScan agent contract', () => {
     const instruction = getAgentSystemInstruction();
     const tools = getAgentToolDeclarations(false, false);
     expect(instruction).toContain('answer in plain text');
+    expect(instruction).toContain('On follow-up turns, answer the new question directly');
+    expect(instruction).toContain('Do not repeat the previous overview or unrelated source details');
     expect(instruction).toContain('cite the exact SRC handle and source name/date');
     expect(instruction).toContain('NutriScan-prepared summary, not a verbatim source quotation');
     expect(instruction).toContain('Omit claims when the returned evidence does not support them');
