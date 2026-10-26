@@ -236,7 +236,9 @@ export function defaultPortion(pkg: { serving?: PortionChoice; netWeight?: Porti
 /** Use an amount the user typed in their question, falling back to the current portion. */
 export function resolveQuestionPortion(question: string, fallback: PortionChoice, netWeight?: PortionChoice, serving?: ReconstructedServingPortion | null): PortionChoice {
   const normalizedServing = normalizeReconstructedServing(serving);
-  const amount = question.match(/\b(\d+(?:\.\d+)?)\s*(g|grams?|ml|millilit(?:er|re)s?)\b/i);
+  const latestFollowUp = question.split(/\bFollow-up:\s*/i).at(-1) ?? question;
+  const amount = latestFollowUp.match(/\b(\d+(?:\.\d+)?)\s*(g|grams?|ml|millilit(?:er|re)s?)\b/i)
+    ?? question.match(/\b(\d+(?:\.\d+)?)\s*(g|grams?|ml|millilit(?:er|re)s?)\b/i);
   if (amount) {
     const value = Number(amount[1]);
     if (value > 0 && value <= 2000) return { value, unit: /^(?:ml|millilit)/i.test(amount[2]) ? 'ml' : 'g' };

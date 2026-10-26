@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {filterAnswerBySourceScope,renderAnswerEvidenceReferences,selectCitedEvidence} from '../answer-evidence';
+import {filterAnswerBySourceScope,prioritizeCitedEvidence,renderAnswerEvidenceReferences,selectCitedEvidence} from '../answer-evidence';
 import {isGuidanceEvidenceInScope,isLocalEvidenceTopicallyRelevant} from '../followup-evidence';
 
 const source=(id:string,title:string,publisher:string,publishedAt:string|null)=>({id,title,publisher,publishedAt,url:`https://example.org/${id}`});
@@ -119,4 +119,14 @@ it('preserves an exact native source identity when different records have identi
   const rendered=renderAnswerEvidenceReferences('Read SRC_1.',new Map([['SRC_1','new']]),[a,b],[]);
   expect(rendered).toContain(b.url);
   expect(selectCitedEvidence(rendered,[a,b])).toEqual([b]);
+});
+
+it('prioritizes exact cited records before applying a bounded evidence limit',()=>{
+  const sources=Array.from({length:21},(_,index)=>source(`source-${index+1}`,`Distinct evidence record ${index+1}`,'Example Institute',String(2000+index)));
+  const answer='See SRC_L.';
+  const aliases=new Map([['SRC_L','source-21']]);
+  const retained=prioritizeCitedEvidence(answer,sources,aliases,20);
+  expect(retained).toHaveLength(20);
+  expect(retained[0]).toEqual(sources[20]);
+  expect(retained.map(item=>item.id).includes(sources[19].id)).toBe(false);
 });

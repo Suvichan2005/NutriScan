@@ -52,6 +52,9 @@ describe('question-directed portions',()=>{
     expect(resolveQuestionPortion('How much sodium is in 50 g?',{value:30,unit:'g'})).toEqual({value:50,unit:'g'});
     expect(resolveQuestionPortion('What about 250 ml?',{value:30,unit:'g'})).toEqual({value:250,unit:'ml'});
   });
+  it('uses the new amount in a resolved natural follow-up instead of the earlier amount',()=>{
+    expect(resolveQuestionPortion('For my 150 ml portion, what does the sodium mean? Follow-up: What if I have 250 ml instead?',{value:150,unit:'ml'})).toEqual({value:250,unit:'ml'});
+  });
   it('uses half the declared pack when requested',()=>{
     expect(resolveQuestionPortion('How about half a pack?',{value:30,unit:'g'},{value:200,unit:'g'})).toEqual({value:100,unit:'g'});
   });

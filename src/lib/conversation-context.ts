@@ -57,10 +57,19 @@ export function resolveLocalFollowUpQuestion(
   previousTurns: Pick<SavedConversationTurn, 'question'>[],
 ): string {
   const current = question.trim();
+  const explicitMassOrVolume = /\b\d+(?:\.\d+)?\s*(?:g|grams?|ml|millilit(?:er|re)s?)\b/i;
+  const amountOnlyFollowUp = /^(?:(?:and|or)\s+)?(?:(?:for|at|with)\s+)?\d+(?:\.\d+)?\s*(?:g|grams?|ml|millilit(?:er|re)s?)(?:\s+instead)?[?.!,]*$/i.test(current);
+  const continuesPriorAmount = amountOnlyFollowUp
+    || /^(?:(?:and\s+)?(?:what|how)\s+about\b|what\s+if\b|and\s+if\b)/i.test(current)
+    || /\binstead\b/i.test(current);
+  const previousQuestion = previousTurns.at(-1)?.question.trim() ?? '';
+  if (continuesPriorAmount && explicitMassOrVolume.test(current) && explicitMassOrVolume.test(previousQuestion)) {
+    return `${previousQuestion.slice(0, 1000)} Follow-up: ${current.slice(0, 1000)}`;
+  }
+
   const ageFollowUp = /^(?:(?:and|what|how)\s+)?(?:(?:about|for)\s+)?(?:the\s+)?(?:children|kids|adults)\b[\s\S]*$/i.test(current);
   if (!ageFollowUp) return current;
 
-  const previousQuestion = previousTurns.at(-1)?.question.trim() ?? '';
   const previousAskedWholeDietFibre = /\b(?:dietary\s+)?fib(?:er|re)\b/i.test(previousQuestion)
     && /\b(?:WHO|guideline|recommend\w*|guidance|daily|per day)\b/i.test(previousQuestion);
   if (!previousAskedWholeDietFibre) return current;

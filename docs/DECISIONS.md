@@ -1,15 +1,19 @@
 # Chronological decisions
 ## 27 October 2026 — concise saved-context follow-ups
 
-Follow-up turns should answer the new question directly from relevant saved package facts and bounded prior evidence, avoiding a repeated overview unless the question needs it. This is a language instruction only; it does not force tools, alter package facts, or weaken numerical/source validation. One matched synthetic live pair showed a small token reduction; general quality and efficiency remain unverified.
+Follow-up turns should answer the new question directly from relevant saved package facts and bounded prior evidence, avoiding a repeated overview unless needed. This is a natural-language instruction only; it does not force retrieval, change package facts or weaken numerical/source validation. A single matched synthetic live pair showed lower tokens but cannot establish broad quality or efficiency.
 
-## 27 October 2026 — require provenance before showing extracted package identity
+## 27 October 2026 — reserve bounded evidence slots for cited sources
 
-Do not use parser best-effort `name` or `brand` as consumer-facing identity by default. Prefer explicit user-provided/corrected values, active package reconstruction, and confidence-qualified OCR values linked to a photographed side. Keep model-suggested identity visibly provisional. Use a generic package title when support is absent; do not add phrase-specific OCR exclusions.
+When carried conversation sources and newly selected tool records share a bounded evidence list, retain records the answer actually cites before unused candidates. Apply this at both agent and response boundaries, then keep existing source-topic, jurisdiction and quantity validation. A citation remains traceability, not proof of entailment.
 
-## 27 October 2026 — keep local allergy findings concise but qualified
+## 27 October 2026 — preserve the restored private report as a historical draft
 
-Quote retained package wording once. Explain that “May contain” is precautionary wording and does not confirm presence; direct label mentions remain unverified readings. Preserve uncertainty about amount/exposure and individual safety without repeating redundant disclaimers.
+Restore the exact owner report archive into ignored `.data` when available, but do not treat its older zero-result draft or its template PDF as a current accepted report/template. Verify its recorded hash, keep the original template DOCX blocker, and revalidate report-evidence anchors against current evidence before any future edit. Never replace the owner artifact with a reconstruction from memory.
+
+## 27 October 2026 — carry context for quantity-only follow-ups
+
+Treat a brief explicit mass/volume turn as a continuation only when the preceding user question also includes an explicit supported amount. Preserve complete current questions verbatim and never consult prior assistant prose as evidence. This is local conversational input resolution; provider adherence and scientific correctness remain separate.
 
 ## 27 October 2026 — preserve answer intent when a requested value is unavailable
 
@@ -1430,5 +1434,6 @@ Reuse bounded sources actually cited in non-outdated turns as model context; do 
 
 Do not require ordinary assistant prose to reproduce exact spans from `EvidenceSource.summary` or `limitations`: these are NutriScan-prepared summaries and may paraphrase the linked publisher. Keep citations tied to uniquely resolved source identity and current-question/topic/jurisdiction scope, render the summary as NutriScan-authored text, and link the original record. Exact source spans may remain internal evidence metadata where contracts need provenance. Scope and citation identity still do not establish semantic entailment; preserve this as an explicit limitation instead of treating quotation matching as a truth test. Numeric and package-evidence validation are unchanged.
 27 October: when an audit has already selected a source for a direct topic, additional personal context in the same question may not hide that source card if the source still directly matches at least one substantive topic term. Personal context alone never authorizes a source; keep jurisdiction and applicability checks intact.
+# 27 October 2026 — Resolve natural changed-quantity follow-ups from user turns
 
-27 October: numeric prose grounded only in the active Gemini package reconstruction may remain useful, but the conversation must identify those quantities as unverified and direct the user to Package details for confirmation. Keep the existing unsupported-number and basis checks unchanged. User-corrected nutrient values are not described as model readings; their correction provenance remains visible through the existing correction UI.
+When a user asks a referential follow-up with a new explicit mass or volume after a quantity question, retain the immediately preceding user question as conversational context. Use the amount in the current follow-up for native calculations, not the earlier amount. Do not use previous assistant prose as evidence, and do not carry an unrelated topic when either turn lacks an explicit supported amount or the current turn is not referential. This keeps calculation inputs typed and local while supporting ordinary multi-turn wording.

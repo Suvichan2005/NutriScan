@@ -16,7 +16,7 @@ import { ApiError } from './http';
 import { recordGeminiDiagnostic } from './gemini-diagnostics';
 import { finishGeminiEvaluation, recordGeminiEvaluationEvent, startGeminiEvaluation } from './gemini-evaluation-recorder';
 import { calculationsForSavedPortionDifferences, calculationsFromReconstruction, defaultPortion, hasExplicitPortionRequest, resolveQuestionPortion } from '../portion';
-import { filterAnswerBySourceScope, renderAnswerEvidenceReferences, selectCitedEvidence } from '../answer-evidence';
+import { filterAnswerBySourceScope, prioritizeCitedEvidence, renderAnswerEvidenceReferences, selectCitedEvidence } from '../answer-evidence';
 import { reconstructionRowIsSuperseded } from '../correction';
 import { workspacePortionSchema } from '../contracts';
 
@@ -1904,7 +1904,7 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
       });
       if(parsed.success)uiComponents.push(parsed.data);
     }
-    const evidence=[...toolEvidence.values()].slice(0,20);
+    const evidence=prioritizeCitedEvidence(text,[...toolEvidence.values()],referenceAliases.fromModel,20);
     if(evidence.length){
       const parsed=assistantUiComponentSchema.safeParse({type:'source-reference-cards',observationIds:[],sourceIds:evidence.slice(0,5).map(item=>item.id),calculationIds:[]});
       if(parsed.success)uiComponents.push(parsed.data);
@@ -2233,7 +2233,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
     const agentTrace=[...reconstructionTrace,...generated.trace].slice(0,24);
     const allEvidence=new Map([...(data.evidence??[]),...generated.evidence].map(source=>[source.id,source]));
     const allCalculations=new Map([...generated.calculations,...(data.calculations??[])].map(calculation=>[calculation.id,calculation]));
-    const effectiveEvidence=[...allEvidence.values()].slice(0,30);
+    const effectiveEvidence=prioritizeCitedEvidence(generated.answer,[...allEvidence.values()],referenceAliases.fromModel,30);
     const effectiveCalculations=[...allCalculations.values()].slice(0,20);
     const sourceScopeCheck=filterAnswerBySourceScope(
       generated.answer,

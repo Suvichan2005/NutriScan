@@ -1,16 +1,33 @@
 # Sanitized engineering journal
 ## 2026-10-27 — direct answers from saved context on follow-up
 
-- Added a general follow-up instruction to answer the new question first from relevant saved package facts and bounded prior cited-source context, avoiding repetitive overviews unless useful. Added agent-prompt regression assertions.
-- A free-only synthetic sodium run used 3.6 Flash after 3.8 timeout and 3.7 503. It made four successful generations, called package reconstruction, nutrition guidance and knowledge search, returned two WHO records, and withheld two unsupported numeric sentences. Usage was 19,956 tokens (18,312 prompt, 613 candidate, 1,031 thinking). Local source metadata confirms `who-sodium` is the WHO Sodium reduction fact sheet published 2026-05-11; this does not independently establish source applicability or answer correctness.
-- A matched 50 g follow-up using saved package context and no photos changed from a repeated overview at 4,545 tokens to a direct answer at 4,465 tokens after the instruction. Both used one generation and no tools; one example is not a general result. No actual billing read or browser-rendered acceptance was performed.
-- Verification: 849 tests passed, 2 skipped; TypeScript and optimized production build passed. Three readable transcripts remain ignored local artifacts. No paid request or real user profile/photo was used.
+- Added a general follow-up instruction to answer the new question first from relevant saved package facts and bounded prior cited-source context, avoiding repetitive overviews unless useful. Regression assertions passed.
+- A free-only synthetic sodium run used 3.6 Flash after 3.8 timeout and 3.7 503. It made four successful response generations, called package reconstruction, nutrition guidance and knowledge search, returned two WHO records, and withheld two unsupported numeric sentences. Usage was 19,956 tokens (18,312 prompt, 613 candidate, 1,031 thinking). Local metadata identifies `who-sodium` as WHO Sodium reduction, published 2026-05-11; this does not independently establish applicability or answer correctness.
+- A matched 50 g follow-up using saved context and no photos changed from a repeated overview at 4,545 tokens to a direct answer at 4,465 tokens after the instruction. Both used one generation and no tools; this is one case, not a broad result. No Google billing read or browser-rendered acceptance was performed.
+- Before newer M6 integration, 849 tests passed, 2 skipped; TypeScript and optimized build passed. Readable synthetic traces remain in ignored `.data/gemini-evaluations/`. No paid request or real profile/photo was used.
 
-## 2026-10-27 — ambiguous package identity and concise label evidence
+## 2026-10-27 — preserve tool-selected sources through answer bounds
 
-- Merged integration commit `9936b8b`, which prevents a parsed line typed as another package field from becoming a catalog-search query. Preserved the feature branch's stronger provenance rule for displaying OCR identity, plus explicit user correction, user detail, reconstructed suggestions, and barcode paths.
-- Browser review showed that the allergy evidence line still repeated its field label. The local finding now quotes the package text once and keeps the precautionary cross-contact caveat.
-- Verification on the combined source: full suite 847 passed/2 skipped, TypeScript and optimized production build clean, local-only Chrome acceptance at 390×844 and 1440×900 with no provider/external requests, page errors, Axe violations or horizontal overflow. The acceptance waits for asynchronous local evidence lookup to settle before screenshots; it resolved within 15 seconds at both viewport sizes. No Gemini generation, real-photo accuracy or scientific validation claimed.
+- Reproduced a production-route failure with30 carried records: the local `get_nutrition_guidance` tool selected WHO sodium guidance and the mocked model cited it, but the final evidence cap removed it before source-scope validation. NutriScan withheld the explanation and omitted the source card.
+- Source references now receive priority before both20-record agent evidence and30-record effective-answer bounds. The same route replay now retains the explanation, exact `who-sodium` record and source-card ID. Local retrieval only; Gemini endpoint mocked; no browser or external request.
+- Focused server/evidence/tool suites191 passed/1 skipped. Full TypeScript still has pre-existing Vitest `.not` matcher errors; changed implementation and new test lines are clear. This verifies bounded source handoff, not semantic entailment or live Gemini behavior.
+
+## 2026-10-27 — restore the private report draft without replacing its template
+
+- The private Drive `.data.7z` contained `academic-completion`; restored that directory into ignored `.data` only. The DOCX SHA-256 exactly matches its archived build manifest. It is a 16-page draft with zero independent experimental results and was tested against source commit `85ae0f70`.
+- The original KIIT `Project_Report-format.docx` is not in the archive; only its PDF reference and inspection metadata are present. No report editing, template reconstruction or current-evidence claim was made. Historical report-evidence anchors remain unverified until the correct owner template/evidence is restored.
+
+## 2026-10-27 — handle amount-only conversational continuations
+
+- A natural short follow-up (“And 250 ml?”) did not carry the prior user question into the local resolver. Added a general amount-only shape check for explicit g/ml quantities with optional continuation/preposition words; complete questions and conversations without a previous amount remain unchanged.
+- Focused conversation-context and portion suites passed33/33. Desktop/mobile acceptance could not start: the fresh dev server's first `/api/status` compilation exceeded the health check and the acceptance runner timed out before browser creation. No assistant, provider or external request was made.
+- Five owner-modified files still match the pinned snapshot. Repeat this test as part of the next broader M2/M6 browser checkpoint; do not report live Gemini behavior.
+
+## 2026-10-27 — verify retry recovery and claim-flow transfer in the current UI
+
+- Replayed a fictional details-entry journey with provider status mocked available and one browser-intercepted 503. Mobile/desktop retained both 30 g calculations, explained the failure, exposed a separate retry action, and produced no browser/external requests, page errors, Axe violations or overflow. The attempted route never reached the app server; this is not evidence for a real provider failure.
+- Re-ran nutrient-claim acceptance after shared local-answer changes; criteria, unverified wording, two dated source cards and current-status abstention passed at 390×844 and 1440×900. Refreshed sanitized receipt: `docs/evidence/nutrient-claim-browser.json`.
+- Added a reproducible M6 acceptance runner, `scripts/acceptance-provider-failure-recovery.mts`; its synthetic payload and screenshots stay ignored in `.data/` and `docs/evidence/private/`. No key, profile or real image was used.
 
 ## 2026-10-27 — preserve trans-fat meaning and current-law responses in local follow-ups
 
@@ -1271,20 +1288,10 @@ Checkpoint checks:756 passed/one skipped with four workers, TypeScript and final
 - No replacement report/template was created and no external archive was retried. R1 report editing waits for restoration of the original owner artifact; product engineering remains active under M2/M3.
 # 27 October — Natural source attribution review
 
-# 27 October — Natural source attribution review
+Reviewed the exact-source-summary quote requirement introduced at `e7114e4`. The cited text in this codebase is a NutriScan-authored summary, so requiring a double-quoted copy in the final response could misrepresent it as publisher wording and make prose brittle. Removed that output-format gate while retaining resolved citation identity and subject/jurisdiction checks; labeled the evidence-card text as a NutriScan summary. A relevant topic match still cannot prove a scientific claim is entailed, and this limitation is now explicit. Focused four-suite verification passed172/172, TypeScript and diff check passed. No live Gemini request was made.
+# 2026-10-27 — Natural changed-quantity follow-up transfer
 
-Reviewed the exact-source-summary quote requirement introduced at `e7114e4`. The cited text in this codebase is a NutriScan-authored summary, so requiring a double-quoted copy could misrepresent it as publisher wording and make prose brittle. Removed that output-format gate while retaining resolved citation identity and subject/jurisdiction checks; labeled the evidence-card text as a NutriScan summary. A relevant topic match still cannot prove a scientific claim is entailed, and this limitation is now explicit. Focused four-suite verification passed172/172, TypeScript and diff check passed. No live Gemini request was made.
-
-# 2026-10-27 — provenance-safe package header and concise allergy finding
-
-- Browser review on synthetic pasted-label input exposed a general provenance issue: an arbitrary parser `name` could be a precautionary-allergen line and was promoted into the package header. The shared identity selector now requires user correction/detail, active reconstruction, confidence-qualified photo-linked OCR, or a clearly marked Gemini suggestion; otherwise the title remains generic.
-- The same review found repetitive allergy copy. Findings now quote the matched label line once and distinguish precautionary wording from direct mentions while preserving uncertainty. Updated tests and the existing browser acceptance contract.
-- Verification: 845 tests passed, 2 skipped; TypeScript and optimized production build clean; local-only Playwright journey passed at 390×844 and 1440×900. No Gemini/provider calls, scientific validation or human accuracy review.
-
-# 27 October — merge and verify local explanation/source preservation
-
-Merged the current shared integration commit `c7eb429` into `codex/m2-subject-scope-20261027`, resolving documentation conflicts by retaining both chronology entries. The trans-fat local response change remains scoped to the shared answer/context boundary; linked topic-relevant sources are retained and jurisdiction filters remain active. Full suite passed 847 tests with 2 skipped, TypeScript passed, optimized production build passed, and the existing local-only Chrome acceptance passed at 390×844 and 1440×900. The receipt was regenerated from this revision. No Gemini credentials were available in this checkout, and no provider or external request was made. This is local presentation/source-card evidence, not live model selection, scientific entailment or legal verification. The handoff was consolidated into `docs/CURRENT_STATE.md`; detailed history remains here and in the completion queue.
-
-# 27 October — label-reading certainty in conversational answers
-
-Read the saved controlled development receipts in `.data/m2-source-acceptance-20261027/`. In the broad sugar/carbohydrate-claim run, Gemini returned numeric claims from the saved package reconstruction but selected no source tools. The numeric validator appropriately withheld unmatched quantities, but did not tell users that accepted model-reconstructed quantities were still unverified. Added a shared provenance-aware notice for accepted numeric prose grounded in the active reconstruction; user-corrected values do not trigger the model-reading notice. Kept unsupported quantity and basis validation intact. Focused inference and Gemini agent/diagnostics suites passed (98 tests); the full suite passed 849 tests with 2 skipped; TypeScript and optimized production build passed. No provider request or claim of source-grounded answer quality was made. The source-tool selection gap remains active M2 work.
+- A new synthetic sweetened-dairy scenario found that “What if I have 250 ml instead?” lost the prior sodium topic after a 150 ml question. This was a real local conversation bug, distinct from the earlier oats case.
+- Updated local follow-up resolution to carry only the previous user question for a referential mass/volume follow-up; updated portion resolution to select the amount in that current follow-up segment. Added positive and negative resolver cases and a numerical precedence case.
+- Current Chrome acceptance passes on mobile390×844 and desktop1440×900: 150 ml carb/sugar/sodium amounts, 6.75% WHO general-adult sodium context with a non-personal limitation and visible source, 250 ml amounts, and missing calcium remains unknown. Zero provider/external requests, page errors, Axe violations or overflow. Receipt: `docs/evidence/m2-sweetened-dairy-transfer-20261027.json`; screenshots remain ignored under `.data/m2-sweetened-dairy-transfer-20261027/`.
+- Focused Vitest suites:32 passed. Full TypeScript command reports repository-wide `Assertion.not` typing errors in tests; no diagnostics name the changed implementation or acceptance runner. Gemini stayed disabled; no model, final-study, human-evaluation or default-method claim.

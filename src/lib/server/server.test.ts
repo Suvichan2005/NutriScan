@@ -792,6 +792,34 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.uiComponents.some(item=>item.type==='source-reference-cards')).toBe(false);
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
+  it('keeps a cited tool-selected source in the effective answer evidence when prior context fills the source cap',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const selected=getNutritionGuidance({query:'sodium hypertension adults',jurisdiction:'India',maxResults:1})[0];
+    expect(selected?.id).toBe('who-sodium');
+    const carried=Array.from({length:30},(_,index)=>({...selected!,id:`carried-source-${index+1}`,title:`Earlier source note ${index+1}`,publisher:`Earlier source publisher ${index+1}`,url:`https://example.org/earlier/${index+1}`,summary:'An earlier cited record unrelated to sodium guidance.',limitations:'Not a sodium recommendation.'}));
+    const question='What sodium guidance applies for hypertension in India?';
+    const answer='WHO guidance discusses sodium intake in relation to blood pressure at a population level SRC_V.';
+    let providerCalls=0;
+    const fetcher=vi.fn().mockImplementation(async(input:RequestInfo|URL)=>{
+      const url=String(input);
+      if(!url.includes('generativelanguage.googleapis.com'))throw new Error(`Unexpected test request to ${new URL(url).hostname}`);
+      providerCalls+=1;
+      const part=providerCalls===1
+        ?toolCallPart('guidance-call','get_nutrition_guidance',{query:'sodium hypertension adults',condition:'hypertension',jurisdiction:'India',maxResults:1})
+        :{text:answer};
+      return new Response(modelResponse([part]),{status:200,headers:{'content-type':'application/json'}});
+    });
+    vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question,evidence:carried,package:{id:'source-cap-tool-transfer',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
+
+    const result=await assist(data);
+
+    expect(providerCalls).toBe(2);
+    expect(result.answer).toContain('WHO guidance discusses sodium intake in relation to blood pressure at a population level');
+    expect(result.agentEvidence.map(item=>item.id)).toContain(selected!.id);
+    expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[selected!.id],calculationIds:[]});
+    expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-ready',withheldSourceScopeSentences:0});
+  });
   it('retains a relevant source on a short follow-up by using prior user questions, not prior answer text',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const source=getNutritionGuidance({query:'diabetes carbohydrate',jurisdiction:'India',maxResults:3}).find(item=>item.id==='idf-healthy-nutrition-diabetes-2024');

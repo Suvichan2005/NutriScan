@@ -79,6 +79,21 @@ export function selectCitedEvidence<T extends SourceIdentity>(answer:string,sour
   });
 }
 
+/** Keep answer-cited records inside a bounded evidence set before validation/rendering. */
+export function prioritizeCitedEvidence<T extends SourceIdentity>(
+  answer:string,
+  sources:readonly T[],
+  aliases:ReadonlyMap<string,string>,
+  limit:number,
+):T[]{
+  const citedIds=new Set(selectCitedEvidence(answer,sources).map(source=>source.id));
+  for(const handle of answer.match(/\bSRC_[A-Z0-9]+\b/gi)??[]){
+    const id=aliases.get(handle);
+    if(id&&sources.some(source=>source.id===id))citedIds.add(id);
+  }
+  return[...sources.filter(source=>citedIds.has(source.id)),...sources.filter(source=>!citedIds.has(source.id))].slice(0,Math.max(0,limit));
+}
+
 /**
  * Withhold sentences that explicitly rely on a source record that is missing,
  * off-topic for the current question, or outside the requested guidance scope.
