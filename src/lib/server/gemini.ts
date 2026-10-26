@@ -19,6 +19,7 @@ import { calculationsForSavedPortionDifferences, calculationsFromReconstruction,
 import { filterAnswerBySourceScope, prioritizeCitedEvidence, renderAnswerEvidenceReferences, selectCitedEvidence } from '../answer-evidence';
 import { reconstructionRowIsSuperseded } from '../correction';
 import { workspacePortionSchema } from '../contracts';
+import { addProfileGuidanceContextSources } from './profile-guidance-context';
 
 export { providerStatus };
 
@@ -2109,6 +2110,8 @@ export async function assist(data: z.infer<typeof assistInput>) {
   if(!status.enabled)throw new ApiError(503,'provider_disabled',status.message);
   const analysisId=randomUUID();
   const callerCalculationCount=data.calculations?.length??0;
+  const evidence=addProfileGuidanceContextSources({question:data.question,package:data.package,profile:data.profile,evidence:data.evidence});
+  if(evidence.length!==(data.evidence?.length??0))data=assistInput.parse({...data,evidence});
   const savedServingCalculations=data.workspacePortion?[]:calculateSavedServing(data.package);
   if(savedServingCalculations.length){
     const byId=new Map([...(data.calculations??[]),...savedServingCalculations].map(calculation=>[calculation.id,calculation]));
@@ -2249,6 +2252,14 @@ export async function assist(data: z.infer<typeof assistInput>) {
       question:data.question,
       evidence:effectiveEvidence,
       calculations:effectiveCalculations,
+      sourceIdsForSentence:sentence=>{
+        const ids=new Set(selectCitedEvidence(sentence,effectiveEvidence).map(source=>source.id));
+        for(const [handle,id] of referenceAliases.fromModel){
+          const escaped=handle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+          if(new RegExp(`\\b${escaped}\\b`,'i').test(sentence))ids.add(id);
+        }
+        return [...ids];
+      },
       onWithheldSentence:decision=>withheldSpans.push(decision),
     });
     const answerStatus=sourceScopeCheck.withheldSentenceCount&&answerCheck.withheldUnsupportedQuantitySentenceCount?'answer-with-evidence-withheld'

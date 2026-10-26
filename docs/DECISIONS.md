@@ -1461,3 +1461,14 @@ A source selected for the user's question cannot support every sentence in the g
 # 27 October 2026 — preserve provider failure and routing reason separately
 
 For every failed model attempt, retain the sanitized provider failure class (for example, `timeout`) independently from the router's retry/cooldown category (for example, `service-unavailable`). Keep the existing category as the routing reason for compatibility; do not use it as a substitute for the observed provider failure. This improves diagnosis without changing model order, cooldown, or paid-fallback policy.
+# 27 October 2026 — validate community product records through the current conversation UI
+
+Use a user-entered barcode to verify live community-record display without presenting catalog ingredients or allergens as package observations. Keep ingredient, declared-allergen, and precautionary trace tags in separately labeled expandable source detail with explicit missing-tag caveats. Browser acceptance checks current mobile/desktop layouts and source attribution; it does not claim photo/OCR identification or manufacturer verification.
+
+# 27 October 2026 — preselect local guidance for an explicitly shared health profile
+
+When a user explicitly includes health context in a Gemini request, locally select up to three matching guidance records from the existing curated guidance catalog using the question and structured package nutrient topics. Merge them into the existing evidence set without duplicates and within the 30-source request limit. This closes a source-availability gap when the model omits a guidance-tool call. It makes no external search and does not prove the model will use or correctly apply the sources; final citation and scientific-quality evidence remains outstanding.
+
+### Retrieved numerical evidence is sentence-scoped
+
+Numeric validation may use a retrieved source's numeric content only when the answer sentence identifies that source. A source elsewhere in the turn must not corroborate an uncited or unrelated quantity. Keep package observations and typed calculation evidence on their established paths. This association check does not establish scientific entailment.
