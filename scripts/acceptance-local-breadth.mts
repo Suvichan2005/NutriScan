@@ -68,6 +68,9 @@ try {
     ].join('\n'));
     await page.getByRole('button', { name: 'Read label text' }).click();
     await page.locator('.thread-workspace').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('.thread-package-identity .badge').innerText(), 'No package photos');
+    await page.getByRole('button', { name: 'Add photos' }).waitFor({ state: 'visible' });
+    assert.equal(await page.locator('.thread-photo-strip').count(), 0);
     const firstAnswer = await page.locator('.thread-assistant-message').first().innerText();
 
     const ask = async (question: string, turn: number) => {
@@ -87,6 +90,24 @@ try {
     await contextualSodiumSources.waitFor({ state: 'visible' });
     await contextualSodiumSources.locator('summary').click();
     const contextualSodiumSourceText = await contextualSodiumSources.innerText();
+    const sourceLimitations = contextualSodiumSources.locator('.fine-print').last();
+    await sourceLimitations.scrollIntoViewIfNeeded();
+    const sourceVisibility = await sourceLimitations.evaluate(limitation => {
+      const scroll = limitation.closest<HTMLElement>('.thread-scroll');
+      const composer = document.querySelector<HTMLElement>('.thread-composer');
+      if (!scroll || !composer || !limitation) return null;
+      const scrollRect = scroll.getBoundingClientRect();
+      const composerRect = composer.getBoundingClientRect();
+      const limitationRect = limitation.getBoundingClientRect();
+      return {
+        scrollTop: scrollRect.top,
+        scrollBottom: scrollRect.bottom,
+        composerTop: composerRect.top,
+        limitationTop: limitationRect.top,
+        limitationBottom: limitationRect.bottom,
+        limitationScrollTop: scroll.scrollTop,
+      };
+    });
     const axe = await new AxeBuilder({ page }).analyze();
     const dimensions = await page.evaluate(() => ({
       viewport: { width: innerWidth, height: innerHeight },
@@ -101,6 +122,7 @@ try {
       combinedContextAnswer,
       contextualSodiumAnswer,
       contextualSodiumSourceText,
+      sourceVisibility,
       providerCalls,
       externalRequests: [...new Set(externalRequests)],
       pageErrors,
@@ -123,6 +145,10 @@ try {
     assert.match(contextualSodiumSourceText, /Sodium reduction/);
     assert.match(contextualSodiumSourceText, /World Health Organization/);
     assert.match(contextualSodiumSourceText, /Population guidance, not an individualized prescription/);
+    assert(sourceVisibility, 'The source limitation must be present in the rendered evidence card.');
+    assert(sourceVisibility.limitationTop >= sourceVisibility.scrollTop - 1, 'The source limitation must remain inside the conversation scroll area.');
+    assert(sourceVisibility.limitationBottom <= sourceVisibility.scrollBottom + 1, 'The source limitation must be scrollable above the conversation composer.');
+    assert(sourceVisibility.scrollBottom <= sourceVisibility.composerTop + 1, 'The conversation composer must not overlap the scroll area.');
     assert.deepEqual(providerCalls, []);
     assert.deepEqual(result.externalRequests, []);
     assert.deepEqual(pageErrors, []);
