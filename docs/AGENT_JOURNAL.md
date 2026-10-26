@@ -4,7 +4,7 @@
 - Added a general follow-up instruction to answer the new question first from relevant saved package facts and bounded prior cited-source context, avoiding repetitive overviews unless useful. Regression assertions passed.
 - A free-only synthetic sodium run used 3.6 Flash after 3.8 timeout and 3.7 503. It made four successful response generations, called package reconstruction, nutrition guidance and knowledge search, returned two WHO records, and withheld two unsupported numeric sentences. Usage was 19,956 tokens (18,312 prompt, 613 candidate, 1,031 thinking). Local metadata identifies `who-sodium` as WHO Sodium reduction, published 2026-05-11; this does not independently establish applicability or answer correctness.
 - A matched 50 g follow-up using saved context and no photos changed from a repeated overview at 4,545 tokens to a direct answer at 4,465 tokens after the instruction. Both used one generation and no tools; this is one case, not a broad result. No Google billing read or browser-rendered acceptance was performed.
-- Before newer M6 integration, 849 tests passed, 2 skipped; TypeScript and optimized build passed. Readable synthetic traces remain in ignored `.data/gemini-evaluations/`. No paid request or real profile/photo was used.
+- After merging integration through `12e0c6a`, 855 tests passed, 2 skipped; TypeScript and optimized build passed. Merge commit: `aa55a6f2587d04e0611a0d5d18f5ae27d1492cd4`. Readable synthetic traces remain in ignored `.data/gemini-evaluations/`. No paid request or real profile/photo was used.
 
 ## 2026-10-27 — preserve tool-selected sources through answer bounds
 
