@@ -1162,3 +1162,8 @@ Checkpoint checks:756 passed/one skipped with four workers, TypeScript and final
 - Saved development trace `262a28bd-e5c8-40e1-bdad-e710cd1a3770`: the user explicitly requested guidance with a fictional type2 diabetes/hypertension profile and a 30 g portion; the model called four nutrient calculators but no guidance tool, then returned broad population advice without source cards. The package arithmetic was sourced; guidance was not.
 - Provider-free execution of the existing `get_nutrition_guidance` function with the exact authorized condition and India context returned IDF diabetes guidance, WHO sodium guidance and WHO healthy-diet guidance, with `externalRequestMade:false`. This establishes tool/source availability, not answer quality.
 - Strengthened the existing tool declaration to explicitly call local guidance when requested, even if package calculations or unrelated evidence are present. Focused tool suite74 passed/1 skipped, TypeScript and diff pass. Live tool-choice transfer remains unverified because the only configured free model timed out earlier; no repeat or paid fallback.
+
+## 2026-10-26 — revalidate local KIIT report artifact availability
+
+- Rechecked the current `.data` tree for `academic-preparation`, `academic-completion`, and `.docx` files. Neither report directory nor any DOCX is present. This conflicts with the prior handoff's historical statement that the owner-controlled17-page report/template was preserved, so CURRENT_STATE and the queue now distinguish prior existence from current checkout availability.
+- No replacement report/template was created and no external archive was retried. R1 report editing waits for restoration of the original owner artifact; product engineering remains active under M2/M3.
