@@ -58,7 +58,9 @@ export function resolveLocalFollowUpQuestion(
 ): string {
   const current = question.trim();
   const explicitMassOrVolume = /\b\d+(?:\.\d+)?\s*(?:g|grams?|ml|millilit(?:er|re)s?)\b/i;
-  const continuesPriorAmount = /^(?:(?:and\s+)?(?:what|how)\s+about\b|what\s+if\b|and\s+if\b)/i.test(current)
+  const amountOnlyFollowUp = /^(?:(?:and|or)\s+)?(?:(?:for|at|with)\s+)?\d+(?:\.\d+)?\s*(?:g|grams?|ml|millilit(?:er|re)s?)(?:\s+instead)?[?.!,]*$/i.test(current);
+  const continuesPriorAmount = amountOnlyFollowUp
+    || /^(?:(?:and\s+)?(?:what|how)\s+about\b|what\s+if\b|and\s+if\b)/i.test(current)
     || /\binstead\b/i.test(current);
   const previousQuestion = previousTurns.at(-1)?.question.trim() ?? '';
   if (continuesPriorAmount && explicitMassOrVolume.test(current) && explicitMassOrVolume.test(previousQuestion)) {

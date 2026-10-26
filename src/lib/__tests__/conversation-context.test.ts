@@ -71,6 +71,13 @@ describe('resolveLocalFollowUpQuestion', () => {
     expect(resolveLocalFollowUpQuestion('How much protein is in 250 ml?', [{ question: 'How much sodium is in 150 ml?', answer: '', at: '' }])).toBe('How much protein is in 250 ml?');
     expect(resolveLocalFollowUpQuestion('What if I have 250 ml instead?', [{ question: 'What ingredients are listed?', answer: '', at: '' }])).toBe('What if I have 250 ml instead?');
   });
+
+  it('carries context for a quantity-only continuation while leaving new questions explicit', () => {
+    const prior = [{ question: 'How much sodium is in 150 ml?', answer: 'Unverified prior assistant text.', at: '' }];
+    expect(resolveLocalFollowUpQuestion('And 250 ml?', prior)).toBe('How much sodium is in 150 ml? Follow-up: And 250 ml?');
+    expect(resolveLocalFollowUpQuestion('for 250 ml instead.', prior)).toBe('How much sodium is in 150 ml? Follow-up: for 250 ml instead.');
+    expect(resolveLocalFollowUpQuestion('How much protein is in 250 ml?', prior)).toBe('How much protein is in 250 ml?');
+  });
 });
 
 describe('conversationEvidenceForAssist', () => {
