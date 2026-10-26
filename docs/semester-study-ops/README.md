@@ -60,3 +60,15 @@ Additional operational interfaces: `RECEIPTS.md` documents the existing-runner c
 No external scripts/fonts/images or network requests are used. Package/model text is rendered as plain text, never HTML. A content security policy permits only the authored script hash and denies network access. The export generator excludes custodian treatment/build labels from reviewer packets, though source content can still reveal treatment. Browser file-origin storage/download behavior varies; verify in the reviewer's intended browser before collecting real ratings.
 
 Current verification: Python injection/CSP checks, JavaScript syntax, and a synthetic-DOM script integration check cover navigation, pending exports, N/A reasons, malformed critical-error JSON, draft persistence and export Blob contents. The resulting synthetic exported row is accepted by the existing rating validator and correctly remains pending for second review. **Actual browser visual, storage and download acceptance is BLOCKED because local browser use is disabled in Work settings.** No browser acceptance, real human rating or scientific outcome is claimed.
+
+## Preparing the retained real-provider development portfolio
+
+```powershell
+python tools/semester-study-ops/prepare_development_review.py --original-root ../NutriScan --output .data/study-ops/development-review-next --allow-development-context
+```
+
+This importer supports only the existing exposed semester conversation pilot. It checks all nine exact scripted cases, package snapshot hashes, response/question identities, logical-turn accounting and source-file stability. It recreates the archived runner's bounded history and exports26 real retained server responses plus an explicit record of the missing27th response, without provider calls. A fresh private output is required outside the read-only original corpus.
+
+The returned answer is labeled server-returned, not observed browser rendering. The packet prominently says DEVELOPMENT and package facts not independently human verified. Contexts include fictional profiles and model-assisted package readings; reviewers must not treat them as gold labels. No treatment/no-knowledge pair or human ratings are invented. Source inputs and historical runner bytes remain hashed in manifest.json. Keep both contexts and custodian metadata private; share authorized reviewer material only after custodian review. The generic reviewer form still requires actual browser acceptance.
+
+Actual preparation26 October:26 responses, A-D turn3 `provider_incomplete` retained,0 returned source records among26 answers. Archived completed-call usage:33 generations,235161 prompt/4351 output tokens,4562 thinking tokens reported in17/33 calls,18174 cached prompt tokens reported in4/33 calls. Missing thinking/cache fields remain unknown. Recorded estimates total$0 for these free calls; billed cost and failed-request usage remain unknown. Initial reconstruction cost excluded. This is retained development evidence and does not establish scientific answer quality or final study success.
