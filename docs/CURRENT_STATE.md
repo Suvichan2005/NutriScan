@@ -1,7 +1,7 @@
 # NutriScan current runtime handoff
 ## M2 bounded free-provider transfer attempt — 26 October 2026
 
-One free-tier synthetic development request used the explicit specialized profile with no photo/profile, paid fallback off, search off and readable capture off. `/api/assist` returned `request_failed` without an answer, provider receipt or usage metadata. Operational trace capture was disabled, so provider-side generation count/outcome cannot be established. Do not infer model adherence; avoid repeating the unavailable route until conditions change.
+One free-tier synthetic development request used the explicit specialized profile with no photo/profile, paid fallback off, search off and readable answer capture off. Sanitized operational trace `caa02170-173b-477f-9d2e-741917a0a7d1` shows the request entered `package-reconstruction` because the fixture omitted a saved reconstruction, then tried four configured free models: three returned `service-unavailable` and the last timed out. No model completed, no answer-stage call or source lookup occurred, and no usage receipt was recorded. This does not test the source-class prompt. The route cooldowns were set; do not retry until provider availability changes, and use a canonical reconstructed package to target answer generation next time.
 
 ## M2 separate study and claim-rule evidence (26 October 2026)
 
