@@ -1,10 +1,10 @@
 # Sanitized engineering journal
 ## 2026-10-26 — make explicit guidance requests call the local guidance tool
 
-- Audited real saved follow-ups262a28bd-e5c8-40e1-bdad-e710cd1a3770 and408005b7-c455-48ee-92c6-5157ab3fd6a3. Both asked to use appropriate nutrition guidance and had `get_nutrition_guidance` available, but neither called it or cited a source. The latter introduced WHO's25 g/day fibre quantity from memory; answer validation withheld it.
+- Audited real saved follow-ups262a28bd-e5c8-40e1-bdad-e710cd1a3770 and408005b7-c455-48ee-92c6-5157ab3fd6a3. Both asked to use appropriate nutrition guidance and had `get_nutrition_guidance` available, but neither made a guidance-tool call or emitted an explicit citation. Both requests already carried the local `who-carbohydrate-2023` record. The later answer's WHO25 g/day fibre statement is supported as population guidance by that record; its initial withholding was a temporal-wording mismatch, resolved by the subsequent time-unit validator update.
 - Expanded the tool description to make explicit guidance requests (and contextual guidance beyond arithmetic) a direct use case and to require disclosure when no applicable local record is returned. No output filtering or condition keyword rules added.
 - Agent/tool suites122 passed/1 skipped; optimized production build/TypeScript pass; five owner hashes preserved. This does not establish model adherence; avoid a provider retry until availability changes.
-- Replayed the actual local tool against the saved408 request/profile/package. It returned `who-healthy-diet-guidance` and `who-sodium` with no network request, confirming a tool-selection gap rather than missing local evidence. Receipt `.data/m2-answer-usefulness-20261026/guidance-tool-local-transfer.json`.
+- Replayed the actual local tool against the saved408 request/profile/package. It returned `who-healthy-diet-guidance` and `who-sodium` with no network request, confirming local retrieval capability. Receipt `.data/m2-answer-usefulness-20261026/guidance-tool-local-transfer.json`.
 ## 2026-10-26 — constrain native calculator calls to the request
 
 - Review of actual trace `3d7e5cc6-1519-475e-ab04-9b0efbc8a70f` showed the model requested energy, fibre, fat and sodium calculations, although the neutral-user question asked only for energy, fibre and sodium.
@@ -1121,5 +1121,5 @@ Checkpoint checks:756 passed/one skipped with four workers, TypeScript and final
 ## 2026-10-26 — replay saved 30 g answer boundary with prior operations
 
 - Replayed actual trace `408005b7-c455-48ee-92c6-5157ab3fd6a3` through current validation with its exact saved package, 8 validated prior 40 g calculations and 8 current 30 g calculations. The comparison sentence remains withheld because the 10 g nutrient deltas have no typed operations.
-- The unsupported WHO 25 g/day fibre target is withheld when no source is supplied, but is accepted when the saved trace's WHO carbohydrate record is supplied. This reveals source-presence acceptance without sufficient source-topic binding. No wording filter or answer rewrite was added.
-- Private provider-free receipt: `.data/m2-answer-usefulness-20261026/30g-prior-calculation-validation-replay.json`. No model call, human review, or new test run. M2 remains active; next work is general claim-to-source applicability and derived-operation support.
+- The trace already supplied `who-carbohydrate-2023`, whose local summary explicitly supports population 25 g/day naturally occurring fibre guidance and distinguishes it from an individualized target. Current validation retains the sentence with this source and withholds it with no source. The earlier saved validation withheld it because temporal wording did not match; the frequency-unit handling fix resolves that transfer case.
+- Private paired provider-free receipt: `.data/m2-answer-usefulness-20261026/30g-prior-calculation-validation-replay.json`. No model call, human review, or new test run. M2 remains active; consider a general typed derived-operation path for precise comparisons.

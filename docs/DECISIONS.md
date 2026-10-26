@@ -1,7 +1,7 @@
 # Chronological decisions
-## 26 October 2026 — keep source applicability distinct from source presence
+## 26 October 2026 — retain typed operations as the basis for portion deltas
 
-A saved 30 g answer's WHO fibre target passed quantity validation when a WHO carbohydrate evidence record was present, despite the source having come from the earlier carbohydrate context and no guidance lookup in the follow-up. Source presence alone is not adequate evidence that a source supports a particular claim. Keep the exact provider wording and current decision observable; resolve this through general source-to-claim evidence binding, not phrase-specific post-processing. Separately, prior/current portion calculations do not support unperformed deltas unless the application represents those derived values as typed operations.
+A saved 30 g answer's comparison between 40 g and 30 g values remained withheld when validation received eight typed operations for each portion, because the derived differences were not themselves typed operations. Keep this boundary: previous/current values do not by themselves certify model-generated arithmetic. If comparison answers are to include precise deltas, represent them as validated derived operations and preserve their provenance rather than weakening quantity validation. The trace-supplied WHO carbohydrate record does explicitly support the population fibre guidance sentence; paired replay confirms it is retained with that source and withheld without it.
 
 ## 26 October 2026 — use local guidance for explicit guidance requests
 

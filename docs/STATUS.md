@@ -1,11 +1,11 @@
 # Current engineering status
-## M2 saved 30 g comparison and source-scope gaps (26 October 2026)
+## M2 saved 30 g comparison replay (26 October 2026)
 
-Current validation of saved trace `408005b7-c455-48ee-92c6-5157ab3fd6a3`, with 8 prior and 8 current typed nutrient operations, continues to withhold the 40 g→30 g delta sentence because no typed delta operations exist. It withholds the unsupported WHO 25 g/day fibre sentence with no evidence, but accepts it when the trace's WHO carbohydrate record is supplied. This is a concrete source-to-claim applicability gap. Provider-free receipt: `.data/m2-answer-usefulness-20261026/30g-prior-calculation-validation-replay.json`. No new provider call or human review. M2 remains active.
+Current validation of saved trace `408005b7-c455-48ee-92c6-5157ab3fd6a3`, with 8 prior and 8 current typed nutrient operations, continues to withhold the 40 g→30 g delta sentence because no typed delta operations exist. The trace-supplied `who-carbohydrate-2023` record explicitly supports population 25 g/day naturally occurring fibre guidance and distinguishes it from an individualized target; current validation retains the sentence with the record and withholds it without the record. Provider-free paired replay receipt: `.data/m2-answer-usefulness-20261026/30g-prior-calculation-validation-replay.json`. No new provider call or human review. M2 remains active.
 
 ## M2 guidance retrieval request (26 October 2026)
 
-Two actual saved follow-ups asked for appropriate guidance but did not use the enabled local guidance tool; unsupported WHO numeric guidance was withheld. Tool instructions now make explicit guidance requests a direct trigger and require a gap disclosure when no applicable record returns.122 focused agent/tool tests passed/1 skipped; production build and TypeScript passed. Fresh-model adherence and source usefulness remain unverified.
+Two actual saved follow-ups asked for appropriate guidance but did not call the enabled local guidance tool or emit an explicit source citation; both requests already carried the `who-carbohydrate-2023` record. The 25 g/day population fibre statement is supported by that record; its earlier withholding was a temporal-wording mismatch, later fixed. Tool instructions now make explicit guidance requests a direct trigger and require a gap disclosure when no applicable record returns.122 focused agent/tool tests passed/1 skipped; production build and TypeScript passed. Fresh-model adherence remains unverified.
 Local provider-free execution with the saved408 package/profile returns two relevant WHO summaries and no external request, confirming tool data is available. Private receipt: `.data/m2-answer-usefulness-20261026/guidance-tool-local-transfer.json`.
 
 ## M2 calculation relevance contract (26 October 2026)
