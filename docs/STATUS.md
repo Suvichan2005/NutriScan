@@ -1,7 +1,7 @@
 # Current engineering status
 ## M6 identity, catalog-query and label-evidence boundaries (27 October 2026)
 
-The default UI and product lookup now reject parsed identity text when that same line is also typed as another package field, while preserving explicit corrections, user detail, barcode lookup, photo-free scans, and source-card access. The feature branch retains confidence/provenance checks before displaying non-conflicting OCR identity. Allergy evidence quotes the exact package text without duplicated field labels and preserves the “May contain” uncertainty. Final combined verification: 847 passed/2 skipped; `tsc --noEmit` and optimized production build pass; local-only browser acceptance passes at 390×844 and 1440×900. No live Gemini, real-photo reconstruction or scientific validation was performed.
+The default UI and product lookup now reject parsed identity text when that same line is also typed as another package field, while preserving explicit corrections, user detail, barcode lookup, photo-free scans, and source-card access. The feature branch retains confidence/provenance checks before displaying non-conflicting OCR identity. Allergy evidence quotes the exact package text without duplicated field labels and preserves the “May contain” uncertainty. Browser acceptance waits for the asynchronous local evidence status to settle; it cleared within 15 seconds at both tested viewports. Final combined verification: 847 passed/2 skipped; `tsc --noEmit` and optimized production build pass; local-only browser acceptance passes at 390×844 and 1440×900. No live Gemini, real-photo reconstruction or scientific validation was performed.
 
 ## M6 package identity and local finding copy (27 October 2026)
 

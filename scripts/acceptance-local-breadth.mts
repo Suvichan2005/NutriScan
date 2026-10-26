@@ -91,6 +91,8 @@ try {
     const contextualSodiumSources = contextualSodiumTurn.locator('.conversation-evidence');
     await contextualSodiumSources.waitFor({ state: 'visible' });
     await contextualSodiumSources.locator('summary').click();
+    const localEvidenceStatus = page.locator('.thread-status').filter({ hasText: 'Checking the curated local evidence library' });
+    if (await localEvidenceStatus.count()) await localEvidenceStatus.waitFor({ state: 'hidden', timeout: 15000 });
     const contextualSodiumSourceText = await contextualSodiumSources.innerText();
     const sourceLimitations = contextualSodiumSources.locator('.fine-print').last();
     await sourceLimitations.scrollIntoViewIfNeeded();
