@@ -462,7 +462,7 @@ describe('Gemini tool retrieval boundaries', () => {
     }, context('How should adults in India with CKD handle sodium and potassium?'));
 
     expect(result.status).toBe('ok');
-    expect(result.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium']);
+    expect(result.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium', 'who-sodium']);
     expect(sourceSchema.array().safeParse(result.evidence).success).toBe(true);
     expect(result.evidence?.[0].summary).toMatch(/below 2 g\/day/i);
     expect(result.evidence?.[0].limitations).toMatch(/sodium-wasting nephropathy/i);
@@ -513,6 +513,25 @@ describe('Gemini tool retrieval boundaries', () => {
     ]));
     expect(result.output).toMatchObject({ externalRequestMade: false });
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('retains directly matched sodium evidence in a combined diabetes and hypertension query', async () => {
+    const toolContext = context('For a fictional adult in India with diabetes and hypertension, how should I think about carbohydrate and sodium in this snack?');
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'diabetes carbohydrate hypertension sodium',
+      condition: 'diabetes and hypertension',
+      jurisdiction: 'India',
+    }, toolContext);
+
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.map(source => source.id)).toContain('idf-healthy-nutrition-diabetes-2024');
+    expect(result.evidence?.map(source => source.id)).toContain('who-sodium');
+    expect(result.evidence?.map(source => source.id)).not.toContain('who-healthy-diet-guidance');
+    expect(result.evidence?.map(source => source.id)).not.toContain('aha-sodium-guidance');
+    expect(result.output.guidanceCoverageFacts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ sourceId: 'who-sodium' }),
+    ]));
+    expect(result.output).toMatchObject({ externalRequestMade: false });
   });
 
   it('passes source-linked numeric guidance through the actual tool-result adapter without a wording gate', async () => {
@@ -590,8 +609,9 @@ describe('Gemini tool retrieval boundaries', () => {
       jurisdiction: 'India',
     }, context('How should I manage sodium for hypertension in India?'));
 
-    expect(result.status).toBe('empty');
+    expect(result.status).toBe('ok');
     expect(result.evidence?.some(source => source.id === 'kdigo-ckd-2024-sodium')).toBe(false);
+    expect(result.evidence?.map(source => source.id)).toEqual(['who-sodium']);
   });
   it('honors each authorized condition in a multi-condition investigation instead of replaying the dominant topic',async()=>{
     const toolContext=context('For this fictional scenario, my dad has diabetes, hypertension and CKD in India. Is this snack suitable?');
@@ -599,7 +619,7 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(bloodPressure.evidence?.map(source=>source.id)).toEqual(['who-sodium','who-healthy-diet-guidance']);
     expect(bloodPressure.evidence?.find(source=>source.id==='who-sodium')?.limitations).toMatch(/not an individualized prescription/i);
     const kidney=await executeGeminiTool('get_nutrition_guidance',{query:'CKD sodium restriction',condition:'CKD',jurisdiction:'India'},toolContext);
-    expect(kidney.evidence?.map(source=>source.id)).toEqual(['kdigo-ckd-2024-sodium']);
+    expect(kidney.evidence?.map(source=>source.id)).toEqual(['kdigo-ckd-2024-sodium','who-sodium']);
     const diabetes=await executeGeminiTool('get_nutrition_guidance',{query:'diabetes carbohydrate portions',condition:'diabetes',jurisdiction:'India'},toolContext);
     expect(diabetes.evidence?.map(source=>source.id)).toEqual(['idf-healthy-nutrition-diabetes-2024']);
   });

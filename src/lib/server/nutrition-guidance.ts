@@ -307,8 +307,11 @@ export function getNutritionGuidance(input: {
     ? ranked.filter(item => item.entry.conditions.some(condition => mentions(contextualText, condition))
       || explicitlyNamesSource(query, item.entry.source) && item.matchedTerms.length > 0
       // General population guidance may complement a condition-specific record
-      // only when the package/query contains multiple direct topic matches.
-      || item.entry.conditions.length === 0 && item.matchedTerms.length >= 2)
+      // when multiple terms match or a declared numeric topic matches directly.
+      || item.entry.conditions.length === 0 && (
+        item.matchedTerms.length >= 2
+        || item.entry.numericCoverage?.queryTerms.some(term => mentions(contextualText, term))
+      ))
     : ranked;
 
   return relevant

@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — preserve relevant numeric guidance in combined-condition retrieval
+
+- A direct local tool probe using the realistic “diabetes + hypertension, carbohydrate + sodium” context returned the IDF diabetes record but omitted WHO sodium unless the query also repeated “salt”. The general-source relevance rule required two matching terms, even though the WHO sodium record itself declares sodium as a numeric coverage topic.
+- Allow a direct query match against a source’s explicit numeric-coverage terms to complement condition-specific guidance. The production tool now returns IDF diabetes + global adult WHO sodium for the combined transfer; it excludes broad WHO diet guidance and U.S.-only AHA targets. CKD sodium transfer keeps KDIGO + WHO context, while hypertension without kidney context receives WHO and not KDIGO. Full `gemini-tools.test.ts` passed (69 passed, 1 skipped), TypeScript and optimized build passed. Five owner files and 27 preserved evidence files reverified; rebuilt loopback3400 reports free/local, paid fallback/search/transcript capture off. No Gemini answer was generated; model tool selection and response usefulness remain open.
+
+
 ## 2026-10-26 — connect WHO sodium evidence to the condition-guidance tool
 
 - Ran the real local `getNutritionGuidance` function without a provider call. Focused India hypertension/sodium terms returned only the broad WHO healthy-diet summary even though the specific WHO sodium-reduction record was already catalogued. The missing link was the curated local guidance entry, not source acquisition.

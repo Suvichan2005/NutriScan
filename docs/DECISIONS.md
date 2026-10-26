@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — retain directly matched numeric population evidence in mixed-condition retrieval
+
+An authorized India diabetes + hypertension request can mention one supported topic once while naming multiple conditions. When an existing source declares numeric coverage for that directly mentioned nutrient/topic, retrieve it alongside condition-specific evidence without requiring redundant synonyms. Keep broad general-population sources subject to the stronger topical threshold; do not admit jurisdiction-incompatible or unrelated evidence. Preserve population limitations and make no individualized threshold or product verdict.
+
 ## 26 October 2026 — expose the existing WHO sodium record through focused guidance
 
 The local nutrition-guidance tool must return the source that directly supports a sodium question, not rely on a broad healthy-diet summary alone. Reuse the catalog’s existing WHO sodium-reduction record, preserve its global general-adult scope and daily-intake caveat, and pass its numeric support facts through the ordinary tool adapter. India routing must not surface U.S.-only sodium targets as local guidance. No product-level pass/fail interpretation, personalized daily balance, or new clinical rule is introduced.
