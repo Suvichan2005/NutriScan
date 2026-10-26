@@ -1433,3 +1433,7 @@ Do not require ordinary assistant prose to reproduce exact spans from `EvidenceS
 # 27 October 2026 — Resolve natural changed-quantity follow-ups from user turns
 
 When a user asks a referential follow-up with a new explicit mass or volume after a quantity question, retain the immediately preceding user question as conversational context. Use the amount in the current follow-up for native calculations, not the earlier amount. Do not use previous assistant prose as evidence, and do not carry an unrelated topic when either turn lacks an explicit supported amount or the current turn is not referential. This keeps calculation inputs typed and local while supporting ordinary multi-turn wording.
+
+# 27 October 2026 — align each cited answer sentence to source topic text
+
+A source selected for the user's question cannot support every sentence in the generated answer. For each cited sentence, require an independent topic match against the source's title, summary and limitations; strip publisher identity and self-attribution first so mentioning an acronym such as WHO is not treated as evidence. Keep question-level relevance, jurisdiction and supplied-source inspection behavior. This is a topic-alignment check, not semantic entailment. During quantity validation, ignore internal evidence handles such as `SRC_1` and `CALC_2`; their digits are identifiers, not food measurements.
