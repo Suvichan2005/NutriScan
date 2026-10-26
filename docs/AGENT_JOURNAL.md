@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-26 — audit source flow and qualitative-claim validation
+
+- Traced the natural follow-up route: request/tool evidence is merged into the effective source set; numeric and printed-basis claims are checked against package evidence, eligible sources and typed calculations; accepted prose resolves native references and source cards from source identities it names. Unused retrieval candidates do not become citations automatically.
+- Found a genuine gap: this path does not deterministically reject unsupported non-numeric scientific statements. Retrieved evidence and source-card identity alone do not establish semantic support. Added an implementation-grounded production-flow diagram and left qualitative claim rejection open for bounded design and distinct acceptance. This is not a live provider or scientific-evaluation result; Subham's independent study and the private KIIT report/template remain untouched.
+
+## 2026-10-26 — recalculate explicit portions after local fallback
 ## 2026-10-26 — recalculate explicit portions after local fallback
 
 - Browser acceptance exposed a stale-answer bug: an unavailable Gemini follow-up for 25 g reused a saved 50 g audit (450 mg sodium). The local fallback now derives an explicit requested portion from the active package and rebuilds its audit before answering. A local 900 mg/100 g correction now yields 450 mg at50 g and225 mg at25 g after save/reopen; the original observation and correction provenance remain visible.

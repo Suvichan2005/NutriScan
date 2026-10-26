@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M2 source-to-answer audit and M6 report diagram (26 October 2026)
+
+Added a traceable diagram for the production natural-answer path. Code inspection confirms supplied and tool-returned records enter the effective evidence set, precise quantities/bases are checked against current evidence and typed calculations, and consumer source cards follow sources identified in accepted prose. It also identifies an open functional gap: non-numeric scientific assertions are not deterministically rejected when unsupported. Retrieved-source presence or a citation card does not establish entailment. Next engineering work should address this boundedly and accept it across distinct development scenarios. This is not provider or human-study evidence and does not replace the unavailable private KIIT report/template.
+
 ## M6 local failure-recovery journey (26 October 2026)
 
 Closed a user-visible fallback defect: explicit 25 g questions after provider failure now use a freshly rebuilt audit for the active package rather than the previous 50 g audit. At390×844 and1440×900 the corrected saved package produced450 mg sodium at50 g and225 mg at25 g; save/reopen retained the original observation and correction provenance. Intercepted `/api/assist` before the server once per viewport, with no provider/remote, profile/photo, error, overflow or Axe findings. The analysis-mode switch also passes accessible-name inspection. `tsc --noEmit` and diff check pass; isolated production build compiled with Next type validation skipped after the interrupted dependency migration. Fresh Gemini selection and scientific validation remain open.

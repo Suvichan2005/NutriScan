@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 production source-use audit (26 October 2026)
+
+The natural follow-up route merges supplied and tool-returned source records into its effective evidence set, checks numeric values and printed bases against current package evidence/sources/calculations, and builds source cards from named source identities in accepted prose. This provides traceable retrieval/citation presentation but does not semantically validate qualitative scientific assertions. Unsupported non-numeric scientific claim rejection is an open implementation and acceptance gap. A code-grounded flow diagram is at `docs/diagrams/production-answer-evidence-flow.md`; no provider response or human evaluation was used.
+
 ## M6 fallback recovery acceptance (26 October 2026)
 
 Fixed an actual stale-quantity failure: when Gemini is unavailable, explicit serving-size follow-ups now calculate from the current package instead of reusing the prior audit. Browser acceptance at390×844 and1440×900 verified corrected sodium of900 mg/100 g, yielding450 mg at50 g and225 mg at25 g after local save/reopen. Original observation and correction provenance persisted. The mode switch now has an accessible name containing its visible label. The single `/api/assist` request per viewport was intercepted in-browser before the server; no provider/external requests, profile/photos, browser errors, overflow or Axe findings. `tsc --noEmit` and diff check pass. Isolated build compiled with Next's type check skipped after interrupted dependency migration; standalone TypeScript passed. No fresh Gemini or independent science validation.
