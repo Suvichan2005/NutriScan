@@ -13,7 +13,9 @@ export function renderAnswerEvidenceReferences(
   sources: readonly SourceIdentity[],
   calculations: readonly { id: string }[],
 ): string {
-  const sourceTitles = new Map(sources.map(source => [source.id, source.title]));
+  const sourceTitles = new Map(sources.map(source => [source.id,
+    sources.filter(other=>normalized(other.title)===normalized(source.title)).length>1
+      ?`${source.title} (${source.url})`:source.title]));
   const calculationIds = new Set(calculations.map(calculation => calculation.id));
   const labels: Record<string, string> = { OBS: 'label observation', IMG: 'package photo', ROW: 'nutrition row', CAND: 'provisional reading' };
   return answer.replace(/\b(OBS|IMG|SRC|CALC|CAND|ROW)_[A-Z0-9]+\b/g, (handle, kind: string) => {
@@ -49,7 +51,21 @@ export function selectCitedEvidence<T extends SourceIdentity>(answer:string,sour
   const sourceAliases=new Map(sources.map(source=>[source.id,aliases(source)]));
   return sources.filter(source=>{
     const title=normalized(source.title);
-    if(urls.has(source.url)||(title.length>=12&&includesIdentity(text,title)))return true;
+    if(urls.has(source.url))return true;
+    if(title.length>=12&&includesIdentity(text,title)){
+      const sameTitle=sources.filter(item=>normalized(item.title)===title);
+      const moreSpecific=sources.some(item=>{
+        const other=normalized(item.title);
+        return other.length>title.length&&includesIdentity(other,title)&&includesIdentity(text,other);
+      });
+      if(!moreSpecific&&sameTitle.length===1)return true;
+      const year=source.publishedAt?.match(/^\d{4}(?:-|$)/)?.[0].slice(0,4);
+      if(!moreSpecific&&year&&sameTitle.filter(item=>item.publishedAt?.startsWith(year)).length===1
+        &&prose.split(/\n\s*\n/).some(paragraph=>includesIdentity(normalized(paragraph),title)&&includesIdentity(normalized(paragraph),year)))return true;
+      // A shorter/ambiguous title must not fall through to its publisher and
+      // acquire the citation already identifying a different specific record.
+      return false;
+    }
     return (sourceAliases.get(source.id)??[]).some(alias=>{
       if(!includesIdentity(text,alias))return false;
       const candidates=sources.filter(item=>(sourceAliases.get(item.id)??[]).includes(alias));

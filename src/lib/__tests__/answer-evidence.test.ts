@@ -76,3 +76,26 @@ describe('production answer source scope',()=>{
     expect(filterAnswerBySourceScope(answer,[diabetes],aliases,'Does this package list peanuts?', '',history).withheldSentenceCount).toBe(1);
   });
 });
+
+describe('citation record identity collisions',()=>{
+  it('does not select a shorter title contained in the cited publication title',()=>{
+    const a=source('overview','Dietary evidence review','Example Institute','2024');
+    const b=source('specific','Dietary evidence review for adults','Example Institute','2024');
+    expect(selectCitedEvidence('See [Dietary evidence review for adults].',[a,b])).toEqual([b]);
+    expect(selectCitedEvidence(`See ${a.url}.`,[a,b])).toEqual([a]);
+  });
+  it('does not silently choose two versions sharing the same complete title',()=>{
+    const a=source('old','Dietary evidence review','Example Institute','2020');
+    const b=source('new','Dietary evidence review','Example Institute','2024');
+    expect(selectCitedEvidence('See Dietary evidence review.',[a,b])).toEqual([]);
+    expect(selectCitedEvidence('See Dietary evidence review (2024).',[a,b])).toEqual([b]);
+  });
+});
+
+it('preserves an exact native source identity when different records have identical titles',()=>{
+  const a=source('old','Shared scientific reference','Example Institute','2020');
+  const b=source('new','Shared scientific reference','Example Institute','2024');
+  const rendered=renderAnswerEvidenceReferences('Read SRC_1.',new Map([['SRC_1','new']]),[a,b],[]);
+  expect(rendered).toContain(b.url);
+  expect(selectCitedEvidence(rendered,[a,b])).toEqual([b]);
+});
