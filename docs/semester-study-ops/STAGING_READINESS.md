@@ -50,3 +50,19 @@ Bind reviewer response exports to exact Git commit, lockfile hash, Node version,
 Current source has a loopback gate and no reviewer authentication. A production-like remote reviewer simulation would need the integration-owner changes above; claiming acceptance now would be misleading. After those changes, install dependencies once in the chosen integration environment, use one designated production build output, bind the app only to127.0.0.1 behind a local authenticated proxy, and run the checklist with Gemini disabled before any bounded authorized provider test. No extra build directory or server was created here.
 
 Rollback: retain previous immutable release and source manifest; pause invitations, disable ENABLE_GEMINI and upstream key access, stop the preview/proxy, revoke reviewer access, preserve sanitized receipts under agreed retention, and remove temporary sessions after owner review. Do not remove original source/research data or alter Google Drive permissions.
+
+## Local production simulation completed26 October
+
+A fresh pinned dependency installation (`npm ci --no-audit --no-fund`) completed once in the isolated study worktree. The inspected postinstall copies local Tesseract/English/Paddle runtime assets from npm packages; it does not invoke a provider. A single Next16.4.2 webpack production build completed under Nodev24.4.1 in `.data/study-staging-build`. No original checkout dependencies/builds were recreated.
+
+The loopback-only instance on127.0.0.1:3422 passed14 HTTP/configuration checks: home/status200, Gemini disabled, readable capture disabled, Tesseract worker/English model/Paddle WASM200, foreign Host and cross-site Origin403, malformed JSON400, oversized input413, and probed private paths404. **The private paths were not populated with real secrets or source stores, so these probes are not proof of full sensitive-data isolation.** Browser OCR execution, rendering, worker initialization, native source retrieval, authentication, proxy deployment and provider behavior are not established by asset200 responses.
+
+The owned test process stopped; next-env.d.ts/tsconfig.json exactly restored to pre-build hashes. No credentials copied/mounted, provider call or external listener. Existing original protected owner files remain unchanged. Sanitized receipt: `evidence/local-production-smoke-20261026.json`; private build/server logs: `.data/study-staging/`. Knowledge stores were intentionally not mounted, so read-only runtime asset and authentication/quota blockers remain.
+
+To reproduce after dependency setup in a dedicated credential-free checkout:
+
+```powershell
+python tools/semester-study-ops/local_staging_smoke.py --port 3422
+```
+
+This always builds the current checkout into the same designated dist directory before starting its own bounded loopback process. It strips provider credentials from its child environment and disables Gemini/paid/capture flags. It does not deploy, enable access, touch original private data or start a public endpoint. A local smoke is one gate; remote reviewer readiness remains BLOCKED on the integration-owner proposals above.

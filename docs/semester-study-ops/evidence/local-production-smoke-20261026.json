@@ -1,0 +1,104 @@
+{
+  "scope": "local-loopback-production-smoke-not-remote-auth-browser-or-provider-acceptance",
+  "implementationCommit": "65263291420ef6d48c762d30ac03332c197fc024",
+  "nodeVersion": "v24.4.1",
+  "distDir": ".data/study-staging-build",
+  "port": 3422,
+  "checks": [
+    {
+      "check": "home-status",
+      "observed": 200,
+      "expected": 200,
+      "passed": true
+    },
+    {
+      "check": "status-endpoint",
+      "observed": 200,
+      "expected": 200,
+      "passed": true
+    },
+    {
+      "check": "gemini-enabled",
+      "observed": false,
+      "expected": false,
+      "passed": true
+    },
+    {
+      "check": "readable-capture",
+      "observed": false,
+      "expected": false,
+      "passed": true
+    },
+    {
+      "check": "ocr-worker",
+      "observed": 200,
+      "expected": 200,
+      "passed": true
+    },
+    {
+      "check": "english-model",
+      "observed": 200,
+      "expected": 200,
+      "passed": true
+    },
+    {
+      "check": "paddle-wasm",
+      "observed": 200,
+      "expected": 200,
+      "passed": true
+    },
+    {
+      "check": "foreign-host",
+      "observed": 403,
+      "expected": 403,
+      "passed": true
+    },
+    {
+      "check": "cross-site",
+      "observed": 403,
+      "expected": 403,
+      "passed": true
+    },
+    {
+      "check": "malformed-json",
+      "observed": 400,
+      "expected": 400,
+      "passed": true
+    },
+    {
+      "check": "oversize-json",
+      "observed": 413,
+      "expected": 413,
+      "passed": true
+    },
+    {
+      "check": "private-path-not-served:/.env.local",
+      "observed": 404,
+      "expected": 404,
+      "passed": true
+    },
+    {
+      "check": "private-path-not-served:/.data/gemini-evaluations",
+      "observed": 404,
+      "expected": 404,
+      "passed": true
+    },
+    {
+      "check": "private-path-not-served:/.data/knowledge/guidelines.sqlite",
+      "observed": 404,
+      "expected": 404,
+      "passed": true
+    }
+  ],
+  "trackedConfigHashesBefore": {
+    "next-env.d.ts": "1b59d4c6b83807db275d43f3cf2cc8e9323f465fab764eea091cc5becd5bad37",
+    "tsconfig.json": "2cc0bad7acb4f5987fcb6917492588fb1871de84c0f93e107c2f8e777e753e2c"
+  },
+  "trackedConfigHashesAfter": {
+    "next-env.d.ts": "1b59d4c6b83807db275d43f3cf2cc8e9323f465fab764eea091cc5becd5bad37",
+    "tsconfig.json": "2cc0bad7acb4f5987fcb6917492588fb1871de84c0f93e107c2f8e777e753e2c"
+  },
+  "ownedServerStopped": true,
+  "providerCallsMade": 0,
+  "knowledgeStoresMounted": false
+}

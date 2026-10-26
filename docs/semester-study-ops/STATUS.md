@@ -47,3 +47,9 @@ Receipt finding:0/26 completed answers contain returned source records. Existing
 Validated and aggregated the actual historical27-turn portfolio into per-turn CSV/JSON and hash-linked existing-generator report artifacts.26 complete/1 failed;33 completed generations;10 tool calls;0/26 returned-source answers; completed direct-assist median5757.5ms/range2611–28099ms;8 withheld quantity sentences. Preserved failed row and unknown usage fields. No independent accuracy/usefulness judgments. Existing report generator verified12 operational metric pointers and generated CSV/PNG/SVG; median figure visually inspected. No original academic document changed.
 
 36 structural tests pass, including summary/source drift, missing logical turn, inconsistent provider call count and unknown token handling. Initial synthetic test omitted a required toolCalls field and was corrected before this checkpoint; actual-format data ran successfully. Private output: `.data/study-ops/development-operations-verified-20261026/`. No provider request or production edit.
+
+## Local production simulation checkpoint
+
+Completed one npm ci in the isolated study worktree for actual production/runtime verification; no model/provider/source acquisition. Next16.4.2 webpack build succeeded in one reusable `.data/study-staging-build`, Nodev24.4.1.14 loopback HTTP/configuration checks passed, own server stopped, Next-generated type/config changes restored byte-for-byte. Receipt committed without sensitive payloads; build/server logs ignored. Private-path probes used no actual secrets/source stores and must not be cited as complete privacy/security acceptance.
+
+Knowledge stores, browser interactions and remote auth/proxy remain unverified. No public deployment/provider call. Original five owner changes remain protected. No old build directories were restored. Reproduce via local_staging_smoke.py in a fresh credential-free study checkout after pinned dependency installation.
