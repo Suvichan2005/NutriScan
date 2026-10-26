@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "provider-free-sweetened-dairy-conversation-transfer",
+  "generatedAt": "2026-10-26T22:05:37.296Z",
+  "appOrigin": "http://127.0.0.1:3418",
+  "scenario": "Synthetic milk drink; fictional session-only diabetes and hypertension context; no image or real patient data.",
+  "screenshots": "C:\\Users\\suvan\\OneDrive\\Documents\\NutriScan\\.data\\m2-sweetened-dairy-transfer-20261027",
+  "results": [
+    {
+      "viewport": "390x844",
+      "distinctSyntheticFamily": "sweetened dairy drink",
+      "ingredientObservationVisible": true,
+      "portion150mlCalculationVisible": true,
+      "combinedProfileAnswerVisible": true,
+      "contextualSourceScopeVisible": true,
+      "changedPortion250mlCalculationVisible": true,
+      "missingCalciumRemainsUnknown": true,
+      "adultSodiumSourceVisible": true,
+      "sourceCardText": "Evidence · Sodium reduction\nNUTRISCAN SUMMARY · CHECK ORIGINAL SOURCE\nSodium reduction ↗\n\nWHO recommends adults consume less than 2000 mg sodium daily. One gram of salt corresponds to 400 mg sodium.\n\nWorld Health Organization · Global; general adult population · Published 2026-05-11 · Retrieved 21/10/2026\n\nPopulation guidance, not an individualized prescription or a product safety threshold. Includes the whole diet.",
+      "contextualSourceText": "Evidence · Sodium reduction\nNUTRISCAN SUMMARY · CHECK ORIGINAL SOURCE\nSodium reduction ↗\n\nWHO recommends adults consume less than 2000 mg sodium daily. One gram of salt corresponds to 400 mg sodium.\n\nWorld Health Organization · Global; general adult population · Published 2026-05-11 · Retrieved 21/10/2026\n\nPopulation guidance, not an individualized prescription or a product safety threshold. Includes the whole diet.",
+      "providerCalls": [],
+      "externalOrigins": [],
+      "pageErrors": [],
+      "axeViolations": [],
+      "width": 390,
+      "documentWidth": 390
+    },
+    {
+      "viewport": "1440x900",
+      "distinctSyntheticFamily": "sweetened dairy drink",
+      "ingredientObservationVisible": true,
+      "portion150mlCalculationVisible": true,
+      "combinedProfileAnswerVisible": true,
+      "contextualSourceScopeVisible": true,
+      "changedPortion250mlCalculationVisible": true,
+      "missingCalciumRemainsUnknown": true,
+      "adultSodiumSourceVisible": true,
+      "sourceCardText": "Evidence · Sodium reduction\nNUTRISCAN SUMMARY · CHECK ORIGINAL SOURCE\nSodium reduction ↗\n\nWHO recommends adults consume less than 2000 mg sodium daily. One gram of salt corresponds to 400 mg sodium.\n\nWorld Health Organization · Global; general adult population · Published 2026-05-11 · Retrieved 21/10/2026\n\nPopulation guidance, not an individualized prescription or a product safety threshold. Includes the whole diet.",
+      "contextualSourceText": "Evidence · Sodium reduction\nNUTRISCAN SUMMARY · CHECK ORIGINAL SOURCE\nSodium reduction ↗\n\nWHO recommends adults consume less than 2000 mg sodium daily. One gram of salt corresponds to 400 mg sodium.\n\nWorld Health Organization · Global; general adult population · Published 2026-05-11 · Retrieved 21/10/2026\n\nPopulation guidance, not an individualized prescription or a product safety threshold. Includes the whole diet.",
+      "providerCalls": [],
+      "externalOrigins": [],
+      "pageErrors": [],
+      "axeViolations": [],
+      "width": 1440,
+      "documentWidth": 1440
+    }
+  ],
+  "passed": true
+}

@@ -59,6 +59,18 @@ describe('resolveLocalFollowUpQuestion', () => {
     const turns = [{ question: 'What does WHO recommend about dietary fibre?', answer: 'Prior answer.', at: '2026-10-21T00:00:00.000Z' }];
     expect(resolveLocalFollowUpQuestion('What WHO dietary fibre guidance applies to children?', turns)).toBe('What WHO dietary fibre guidance applies to children?');
   });
+
+  it('carries the previous user question into a natural explicit-quantity follow-up', () => {
+    const turns = [{ question: 'For my 150 ml portion, what does the sodium mean with hypertension and diabetes?', answer: 'Unverified prior assistant text.', at: '2026-10-21T00:00:00.000Z' }];
+    expect(resolveLocalFollowUpQuestion('What if I have 250 ml instead?', turns)).toBe(
+      'For my 150 ml portion, what does the sodium mean with hypertension and diabetes? Follow-up: What if I have 250 ml instead?',
+    );
+  });
+
+  it('does not borrow a prior topic for a new amount without a continuation cue or prior amount', () => {
+    expect(resolveLocalFollowUpQuestion('How much protein is in 250 ml?', [{ question: 'How much sodium is in 150 ml?', answer: '', at: '' }])).toBe('How much protein is in 250 ml?');
+    expect(resolveLocalFollowUpQuestion('What if I have 250 ml instead?', [{ question: 'What ingredients are listed?', answer: '', at: '' }])).toBe('What if I have 250 ml instead?');
+  });
 });
 
 describe('conversationEvidenceForAssist', () => {
