@@ -3,6 +3,10 @@
 
 Follow-up turns should answer the new question directly from relevant saved package facts and bounded prior evidence, avoiding a repeated overview unless needed. This is a natural-language instruction only; it does not force retrieval, change package facts or weaken numerical/source validation. A single matched synthetic live pair showed lower tokens but cannot establish broad quality or efficiency.
 
+## 27 October 2026 — preserve community allergen declarations and trace tags separately
+
+Carry Open Food Facts `allergens_tags` and `traces_tags` through lookup as distinct optional fields and label them separately in the community-record UI. Neither field is package verification; an empty list does not establish allergen absence or no cross-contact. Photographed package observations remain separate evidence.
+
 ## 27 October 2026 — reserve bounded evidence slots for cited sources
 
 When carried conversation sources and newly selected tool records share a bounded evidence list, retain records the answer actually cites before unused candidates. Apply this at both agent and response boundaries, then keep existing source-topic, jurisdiction and quantity validation. A citation remains traceability, not proof of entailment.
@@ -1441,3 +1445,7 @@ When a user asks a referential follow-up with a new explicit mass or volume afte
 # 27 October 2026 — Render provider-mode disclosure from effective server status
 
 Do not hardcode a paid-fallback warning in the consumer composer. Render the existing server-derived tier disclosure so free mode with paid fallback disabled does not imply a possible paid charge. Preserve the user's selected cloud/local mode and keep provider-routing diagnostics out of normal chat. Browser assertions cover the free-mode text and omission of the paid warning; saved-response rendering does not establish live provider behavior.
+
+# 27 October 2026 — align each cited answer sentence to source topic text
+
+A source selected for the user's question cannot support every sentence in the generated answer. For each cited sentence, require an independent topic match against the source's title, summary and limitations; strip publisher identity and self-attribution first so mentioning an acronym such as WHO is not treated as evidence. Keep question-level relevance, jurisdiction and supplied-source inspection behavior. This is a topic-alignment check, not semantic entailment. During quantity validation, ignore internal evidence handles such as `SRC_1` and `CALC_2`; their digits are identifiers, not food measurements.

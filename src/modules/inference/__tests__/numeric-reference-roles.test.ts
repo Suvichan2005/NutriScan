@@ -20,6 +20,15 @@ it('keeps exact user numeral identifiers attached to their words and separate fr
  expect(validateNaturalAnswerText('This is for 2 participants.',{...context,question:'Please calculate for 2 servings.'}).withheldUnsupportedQuantitySentenceCount).toBeGreaterThan(0);
 });
 
+it('does not treat evidence handles as factual quantities',()=>{
+ for(const handle of ['OBS_1','IMG_2','SRC_3','CALC_4','CAND_5','ROW_6']){
+  const answer=`The cited evidence supports this explanation ${handle}.`;
+  const result=validateNaturalAnswerText(answer,context);
+  expect(result.withheldUnsupportedQuantitySentenceCount).toBe(0);
+  expect(result.answer).toBe(answer);
+ }
+});
+
 const source:EvidenceSource={id:'developer-reference',title:'Developer source',publisher:'Developer',url:'https://example.test/reference',category:'guideline',jurisdiction:'Synthetic',publishedAt:null,effectiveAt:null,retrievedAt:'2026-10-26',summary:'A source amount is 12 g per serving. The source reference is at least 25 g per day.',limitations:'Developer numerical fixture, not dietary guidance.'};
 it('keeps the printed basis mandatory when an actual amount is asserted',()=>{
  const ctx={...context,evidence:[source]};

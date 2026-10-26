@@ -78,6 +78,17 @@ describe('production answer source scope',()=>{
     expect(filterAnswerBySourceScope(answer,[salt],aliases,'What does WHO say about sodium and blood pressure?').answer).toBe(answer);
   });
 
+  it('does not let a source relevant to the question support an off-topic scientific sentence',()=>{
+    const aliases=new Map([['SRC_1',salt.id]]);
+    const question='What does WHO say about sodium and blood pressure?';
+    const supported='WHO guidance discusses limiting sodium intake to reduce blood pressure risk at the population level SRC_1.';
+    const unrelated='The same WHO source says omega-3 prevents heart attacks SRC_1.';
+    const answer=`${supported} ${unrelated}`;
+    expect(isLocalEvidenceTopicallyRelevant(salt,question)).toBe(true);
+    expect(isLocalEvidenceTopicallyRelevant(salt,unrelated)).toBe(false);
+    expect(filterAnswerBySourceScope(answer,[salt],aliases,question)).toEqual({answer:supported,withheldSentenceCount:1});
+  });
+
   it('withholds guidance outside a user-named jurisdiction but allows explicit source inspection',()=>{
     const us={...peanut,id:'us-peanut-guidance',jurisdiction:'United States'};
     const aliases=new Map([['SRC_1',us.id]]);
