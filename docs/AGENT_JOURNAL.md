@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — clarify the local text-only scan and check evidence-card reachability
+
+- The synthetic local label-text journey exposed “0 sides” and an empty photo group despite producing a valid package reading without images. The package header now says “No package photos,” the action says “Add photos,” and the empty group is omitted.
+- Expanded the existing browser acceptance to scroll the selected WHO source limitation into view and compare its bounds with the conversation scroller and composer. At390×844 and1440×900 the limitation is within the scroller, whose bottom aligns with the composer; the earlier concern was only a screenshot taken before scrolling to the card end.
+- Provider-free Chrome acceptance passes with zero Axe/page errors, provider/external requests or horizontal overflow. Receipt: `docs/evidence/m2-context-source-browser-20261027.json`; screenshots remain ignored under `.data/m2-local-breadth-acceptance/`.
+
 ## 2026-10-27 — carry selected sodium context through to the visible source card
 
 - A 30 g synthetic snack scenario had a valid 228 mg sodium calculation and a source-linked WHO interpretation (11.4% of the 2,000 mg/day general-adult reference), but the local answer showed only the arithmetic. Tracing the UI showed `selectCitedEvidence` hid the otherwise-selected evidence because the answer did not name/cite the source.

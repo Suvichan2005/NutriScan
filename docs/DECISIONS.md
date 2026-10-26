@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — describe zero-photo label-text investigations explicitly
+
+When a package is created from entered label text with no attached images, say “No package photos,” omit an empty photo group, and offer “Add photos.” Keep photo counts and per-photo controls for scans that include images.
+
 ## 27 October 2026 — preserve scoped source context in local replies
 
 When the local audit already selects a source-backed context finding, the concise fallback may carry that finding into the answer only after its source survives topic and jurisdiction filtering. Preserve the source's population scope and non-personal-target limitation, and expose its source card. Avoid copying full source summaries or presenting population guidance as individualized advice.

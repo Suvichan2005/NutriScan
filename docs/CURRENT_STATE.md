@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## Current integration checkpoint — M6 photo-free text scan clarity (27 October 2026)
+
+Local label-text investigations now say “No package photos,” offer “Add photos,” and omit the empty photo group when the user entered text without attaching an image. Existing scans retain their photo controls. The browser acceptance additionally proves the expanded source limitation can scroll fully into view above the composer on mobile and desktop. Current local screenshots and geometry are in `.data/m2-local-breadth-acceptance/`; sanitized receipt: `docs/evidence/m2-context-source-browser-20261027.json`. No provider or external requests were made, and the temporary server is stopped.
+
 ## Current integration checkpoint — M2/M6 local source context is visible (27 October 2026)
 
 When a combined health-context question had a local WHO sodium finding, the local fallback kept only the arithmetic and the conversation UI hid the selected source card. `buildLocalAuditConversationReply` now carries through the source-linked, topic/scope-filtered context finding with its whole-day population reference and personal-target limit. The existing UI then renders the matching source card. Focused follow-up suite passed 16/16; local-only Chrome acceptance passed at 390×844 and 1440×900. Receipt: `docs/evidence/m2-context-source-browser-20261027.json`. This does not verify Gemini selection, entailment or clinical suitability. The five protected owner files remain preserved; the development server is stopped.

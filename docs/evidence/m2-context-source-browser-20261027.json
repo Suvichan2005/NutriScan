@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "kind": "provider-free local answer context and source-card acceptance",
+  "kind": "provider-free local answer context, source-card scroll and text-only photo-state acceptance",
   "date": "2026-10-27",
   "browser": "Installed Chrome via Playwright",
   "server": "Loopback Next.js development server; Gemini, paid fallback, Search grounding and readable transcript capture disabled",
@@ -26,10 +26,32 @@
     "sourceCardVisibleAndExpanded": true,
     "publisherAndPopulationVisible": true,
     "sourceLimitationVisible": true,
+    "sourceLimitationReachableAboveComposer": true,
+    "textOnlyHeaderSaysNoPackagePhotos": true,
+    "textOnlyPhotoActionSaysAddPhotos": true,
+    "emptyPhotoGroupRendered": false,
     "pageErrors": 0,
     "axeViolations": 0,
     "horizontalOverflow": false
   },
+  "scrollGeometryAfterBringingSourceLimitationIntoView": [
+    {
+      "viewport": "390x844",
+      "scrollAreaBottom": 737,
+      "composerTop": 737,
+      "limitationTop": 584.52,
+      "limitationBottom": 618.61,
+      "limitationWithinScrollArea": true
+    },
+    {
+      "viewport": "1440x900",
+      "scrollAreaBottom": 771,
+      "composerTop": 771,
+      "limitationTop": 688.69,
+      "limitationBottom": 705.73,
+      "limitationWithinScrollArea": true
+    }
+  ],
   "limitations": [
     "This verifies deterministic local calculation, source selection and browser presentation only.",
     "It does not verify Gemini selection or answer quality, semantic entailment, photo OCR, human scientific judgment or individualized medical suitability."
