@@ -3,7 +3,7 @@
 
 - The saved claim answer contained a PubMed-supported sentence with the review year and exact trial/participant counts; the same response also contained an unsupported portion conversion and a claim threshold from another jurisdiction.
 - Added a combined saved-answer replay with the real PubMed record: keep the supported 2022/13-trial/927-participant sentence while withholding the uncalculated package conversion and unsupported claim threshold, with an accurate plural notice.
-- Inference suite61 passed, TypeScript and diff check pass. This is validator coverage, not fresh model or source-card acceptance; no provider retry was made because availability had not changed.
+- Full assist replay of the exact saved answer retains the study sentence, withholds two unsupported statements and selects the PubMed source card. Intercepted local UI/API replay at1440×900 and390×844 shows the answer, notice and source card with no page errors. Inference suite61 passed, TypeScript and diff check pass. This is saved-output replay, not fresh model behavior or clinical review; no provider retry was made because availability had not changed.
 ## 2026-10-26 — make unavailable evidence lookups actionable
 
 - Tool-profile inventory confirms ordinary mode does not include `search_research`; selected specialized mode is the existing user-controlled path to external research and official regulatory lookup.
