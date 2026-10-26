@@ -51,6 +51,7 @@ const entries: readonly GuidanceEntry[] = [
     }),
     terms: ['diabetes', 'prediabetes', 'blood sugar', 'glycemic', 'carbohydrate', 'added sugar', 'meal planning', 'nutrition therapy'],
     conditions: ['diabetes', 'prediabetes'],
+    topicTerms: ['carbohydrate', 'meal planning', 'nutrition therapy'],
   },
   {
     source: guidanceSource({
@@ -183,6 +184,7 @@ const entries: readonly GuidanceEntry[] = [
     }),
     terms: ['diabetes', 'diabetic', 'prediabetes', 'snack', 'snacking', 'carbohydrate', 'refined', 'whole grain', 'wholegrain', 'fibre', 'fiber', 'blood glucose', 'portion'],
     conditions: ['diabetes', 'diabetic', 'prediabetes'],
+    topicTerms: ['snack', 'snacking', 'carbohydrate', 'refined', 'whole grain', 'wholegrain', 'fibre', 'fiber', 'blood glucose', 'portion'],
   },
   // ICMR-NIN Dietary Guidelines 2024 is intentionally not searchable until
   // written permission covers electronic use in a product (see docs/DECISIONS.md).
@@ -203,6 +205,7 @@ const entries: readonly GuidanceEntry[] = [
     }),
     terms: ['aha', 'american heart association', 'hypertension', 'high blood pressure', 'blood pressure', 'sodium', 'salt'],
     conditions: ['hypertension', 'high blood pressure'],
+    topicTerms: ['sodium', 'salt'],
     numericCoverage: {
       queryTerms: ['sodium', 'salt'],
       requiredValuePatterns: ['\\b2,?300\\s*mg\\s*(?:\\/|per\\s+)day\\b', '\\b1,?500\\s*mg\\s*(?:\\/|per\\s+)day\\b'],
@@ -223,8 +226,9 @@ const entries: readonly GuidanceEntry[] = [
       limitations: 'U.S. patient education, not a clinical guideline or a fixed nutrient allowance. Potassium, phosphorus, fluid, and protein targets cannot be inferred from a package or diagnosis alone.',
       license: 'Source-linked, NutriScan-authored paraphrase only; no source page text is bundled.',
     }),
-    terms: ['ckd', 'chronic kidney', 'kidney', 'renal', 'potassium', 'phosphorus', 'fluid', 'protein', 'dialysis'],
+    terms: ['ckd', 'chronic kidney', 'kidney', 'renal', 'sodium', 'salt', 'potassium', 'phosphorus', 'fluid', 'protein', 'dialysis'],
     conditions: ['ckd', 'chronic kidney disease', 'kidney disease'],
+    topicTerms: ['sodium', 'salt', 'potassium', 'phosphorus', 'fluid', 'protein', 'dialysis'],
   },
   {
     source: guidanceSource({
@@ -243,6 +247,7 @@ const entries: readonly GuidanceEntry[] = [
     }),
     terms: ['celiac', 'coeliac', 'gluten', 'gluten-free', 'gluten free'],
     conditions: ['celiac disease', 'coeliac disease'],
+    topicTerms: ['gluten', 'gluten-free', 'gluten free'],
   },
 ];
 

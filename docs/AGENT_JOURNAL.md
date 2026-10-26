@@ -1,5 +1,10 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — generalize source-topic matching across condition guidance
+
+- A provider-free retrieval matrix found that diabetes + potassium selected an IDF record whose stored summary is about carbohydrate portions, meal/snack choices and blood glucose; it contains no potassium guidance. Other sampled pairings showed the same condition-only eligibility rule could conflate a condition with an unrelated nutrient.
+- Added explicit topical applicability terms to condition-scoped records (diabetes, hypertension, CKD and celiac). A matching condition no longer suffices without a supported topic. Matrix: diabetes/potassium, hypertension/potassium and CKD/potassium abstain; diabetes/carbohydrate and snack, hypertension/sodium and CKD sodium retrieve the matching records. Full tool suite71 passed/one skipped, TypeScript and optimized build passed; owner/evidence hashes verified and3400 refreshed with paid fallback/search/capture off. No Gemini response or human clinical review; this is retrieval-only validation.
+
 ## 2026-10-26 — prevent sodium-only KDIGO evidence from answering a potassium-only query
 
 - A real local `getNutritionGuidance` transfer probe for “potassium kidney guidance” with India/CKD returned `kdigo-ckd-2024-sodium`. The relevance path admitted a narrow nutrient source on condition match alone, despite the stored summary covering sodium only.

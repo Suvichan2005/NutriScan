@@ -483,6 +483,18 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.output).toMatchObject({ externalRequestMade: false });
   });
 
+  it('does not reuse broad diabetes guidance as evidence for an unrelated nutrient question', async () => {
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'potassium diabetes package guidance',
+      condition: 'diabetes',
+      jurisdiction: 'India',
+    }, context('For a fictional adult in India with diabetes, what potassium guidance applies?'));
+
+    expect(result.status).toBe('empty');
+    expect(result.evidence).toEqual([]);
+    expect(result.output).toMatchObject({ externalRequestMade: false });
+  });
+
   it('uses global diabetes guidance for India without presenting U.S. guidance as locally applicable', async () => {
     const fetcher = vi.fn();
     vi.stubGlobal('fetch', fetcher);

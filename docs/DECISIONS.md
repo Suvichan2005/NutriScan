@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — require topic overlap for condition-scoped guidance
+
+Do not return a condition-scoped summary solely because a diagnosis/condition matches. Each such record declares the nutrition topics it actually summarizes; retrieval requires a direct topic match as well as the authorized condition and jurisdiction, except when the source itself is explicitly requested. Keep broader general-population sources under their existing relevance rule. This prevents adjacent-nutrient questions from inheriting irrelevant clinical text without building a clinical intent classifier.
+
 ## 26 October 2026 — require direct nutrient-topic fit for the CKD sodium summary
 
 Condition match alone must not make a narrow nutrient source appear applicable to every question about that condition. The local KDIGO summary stored here covers sodium; require sodium/salt topic overlap unless the user explicitly requests KDIGO, and state in its limitations that this summary supplies no potassium target. A potassium-only India query should abstain from this source rather than imply an answer from its CKD context. Do not infer that no external or individualized potassium guidance exists.
