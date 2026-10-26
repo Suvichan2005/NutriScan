@@ -318,4 +318,11 @@ describe('Gemini failure explanations', () => {
     expect(geminiFailureMessage('provider_invalid_json')).toMatch(/not read as structured data/i);
     expect(geminiFailureMessage('provider_schema_invalid')).toMatch(/could not finish an answer NutriScan can use/i);
   });
+
+  it('explains when every configured free model failed without implying a paid retry', () => {
+    const message = geminiFailureMessage('free_models_exhausted');
+    expect(message).toMatch(/configured free Gemini models did not finish/i);
+    expect(message).toMatch(/package and conversation are saved/i);
+    expect(message).not.toMatch(/paid|billing|upgrade/i);
+  });
 });

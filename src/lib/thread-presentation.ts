@@ -154,6 +154,7 @@ export function geminiFailureMessage(code: string, timedOut = false): string {
     case 'provider_invalid': return 'Gemini’s response could not be read. Your scan is still here; retry when ready.';
     case 'provider_incomplete': return 'Gemini could not finish this response. Your scan is still here; retry when ready.';
     case 'provider_unavailable': return 'Google Gemini is temporarily unavailable. Your scans are still here; try again later.';
+    case 'free_models_exhausted': return 'The configured free Gemini models did not finish this request. Your package and conversation are saved; try again later.';
     case 'paid_provider_unauthorized':
     case 'paid_price_missing':
     case 'provider_disabled':

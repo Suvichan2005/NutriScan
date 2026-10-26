@@ -1,4 +1,8 @@
 # Sanitized engineering journal
+## 2026-10-26 — explain exhausted free-model requests
+
+- The bounded synthetic specialized-source run exhausted the configured free route without returning an answer. Added a dedicated client message for `free_models_exhausted`, preserving the distinction from Google quota errors and paid-spend guards; it says the package/conversation are saved and does not suggest paid fallback.
+- Focused `thread-presentation.test.ts`36/36 and TypeScript pass. This verifies failure-message selection, not a fresh browser render or provider response.
 ## 2026-10-26 — replay the complete study-count withholding boundary
 
 - The saved claim answer contained a PubMed-supported sentence with the review year and exact trial/participant counts; the same response also contained an unsupported portion conversion and a claim threshold from another jurisdiction.

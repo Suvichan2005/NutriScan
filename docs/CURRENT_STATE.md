@@ -1,4 +1,7 @@
 # NutriScan current runtime handoff
+## M2/M6 free-model exhaustion message (26 October 2026)
+
+Added an explicit user-facing message for the exhausted configured free-model route: the request did not finish, saved package/conversation remain, and the user can retry later. It does not imply a paid fallback. Focused `thread-presentation.test.ts`36/36 and TypeScript pass. No full browser/build replay yet; the provider failure behavior remains as recorded below.
 ## M2 replay the saved study-count boundary (26 October 2026)
 
 Added a combined saved-answer replay using the actual PubMed review record and answer sentence naming its 2022 date, 13 trials and 927 participants. Full-assist replay retains that sentence, withholds the unsupported 12.4 g/100 g-to-4.7 g/38 g package conversion and 1 g/serving threshold, and selects the PubMed source card. Intercepted UI/API replay at1440×900 and390×844 displays the supported sentence, plural notice and source card with no page errors. Inference suite61/61, TypeScript and diff check pass. This is saved-output replay, not fresh model behavior or clinical validation; it does not establish an official India rule.
