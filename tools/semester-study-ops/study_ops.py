@@ -48,7 +48,8 @@ def artifact(root, record):
     return p.is_file() and sha(p) == record['sha256']
 
 
-def readiness(collection, root, review):
+def readiness(collection, root, review, review_root=None):
+    review_root = review_root or root
     groups = collection.get('products', [])
     decisions = review.get('groups', {})
     ids = Counter(g.get('productGroupId') for g in groups)
@@ -71,7 +72,7 @@ def readiness(collection, root, review):
         if g.get('familyGroupId') in review.get('developmentFamilies', []) and d.get('split') != 'development':
             issue('development-family-outside-development', 'CONFLICT')
         for key in ('rights', 'variant', 'market', 'layout', 'exposure', 'split'):
-            if not artifact(root, d.get(key + 'Review')): issue(key + '-review-artifact', 'MISSING')
+            if not artifact(review_root, d.get(key + 'Review')): issue(key + '-review-artifact', 'MISSING')
         if d.get('rightsDecision') != 'approved-local-study': issue('rights-not-approved')
         if not d.get('variantId') or not d.get('packagingRevision'): issue('exact-variant-revision', 'MISSING')
         if d.get('variantId') and g.get('variantId') and d['variantId'] != g['variantId']:
@@ -89,11 +90,11 @@ def readiness(collection, root, review):
                 issue('image-integrity:' + im['imageId'], 'CONFLICT')
             if len(image_owners[im.get('sha256')]) > 1: issue('image-reused-across-groups', 'CONFLICT')
         passes = d.get('readerPasses', [])
-        readers = {p.get('reviewerCode') for p in passes if p.get('independentHuman') is True and artifact(root, p)} - {None, ''}
+        readers = {p.get('reviewerCode') for p in passes if p.get('independentHuman') is True and artifact(review_root, p)} - {None, ''}
         if len(readers) < 2: issue('two-independent-reader-passes', 'MISSING')
         if len({p.get('path') for p in passes}) != len(passes): issue('reader-pass-artifact-reused', 'CONFLICT')
         adjudication = d.get('adjudication', {})
-        if not artifact(root, adjudication) or not adjudication.get('reviewerCode') or adjudication.get('reviewerCode') in readers:
+        if not artifact(review_root, adjudication) or not adjudication.get('reviewerCode') or adjudication.get('reviewerCode') in readers:
             issue('independent-adjudication', 'MISSING')
         if adjudication.get('unresolvedDisagreements') != 0: issue('unresolved-reference-disagreements')
         required = {'nutrition', 'ingredients', 'allergens', 'additives', 'warnings', 'claims', 'serving', 'identity'}
@@ -220,13 +221,13 @@ def export_review(records, seed, output, evidence_root):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);s=p.add_subparsers(dest='command',required=True)
-    r=s.add_parser('readiness');r.add_argument('--collection',type=Path,required=True);r.add_argument('--evidence-root',type=Path,required=True);r.add_argument('--reviews',type=Path)
+    r=s.add_parser('readiness');r.add_argument('--collection',type=Path,required=True);r.add_argument('--evidence-root',type=Path,required=True);r.add_argument('--reviews',type=Path);r.add_argument('--review-root',type=Path,help='Separate read-only root for human review artifacts; defaults to evidence-root')
     b=s.add_parser('blind');b.add_argument('--responses',type=Path,required=True);b.add_argument('--seed',type=int,required=True)
     a=s.add_parser('ratings');a.add_argument('--ratings',type=Path,required=True);a.add_argument('--key',type=Path,required=True)
     e=s.add_parser('export-review');e.add_argument('--responses',type=Path,required=True);e.add_argument('--seed',type=int,required=True);e.add_argument('--output',type=Path,required=True);e.add_argument('--evidence-root',type=Path,required=True)
     pairs=s.add_parser('pairs');pairs.add_argument('--responses',type=Path,required=True)
     args=p.parse_args()
-    if args.command=='readiness':out=readiness(load(args.collection),args.evidence_root,load(args.reviews) if args.reviews else {})
+    if args.command=='readiness':out=readiness(load(args.collection),args.evidence_root,load(args.reviews) if args.reviews else {},args.review_root)
     elif args.command=='blind':out=blind_responses(load(args.responses),args.seed)
     elif args.command=='export-review':out=export_review(load(args.responses),args.seed,args.output,args.evidence_root)
     elif args.command=='pairs':out=pair_audit(load(args.responses))

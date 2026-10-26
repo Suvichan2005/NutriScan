@@ -79,6 +79,15 @@ class StudyOperations(unittest.TestCase):
         text=(output/'reviewer/packets.json').read_text()
         self.assertNotIn('knowledge-on',text);self.assertNotIn('buildCommit',text)
         with self.assertRaises(FileExistsError):ops.export_review([r],3,output,self.root)
+    def test_separate_review_root_does_not_require_writing_original(self):
+        review_root=self.root/'reviews';review_root.mkdir()
+        for p in self.root.glob('*.bin'): (review_root/p.name).write_bytes(p.read_bytes())
+        for p in self.root.glob('pass-*.json'): (review_root/p.name).write_bytes(p.read_bytes())
+        report=ops.readiness({'products':[self.g]},self.root,{'groups':{'synthetic-1':self.d}},review_root)
+        self.assertEqual(report['status'],'READY')
+        (review_root/'pass-A.json').write_text('changed review')
+        report=ops.readiness({'products':[self.g]},self.root,{'groups':{'synthetic-1':self.d}},review_root)
+        self.assertNotEqual(report['status'],'READY')
     def test_reused_pass_rejected(self):
         d=copy.deepcopy(self.d);d['readerPasses'][1]['path']=d['readerPasses'][0]['path']
         self.assertIn('reader-pass-artifact-reused',self.codes(self.report(d)))

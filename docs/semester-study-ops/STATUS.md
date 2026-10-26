@@ -61,3 +61,7 @@ Actual source readers from the study worktree successfully queried original Thin
 ## Primary bibliography verification checkpoint
 
 Verified accessible primary metadata/documentation for8/9 existing entries, recording depth. L02 publisher429/PubMed unusable extraction remains access-limited, not upgraded to full-method verification. Proposed2 Unicode author corrections in a hash-bound overlay/private copy; original owner bibliography/scientific result fields unchanged. Primary-source URLs and boundaries retained.40 structural tests pass. Integration remote moved to3dceade; existing evaluation definitions/runners unchanged from this branch's0bfe794 base. No merge or production edit.
+
+## Custodian handoff checkpoint
+
+Generated12 actual candidate metadata sheets and blank review-decision index, reusing existing23-original/46-nutrition/46-supplement assignment metadata. No new batch/labels/rights approval or image copies. Identified stale historical HUMAN_HANDOFF10-group count versus matching later manifest/index12-group counts; originals preserved. Added separate evidence/review roots so human receipts need not be written back into original corpus. Actual blank index revalidated BLOCKED with all human gates pending.41 structural tests pass including cross-root review-integrity validation.

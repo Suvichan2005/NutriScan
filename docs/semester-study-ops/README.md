@@ -86,3 +86,14 @@ The first command validates the27 logical turns against exact authoritative scri
 Actual artifacts: `.data/study-ops/development-operations-verified-20261026/`. Retained run metrics:26 completed/1 failed;33 completed generations;10 tool calls;0/26 answers with returned sources; median completed direct-assist task5757.5ms, range2611–28099ms;8 withheld quantity sentences. No nutrient/answer accuracy score or independent result is produced. Assistant-task time is not browser/full-scan latency. Failed-call usage and initial reconstruction cost remain outside these completed-generation totals and must not be silently described as free/zero. Historical free estimates and actual billing are separate.
 
 The generated median figure was visually inspected for readable labels and development-exploratory scope. These are individual operational receipt figures, not final scientific comparison plots. Human reference/rating results remain PENDING.
+
+## Custodian candidate intake without copying originals
+
+```powershell
+python tools/semester-study-ops/custodian_intake.py --original-root ../NutriScan --output .data/study-ops/custodian-intake-next
+python tools/semester-study-ops/study_ops.py readiness --collection ../NutriScan/.data/semester-evaluation-acquisition-20261026/collection-manifest.json --evidence-root ../NutriScan --reviews .data/study-ops/custodian-intake-next/reviews.json --review-root .
+```
+
+The intake creates per-group metadata sheets, a fully unfilled reviews.json and before-review readiness. It links existing annotation-batches/index.json instead of regenerating a second assignment system. The explicit `--review-root` lets human receipts live in the study workspace while the original image/reference corpus stays read-only under `--evidence-root`; each root is independently path-bounded. No photos or answer labels are copied, decoded or prefilled.
+
+Actual prepared packet: `.data/study-ops/custodian-intake-20261026/` contains12 candidate sheets/23 original pointers and reuses46 nutrition plus46 supplemental reader assignments. All approvals/references/splits remain pending. The original HUMAN_HANDOFF.md still says10 groups, while the later collection manifest and annotation index consistently say12. Its historical text was preserved; use the latter hashed manifests for current accounting and have the custodian reconcile human eligibility. Counts are not final-study acceptance.
