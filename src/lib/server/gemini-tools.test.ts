@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { evidenceSources } from '../../modules/knowledge';
 import { calculationSchema, defaultProfile, sourceSchema, type PackageData, type Profile, type TentativeStructuredCandidate } from '../contracts';
 import { validateNaturalAnswerText } from '../../modules/inference';
-import { assistInput, assistPromptPayload, toolResultForModel } from './gemini';
+import { assistInput, assistPromptPayload, getAgentToolDeclarations, toolResultForModel } from './gemini';
 import { calculateSavedServing, executeGeminiTool, type GeminiToolContext } from './gemini-tools';
 import { applyNutrientCorrection } from '../correction';
 
@@ -34,6 +34,12 @@ function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019
 }
 
 describe('Gemini tool retrieval boundaries', () => {
+  it('keeps explicit profile guidance requests actionable when package calculations are present',()=>{
+    const declaration=getAgentToolDeclarations(false,false,{mode:'ordinary'}).find(tool=>tool.name==='get_nutrition_guidance');
+    expect(declaration?.description).toContain('explicitly asks for guidance and supplies a relevant authorized health condition');
+    expect(declaration?.description).toContain('even if package calculations or evidence for another condition are already present');
+  });
+
   it('makes exact ontology relationships and attribution accessible without treating taxonomy as health evidence',async()=>{
     const result=await executeGeminiTool('get_ingredient_concept',{id:'FOODON_03601071',relation:'ancestors'},context('How is besan classified?'));
     expect(result.status).toBe('ok');
