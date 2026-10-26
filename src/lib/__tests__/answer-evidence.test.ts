@@ -1,7 +1,5 @@
 import {describe,expect,it} from 'vitest';
 import {filterAnswerBySourceScope,renderAnswerEvidenceReferences,selectCitedEvidence} from '../answer-evidence';
-import {parseLabel} from '../parser';
-import {validateNaturalAnswerText} from '../../modules/inference/core';
 
 const source=(id:string,title:string,publisher:string,publishedAt:string|null)=>({id,title,publisher,publishedAt,url:`https://example.org/${id}`});
 
@@ -66,7 +64,6 @@ describe('production answer source scope',()=>{
     const aliases=new Map([['SRC_1',us.id]]);
     expect(filterAnswerBySourceScope('This US source says peanut warnings vary by product SRC_1.',[us],aliases,'How are peanut warnings handled in India?').withheldSentenceCount).toBe(1);
     expect(filterAnswerBySourceScope('The supplied reference is SRC_1.',[us],aliases,'Explain the supplied reference.').answer).toBe('The supplied reference is SRC_1.');
-    expect(filterAnswerBySourceScope('The supplied reference recommends avoiding the named allergen.',[us],aliases,'Explain the supplied reference.').answer).toBe('The supplied reference recommends avoiding the named allergen.');
   });
 
   it('uses only prior user questions to resolve a contextual multi-turn source reference',()=>{
@@ -77,26 +74,5 @@ describe('production answer source scope',()=>{
     expect(filterAnswerBySourceScope(answer,[diabetes],aliases,'Does that change for 25 g?', '',history).answer).toBe(answer);
     expect(filterAnswerBySourceScope(answer,[diabetes],aliases,'And for 25 g?', '',history).answer).toBe(answer);
     expect(filterAnswerBySourceScope(answer,[diabetes],aliases,'Does this package list peanuts?', '',history).withheldSentenceCount).toBe(1);
-  });
-
-  it('withholds obvious unreferenced health effects while retaining package facts and quantities',()=>{
-    const pkg=parseLabel('Nutrition information per 100 g\nFibre 8 g',{origin:'user'});
-    const answer='The package lists 8 g fibre per 100 g. Oats may lower LDL cholesterol. Package text alone does not establish whether it is safe for a person.';
-    const scope=filterAnswerBySourceScope(answer,[],new Map(),'Does this help with cholesterol?');
-    expect(scope.answer).toBe('The package lists 8 g fibre per 100 g. Package text alone does not establish whether it is safe for a person.');
-    expect(scope.withheldUnreferencedScientificSentenceCount).toBe(1);
-    expect(scope.withheldSourceSentenceCount).toBe(0);
-    const quantities=validateNaturalAnswerText(scope.answer,{package:pkg,question:'Does this help with cholesterol?',evidence:[],calculations:[]});
-    expect(quantities.answer).toContain('8 g fibre per 100 g');
-  });
-
-  it('keeps a topical cited scientific explanation eligible for source-card selection',()=>{
-    const aliases=new Map([['SRC_1',salt.id]]);
-    const answer='A 2023 World Health Organization guideline says lowering dietary sodium can reduce blood pressure SRC_1.';
-    const scoped=filterAnswerBySourceScope(answer,[salt],aliases,'How is sodium related to blood pressure?');
-    expect(scoped.withheldUnreferencedScientificSentenceCount).toBe(0);
-    expect(scoped.answer).toBe(answer);
-    const rendered=renderAnswerEvidenceReferences(scoped.answer,aliases,[salt],[]);
-    expect(selectCitedEvidence(rendered,[salt]).map(item=>item.id)).toEqual([salt.id]);
   });
 });

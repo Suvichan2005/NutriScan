@@ -28,18 +28,6 @@ const normalized = (text:string) => text.normalize('NFKC').toLocaleLowerCase('en
 const includesIdentity = (text:string,identity:string) => !!identity && ` ${text} `.includes(` ${identity} `);
 const contextualFollowupPattern=/^(?:(?:(?:and|also)\s+)?(?:what|how)\s+about\s+(?:that|it|this|them|those|the same|(?:just\s+|only\s+)?(?:\d|one\b|two\b|three\b|four\b|five\b|half\b|whole\b|a portion\b|a serving\b))|(?:(?:and|also)\s+)?(?:does|is|can|should|would)\s+(?:that|it)\b|(?:and\s+)?for\s+(?:that|it|the same|(?:just\s+|only\s+)?(?:\d|one\b|two\b|three\b|four\b|five\b|half\b|whole\b|a portion\b|a serving\b)))|\b(?:same as before|does that apply|what does that mean)\b/i;
 const isContextDependentFollowup=(question:string)=>contextualFollowupPattern.test(question.trim());
-const healthDomainPattern=/\b(?:health|medical|disease|diabetes|prediabet\w*|blood\s+(?:sugar|glucose|pressure|lipids?)|(?:ldl|hdl)|cholesterol|heart|cardiovascular|gut|digest\w*|allerg\w*|inflamm\w*|weight|cancer|kidney|liver|symptom\w*|immune|glycem\w*|insulin|hypertension|fibre|fiber|sodium|salt|sugar|carbohydrat\w*|protein|fat|calorie\w*|nutrient|pregnan\w*|infant|child|adult|bone|brain|probiotic\w*|prebiotic\w*|microbiome|dental|cavity|tooth|anemi\w*)\b/i;
-const healthEffectPattern=/\b(?:caus\w*|prevent\w*|reduc\w*|lower\w*|increas\w*|rais\w*|improv\w*|worsen\w*|protect\w*|treat\w*|cur\w*|manag\w*|benefit\w*|help\w*|support\w*|recommend\w*|promot\w*|trigger\w*|associated\s+with|linked\s+to|good\s+for|bad\s+for|should\s+(?:eat|avoid|limit|consume|choose|include|reduce|increase|take|use))\b/i;
-const explicitSafetyAssertionPattern=/\b(?:is|are|may\s+be|can\s+be|could\s+be|should\s+be)\s+(?:not\s+)?(?:safe|unsafe|healthy|harmful)\b|\b(?:safe|unsafe|healthy|harmful)\s+for\s+(?:you|children|a\s+child|infants?|pregnan\w*\s+(?:people|women))\b|\bsafe\s+to\s+(?:eat|consume|use)\b/i;
-
-/** Catch clear unreferenced health effects, safety claims and dietary advice.
- * This conservative guard does not decide whether a cited source entails a
- * claim; linked sources still pass through topical and jurisdiction checks.
- */
-function isUnreferencedScientificAssertion(sentence:string):boolean{
-  if(/\b(?:does\s+not|doesn['’]t|cannot|can['’]t|not\s+enough\s+to)\s+(?:establish|prove|show|determine|confirm|identify)\b/i.test(sentence))return false;
-  return explicitSafetyAssertionPattern.test(sentence)||(healthDomainPattern.test(sentence)&&healthEffectPattern.test(sentence));
-}
 
 /**
  * Link source identities mentioned in ordinary prose to existing records.
@@ -74,9 +62,10 @@ export function selectCitedEvidence<T extends SourceIdentity>(answer:string,sour
 }
 
 /**
- * Withhold sentences with missing/off-topic/out-of-scope source records and
- * obvious health-effect or dietary-guidance assertions with no source. This
- * does not check whether a topical cited record entails a sentence's meaning.
+ * Withhold sentences that explicitly rely on a source record that is missing,
+ * off-topic for the current question, or outside the requested guidance scope.
+ * This is a source-selection guard, not a check that the record entails the
+ * sentence's scientific meaning.
  */
 export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<EvidenceSource, 'summary' | 'category' | 'jurisdiction'>>(
   answer: string,
@@ -85,12 +74,7 @@ export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<Eviden
   question: string,
   explicitlySharedCountry = '',
   previousQuestions: readonly string[] = [],
-): {
-  answer: string;
-  withheldSentenceCount: number;
-  withheldSourceSentenceCount: number;
-  withheldUnreferencedScientificSentenceCount: number;
-} {
+): { answer: string; withheldSentenceCount: number } {
   const sourcesById = new Map(sources.map(source => [source.id, source]));
   const acceptedLines: string[] = [];
   const inspectingSuppliedSource = /\b(?:supplied|provided|selected)\s+(?:source|reference|guidance|evidence)\b/i.test(question);
@@ -104,8 +88,6 @@ export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<Eviden
   }
   const topicalQuestion = contextualQuestions.join(' ');
   let withheldSentenceCount = 0;
-  let withheldSourceSentenceCount = 0;
-  let withheldUnreferencedScientificSentenceCount = 0;
 
   for (const line of answer.replace(/\r\n?/g, '\n').split('\n')) {
     const trimmed = line.trim();
@@ -133,17 +115,9 @@ export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<Eviden
         && (!isLocalEvidenceTopicallyRelevant(source, topicalQuestion)
           || !isGuidanceEvidenceInScope(source, topicalQuestion, explicitlySharedCountry)),
       );
-      if (unresolvedHandle || invalidSource) {
-        withheldSentenceCount += 1;
-        withheldSourceSentenceCount += 1;
-        return false;
-      }
-      if (!referenced.length && !(inspectingSuppliedSource && sources.length > 0) && isUnreferencedScientificAssertion(sentence)) {
-        withheldSentenceCount += 1;
-        withheldUnreferencedScientificSentenceCount += 1;
-        return false;
-      }
-      return true;
+      if (!unresolvedHandle && !invalidSource) return true;
+      withheldSentenceCount += 1;
+      return false;
     });
     if (acceptedSentences.length) acceptedLines.push(headingPrefix + listPrefix + acceptedSentences.join(' '));
   }
@@ -151,7 +125,5 @@ export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<Eviden
   return {
     answer: acceptedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim(),
     withheldSentenceCount,
-    withheldSourceSentenceCount,
-    withheldUnreferencedScientificSentenceCount,
   };
 }
