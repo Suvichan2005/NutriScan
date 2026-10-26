@@ -245,6 +245,22 @@ it('shows printed pack contents and unit declarations separately from the servin
   expect(markup).toContain('10 servings');
 });
 
+it('offers a user-supplied value for a nutrient the active reading omitted',()=>{
+  const reconstruction=packageReconstructionSchema.parse({
+    identity:{brand:'Example',name:'Fictional development package',variant:null,status:'provisional',evidence:{observationIds:[],imageRegions:[]}},
+    serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Fictional development fixture.',
+    revision:1,updatedAt:'2026-10-26T00:00:00.000Z',model:'fixture',current:true,
+  });
+  const markup=renderToStaticMarkup(<PackageReconstructionView reconstruction={reconstruction} savedNutrients={[]} onCorrect={()=>true} onInspectEvidence={()=>true}/>);
+  expect(markup).toContain('Nutrition as printed');
+  expect(markup).toContain('Add a missing nutrient value');
+  expect(markup.includes('Sodium')).toBe(false);
+  const correctedMarkup=renderToStaticMarkup(<PackageReconstructionView reconstruction={reconstruction} savedNutrients={[{key:'sodium',value:450,unit:'mg',basis:{amount:100,unit:'g'},status:'corrected'}]} onCorrect={()=>true} onInspectEvidence={()=>true}/>);
+  expect(correctedMarkup).toContain('Your supplied reading');
+  expect(correctedMarkup).toContain('450 mg');
+  expect(correctedMarkup).toContain('Unverified user correction');
+});
+
 it('keeps raw package-evidence OCR out of the assistant conversation cards', () => {
   const observation: Observation = { id: 'raw-label-line', field: 'ocr-line', text: 'INGREDIENTS: wheat flour, edible oil, antioxidant (319)', side: 'back', confidence: 88, origin: 'ocr', imageId };
   const pkg = packageSchema.parse({ ...parseLabel('Package label', { origin: 'user' }), name: 'Unidentified package', observations: [observation], rawText: observation.text });

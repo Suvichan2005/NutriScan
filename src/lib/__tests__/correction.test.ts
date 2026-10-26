@@ -44,6 +44,22 @@ describe('user correction provenance', () => {
     expect(corrected.observations.find(item => item.origin === 'user')?.supersedesObservationIds).toContain(pkg.nutrients.find(item => item.key === 'sodium')?.observationIds[0]);
   });
 
+  it('calculates a newly supplied nutrient value without rewriting the original label reading', () => {
+    const original = parseLabel('Nutrition per 100 g\nCarbohydrate 60 g', { origin: 'ocr' });
+    const originalObservations = structuredClone(original.observations);
+    expect(buildAudit(original, 30, 'g', defaultProfile, 'How much sodium?').calculations.some(row => row.nutrient === 'sodium')).toBe(false);
+
+    const updated = applyNutrientCorrection(original, { key: 'sodium', value: 450, unit: 'mg', basisAmount: 100, basisUnit: 'g' });
+    const sodium = buildAudit(updated, 30, 'g', defaultProfile, 'How much sodium?').calculations.find(row => row.nutrient === 'sodium');
+    const userReading = updated.observations.find(row => row.origin === 'user' && row.field === 'sodium');
+
+    expect(sodium?.result).toBeCloseTo(135, 10);
+    expect(sodium?.observationIds).toContain(userReading?.id);
+    expect(userReading?.text).toContain('450 mg per 100 g');
+    expect(updated.observations.filter(row => row.origin === 'ocr')).toEqual(originalObservations);
+    expect(updated.nutrients.find(row => row.key === 'carbohydrate')?.value).toBe(60);
+  });
+
   it('rejects a unit incompatible with the selected nutrient', () => {
     const pkg = parseLabel('Nutrition per 100 g\nCarbohydrate 65 g', { origin: 'ocr' });
     expect(() => applyNutrientCorrection(pkg, { key: 'carbohydrate', value: 65, unit: 'mg', basisAmount: 100, basisUnit: 'g' })).toThrow(/unit does not match/);

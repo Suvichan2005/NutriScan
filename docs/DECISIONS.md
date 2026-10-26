@@ -1457,3 +1457,7 @@ Numeric validation may use a retrieved source's numeric content only when the an
 # 2026-10-27 — preserve explicit user context in local package recovery
 
 When the cloud response is unavailable, carry the preceding user question into a follow-up only when the current turn explicitly refers back to it. Never use prior assistant prose as evidence. Local nutrient calculations remain package-only; any combined meal total requires separate amounts and nutrition data for other foods. Package claim wording remains distinct from the requested nutrient amount; do not infer regulatory compliance or health outcomes.
+
+# 2026-10-27 — allow an explicitly user-supplied reading for an absent nutrient
+
+An active package reconstruction may omit a nutrient entirely, leaving no row to correct. Provide a missing-nutrient entry route that accepts only a value and basis entered by the user, starts blank, and records it through the established user-correction path. Keep it visibly unverified and preserve existing package/OCR observations. This supports arithmetic from newly supplied input; it does not establish that the number was read correctly or verify a product label.
