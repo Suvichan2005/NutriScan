@@ -1,4 +1,31 @@
 # Sanitized engineering journal
+## 2026-10-26 — make local answers specific about missing nutrients and allergy evidence
+
+- A guarded local-only browser journey showed useful ingredient text, portion arithmetic and sugar-free caveats, but an unrecorded calcium question returned a generic refusal. A combined peanut-allergy/diabetes question retained carbohydrate and sodium calculations while omitting the linked “May contain” uncertainty. Local source cards were selected by jurisdiction but not topic.
+- Local replies now state that a nutrient amount is not recorded in the provided text without treating it as zero or product absence, include the relevant linked allergen finding and individual-suitability limit, and attach guidance only when it passes topical and jurisdiction filters. Synthetic regression coverage checks the missing-calcium and combined-context paths.
+- `scripts/acceptance-local-breadth.mts` passed at390×844 and1440×900 against an isolated local server with Gemini, paid fallback, search and readable transcript capture disabled. It verified 228 mg sodium for30 g, the sugar-free caveat, explicit calcium unknown, combined contextual facts and May-contain caveats; provider/external requests0, page errors0, overflow0 and Axe violations0. Receipts/screenshots are ignored under `.data/m2-local-breadth-acceptance/`.
+- The changed app files pass an isolated TypeScript project and `followup-evidence.test.ts` passes13/13. Webpack compiled the production app; repository-wide Next typechecking still fails on widespread `Assertion.not` type errors in existing test files. A generated `tsconfig.json` change was restored from the owner snapshot. No live provider or human-evaluation evidence was used.
+
+## 2026-10-26 — make incomplete label recovery reachable and local
+## 2026-10-26 — make incomplete label recovery reachable and local
+
+- A local Tesseract run on the exploratory two-photo Amul Lassi package kept label text for review but did not establish ingredient/allergen details; sodium remained unknown. The UI already promised that pasted label text stays in the browser, but its handler could call Gemini when cloud mode was enabled, and the text-entry control disappeared after a scan.
+- Added “Add label text” to active investigations and made text entry/merge always local. A separate future analysis/follow-up remains the explicit remote action. Added keyboard focusability to the conversation scroll region after Axe found the missing focus target.
+- Provider-free browser acceptance on the real development photos reproduced the unknown field, added visible ingredient and allergen wording as user-entered evidence, then answered separate ingredient and allergen follow-ups with an unverified-reading caveat. At390×844: no `/api/assist`, no external origins, no page errors or horizontal overflow, Axe0 violations. The only POSTs were same-origin `/api/evidence` lookups. Synthetic typed-label transfer at390×844 and1440×900 confirmed the active-scan entry point, preservation of the previous600 mg/100 g reading and added evidence, with no assist/external calls, errors or overflow. Receipts/screenshots remain ignored under `.data/local-text-recovery-acceptance/` and `.data/amul-lassi-local-text-recovery/`.
+- `tsc --noEmit` via the installed TypeScript binary and `git diff --check` pass. The interrupted pnpm wrapper was stopped and its moved packages restored; no build/package-manager migration was run afterward. Five owner files were hash-verified against their saved snapshots. Images are exploratory development material only, not human-reviewed truth or held-out evaluation.
+
+## 2026-10-26 — audit source flow and qualitative-claim validation
+
+- Traced the natural follow-up route: request/tool evidence is merged into the effective source set; numeric and printed-basis claims are checked against package evidence, eligible sources and typed calculations; accepted prose resolves native references and source cards from source identities it names. Unused retrieval candidates do not become citations automatically.
+- Found a genuine gap: this path does not deterministically reject unsupported non-numeric scientific statements. Retrieved evidence and source-card identity alone do not establish semantic support. Added an implementation-grounded production-flow diagram and left qualitative claim rejection open for bounded design and distinct acceptance. This is not a live provider or scientific-evaluation result; Subham's independent study and the private KIIT report/template remain untouched.
+
+## 2026-10-26 — recalculate explicit portions after local fallback
+## 2026-10-26 — recalculate explicit portions after local fallback
+
+- Browser acceptance exposed a stale-answer bug: an unavailable Gemini follow-up for 25 g reused a saved 50 g audit (450 mg sodium). The local fallback now derives an explicit requested portion from the active package and rebuilds its audit before answering. A local 900 mg/100 g correction now yields 450 mg at50 g and225 mg at25 g after save/reopen; the original observation and correction provenance remain visible.
+- Acceptance passed at390×844 and1440×900. One `/api/assist` request per viewport was intercepted in-browser before the server; no profile/photos or external/provider calls, page errors, overflow or Axe violations. Also made the visible analysis-mode label part of its accessible name.
+- `tsc --noEmit` and `git diff --check` pass. Isolated production build succeeded with Next's built-in type check temporarily skipped because the interrupted package-manager migration left inconsistent test dependency types; standalone TypeScript passed. The five pre-existing owner files were hash-checked and preserved. No fresh Gemini selection or scientific validation is claimed.
+
 ## 2026-10-26 — make saved portion comparisons a typed path
 
 - The saved 40 g→30 g trace previously needed an additional model calculator call for the 10 g difference, even though the current interpretation row and a prior typed 40 g calculation were already available.

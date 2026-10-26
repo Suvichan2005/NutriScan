@@ -202,6 +202,36 @@ describe('local evidence follow-ups', () => {
     expect(unrelated.answer).not.toContain('WHO general adult reference');
   });
 
+  it('states when a requested nutrient is unrecorded and combines linked allergy uncertainty with portion facts', () => {
+    const pkg = parseLabel([
+      'Synthetic evaluation label',
+      'Nutrition information per 100 g',
+      'Carbohydrate 60 g',
+      'Sodium 760 mg',
+      'Ingredients: Oats, milk powder, salt',
+      'Contains: Milk',
+      'May contain traces of peanuts',
+    ].join('\n'), { origin: 'user' });
+    const missingQuestion = 'Is calcium listed?';
+    const missing = buildLocalAuditConversationReply(
+      buildAudit(pkg, 30, 'g', defaultProfile, missingQuestion), missingQuestion, pkg,
+    );
+    expect(missing.answer).toMatch(/No calcium amount is recorded in the label text entered so far/i);
+    expect(missing.answer).toMatch(/does not establish that the package contains none/i);
+    expect(missing.answer).not.toMatch(/(?:0|zero)\s*mg/i);
+
+    const combinedQuestion = 'Is this suitable with my peanut allergy and diabetes?';
+    const profile = { ...defaultProfile, allergies: 'peanuts', healthConsiderations: 'type 2 diabetes' };
+    const combined = buildLocalAuditConversationReply(
+      buildAudit(pkg, 30, 'g', profile, combinedQuestion), combinedQuestion, pkg,
+    );
+    expect(combined.answer).toContain('18 g carbohydrate');
+    expect(combined.answer).toContain('May-contain precautionary wording');
+    expect(combined.answer).toMatch(/does not establish actual allergen presence.*individual risk or safety/i);
+    expect(combined.answer).toMatch(/cannot establish individual suitability/i);
+    expect(combined.evidence).toBeUndefined();
+  });
+
   it('does not paste US-only diabetes education into the local fallback for an Indian-market snack question', () => {
     const pkg = parseLabel('Bisk Farm Sugar Free Cream Cracker\nIngredients: Refined wheat flour (maida) (89.98%)', { origin: 'user' });
     const question = 'Is this good to have for diabetic patients daily for snacking?';

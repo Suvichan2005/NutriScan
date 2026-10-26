@@ -1,4 +1,20 @@
 # Chronological decisions
+## 27 October 2026 — withhold source-linked sentences that fail topic or jurisdiction checks
+
+Before quantitative validation, resolve source handles and named source identities against the current supplied-plus-tool evidence set. Withhold a sentence when its cited record is unavailable, does not match the active question/profile topic, or is guidance outside a user-named jurisdiction. For a clearly contextual follow-up, include only the bounded prior user questions needed for topic continuity; prior assistant answers remain conversational context, not evidence. Standalone new topics do not inherit prior questions. Keep other useful sentences and package evidence, retain the record in the evidence inspector, and explain that the citation was omitted. An explicit request to inspect a supplied reference can show that record regardless of its topic or jurisdiction. This is a relevance/scope guard, not semantic entailment validation; it does not reject unsupported claims that lack source references or prove that a topical source supports the stated conclusion.
+
+## 26 October 2026 — preserve missing nutrient and allergen meaning in local answers
+
+When a user requests a nutrient with no captured amount, say it is not recorded in the supplied label text, explicitly avoid implying zero or product absence, and suggest adding a clearer panel reading. When a question combines suitability/allergy context with package nutrition, preserve both the deterministic portion facts and the linked allergen finding/caveat; do not convert either into a personal-safety verdict. Source cards require topic relevance as well as jurisdiction fit. This improves the existing local answer path without changing the analysis method or remote prompt.
+
+## 26 October 2026 — keep explicit label-text entry local and available after scan
+
+The label-text dialog tells users that entered text stays in the browser, so submitting it must not initiate Gemini. Keep the merge and immediate answer local regardless of the selected cloud mode; users can choose a separately disclosed Gemini analysis or follow-up afterward. Expose the same correction path from an active package so unreadable OCR fields can be supplied without discarding existing scan evidence. Preserve user-entered provenance and uncertainty. Browser acceptance on exploratory photos establishes the interaction and privacy boundary, not label truth or OCR accuracy.
+
+## 26 October 2026 — rebuild local fallback for explicit portions
+
+When a provider failure returns an answer for a follow-up, do not reuse the active audit if the question explicitly asks for a different portion. Resolve that amount against the current package and rebuild the local audit so fallback calculations reflect the user's request. Preserve the current fallback boundary and evidence provenance. Browser acceptance verifies this for corrected package observations at mobile and desktop sizes; it does not establish Gemini behavior or scientific accuracy.
+
 ## 26 October 2026 — derive a portion delta from the current typed row
 
 When a saved typed calculation and the current explicit request use different gram/millilitre portions of the same active interpretation row, expose a deterministic calculation for their absolute portion difference before answer generation. Require matching row identity, input, basis, units and nutrient; exclude user-corrected, counted and package operations, and do not compare mass with volume. Recompute from the current row so the delta is revision-linked. The existing validator can then accept a model-referenced delta, while the interactive card remains scoped to the requested portion. This path supplies evidence without relying on model tool selection; it does not establish fresh-model adherence or independent label accuracy.

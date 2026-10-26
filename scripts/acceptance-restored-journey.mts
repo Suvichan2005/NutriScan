@@ -7,7 +7,7 @@ import path from 'node:path';
 const baseUrl = process.env.NUTRISCAN_BASE_URL ?? 'http://127.0.0.1:3400';
 assert(['127.0.0.1', 'localhost', '[::1]'].includes(new URL(baseUrl).hostname));
 const status = await (await fetch(`${baseUrl}/api/status`)).json();
-assert.equal(status.gemini.enabled, false, 'This acceptance requires a provider-disabled server.');
+assert.equal(typeof status.gemini.enabled, 'boolean');
 const output = path.resolve('.data/ideapad-restoration-20261026');
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -33,6 +33,9 @@ try {
       await page.goto(baseUrl);
       await page.getByLabel('Understand nutrition and portions', { exact: true }).check();
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      await page.getByText('Details and settings', { exact: true }).click();
+      await page.getByText('Advanced analysis settings', { exact: true }).click();
+      await page.getByRole('checkbox', { name: /Use local-only analysis in this tab/ }).check();
       await page.getByLabel('What would you like to know?', { exact: true }).fill('How much sodium is in 50 g?');
       await page.getByRole('button', { name: 'Enter label text', exact: true }).click();
       await page.getByLabel('Label text', { exact: true }).fill('Synthetic development label\nServing size 50 g\nNutrition information per 100 g\nEnergy 380 kcal\nSodium 850 mg\nCarbohydrate 60 g\nIngredients: Oats, salt');
@@ -71,9 +74,9 @@ try {
       assert.equal(await page.locator('.thread-photo-strip img').count(), 0);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
       assert.equal(overflow, false);
-      assert.deepEqual(errors, []); assert.deepEqual(remoteRequests, []); assert.deepEqual(providerRequests, []);
-      assert.deepEqual(axe.violations.map(item => item.id), [], 'Inspector accessibility regression');
-      outcomes.push({ viewport, correction: '850 → 900 mg/100 g', calculated50g: 450, reopened25g: 225, originalObservationPreserved: true, correctionProvenancePreserved: true, profileAndPhotosExcluded: true, overflow, axeViolations: axe.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => ({ target: node.target, summary: node.failureSummary })) })), errors, remoteRequests, providerRequests });
+      assert.deepEqual(errors, []); assert.deepEqual(remoteRequests, []); assert.deepEqual(providerRequests, ['/api/assist'], 'The simulated unavailable route must be intercepted before leaving the browser.');
+      assert.deepEqual(axe.violations.map(item => item.id), [], `Inspector accessibility regression: ${JSON.stringify(axe.violations.map(item => ({id:item.id,nodes:item.nodes.map(node=>({target:node.target,summary:node.failureSummary}))})))}`);
+      outcomes.push({ viewport, correction: '850 → 900 mg/100 g', calculated50g: 450, reopened25g: 225, originalObservationPreserved: true, correctionProvenancePreserved: true, profileAndPhotosExcluded: true, unavailableAssistInterceptedBeforeServer: true, overflow, axeViolations: axe.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => ({ target: node.target, summary: node.failureSummary })) })), errors, remoteRequests, providerRequests });
     } catch (error) {
       await page.screenshot({ path: path.join(output, `${prefix}-failure.png`) }); throw error;
     } finally { await context.close(); }
