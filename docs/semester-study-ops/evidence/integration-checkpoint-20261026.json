@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-10-26",
+  "testedFeatureCommit": "f302421d0f728c8e4dd556f18e103af0c912b4fd",
+  "integrationReference": "3dceadec9fffabcf39a6680e2aefbf875fac68d5",
+  "ownedPathBoundaryPass": true,
+  "originalProtectedFilesUnchanged": {
+    "next-env.d.ts": true,
+    "package-lock.json": true,
+    "src/lib/server/research-regulation.test.ts": true,
+    "src/modules/ocr/browser.ts": true,
+    "tsconfig.json": true
+  },
+  "studyStructuralTests": {
+    "passed": 41,
+    "scope": "synthetic structural plus separately retained actual-data receipts"
+  },
+  "existingExperimentGateTests": {
+    "passed": 12,
+    "scope": "existing runner restrictions and receipt handling"
+  },
+  "semesterManifestValidator": "PASS_PREPARATION_ONLY",
+  "finalIndependentFreeze": "PENDING",
+  "independentHumanReferences": "PENDING",
+  "liveProviderCallsThisWorkstream": 0,
+  "browserAcceptance": "BLOCKED_LOCAL_BROWSER_DISABLED",
+  "publicDeployment": "NOT_PERFORMED",
+  "productionSourceChanges": 0
+}

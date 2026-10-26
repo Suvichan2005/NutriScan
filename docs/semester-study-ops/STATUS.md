@@ -1,3 +1,21 @@
+# Current ThinkBook study operations handoff
+
+As of26 October2026, feature branch `codex/thinkbook-study-ops-20261026`, draft PR1 targets `codex/generalized-package-intelligence-wip`. This workstream owns only tools/semester-study-ops and docs/semester-study-ops. Integration/production ownership remains on IdeaPad; human scientific/reference judgments remain with actual reviewers. No second master queue is introduced.
+
+**Ready for owner review:** metadata readiness and separate evidence/review roots;12-group/23-original custodian intake using existing46+46 annotation assignments; private26-answer historical development review packets plus one preserved failure; nine-dimension rating and separate adjudication workflow; receipt comparability audit using existing usage/scorer interfaces; actual operational CSV/figures using existing report generator; template/draft hash and stale-anchor inventory; primary bibliography correction overlay; credential-free loopback production smoke and read-only FoodOn/WHO/USDA/model-asset probe.
+
+**Not complete:** final independent accuracy/answer study; human rights/variant/exposure/split/reference approval; reviewed package contexts and real response ratings; actual browser acceptance of offline forms; provider-backed final model/config freeze and nine knowledge pairs; remote staging authentication/origin/quota/persistence changes. These remain external or integration-owner dependencies, not implied complete by tooling/tests. No new provider runs or deployment are permitted by this handoff.
+
+**Observed development results:**26/27 retained conversation responses,33 completed generations,10 tool calls,0/26 answers with returned source records; median completed direct-assist5757.5ms. Correlated turns/three exposed products, model-assisted contexts and no human scores: no independent accuracy/generalization or full task cost claim. Thinking/cache/billed/failure metadata gaps remain explicit.
+
+**Verification:**41 study structural tests and12 existing experiment-gate tests pass; original semester manifest preparation check passes with human references/final freeze pending. One Next production build and14 loopback checks passed with Gemini disabled;25 local read-only runtime-store checks passed. Exact tested revisions and limitations live in evidence/*.json. Original five protected file hashes unchanged. Two worktrees; one installed dependency tree and one reusable study build; own test server stopped. Generated scripts/evaluation/__pycache__ remains untracked after automatic deletion rejection and is excluded from Git.
+
+**Immediate integration requests:** review/merge PR1 without production overlap; agree actual adapter receipt bindings before final receipt activation; refresh14 stale report anchors at a final implementation freeze; implement separately configured protected staging gate/budget storage if hosting is chosen. Human custodian can now complete private intake/ratings using the prepared packets. Do not run another model sweep to compensate for missing human references.
+
+The following entries preserve this workstream's checkpoint chronology.
+
+---
+
 # ThinkBook workstream status — 26 October 2026
 
 Owner assignment: independent study/review/benchmark/report operations. Main queue and production files remain owned by IdeaPad; Subham supplies his own human judgments.
