@@ -132,7 +132,7 @@
       "reconstructionScorer": "scripts/evaluation/score-reconstruction.mts",
       "preparationAndReceiptGates": "scripts/evaluation/run_experiments.py"
     },
-    "adapterIntegrationStatus": "pending-owner-integration: existing experiment-plan.json and runner modality mapping describe earlier arms; this manifest is not a directly executable replacement",
+    "adapterIntegrationStatus": "application-five-method-dispatch-and-local-reconstruction-only-adapter-implemented; development pilot at046e8d2 recorded separately; independent references and final owner freeze pending",
     "measures": [
       "complete correct value/nutrient/unit/basis/row/column/qualifier entries",
       "incorrect/missing/invented entries",

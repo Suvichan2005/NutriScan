@@ -1224,3 +1224,6 @@ Physical-mass protection must not remain confined to the historical local audit.
 
 
 26 October: controlled extraction reuses the exact production initial-stage function and image preparation, without consumer answer synthesis. A local-only CLI accepts hashed raw inputs and emits stage/route/config/usage provenance; no new public API or alternative reconstruction prompt. Profiles, external evidence, prior interpretation and recovery crops are excluded from controlled initial extraction. Final fallback/config drift remains noncomparable.
+
+
+26 October: retain the frozen five-method development pilot as exploratory evidence, including failed integrated extractions, optional-section rejection, provisional/wrong/missing fields and unavailable OCR timing. Do not choose the default or claim independent accuracy from three exposed products and model-assisted labels. Fix optional repeated-section validation at the shared boundary after preserving the original-study receipt; no prompt tuning during frozen execution.
