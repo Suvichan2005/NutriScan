@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M2 test baseline restored after prompt/source contract drift (26 October 2026)
+
+Updated four outdated `server.test.ts` expectations to match the current compact assistant instruction and topic-scoped guidance lookup. Their prior failures were stale prompt phrases and `diabetes nutrition` fixture queries that no longer returned an applicable source; tests now assert the live contract using a diabetes/carbohydrate query. Full server suite92/92, repository suite812 passed/2 skipped, TypeScript and diff check pass. This restores the software-test baseline; it is not evidence of live provider behavior or scientific answer quality.
+
 ## M2 typed comparison calculation transfer (26 October 2026)
 
 Followed the saved 30 g replay through calculation, validation and UI selection. The calculator tool now directs the model to calculate the absolute difference as a direct gram/millilitre portion only for requested nutrients, on a shared supported package basis. The answer may use that typed result; the portion card filters to the explicit/current requested amount, while referenced difference calculations remain attached to the saved answer. Added a mocked end-to-end server regression: a 10 g calculation validates 37.6 kcal, is retained via its `CALC_...` reference, and does not replace or duplicate the 30 g card. Portion/calculator server cases7/7, agent contract50/50, inference plus tools77/1 skipped and TypeScript pass. Whole `server.test.ts` is 88/92 with four unrelated existing failures in stale prompt/source fixtures. No Gemini generation, build, or browser UI acceptance; fresh tool selection remains unverified. Five owner-modified files remain unstaged.

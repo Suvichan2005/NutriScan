@@ -454,7 +454,7 @@ describe('provider validation, independent of provider invocation', () => {
     expect(reconstruction).toContain('image geometry');
     expect(reconstruction).toContain('Do not answer the user’s food or health question');
     expect(reconstruction).not.toContain('Before making a health-specific suitability recommendation');
-    expect(conversation).toContain('final response is ordinary conversation');
+    expect(conversation).toContain('Answer directly in plain text');
     expect(conversation).not.toContain('readingOrder.runId');
   });
   it('reuses the complete saved package while omitting raw OCR from ordinary follow-ups',()=>{
@@ -744,7 +744,7 @@ describe('provider validation, independent of provider invocation', () => {
   });
   it('renders an explicit native source reference and returns its source card without a repair generation',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const source=getNutritionGuidance({query:'diabetes nutrition',jurisdiction:'India',maxResults:3})[0];
+    const source=getNutritionGuidance({query:'diabetes carbohydrate',jurisdiction:'India',maxResults:3})[0];
     const answer='The supplied reference is SRC_1.\n\nIt is contextual guidance, not a personal target.';
     const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
     const data=assistInput.parse({consent:true,question:'Explain the supplied reference.',evidence:[source],package:{id:'native-source-reference-ui',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
@@ -755,7 +755,7 @@ describe('provider validation, independent of provider invocation', () => {
   });
   it('keeps unused evidence inspectable without presenting it as a conversational citation',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
-    const source=getNutritionGuidance({query:'diabetes nutrition',jurisdiction:'India',maxResults:3})[0];
+    const source=getNutritionGuidance({query:'diabetes carbohydrate',jurisdiction:'India',maxResults:3})[0];
     expect(source).toBeDefined();
     const answer='The supplied package frame does not show an ingredient list.';
     const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
@@ -1068,7 +1068,7 @@ describe('provider validation, independent of provider invocation', () => {
     expect(initialRequest.contents[0].parts.some((part:{inlineData?:unknown})=>part.inlineData)).toBe(false);
     expect(initialRequest.contents[0].parts[0].text).toContain('Cream Cracker Sugar Free');
     expect(initialRequest.contents[0].parts[0].text).not.toContain('BISK FARM CREAM CRACKER');
-    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Track intent across the current question, saved package and recent turns.');
+    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Track intent across turns.');
     expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Answer directly in plain text');
   });
   it('normalizes package-native reconstruction fields while preserving explicit claim links', () => {

@@ -1129,3 +1129,8 @@ Checkpoint checks:756 passed/one skipped with four workers, TypeScript and final
 - Extended the existing calculator tool contract: for a precise same-basis gram/millilitre comparison, compute the absolute difference as its own direct portion for requested nutrients. The saved 30 g case's10 g amount calculates37.6 kcal,6.92 g carbohydrate and228.3 mg sodium from the package basis.
 - Server presentation now restricts the interactive calculator to the explicit/current requested portion while preserving cited comparison calculations in the response. Added a mocked end-to-end server regression for the30 g/10 g energy case and retained the existing count-serving behavior.
 - Portion/calculator server cases7/7, agent contract50/50, inference+tools77 passed/1 skipped, TypeScript pass. Full server suite88/92: four unrelated prompt/source fixture failures. No live Gemini, production build, or browser UI acceptance. Fresh provider adherence remains unverified.
+## 2026-10-26 — restore the current server-test baseline
+
+- Updated four outdated `server.test.ts` assumptions: two expected superseded system-instruction wording, while two asked the topical guidance retriever for a source with the non-specific query “diabetes nutrition.” Replaced those with checks against current prompt text and a diabetes/carbohydrate query that retrieves an applicable record.
+- Full server suite92/92; full repository suite812 passed/2 skipped; TypeScript and `git diff --check` pass. No build, browser acceptance or provider call. This is software-contract evidence, not M2 scientific answer acceptance.
+

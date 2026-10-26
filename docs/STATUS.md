@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 full software suite recovered (26 October 2026)
+
+Aligned four stale `server.test.ts` assertions/fixtures to the current assistant instruction and topic-scoped local guidance retrieval. Results: server suite92/92; repository suite812 passed/2 skipped; TypeScript and diff check pass. This validates repository behavior only, not fresh model adherence or independent scientific usefulness. No build/browser/provider acceptance claimed.
+
 ## M2 typed portion-difference support (26 October 2026)
 
 Added model-visible guidance for direct calculator calls on requested gram/millilitre portion differences and separated comparison calculations from the interactive requested-portion card. A mocked end-to-end server regression validates the saved 30 g scenario, keeps the 10 g difference calculation via its `CALC_...` reference, and shows a single 30 g card. Portion/calculator server tests7/7, agent50/50, inference+tools77 passed/1 skipped and TypeScript pass. Whole server suite88/92: four unrelated prompt/source fixture failures remain. No live model adherence, production build, or desktop/mobile UI replay claimed.
