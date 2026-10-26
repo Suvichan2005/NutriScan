@@ -13,6 +13,8 @@ const success = (model: string) => JSON.stringify({
 const quota = (daily = false) => JSON.stringify({ error: { code: 429, status: 'RESOURCE_EXHAUSTED', message: daily ? 'Per day quota exceeded' : 'Rate limit exceeded', details: daily ? [{ quotaId: 'requests_per_day' }] : [] } });
 
 beforeEach(() => {
+  telemetry.diagnostic.mockReset();
+  telemetry.evaluation.mockReset();
   resetGeminiUsageLedgerForTests();
   resetGeminiRoutingForTests();
   vi.stubEnv('ENABLE_GEMINI', 'true');
