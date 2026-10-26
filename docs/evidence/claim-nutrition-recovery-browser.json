@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "mocked-provider-failure-claim-nutrition-browser-acceptance",
+  "generatedAt": "2026-10-26T23:35:09.072Z",
+  "evidenceClass": "fictional sugar-free claim and carbohydrate development journey with browser-intercepted 503; not a real Gemini failure, regulatory opinion or independent answer-quality result",
+  "baseOrigin": "http://127.0.0.1:3400",
+  "providerCallsReached": 0,
+  "outcomes": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "mockedProviderUnavailable": true,
+      "assistantRequestsIntercepted": 1,
+      "claimDistinctionShown": true,
+      "usefulCalculationsRetained": true,
+      "failureExplained": true,
+      "retryAvailable": true,
+      "pageErrors": [],
+      "axeViolationIds": [],
+      "externalRequests": []
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "mockedProviderUnavailable": true,
+      "assistantRequestsIntercepted": 1,
+      "claimDistinctionShown": true,
+      "usefulCalculationsRetained": true,
+      "failureExplained": true,
+      "retryAvailable": true,
+      "pageErrors": [],
+      "axeViolationIds": [],
+      "externalRequests": []
+    }
+  ],
+  "passed": true
+}

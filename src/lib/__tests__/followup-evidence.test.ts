@@ -384,6 +384,23 @@ describe('local evidence follow-ups', () => {
     expect(distinctNutrientReply.answer.includes('1.2 g added sugar')).toBe(false);
   });
 
+  it('keeps a package claim separate from a calculated nutrient amount during local recovery', () => {
+    const pkg = parseLabel([
+      'Fictional development crackers',
+      'Sugar free',
+      'Nutrition information per 100 g',
+      'Carbohydrate 72 g',
+      'Sugars 0.5 g',
+    ].join('\n'), { origin: 'user' });
+    const question = 'Does its sugar-free claim mean carbohydrate-free for a 30 g portion?';
+    const reply = buildLocalPackageFallbackReply(buildAudit(pkg, 30, 'g', defaultProfile, question), question, pkg);
+
+    expect(reply.answer).toContain('The recorded package claim is “Sugar free”.');
+    expect(reply.answer).toContain('The printed claim and the requested nutrition-panel amount are separate package details');
+    expect(reply.answer).toContain('21.6 g carbohydrate for 30 g');
+    expect(reply.answer).toContain('0.15 g sugars for 30 g');
+  });
+
   it('bounds restored conversation citations and removes unsafe links', () => {
     const sources = safeConversationEvidence([
       source,

@@ -1453,3 +1453,7 @@ When a user explicitly includes health context in a Gemini request, locally sele
 ### Retrieved numerical evidence is sentence-scoped
 
 Numeric validation may use a retrieved source's numeric content only when the answer sentence identifies that source. A source elsewhere in the turn must not corroborate an uncited or unrelated quantity. Keep package observations and typed calculation evidence on their established paths. This association check does not establish scientific entailment.
+
+# 2026-10-27 — separate package claims from requested nutrient amounts in local recovery
+
+When the cloud response is unavailable, the local package fallback may state a package claim and supported nutrient calculations together, but it must describe them as distinct package details. The claim alone does not establish the requested numeric amount. Continue to derive quantities only from the saved package and typed calculator; do not infer regulatory compliance or a health outcome.

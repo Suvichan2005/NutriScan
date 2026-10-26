@@ -322,6 +322,10 @@ export function buildLocalPackageFallbackReply(audit: Audit, question: string, p
     facts.push(`The recorded calculation${calculations.length === 1 ? '' : 's'} ${calculations.length === 1 ? 'gives' : 'give'} ${details.join('; ')}.`);
   }
 
+  if (asksClaim && requestedNutrients.length) {
+    facts.push('The printed claim and the requested nutrition-panel amount are separate package details; the claim wording alone does not establish that amount.');
+  }
+
   const labelText = [pkg.rawText, ...pkg.observations.map(observation => observation.text)].join('\n').toLocaleLowerCase('en-IN');
   const labelTermsByNutrient: Record<string, string[]> = {
     energy: ['energy', 'calorie'], carbohydrate: ['carbohydrate', 'carb'], sugars: ['sugar'], addedSugars: ['added sugar'],
