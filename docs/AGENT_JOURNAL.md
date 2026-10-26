@@ -1133,3 +1133,10 @@ Checkpoint checks:756 passed/one skipped with four workers, TypeScript and final
 
 - Updated four outdated `server.test.ts` assumptions: two expected superseded system-instruction wording, while two asked the topical guidance retriever for a source with the non-specific query “diabetes nutrition.” Replaced those with checks against current prompt text and a diabetes/carbohydrate query that retrieves an applicable record.
 - Full server suite92/92; full repository suite812 passed/2 skipped; TypeScript and `git diff --check` pass. No build, browser acceptance or provider call. This is software-contract evidence, not M2 scientific answer acceptance.
+
+## 2026-10-26 — verify saved portion comparison at mobile and desktop widths
+
+- Browser replay first exposed that the existing local server was serving a stale Next manifest/chunk pairing: the page chunk returned500 and the error boundary replaced the app shell. The existing `next start` process was restarted against its intact configured build directory; app shell then loaded normally. No source changes were needed for this environment mismatch.
+- Replayed the saved trace `408005b7-c455-48ee-92c6-5157ab3fd6a3` with local deterministic `executeGeminiTool` results for the 10 g energy/carbohydrate/sodium difference. The intercepted response rendered the comparison sentence and kept all three difference calculations attached to answer evidence.
+- At390×844 and1440×900 the calculator card showed exactly eight current30 g rows, no10 g difference rows. Each viewport had one intercepted `/api/assist` request; zero photos/profile, off-origin requests and page errors. Receipts and screenshots: `.data/m2-answer-usefulness-20261026/portion-difference-ui-{390,1440}.{json,png}`.
+- This closes saved-response calculation/validation/UI transfer acceptance only. It does not verify fresh Gemini tool selection, broader answer quality, independent review, or M2 completion. No provider request or human review.

@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 comparison UI transfer acceptance (26 October 2026)
+
+The saved mixed-portion comparison response now passes intercepted browser replay at390×844 and1440×900. The answer displays the 10 g deltas (37.6 kcal,6.92 g carbohydrate,228.3 mg sodium) while its portion card contains only eight 30 g rows; all three difference calculations remain answer evidence but are not duplicate interactive rows. Both replays had one intercepted local assist request, no photos/profile/external requests and no page errors. Receipts/screenshots: `.data/m2-answer-usefulness-20261026/portion-difference-ui-{390,1440}.{json,png}`. This is saved-response presentation/arithmetic evidence, not fresh Gemini adherence or independent quality validation. M2 remains active.
+
 ## M2 full software suite recovered (26 October 2026)
 
 Aligned four stale `server.test.ts` assertions/fixtures to the current assistant instruction and topic-scoped local guidance retrieval. Results: server suite92/92; repository suite812 passed/2 skipped; TypeScript and diff check pass. This validates repository behavior only, not fresh model adherence or independent scientific usefulness. No build/browser/provider acceptance claimed.

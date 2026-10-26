@@ -1,7 +1,11 @@
 # NutriScan current runtime handoff
+## M2 comparison UI transfer acceptance (26 October 2026)
+
+Saved 30 g comparison response replayed through the browser at390×844 and1440×900 with `/api/assist` intercepted. It rendered the comparison sentence backed by three directly calculated 10 g differences (37.6 kcal,6.92 g carbohydrate,228.3 mg sodium), while the interactive portion card showed only the eight requested 30 g rows. No profile/photos, external requests or page errors; one local intercepted request per viewport. Receipts/screenshots: `.data/m2-answer-usefulness-20261026/portion-difference-ui-{390,1440}.{json,png}`. This verifies arithmetic/validation/UI presentation for the saved response, not fresh Gemini selection, human review or general answer quality. M2 remains active.
+
 ## M2 verification checkpoint (26 October 2026)
 
-Reconciled four stale server-test expectations with current behavior: assistant prose contract and topical source retrieval. The retriever still requires applicable topic overlap; tests now use a diabetes/carbohydrate query rather than assuming the broad term “nutrition” retrieves a source. Full `server.test.ts`92/92; repository Vitest suite812 passed/2 skipped; TypeScript and `git diff --check` pass. No production build, browser replay or provider call was run. The comparison path's free-model selection and real UI acceptance remain open.
+Reconciled four stale server-test expectations with current behavior: assistant prose contract and topical source retrieval. The retriever still requires applicable topic overlap; tests now use a diabetes/carbohydrate query rather than assuming the broad term “nutrition” retrieves a source. Full `server.test.ts`92/92; repository Vitest suite812 passed/2 skipped; TypeScript and `git diff --check` pass. No provider call. Comparison UI is now replayed at mobile and desktop; free-model selection/adherence remains open.
 
 ## M2 typed comparison calculation transfer (26 October 2026)
 
