@@ -824,6 +824,17 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(mocks.research).not.toHaveBeenCalled();
   });
 
+  it('separates official claim-rule results from clinical-effect evidence',async()=>{
+    mocks.research.mockResolvedValueOnce({status:'ok',items:[],message:'Retrieved dated official claim-rule sources.'});
+    const toolContext=context('Does dietary fibre establish enough oat beta-glucan for a cholesterol-lowering claim? What did studies find?');
+    const result=await executeGeminiTool('search_research',{query:'oat beta glucan cholesterol lowering claim',topic:'claims'},toolContext);
+    expect(result.status).toBe('empty');
+    expect(result.output.message).toContain('topic=claims lookup searches official claim-rule sources');
+    expect(result.output.message).toContain('it does not search clinical-effect evidence');
+    expect(result.output.message).toContain('separate search_research call with topic science');
+    expect(result.output.message).toContain('same authorized terms');
+  });
+
   it('expands an India regulation lookup with one exactly resolved additive identity', async () => {
     mocks.research.mockResolvedValueOnce({
       status: 'ok',

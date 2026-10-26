@@ -1044,7 +1044,10 @@ async function searchResearch(args: z.infer<typeof toolArgs.search_research>, co
   try {
     const result = await research(parsed.data);
     const evidence = result.items.slice(0, 3).map(item => toResearchEvidence(item, args.topic)).filter((item): item is EvidenceSource => item !== null);
-    return { status: evidence.length ? 'ok' : result.status === 'unavailable' ? 'unavailable' : 'empty', resultCount: evidence.length, evidence, output: { status: result.status, message: result.message, results: evidence.map(item => ({ ...item, ...(item.id.startsWith('epmc-')?{detailAccess:{tool:'get_research_record',source:item.id.split('-')[1],id:item.id.split('-').slice(2).join('-')}}:{}) })) } };
+    const message=args.topic==='claims'
+      ?`${result.message} A topic=claims lookup searches official claim-rule sources; it does not search clinical-effect evidence. If the user asks what studies found, run a separate search_research call with topic science using only the same authorized terms.`
+      :result.message;
+    return { status: evidence.length ? 'ok' : result.status === 'unavailable' ? 'unavailable' : 'empty', resultCount: evidence.length, evidence, output: { status: result.status, message, results: evidence.map(item => ({ ...item, ...(item.id.startsWith('epmc-')?{detailAccess:{tool:'get_research_record',source:item.id.split('-')[1],id:item.id.split('-').slice(2).join('-')}}:{}) })) } };
   } catch {
     return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', message: 'The bounded public research lookup failed. No source or current-law conclusion is available.' } };
   }
