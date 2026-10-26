@@ -1,4 +1,12 @@
 # Current engineering status
+## M6 restore the original private evidence-report draft (27 October 2026)
+
+Drive’s `.data.7z` contained the original `academic-completion` archive. Restored its 13 files into ignored `.data/academic-completion` without touching tracked source. The 16-page DOCX SHA-256 matches `report-build.json` (`677a6a6d…163f93`); its manifest records zero independent experimental results and an older tested source commit (`85ae0f7`). The original `Project_Report-format.docx` itself is still absent; the archive contains its PDF reference and inspection metadata. No report was edited, and historical `report-evidence.json` anchors were not revalidated. M6 report completion remains blocked on the original template and current accepted evidence.
+
+## M2 quantity-only natural follow-up context (27 October 2026)
+
+The local resolver now carries the preceding user question for a short amount-only continuation such as “And 250 ml?” only when both turns include explicit supported mass/volume. A complete new question remains intact. Focused conversation/portion suites pass33/33. Desktop/mobile browser replay was attempted but the dev server did not finish its first `/api/status` compilation; the acceptance script timed out before opening a browser or making an assistant request. No provider or external requests were made. Re-run this alongside the next broader browser acceptance when the local runtime is responsive.
+
 ## M2 restore natural quantity context in local follow-ups (27 October 2026)
 
 A synthetic sweetened-dairy browser transfer exposed a natural follow-up gap: “What if I have 250 ml instead?” lost the prior sodium topic and returned a generic abstention. Local follow-up resolution now carries forward the previous user question only when the new explicit mass/volume question is referential; portion selection takes the amount from the follow-up suffix, not the older amount. Mobile390×844 and desktop1440×900 acceptance now retain 150 ml calculations, the 6.75% WHO general-adult comparison and its population-only limitation, the changed 250 ml calculations, unknown calcium, and the Sodium reduction source card. Zero Gemini, Search or external calls; zero page/Axe errors or overflow. Receipt: `docs/evidence/m2-sweetened-dairy-transfer-20261027.json`. This is synthetic local acceptance, not Gemini selection or scientific validation.

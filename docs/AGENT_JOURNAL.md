@@ -1,4 +1,15 @@
 # Sanitized engineering journal
+## 2026-10-27 — restore the private report draft without replacing its template
+
+- The private Drive `.data.7z` contained `academic-completion`; restored that directory into ignored `.data` only. The DOCX SHA-256 exactly matches its archived build manifest. It is a 16-page draft with zero independent experimental results and was tested against source commit `85ae0f70`.
+- The original KIIT `Project_Report-format.docx` is not in the archive; only its PDF reference and inspection metadata are present. No report editing, template reconstruction or current-evidence claim was made. Historical report-evidence anchors remain unverified until the correct owner template/evidence is restored.
+
+## 2026-10-27 — handle amount-only conversational continuations
+
+- A natural short follow-up (“And 250 ml?”) did not carry the prior user question into the local resolver. Added a general amount-only shape check for explicit g/ml quantities with optional continuation/preposition words; complete questions and conversations without a previous amount remain unchanged.
+- Focused conversation-context and portion suites passed33/33. Desktop/mobile acceptance could not start: the fresh dev server's first `/api/status` compilation exceeded the health check and the acceptance runner timed out before browser creation. No assistant, provider or external request was made.
+- Five owner-modified files still match the pinned snapshot. Repeat this test as part of the next broader M2/M6 browser checkpoint; do not report live Gemini behavior.
+
 ## 2026-10-27 — verify retry recovery and claim-flow transfer in the current UI
 
 - Replayed a fictional details-entry journey with provider status mocked available and one browser-intercepted 503. Mobile/desktop retained both 30 g calculations, explained the failure, exposed a separate retry action, and produced no browser/external requests, page errors, Axe violations or overflow. The attempted route never reached the app server; this is not evidence for a real provider failure.

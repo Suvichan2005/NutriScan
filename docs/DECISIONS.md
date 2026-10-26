@@ -1,4 +1,12 @@
 # Chronological decisions
+## 27 October 2026 — preserve the restored private report as a historical draft
+
+Restore the exact owner report archive into ignored `.data` when available, but do not treat its older zero-result draft or its template PDF as a current accepted report/template. Verify its recorded hash, keep the original template DOCX blocker, and revalidate report-evidence anchors against current evidence before any future edit. Never replace the owner artifact with a reconstruction from memory.
+
+## 27 October 2026 — carry context for quantity-only follow-ups
+
+Treat a brief explicit mass/volume turn as a continuation only when the preceding user question also includes an explicit supported amount. Preserve complete current questions verbatim and never consult prior assistant prose as evidence. This is local conversational input resolution; provider adherence and scientific correctness remain separate.
+
 ## 27 October 2026 — preserve answer intent when a requested value is unavailable
 
 Report an unrecorded amount when the user asks for a quantity or asks whether that value is recorded. Do not replace contextual meaning or regulatory abstention answers merely because they also name a nutrient. Preserve the local finding-to-source relationship when the source title directly names the asked topic, but continue jurisdiction filtering and reject unrelated profile-only matches.
