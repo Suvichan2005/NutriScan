@@ -1,5 +1,9 @@
 # NutriScan current runtime handoff
 
+## M2 quantity-withholding notice — 26 October 2026
+
+The natural-answer validator now uses a count-neutral notice when it withholds unsupported numerical statements, so the message remains accurate when one or many sentences are removed. Exact saved real response replay tied to diagnostic `c320a5ac-ea92-4046-9c2e-4c6bc3569c11` confirms all five unsupported statements remain withheld and the notice is now accurate. Private receipt: `.data/m2-answer-usefulness-20261026/withheld-notice-replay.json`. Inference suite38/38, TypeScript and optimized production build pass; current loopback3400 is free/local with paid fallback, search and transcript capture off. This does not recover claims or establish answer usefulness; M2 remains open.
+
 ## M2 combined-condition guidance retrieval — 26 October 2026
 
 Provider-free replay found an India diabetes + hypertension query mentioning carbohydrate and sodium returned the IDF diabetes source but missed the WHO sodium record unless “salt” was repeated. The local relevance filter now admits an otherwise general-population source when its declared numeric-coverage topic directly matches the focused query. Transfer evidence: combined profile returns IDF + WHO sodium, excluding broad WHO healthy-diet and U.S.-only AHA; CKD sodium returns KDIGO + WHO; hypertension without kidney context returns WHO and not KDIGO. Full tool suite69 passed/one skipped, TypeScript/build pass, five owner files/27 evidence files verified, and current 3400 reports free/local with paid fallback, search and transcript capture disabled. This is retrieval behavior only; no provider answer or independent clinical-usefulness review has occurred.

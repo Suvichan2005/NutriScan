@@ -900,7 +900,7 @@ export function validateNaturalAnswerText(
   }
   const acceptedAnswer = acceptedLines.join('\n').trim();
   if (withheldUnsupportedQuantitySentenceCount && acceptedAnswer) {
-    acceptedLines.push('', 'I left out a numerical detail the available evidence could not verify.');
+    acceptedLines.push('', 'I omitted one or more numerical statements that the available evidence could not verify.');
   }
   return {
     answer: acceptedLines.join('\n').trim(),

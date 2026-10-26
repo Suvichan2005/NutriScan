@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — make withheld-quantity notices count-neutral
+
+The answer validator may remove one or several unsupported numerical statements while retaining supported prose. Its notice must remain true for either case and must not reproduce rejected claims. Use a generic “one or more numerical statements” explanation. This does not relax the quantity/basis validator, add an action based on unknown reasons, or claim that withheld values were recovered.
+
 ## 26 October 2026 — retain directly matched numeric population evidence in mixed-condition retrieval
 
 An authorized India diabetes + hypertension request can mention one supported topic once while naming multiple conditions. When an existing source declares numeric coverage for that directly mentioned nutrient/topic, retrieve it alongside condition-specific evidence without requiring redundant synonyms. Keep broad general-population sources subject to the stronger topical threshold; do not admit jurisdiction-incompatible or unrelated evidence. Preserve population limitations and make no individualized threshold or product verdict.
