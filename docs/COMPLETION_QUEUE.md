@@ -1,5 +1,9 @@
 # NutriScan final semester completion queue
 
+## M2 multi-topic retrieval continuation (26 October 2026)
+
+Fixed a shared topical-filter failure that dropped sodium guidance in integrated diabetes/hypertension/carbohydrate/sodium searches. Provider-free replay of the actual local knowledge tool now returns the WHO sodium source and excludes unrelated beta-glucan claim sources; the existing named-ingredient negative still abstains. Full802/two skipped, TypeScript/build pass. Fresh Gemini answer transfer and independent usefulness remain unverified; continue M2 breadth.
+
 ## M2 citation contract continuation (26 October 2026)
 
 Exact request-local source handles are now explicitly required when the model relies on retrieved evidence, allowing existing safe citation selection to render the appropriate source card. The instruction stays under the2,000-character bound. Offline focused tests/build pass; fresh free-provider adherence is still required before acceptance. Continue breadth/transfer work; do not treat this as M2 completion.

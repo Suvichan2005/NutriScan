@@ -353,6 +353,27 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.output).toMatchObject({ status: 'ok' });
   });
 
+  it('keeps sodium guidance for hypertension when the retrieval query also names diabetes and carbohydrate', async () => {
+    const niddk = evidenceSources.find(source => source.id === 'niddk-meals')!;
+    const glucose = evidenceSources.find(source => source.id === 'efsa-oat-beta-glucan-glycaemic-peak-2026')!;
+    const sweetener = evidenceSources.find(source => source.id === 'who-nss')!;
+    const sodium = evidenceSources.find(source => source.id === 'who-sodium')!;
+    const glucose2025 = evidenceSources.find(source => source.id === 'efsa-oat-barley-beta-glucan-glycaemic-2025')!;
+    mocks.semanticRetrieve.mockResolvedValue({
+      status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
+      results: [niddk, glucose, sweetener, sodium, glucose2025].map((source, index) => ({ source, score: 0.8 - index * 0.05, exactIdentity: false })),
+    });
+    const question = 'How should a vegetarian adult with diabetes and hypertension think about carbohydrate and sodium in a packaged snack in India?';
+    const query = 'diabetes hypertension food package carbohydrate sodium effects local clinical guidance';
+
+    const result = await executeGeminiTool('search_knowledge', { query }, context(question));
+
+    expect(mocks.semanticRetrieve).toHaveBeenCalledWith(query, 5);
+    expect(result.evidence?.map(source => source.id)).toContain('who-sodium');
+    expect(result.evidence?.map(source => source.id)).not.toContain('who-nss');
+    expect(result.evidence?.map(source => source.id)).not.toContain('efsa-oat-beta-glucan-glycaemic-peak-2026');
+  });
+
   it('returns relevant oat outcome evidence alongside local ingredient identity lookup', async () => {
     const result = await executeGeminiTool(
       'resolve_ingredient',

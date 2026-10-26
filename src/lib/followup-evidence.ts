@@ -12,6 +12,9 @@ export type LocalEvidenceCandidate = { source: ConversationEvidenceSource; score
 const genericEvidenceTerms = new Set([
   'a','about','according','after','and','any','are','as','at','be','because','before','between','can','could','describe','describes','does','effect','evidence','food','foods','for','from','good','guidance','health','healthy','how','in','information','into','is','it','label','labels','may','more','nutrition','nutritional','of','on','or','package','packages','product','products','research','should','some','study','studies','that','the','their','there','these','this','those','to','what','when','where','which','with','would'
 ]);
+// Broad context words can accompany a named ingredient without making a
+// generic source about that broad topic applicable to the named ingredient.
+const broadContextTerms = new Set(['dietary','effect','effects','fibre','fiber','intake','amount']);
 
 function evidenceTokens(value: string): string[] {
   return (value.normalize('NFKC').toLocaleLowerCase('en-IN').match(/[\p{L}\p{N}]+/gu) ?? [])
@@ -45,9 +48,15 @@ export function isLocalEvidenceTopicallyRelevant(
 
   const sourceTokens = new Set(sourceTokenList);
   const namedEntityTokens = queryTokens.filter(token => token.length >= 10);
+  const matchedNamedEntityTokens = namedEntityTokens.filter(token => sourceTokens.has(token));
   // A specific substance, nutrient, or condition should be present in the source
-  // itself. A broad source about food or health cannot stand in for that evidence.
-  if (namedEntityTokens.length) return namedEntityTokens.some(token => sourceTokens.has(token));
+  // itself when possible. Multi-part queries also contain conditions and other
+  // context that every useful source will not repeat; retain a direct match on
+  // another substantive topic term (for example sodium in a hypertension query).
+  if (matchedNamedEntityTokens.length && (namedEntityTokens.length < 2 || matchedNamedEntityTokens.length >= 2)) return true;
+  const substantiveTopicTokens = queryTokens.filter(token => token.length >= 4 && !broadContextTerms.has(token) && !namedEntityTokens.includes(token));
+  const matchedTopicTokens = substantiveTopicTokens.filter(token => sourceTokens.has(token));
+  if (namedEntityTokens.length) return matchedTopicTokens.length >= 2 || (namedEntityTokens.length >= 2 && matchedTopicTokens.length >= 1);
   return queryTokens.some(token => sourceTokens.has(token));
 }
 

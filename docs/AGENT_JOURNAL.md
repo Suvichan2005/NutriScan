@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — retain the directly relevant topic in mixed-condition searches
+
+- Provider-free replay against the actual hybrid index found WHO sodium ranked for a combined diabetes/hypertension/carbohydrate/sodium query, but `search_knowledge` returned only two oat beta-glucan glucose-claim assessments. Shared topical filtering let long context terms dominate and rejected sodium; it also overaccepted the assessments from one broad carbohydrate match.
+- Refined the shared topic check: a direct secondary-topic match can survive a multi-part query, but broad context words do not rescue a named-substance mismatch, and when multiple named topics are present a candidate cannot match only one named term. Live direct `executeGeminiTool` replay returns only `who-sodium` for the combined case; focused hypertension/sodium/salt also returns WHO sodium. Generic fibre guidance remains rejected for oligofructose-specific evidence. The answer model was not called, so this establishes retrieval/tool behavior only.
+- Added two regression cases. Full802 passed/two skipped, TypeScript and optimized build passed. Build-mutated owner files were restored and all five protected hashes/27 evidence files verified. Loopback3400 is refreshed, free/local, with paid fallback/search off. M2 and human gates remain open.
+
 ## 2026-10-26 — make evidence citation contract explicit
 
 - The current claim trace showed the model could receive official evidence yet omit its identity in the answer; the UI correctly displayed no card because cards require an explicit source citation. Existing tool results already provide request-scoped source IDs, and the renderer validates/maps those aliases. Added a concise general instruction to cite the exact `SRC_...` handle and name/date whenever using retrieved evidence. This should connect actual use to the source card without displaying every retrieval candidate or accepting invented IDs.

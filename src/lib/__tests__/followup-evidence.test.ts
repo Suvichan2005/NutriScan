@@ -121,6 +121,23 @@ describe('local evidence follow-ups', () => {
     expect(filtered.message).toMatch(/topical relevance and jurisdiction/i);
   });
 
+  it('retains a source matching one requested topic when a multi-part query adds unrelated context', () => {
+    const sodium: EvidenceSource = {
+      ...source,
+      id: 'who-sodium',
+      title: 'Sodium reduction',
+      publisher: 'World Health Organization',
+      jurisdiction: 'Global; general adult population',
+      summary: 'WHO recommends adults consume less than 2000 mg sodium daily. One gram of salt corresponds to 400 mg sodium.',
+    };
+    const query = 'hypertension sodium salt intake';
+
+    expect(isLocalEvidenceTopicallyRelevant(sodium, query)).toBe(true);
+    expect(parseLocalEvidenceResponse(retrievalResponse({ results: [
+      { source: sodium, semanticScore: 0.7, lexicalScore: 0.6, score: 0.68, exactIdentity: false },
+    ] }), query).hits.map(hit => hit.source.id)).toEqual(['who-sodium']);
+  });
+
   it('withholds an otherwise matching source that explicitly excludes the asked population', () => {
     const guidance: EvidenceSource = {
       ...source,

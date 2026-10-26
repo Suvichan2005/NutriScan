@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — preserve source matches for separate topics in combined queries
+
+A local evidence candidate may support one explicit part of a multi-topic query without repeating every condition or context term. Preserve a strong direct topic match such as sodium in a hypertension-plus-carbohydrate question, while retaining named-entity specificity: generic fibre guidance must not stand in for oligofructose evidence, and a source matching only one term of several named topics is insufficient. Keep source-jurisdiction and explicit-exclusion checks in force. Measure both candidate recall and off-topic leakage in regression cases.
+
 ## 26 October 2026 — require request-bound source handles in answers
 
 Retrieved candidates are not themselves proof that the final answer used or endorsed them, so continue requiring explicit citations for source cards. Make the model-facing contract explicit: when relying on retrieved evidence, cite the exact supplied request-local `SRC_...` handle and name/date. Existing alias validation and rendering resolve only sources returned for this request; unknown handles remain unavailable. Verify with a fresh free provider response before claiming behavioral acceptance.
