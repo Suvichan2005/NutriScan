@@ -1,5 +1,9 @@
 # NutriScan final semester completion queue
 
+## M2 CKD potassium individualized-guidance transfer (26 October 2026)
+
+After KDIGO's protein scope was restored, review of the same official guideline found Practice Point 3.3.2: renal dietitians/accredited providers should tailor potassium, phosphorus, sodium and protein adaptations to individual needs, CKD severity and comorbidities. This gives CKD potassium questions useful non-numeric context without inventing a potassium allowance. Expanded the same source summary/topic eligibility; potassium-only retrieval now returns KDIGO with the explicit no-numeric-target limit and no numerical coverage patterns. Diabetes/potassium and hypertension/potassium remain excluded. Focused suite72 passed/one skipped, TypeScript passed, production build passed and loopback3400 refreshed/health checked in free/local mode; all five pinned owner files match preserved archive. No model answer or human clinical review. Commit pending.
+
 ## M2 CKD protein guidance transfer (26 October 2026)
 
 A provider-free India/CKD query for protein returned no applicable local source because the existing KDIGO 2024 entry was scoped only to sodium, despite the same guideline also recommending 0.8 g/kg/day for adults with CKD G3–G5 and advising avoidance of >1.3 g/kg/day in adults at risk of progression. Expanded the existing source-linked summary and topical scope with those population/stage bounds, close-supervision limits and topic-specific answer-coverage patterns. Transfer now returns KDIGO for CKD protein, sodium-only patterns for sodium, protein-only patterns for protein, and no source for potassium. Focused tool suite72 passed/one skipped, TypeScript and optimized build passed; production3400 restarted in free/local mode with paid fallback/search/transcript capture off. This is retrieval/source-summary behavior, not generated medical advice or independent clinical review.

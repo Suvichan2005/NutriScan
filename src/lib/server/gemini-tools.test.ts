@@ -466,7 +466,7 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(sourceSchema.array().safeParse(result.evidence).success).toBe(true);
     expect(result.evidence?.[0].summary).toMatch(/below 2 g\/day/i);
     expect(result.evidence?.[0].limitations).toMatch(/sodium-wasting nephropathy/i);
-    expect(result.evidence?.[0].limitations).toMatch(/provides no potassium target/i);
+    expect(result.evidence?.[0].limitations).toMatch(/provides no numerical potassium or phosphorus target/i);
     expect(result.output).toMatchObject({
       guidanceCoverageFacts: expect.arrayContaining([expect.objectContaining({
         sourceId: 'kdigo-ckd-2024-sodium',
@@ -497,15 +497,18 @@ describe('Gemini tool retrieval boundaries', () => {
     });
   });
 
-  it('does not return a sodium-only CKD source for an India potassium-only query', async () => {
+  it('returns individualized CKD potassium context without fabricating a numerical target', async () => {
     const result = await executeGeminiTool('get_nutrition_guidance', {
       query: 'potassium kidney guidance',
       condition: 'CKD',
       jurisdiction: 'India',
     }, context('For a fictional adult in India with CKD, what potassium guidance applies?'));
 
-    expect(result.status).toBe('empty');
-    expect(result.evidence).toEqual([]);
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium']);
+    expect(result.evidence?.[0].summary).toMatch(/tailor.*potassium.*individual needs.*CKD severity.*comorbidities/i);
+    expect(result.evidence?.[0].limitations).toMatch(/no numerical potassium or phosphorus target/i);
+    expect(result.output).not.toHaveProperty('guidanceCoverageFacts');
     expect(result.output).toMatchObject({ externalRequestMade: false });
   });
 
@@ -687,7 +690,7 @@ describe('Gemini tool retrieval boundaries', () => {
       query: 'What does NIDDK say about potassium in CKD?',
     }, context('What does NIDDK say about potassium in CKD?'));
 
-    expect(explicit.evidence?.map(source => source.id)).toEqual(['niddk-ckd-adult-eating']);
+    expect(explicit.evidence?.map(source => source.id)).toEqual(['niddk-ckd-adult-eating', 'kdigo-ckd-2024-sodium']);
     expect(explicit.evidence?.some(source => source.id === 'niddk-celiac-eating-2020')).toBe(false);
   });
 

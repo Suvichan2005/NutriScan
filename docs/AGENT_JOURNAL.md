@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — provide individualized CKD potassium context without targets
+
+- Official KDIGO 2024 Practice Point3.3.2 supports tailored potassium/phosphorus/sodium/protein adaptation through renal dietitians/accredited providers based on individual needs, CKD severity and comorbidities. A prior retrieval probe had correctly rejected KDIGO's then sodium-only paraphrase; after source-summary scope expanded for protein, the same CKD-only potassium abstention became unnecessarily empty.
+- Added KDIGO's non-numeric potassium context to the existing summary and topic terms. The source can now answer CKD potassium questions with scope/individualization caveats, while explicit absence of numerical potassium/phosphorus targets remains and no potassium patterns enter numerical coverage. Other conditions remain topic- and source-scoped.
+- Focused suite72 passed/one skipped, TypeScript passed, and provider-free matrix confirms only CKD potassium is admitted with no numeric patterns; hypertension/diabetes potassium abstain. Optimized reusable-directory build passed and loopback3400 status is healthy in free/local mode (paid fallback/search/capture off). All five pinned owner files match the preserved archive. No Gemini response or human clinical review; commit pending.
+
 ## 2026-10-26 — restore scoped KDIGO CKD protein retrieval
 
 - A provider-free India/CKD protein query returned no source even though the selected KDIGO 2024 guideline includes a scoped adult CKD G3–G5 protein recommendation. Verified the recommendation and its limits against the official KDIGO guideline before changing the summary.
