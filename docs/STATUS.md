@@ -1396,3 +1396,6 @@ The failed-turn fallback used to keep its “Retry Gemini” button enabled afte
 ### 27 October — report-facing architecture trace
 
 Replaced the stale structured-synthesis diagram with the current local-first and consented-cloud flow. The figure links capture/OCR, canonical corrections, calculations, evidence selection, output validation, source-card display, browser storage and failure recovery to implementation paths and existing receipts. The evidence table distinguishes genuine-photo correction, provider-free local acceptance, code-path audit and mocked retry recovery; it does not present any of them as human science evaluation or fresh Gemini acceptance. The private KIIT report/template remains unavailable and was not recreated.
+# 27 October M2 answer-source boundary correction
+
+Removed the final-answer exact-summary-quote gate because source summaries are NutriScan-authored paraphrases, not publisher quotations. The user-facing source card now labels the summary and links the original. Source identity/topic/applicability filters remain; numerical safeguards are unchanged. Focused answer-evidence, conversation-context, Gemini-agent and server suites:172 passed; TypeScript and diff check passed. Provider-free only. Semantic entailment remains unverified and is not established by a citation or a topic match.

@@ -28,10 +28,6 @@ export function renderAnswerEvidenceReferences(
 }
 const normalized = (text:string) => text.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 const includesIdentity = (text:string,identity:string) => !!identity && ` ${text} `.includes(` ${identity} `);
-const hasExactSourceExcerpt=(sentence:string,source:Pick<EvidenceSource,'summary'|'limitations'>):boolean=>{
-  const quotes=[...sentence.matchAll(/"([^"]{24,300})"|“([^”]{24,300})”/gu)].map(match=>match[1]??match[2]??'');
-  return quotes.some(quote=>source.summary.includes(quote)||source.limitations.includes(quote));
-};
 const contextualFollowupPattern=/^(?:(?:(?:and|also)\s+)?(?:what|how)\s+about\s+(?:that|it|this|them|those|the same|(?:just\s+|only\s+)?(?:\d|one\b|two\b|three\b|four\b|five\b|half\b|whole\b|a portion\b|a serving\b))|(?:(?:and|also)\s+)?(?:does|is|can|should|would)\s+(?:that|it)\b|(?:and\s+)?for\s+(?:that|it|the same|(?:just\s+|only\s+)?(?:\d|one\b|two\b|three\b|four\b|five\b|half\b|whole\b|a portion\b|a serving\b)))|\b(?:same as before|does that apply|what does that mean)\b/i;
 const isContextDependentFollowup=(question:string)=>contextualFollowupPattern.test(question.trim());
 
@@ -86,8 +82,8 @@ export function selectCitedEvidence<T extends SourceIdentity>(answer:string,sour
 /**
  * Withhold sentences that explicitly rely on a source record that is missing,
  * off-topic for the current question, or outside the requested guidance scope.
- * This checks source identity, scope and a visible exact excerpt. It is still
- * not a check that the record entails the sentence's scientific meaning.
+ * This checks citation identity and topic/applicability scope. It does not
+ * establish that the retrieved record entails the sentence's scientific meaning.
  */
 export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<EvidenceSource, 'summary' | 'limitations' | 'category' | 'jurisdiction'>>(
   answer: string,
@@ -132,12 +128,9 @@ export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<Eviden
 
       const identitySources = selectCitedEvidence(sentence, sources);
       const referenced = [...new Map([...handleSources, ...identitySources].map(source => [source.id, source])).values()];
-      const invalidSource = referenced.some(source =>
-        !hasExactSourceExcerpt(sentence,source)
-        || (!inspectingSuppliedSource
-          && (!isLocalEvidenceTopicallyRelevant(source, topicalQuestion)
-            || !isGuidanceEvidenceInScope(source, topicalQuestion, explicitlySharedCountry))),
-      );
+      const invalidSource = referenced.some(source => !inspectingSuppliedSource
+        && (!isLocalEvidenceTopicallyRelevant(source, topicalQuestion)
+          || !isGuidanceEvidenceInScope(source, topicalQuestion, explicitlySharedCountry)));
       if (!unresolvedHandle && !invalidSource) return true;
       withheldSentenceCount += 1;
       return false;

@@ -61,7 +61,7 @@ const exampleText=`NUTRISCAN EXAMPLE CRACKERS\nSynthetic test label, not a real 
 export function ConversationEvidence({sources}:{sources?:Message['evidence']}){
  const safe=safeConversationEvidence(sources);
  if(!safe.length)return null;
- const card=(source:typeof safe[number])=><article key={source.id}><span className="eyebrow">SOURCE CHECKED BY NUTRISCAN · REVIEW SCOPE</span><h2 className="conversation-evidence-title"><a href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a></h2><p>{source.summary}</p><small>{source.publisher} · {source.jurisdiction} · Published {source.publishedAt??'not established'} · Retrieved {new Date(source.retrievedAt).toLocaleDateString('en-IN')}</small><p className="fine-print">{source.limitations}</p></article>;
+ const card=(source:typeof safe[number])=><article key={source.id}><span className="eyebrow">NUTRISCAN SUMMARY · CHECK ORIGINAL SOURCE</span><h2 className="conversation-evidence-title"><a href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a></h2><p>{source.summary}</p><small>{source.publisher} · {source.jurisdiction} · Published {source.publishedAt??'not established'} · Retrieved {new Date(source.retrievedAt).toLocaleDateString('en-IN')}</small><p className="fine-print">{source.limitations}</p></article>;
  return <details className="conversation-evidence" aria-label="Sources for this answer"><summary><span>Evidence · {safe[0].title}{safe.length>1?` + ${safe.length-1} more`:''}</span><ChevronDown size={14}/></summary><div className="conversation-evidence-content">{card(safe[0])}{safe.length>1&&<div className="research-results">{safe.slice(1).map(card)}</div>}</div></details>;
 }
 
