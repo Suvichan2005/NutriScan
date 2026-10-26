@@ -1472,3 +1472,7 @@ When a user explicitly includes health context in a Gemini request, locally sele
 ### Retrieved numerical evidence is sentence-scoped
 
 Numeric validation may use a retrieved source's numeric content only when the answer sentence identifies that source. A source elsewhere in the turn must not corroborate an uncited or unrelated quantity. Keep package observations and typed calculation evidence on their established paths. This association check does not establish scientific entailment.
+
+### Retrieved records are not citations
+
+Persist bounded tool-retrieved evidence separately from answer-cited evidence. Only answer-cited, current, in-scope records can be carried into follow-up evidence context. The inspector may show retrieved-only records with an explicit uncited label for transparency. Never promote all retrieved records into answer citations or numerical support.

@@ -153,8 +153,9 @@ export function buildLocalEvidenceUnavailableFollowUp(baseAnswer: string): strin
 }
 
 /** Keep only bounded, safe citations when restoring or preparing source context. */
-export function safeConversationEvidence(sources: readonly EvidenceSource[] | undefined): ConversationEvidenceSource[] {
+export function safeConversationEvidence(sources: readonly EvidenceSource[] | undefined, limit = 3): ConversationEvidenceSource[] {
   if (!sources) return [];
+  const boundedLimit=Math.min(8,Math.max(0,Math.trunc(limit)));
   const seen = new Set<string>();
   return sources.flatMap((source) => {
     if (!isSafeEvidenceUrl(source.url) || seen.has(source.id)) return [];
@@ -162,7 +163,7 @@ export function safeConversationEvidence(sources: readonly EvidenceSource[] | un
     if (!parsed.success || seen.has(parsed.data.id)) return [];
     seen.add(parsed.data.id);
     return [parsed.data];
-  }).slice(0, 3);
+  }).slice(0, boundedLimit);
 }
 
 /** Carry source-linked audit context into the local chat reply without adding unsupported findings. */

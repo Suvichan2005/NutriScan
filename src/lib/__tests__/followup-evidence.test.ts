@@ -384,8 +384,13 @@ describe('local evidence follow-ups', () => {
       ...Array.from({ length: 4 }, (_, index) => ({ ...source, id: 'extra-' + index }))
     ]);
     expect(sources.map((item) => item.id)).toEqual([source.id, 'extra-0', 'extra-1']);
+    const retrieved=safeConversationEvidence([source,...Array.from({length:9},(_,index)=>({...source,id:`retrieved-${index}`}))],8);
+    expect(retrieved).toHaveLength(8);
+    expect(retrieved.at(-1)?.id).toBe('retrieved-6');
     const turn = { question: 'Why this source?', answer: 'A local source was surfaced.', at: '2026-10-22T00:00:00.000Z' };
     expect(savedConversationTurnSchema.parse({ ...turn, evidence: sources }).evidence).toEqual(sources);
+    expect(savedConversationTurnSchema.parse({ ...turn, retrievedEvidence: retrieved }).retrievedEvidence).toEqual(retrieved);
+    expect(savedConversationTurnSchema.safeParse({ ...turn, retrievedEvidence: [...retrieved, source] }).success).toBe(false);
     expect(savedConversationTurnSchema.safeParse({ ...turn, evidence: [...sources, source] }).success).toBe(false);
     expect(savedConversationTurnSchema.safeParse({ ...turn, evidence: [{ ...source, summary: 'x'.repeat(1601) }] }).success).toBe(false);
   });

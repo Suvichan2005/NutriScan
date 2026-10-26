@@ -89,6 +89,9 @@ describe('conversationEvidenceForAssist', () => {
   it('does not promote an uncited candidate',()=>{
     expect(conversationEvidenceForAssist([{...cited,answer:'A package-only observation.'}],true)).toEqual([]);
   });
+  it('does not feed retrieved-only records into follow-up evidence context',()=>{
+    expect(conversationEvidenceForAssist([{...cited,evidence:[],retrievedEvidence:[source]}],true)).toEqual([]);
+  });
   it('excludes outdated, unsafe and non-consented records',()=>{
     expect(conversationEvidenceForAssist([cited],false)).toEqual([]);
     expect(conversationEvidenceForAssist([{...cited,outdated:true}],true)).toEqual([]);
