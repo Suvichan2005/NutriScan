@@ -1133,4 +1133,3 @@ Checkpoint checks:756 passed/one skipped with four workers, TypeScript and final
 
 - Updated four outdated `server.test.ts` assumptions: two expected superseded system-instruction wording, while two asked the topical guidance retriever for a source with the non-specific query “diabetes nutrition.” Replaced those with checks against current prompt text and a diabetes/carbohydrate query that retrieves an applicable record.
 - Full server suite92/92; full repository suite812 passed/2 skipped; TypeScript and `git diff --check` pass. No build, browser acceptance or provider call. This is software-contract evidence, not M2 scientific answer acceptance.
-
