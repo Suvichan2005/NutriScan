@@ -1,5 +1,10 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — make evidence citation contract explicit
+
+- The current claim trace showed the model could receive official evidence yet omit its identity in the answer; the UI correctly displayed no card because cards require an explicit source citation. Existing tool results already provide request-scoped source IDs, and the renderer validates/maps those aliases. Added a concise general instruction to cite the exact `SRC_...` handle and name/date whenever using retrieved evidence. This should connect actual use to the source card without displaying every retrieval candidate or accepting invented IDs.
+- Prompt length is1996/2000. Focused agent/tool/server tests207 passed/one skipped, TypeScript and optimized build passed. Refreshed loopback3400 status is free/local with paid fallback and search off. No live generation after this prompt edit; adherence and source-use quality remain unverified. Five owner files and27 preserved evidence files reverified after build. No paid request or study execution.
+
 ## 2026-10-26 — confirm the local clinical study source is retrievable
 
 - Same-origin `/api/evidence` on the refreshed 3400 runtime returned the PubMed 2022 oat beta-glucan/lipid systematic review as the top hit for a focused query (semantic0.854, lexical1.0). Its existing curated summary reports13 trials and927 participants and explicitly says package beta-glucan dose and individual effects are unknown.

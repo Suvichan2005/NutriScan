@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — require request-bound source handles in answers
+
+Retrieved candidates are not themselves proof that the final answer used or endorsed them, so continue requiring explicit citations for source cards. Make the model-facing contract explicit: when relying on retrieved evidence, cite the exact supplied request-local `SRC_...` handle and name/date. Existing alias validation and rendering resolve only sources returned for this request; unknown handles remain unavailable. Verify with a fresh free provider response before claiming behavioral acceptance.
+
 ## 26 October 2026 — bound research retries and add dated official claims source
 
 When external research terms exceed the explicit question/package/OCR/source context, make no request and suggest only the already-authorized terms; do not disclose denied terms or invent synonyms. Add the official FSSAI 2022 claims compendium as a bounded live source with a distinct ID from the curated knowledge source. Preserve its date and applicability caveat, and keep soluble-fibre/cholesterol criteria separate from oat beta-glucan/blood-glucose criteria. A retrieval candidate is not a cited answer: source cards continue to require an explicit answer reference. Prompt for both clinical and official sources when both are requested and available, but require a fresh provider run before claiming the behavior works.

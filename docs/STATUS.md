@@ -1,5 +1,7 @@
 # Current engineering status
 
+M2 source-citation contract: evidence cards require an explicit answer citation, but the agent was not told to emit its supplied source handle. General prompt now requires exact `SRC_...` handle plus source name/date for retrieved evidence used; renderer maps only request-local handles and existing citation selector remains authoritative. Prompt length1996. Focused207 passed/one skipped; TypeScript/build pass; current3400 free/local, fallback/search off. Fresh provider adherence remains unverified. M2/M4/M5 open.
+
 M2 local source transfer: same-origin evidence API on refreshed 3400 returns the PubMed oat beta-glucan lipid meta-analysis as top match (score0.854; lexical1.0; summary says13 trials/927 participants). Earlier actual model trace had both knowledge/research tools available but called research only, so omission was model selection, not missing local source. Current prompt requests both when needed; fresh-provider behavior remains unverified. Live official FSSAI source wiring independently checked. No paid call; M2 remains open.
 
 M2 runtime drift resolved: 3400 had served a pre-commit build with the curated FSSAI ID. Rebuilt and refreshed it from current source; live status is free/local-development, paid fallback off, search off. Same-origin research API now returns distinct `fssai-advertising-claims-live-2022` dated 2022-12-14 with extracted text. No provider generation; citation behavior remains unverified. Five owner files and 27 evidence files reverified after build. M2 remains open.

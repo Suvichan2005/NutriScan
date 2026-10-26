@@ -1,5 +1,9 @@
 # NutriScan final semester completion queue
 
+## M2 citation contract continuation (26 October 2026)
+
+Exact request-local source handles are now explicitly required when the model relies on retrieved evidence, allowing existing safe citation selection to render the appropriate source card. The instruction stays under the2,000-character bound. Offline focused tests/build pass; fresh free-provider adherence is still required before acceptance. Continue breadth/transfer work; do not treat this as M2 completion.
+
 ## M2 source-selection evidence — local study match (26 October 2026)
 
 Current same-origin local retrieval finds the relevant oat beta-glucan lipid review. The earlier real model trace had the knowledge tool available but did not call it; this is model-selection evidence. Verify updated dual-source prompting through a fresh bounded free-provider transfer run when quota is available. Continue unblocked M2 transfer work meanwhile; no formal study or human gate change.
