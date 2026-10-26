@@ -67,6 +67,13 @@ describe('resolveLocalFollowUpQuestion', () => {
     );
   });
 
+  it('retains user-mentioned food context for an explicit referential follow-up', () => {
+    const prior = [{ question: 'I am adding spinach with the crackers. How much carbohydrate is in 30 g?', answer: 'Unverified answer text.', at: '' }];
+    expect(resolveLocalFollowUpQuestion('Would that change the meal total?', prior)).toBe(
+      'I am adding spinach with the crackers. How much carbohydrate is in 30 g? Follow-up: Would that change the meal total?',
+    );
+  });
+
   it('does not borrow a prior topic for a new amount without a continuation cue or prior amount', () => {
     expect(resolveLocalFollowUpQuestion('How much protein is in 250 ml?', [{ question: 'How much sodium is in 150 ml?' }])).toBe('How much protein is in 250 ml?');
     expect(resolveLocalFollowUpQuestion('What if I have 250 ml instead?', [{ question: 'What ingredients are listed?' }])).toBe('What if I have 250 ml instead?');

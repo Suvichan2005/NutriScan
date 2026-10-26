@@ -321,6 +321,7 @@ export function buildLocalPackageFallbackReply(audit: Audit, question: string, p
       return `${result} ${calculation.unit} ${nutrient} for ${portion} ${calculation.portionUnit}, scaled from ${input} ${calculation.inputUnit} per ${basis} ${calculation.portionUnit} (${qualifier})`;
     });
     facts.push(`The recorded calculation${calculations.length === 1 ? '' : 's'} ${calculations.length === 1 ? 'gives' : 'give'} ${details.join('; ')}.`);
+    facts.push('This is a package-only calculation; a combined meal total needs separate amounts and nutrition data for any other foods.');
   }
 
   if (asksClaim && requestedNutrients.length) {

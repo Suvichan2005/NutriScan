@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "kind": "mocked-provider-failure-claim-nutrition-browser-acceptance",
-  "generatedAt": "2026-10-26T23:35:09.072Z",
-  "evidenceClass": "fictional sugar-free claim and carbohydrate development journey with browser-intercepted 503; not a real Gemini failure, regulatory opinion or independent answer-quality result",
+  "kind": "mocked-provider-failure-claim-and-added-food-followup-browser-acceptance",
+  "generatedAt": "2026-10-26T23:41:33.238Z",
+  "evidenceClass": "fictional sugar-free cracker and spinach-follow-up development journey with browser-intercepted 503; not a real Gemini failure, regulatory opinion or independent answer-quality result",
   "baseOrigin": "http://127.0.0.1:3400",
   "providerCallsReached": 0,
   "outcomes": [
@@ -12,13 +12,17 @@
         "height": 844
       },
       "mockedProviderUnavailable": true,
-      "assistantRequestsIntercepted": 1,
+      "assistantRequestsIntercepted": 2,
+      "previousQuestionReachedSecondTurn": true,
       "claimDistinctionShown": true,
       "usefulCalculationsRetained": true,
+      "packageOnlyBoundaryShown": true,
+      "followupRetainsSupportedCalculation": true,
       "failureExplained": true,
       "retryAvailable": true,
       "pageErrors": [],
       "axeViolationIds": [],
+      "horizontalOverflow": false,
       "externalRequests": []
     },
     {
@@ -27,13 +31,17 @@
         "height": 900
       },
       "mockedProviderUnavailable": true,
-      "assistantRequestsIntercepted": 1,
+      "assistantRequestsIntercepted": 2,
+      "previousQuestionReachedSecondTurn": true,
       "claimDistinctionShown": true,
       "usefulCalculationsRetained": true,
+      "packageOnlyBoundaryShown": true,
+      "followupRetainsSupportedCalculation": true,
       "failureExplained": true,
       "retryAvailable": true,
       "pageErrors": [],
       "axeViolationIds": [],
+      "horizontalOverflow": false,
       "externalRequests": []
     }
   ],
