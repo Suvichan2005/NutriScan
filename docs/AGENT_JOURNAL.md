@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — verify retry recovery and claim-flow transfer in the current UI
+
+- Replayed a fictional details-entry journey with provider status mocked available and one browser-intercepted 503. Mobile/desktop retained both 30 g calculations, explained the failure, exposed a separate retry action, and produced no browser/external requests, page errors, Axe violations or overflow. The attempted route never reached the app server; this is not evidence for a real provider failure.
+- Re-ran nutrient-claim acceptance after shared local-answer changes; criteria, unverified wording, two dated source cards and current-status abstention passed at 390×844 and 1440×900. Refreshed sanitized receipt: `docs/evidence/nutrient-claim-browser.json`.
+- Added a reproducible M6 acceptance runner, `scripts/acceptance-provider-failure-recovery.mts`; its synthetic payload and screenshots stay ignored in `.data/` and `docs/evidence/private/`. No key, profile or real image was used.
+
 ## 2026-10-27 — preserve trans-fat meaning and current-law responses in local follow-ups
 
 - A distinct provider-free browser scenario showed the local follow-up layer replacing “What does the trans fat line mean?” and “What is the current FSSAI law for trans fat?” with the same generic missing-amount message. The latter also lost its actionable next evidence, and selected WHO/FSSAI cards were absent.
