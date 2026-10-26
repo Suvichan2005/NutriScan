@@ -455,6 +455,7 @@ dialog.onboarding-dialog{width:min(620px,calc(100% - 24px));max-width:none;max-h
 .conversation-evidence[open]>summary>svg{transform:rotate(180deg)}
 .conversation-evidence-content{padding:0 0 10px}
 .conversation-evidence-content>article,.conversation-evidence-content>.research-results article{margin:0;padding:12px 14px;border:1px solid #e5ebdf;border-radius:10px;background:#fff}
+.conversation-evidence-title{font-size:13px;line-height:1.4;overflow-wrap:anywhere}
 .conversation-evidence-content>article>p,.conversation-evidence-content>.research-results article>p{font-size:12px;line-height:1.55}
 .conversation-evidence-content>article>small,.conversation-evidence-content>.research-results article>small{font-size:10px}
 @media(max-width:700px){.conversation-evidence{margin-left:37px}.conversation-evidence>summary{min-height:32px;font-size:10px}.conversation-evidence-content>article,.conversation-evidence-content>.research-results article{padding:10px}.conversation-evidence-content>article>p,.conversation-evidence-content>.research-results article>p{font-size:11px}}

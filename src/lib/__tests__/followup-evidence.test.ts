@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultProfile, packageSchema, savedConversationTurnSchema } from '../contracts';
 import { buildAudit } from '../engine';
 import { parseLabel } from '../parser';
+import { selectCitedEvidence } from '../answer-evidence';
 import {
   buildLocalEvidenceFollowUp,
   buildLocalEvidenceUnavailableFollowUp,
@@ -138,6 +139,23 @@ describe('local evidence follow-ups', () => {
     ] }), query).hits.map(hit => hit.source.id)).toEqual(['who-sodium']);
   });
 
+  it('does not confuse an additive identity with a requested nutrition-panel value', () => {
+    const calciumEdta: EvidenceSource = {
+      ...source,
+      id: 'jefca-calcium-disodium-edta',
+      title: 'JECFA additive identity: Calcium Disodium EDTA (385)',
+      publisher: 'Joint FAO/WHO Expert Committee on Food Additives',
+      category: 'registry',
+      summary: 'Calcium disodium EDTA is an additive identity used in food specifications.',
+    };
+    const query = 'Is calcium listed?';
+    expect(isLocalEvidenceTopicallyRelevant(calciumEdta, query)).toBe(false);
+    expect(parseLocalEvidenceResponse(retrievalResponse({ results: [
+      { source: calciumEdta, semanticScore: 0.95, lexicalScore: 0.9, score: 0.93, exactIdentity: false },
+    ] }), query).hits).toEqual([]);
+    expect(isLocalEvidenceTopicallyRelevant(calciumEdta, 'What is calcium disodium EDTA additive?')).toBe(true);
+  });
+
   it('withholds an otherwise matching source that explicitly excludes the asked population', () => {
     const guidance: EvidenceSource = {
       ...source,
@@ -200,6 +218,37 @@ describe('local evidence follow-ups', () => {
     const unrelated = buildLocalAuditConversationReply(audit, 'What remains uncertain on this label?');
     expect(unrelated.evidence).toBeUndefined();
     expect(unrelated.answer).not.toContain('WHO general adult reference');
+  });
+
+  it('preserves a complete source-backed answer for a direct guidance question', () => {
+    const pkg = parseLabel([
+      'Synthetic evaluation label',
+      'Serving size 30 g',
+      'Nutrition information per 100 g',
+      'Fibre 8 g',
+    ].join('\n'), { origin: 'user' });
+    const question = 'What does WHO recommend about dietary fibre?';
+    const reply = buildLocalAuditConversationReply(buildAudit(pkg, 30, 'g', defaultProfile, question), question, pkg);
+
+    expect(reply.evidence?.map(item => item.id)).toContain('who-carbohydrate-2023');
+    expect(reply.answer).toContain('at least 25 g/day of naturally occurring dietary fibre');
+    expect(reply.answer).toContain('not a product-specific threshold or individual prescription');
+    expect(reply.answer).toContain('2.4 g fibre in 30 g');
+
+    const claimPackage = parseLabel('Nutrition information per 100 g\nProtein 10 g\nHigh protein', { origin: 'user' });
+    const claimQuestion = 'What does the High protein claim mean?';
+    const claimReply = buildLocalAuditConversationReply(buildAudit(claimPackage, 30, 'g', defaultProfile, claimQuestion), claimQuestion, claimPackage);
+    expect(claimReply.evidence?.length).toBeGreaterThan(0);
+    expect(claimReply.answer).toContain('at least 20% of RDA per 100 g for solids');
+    expect(claimReply.answer).toMatch(/establish whether the product makes or meets the claim/i);
+
+    const allergenPackage = parseLabel('Ingredients: Oats, salt\nMay contain traces of peanuts', { origin: 'user' });
+    const allergenQuestion = 'How should I interpret the May contain traces of peanuts statement?';
+    const allergenReply = buildLocalAuditConversationReply(buildAudit(allergenPackage, 30, 'g', defaultProfile, allergenQuestion), allergenQuestion, allergenPackage);
+    expect(allergenReply.evidence?.map(item => item.id)).toContain('fssai-labelling-allergen-faq-2023');
+    expect(allergenReply.answer).toContain('does not establish actual allergen presence');
+    expect(allergenReply.answer).toContain('FAQ on Food Safety and Standards (Labelling & Display) Regulations, 2020');
+    expect(selectCitedEvidence(allergenReply.answer, allergenReply.evidence ?? []).map(item => item.id)).toContain('fssai-labelling-allergen-faq-2023');
   });
 
   it('states when a requested nutrient is unrecorded and combines linked allergy uncertainty with portion facts', () => {

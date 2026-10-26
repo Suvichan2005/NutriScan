@@ -31,10 +31,16 @@ function evidenceTokens(value: string): string[] {
 
 /** Reject obvious semantic near-matches before local sources enter an answer. Exact entity matches remain eligible. */
 export function isLocalEvidenceTopicallyRelevant(
-  source: Pick<EvidenceSource, 'title' | 'publisher' | 'summary'>,
+  source: Pick<EvidenceSource, 'title' | 'publisher' | 'summary'> & Partial<Pick<EvidenceSource, 'category'>>,
   query: string,
   exactIdentity = false,
 ): boolean {
+  const asksForNutrientValue = /\b(?:calcium|iron|potassium|magnesium|zinc|cholesterol|protein|carbohydrates?|carbs?|sugars?|sodium|salt|fibre|fiber|fat|energy|calories?)\b/i.test(query)
+    && /\b(?:listed|amount|how much|per\s*(?:100|serving|portion)|nutrition|nutrient|content)\b/i.test(query);
+  const explicitlyAsksAboutAdditives = /\b(?:additive|INS\s*\d|E\d{3,4}|EDTA|preservative|stabili[sz]er|sweetener|colour|color)\b/i.test(query);
+  const isAdditiveIdentity = source.category === 'registry' && /\badditive identity\b/i.test(source.title);
+  if (isAdditiveIdentity && asksForNutrientValue && !explicitlyAsksAboutAdditives) return false;
+
   const queryTokens = [...new Set(evidenceTokens(query).filter(token => token.length >= 3 && token.length <= 48 && !genericEvidenceTerms.has(token)))];
   const sourceTokenList = evidenceTokens(`${source.title} ${source.publisher} ${source.summary}`);
   const exclusionMarkers = new Set(['exclude','excludes','excluding','excluded','except']);
@@ -158,9 +164,9 @@ export function buildLocalAuditConversationReply(audit: Audit, question: string,
   answer: string;
   evidence?: ConversationEvidenceSource[];
 } {
-  const asksForEvidenceContext = /\b(?:compare|comparison|guidance|recommend\w*|daily|per day|whole[- ]day|reference|population|limit|according to|WHO|official|evidence|research|suitab\w*|safe|safety|health|risk|personal|me|my|allerg\w*|intoleran\w*|diabetes|blood pressure)\b/i.test(question);
+  const asksForEvidenceContext = /\b(?:compare|comparison|guidance|recommend\w*|daily|per day|whole[- ]day|reference|population|limit|according to|WHO|official|evidence|research|suitab\w*|safe|safety|health|risk|personal|me|my|allerg\w*|intoleran\w*|diabetes|blood pressure|claim\w*|criteria|regulat\w*|rules?|compliance|mean(?:ing)?|explain|interpret|may\s+contain|cross[- ]?contact|cross[- ]?contamination|precautionary)\b/i.test(question);
   const relevantFindings = audit.findings.filter((finding) => finding.sourceIds.length > 0 && (
-    (asksForEvidenceContext && finding.status === 'context') || finding.status === 'calculated'
+    (asksForEvidenceContext && ['context', 'uncertain'].includes(finding.status)) || finding.status === 'calculated'
   ));
   const referencedSourceIds = new Set(relevantFindings.flatMap((finding) => finding.sourceIds));
   const evidence = safeConversationEvidence(audit.sources.filter((source) => referencedSourceIds.has(source.id)
@@ -171,7 +177,10 @@ export function buildLocalAuditConversationReply(audit: Audit, question: string,
   // limitations remain visible on demand.
   const lead = audit.answer.trim().split(/\n\s*\n/, 1)[0]?.trim() ?? '';
   const sentence = lead.match(/^(.{1,700}?[.!?])(?:\s|$)/s)?.[1];
-  let answer = (sentence ?? lead.slice(0, 700)).trim();
+  const asksDirectGuidance = evidence.length > 0
+    && /\b(?:recommend(?:ation|ations|ed|s)?|guidelines?|guidance|according\s+to|what\s+does\s+(?:WHO|FSSAI)\s+say|mean(?:ing)?|explain|interpret|criteria|thresholds?|definitions?|requirements?|compliance|compliant|qualif\w*|meets?)\b/i.test(question)
+    && !/\b(?:compare|comparison|compared|versus|\bvs\b|portion|serving)\b/i.test(question);
+  let answer = (asksDirectGuidance ? lead.slice(0, 1200) : sentence ?? lead.slice(0, 700)).trim();
 
   // A package-only response should say when the requested nutrient was not
   // captured, while preserving the distinction between missing evidence and

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "kind": "provider-free-m2-m6-browser-acceptance",
+  "date": "2026-10-27",
+  "browser": "Installed Chrome via Playwright",
+  "server": "Local Next development server; Gemini, paid fallback, Search grounding and transcript capture disabled",
+  "input": "Synthetic package text and fictional session-only context; no package photographs or external source acquisition",
+  "viewports": [
+    { "name": "mobile", "width": 390, "height": 844, "result": "pass" },
+    { "name": "desktop", "width": 1440, "height": 900, "result": "pass" }
+  ],
+  "scenarios": [
+    "Ingredient text remains an unverified package observation",
+    "Carbohydrate calculations use explicit 20 g and 40 g portions",
+    "High-protein claim criteria retain the dated FSSAI source and non-compliance caveat",
+    "Unrecorded calcium remains unknown and does not receive a calcium-EDTA additive identity source",
+    "Combined allergy and diabetes context retains precautionary wording and individual-suitability limits",
+    "WHO adult fibre guidance includes the current package-portion calculation and population limitation",
+    "The natural children follow-up uses the preceding user question and returns age-group guidance",
+    "May-contain wording retains the dated FSSAI Gazette and FAQ cards with scope limitations"
+  ],
+  "checks": {
+    "axeViolationIds": [],
+    "horizontalOverflow": false,
+    "pageErrors": 0,
+    "externalOrigins": [],
+    "geminiOrVisionRequests": 0,
+    "sourceCardsExpandedAndInspected": true
+  },
+  "screenshots": "docs/evidence/private/package-text-conversation/mobile-m2-m6.png and desktop-m2-m6.png",
+  "limits": [
+    "No live Gemini answer or fresh model selection was evaluated",
+    "No human scientific reference or held-out case was used",
+    "UI/source-card presentation does not establish semantic entailment",
+    "Synthetic text acceptance is not real-photo OCR acceptance"
+  ]
+}

@@ -20,7 +20,14 @@ flowchart TD
   V -->|accepted prose| I[Resolve source handles and identify named sources]
   E --> I
   I --> U[Answer text and source-reference cards]
+  Q --> LA[Build local audit; resolve supported short follow-ups from prior user questions]
+  P --> LA
+  LA --> LR[Local reply preserves complete direct source-backed guidance or claim explanation]
+  LA --> LE[Filter local sources by topic, scope and additive-versus-nutrient intent]
+  LR --> U
+  LE --> U
   I -.-> L[Topic and scope do not prove semantic entailment]
+  LR -.-> L
   V -.-> L
 ```
 
@@ -30,6 +37,10 @@ flowchart TD
 - The natural answer validator verifies numeric values and printed bases against current package evidence, eligible source text and typed calculations. It withholds unsupported numeric sentences while preserving independently supported prose.
 - Consumer source cards are selected from source identities named in the surviving prose; unused or scope-filtered retrieval candidates do not automatically become citations, though they remain available in the inspector.
 - These checks establish data flow, numeric support, traceable references and topical/jurisdiction scope. They do not show that a source semantically entails every qualitative scientific statement in the natural answer. Unreferenced assertions and incorrect claims linked to a merely topical source are still not deterministically rejected.
+
+## Local deterministic thread path
+
+The UI derives its local audit from the active package. A bounded prior user question may resolve a clearly contextual follow-up, but assistant prose is not carried as evidence. Direct source-backed guidance and claim criteria keep their useful explanation and qualifications; comparisons stay concise. Topic/scope-filtered source identities determine which local evidence cards appear. An additive identity alone cannot establish that a nutrient is present or quantify it.
 
 ## Acceptance gap and evidence boundary
 
