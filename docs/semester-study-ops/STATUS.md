@@ -29,3 +29,9 @@ A generated scripts/evaluation/__pycache__ file remains untracked after automati
 Implemented separate read-only disagreement packets and explicit adjudicator-decision validation, preserving original reviewer records and exact rating-set hashes. N/A-versus-score disagreement remains visible; means exclude N/A without converting it to zero. Distinct adjudicator, response/context/rating binding, timestamps, reasons for changed/disputed scores and a resolution for each critical error are mandatory. Unresolved errors or missing readers remain PENDING. Empty studies cannot become adjudicated. Review batch IDs now bind response identity/context/build/treatment as well as text and seed.
 
 Checks:26 unique synthetic structural tests pass; existing semester preparation validator remains PASS with independent references/final freeze PENDING. No genuine ratings generated or model/provider calls made. See ADJUDICATION.md for operational commands. Human authentication and scientific correctness cannot be inferred from a declared provenance field.
+
+## Offline reviewer form checkpoint
+
+Added a static review.html to authorized packet exports, with context/response/source display, nine-dimension controls, explicit human declaration, evidence/critical-error entry, optional local draft persistence, and compatible JSON export. No arbitrary HTML sink or network dependencies. Structural smoke uses two explicitly synthetic responses only; exported synthetic data is not a genuine human rating.
+
+Checks:28 Python tests, Node syntax check, synthetic-DOM navigation/export/persistence integration, and exported-row rating-contract validation pass. Browser attempt returned local browser use disabled in Work settings; actual visual/file-origin/download acceptance remains BLOCKED, without changing settings or trying another browser mechanism. No npm install, application build, provider call or deployment.

@@ -210,6 +210,9 @@ def export_review(records, seed, output, evidence_root):
         record=next(r for r in records if r['responseId']==join['responseId'])
         context=local(evidence_root,record['contextArtifact']['path']).read_text(encoding='utf-8-sig')
         (output/'reviewer'/f"{packet['blindResponseId']}.md").write_text(f"# {packet['blindResponseId']}\n\n{context}\n\n## Response\n\n{packet['displayedResponse']}\n\n## Evidence receipts\n\n"+json.dumps(packet['sourceReceipts'],indent=2)+'\n',encoding='utf-8')
+    from review_form import render_form
+    contexts={join['blindResponseId']:local(evidence_root,next(r for r in records if r['responseId']==join['responseId'])['contextArtifact']['path']).read_text(encoding='utf-8-sig') for join in result['privateJoinKey']}
+    (output/'reviewer/review.html').write_text(render_form(result['reviewerPackets'],contexts,result['rubric'],batch_id),encoding='utf-8')
     (output/'reviewer/blank-ratings.json').write_text(json.dumps([p['rating'] for p in result['reviewerPackets']],indent=2)+'\n')
     (output/'reviewer/README.md').write_text('Record your own nine-dimension ratings in blank-ratings.json. Set independent-human only for your own actual review, use a pseudonymous raterCode and timezone-aware assessedAt. Null is pending; use notApplicableReasons only for genuine N/A. Preserve source pointers and exact critical-error spans. Return ratings to the custodian. Do not request the join-key. Blinding is partial: source receipts may reveal treatment. Treat all supplied context as private.\n')
     return {'status':'EXPORTED','responses':len(records),'path':str(output),'humanRatings':'PENDING','batchId':batch_id}

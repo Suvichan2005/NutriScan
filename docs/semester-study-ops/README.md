@@ -52,3 +52,11 @@ All bundled tests use explicitly synthetic structural data. They do not produce 
 Additional operational interfaces: `RECEIPTS.md` documents the existing-runner comparison wrapper and proposed binding extension; `STAGING_READINESS.md` records actual remote-host blockers and reviewer acceptance; `REPORT_EVIDENCE.md` documents the actual-template audit and stale source anchors. Keep these workstream notes subordinate to the master completion queue.
 
 `ADJUDICATION.md` covers immutable reader disagreement packets and explicit human adjudicator records. It preserves N/A disagreements and every critical-error disposition; unresolved decisions stay pending.
+
+## Offline reviewer form
+
+`export-review` now includes `reviewer/review.html`. Open it locally to read the authorized frozen context, response and source receipts, then enter nine scores, evidence pointers, critical errors and your own reviewer code. Completed assessments export as the same JSON accepted by `ratings` and adjudication; incomplete assessments remain pending. Device storage is off by default and optional; Restore saved draft and Remove saved draft are explicit. Export before closing if device storage is unavailable. Keep the whole packet private and share only with authorized reviewers.
+
+No external scripts/fonts/images or network requests are used. Package/model text is rendered as plain text, never HTML. A content security policy permits only the authored script hash and denies network access. The export generator excludes custodian treatment/build labels from reviewer packets, though source content can still reveal treatment. Browser file-origin storage/download behavior varies; verify in the reviewer's intended browser before collecting real ratings.
+
+Current verification: Python injection/CSP checks, JavaScript syntax, and a synthetic-DOM script integration check cover navigation, pending exports, N/A reasons, malformed critical-error JSON, draft persistence and export Blob contents. The resulting synthetic exported row is accepted by the existing rating validator and correctly remains pending for second review. **Actual browser visual, storage and download acceptance is BLOCKED because local browser use is disabled in Work settings.** No browser acceptance, real human rating or scientific outcome is claimed.
