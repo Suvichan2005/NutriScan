@@ -1372,6 +1372,10 @@ Physical-mass protection must not remain confined to the historical local audit.
 
 27 October: local deterministic answers may keep their complete multi-sentence explanation when the user directly asks for source-backed guidance, claim meaning/criteria or compliance context and a relevant scoped source is selected. Numeric comparisons stay concise. Resolve a supported short follow-up using bounded prior user questions only; never use a prior assistant answer as evidence. Show matching source cards in the consumer thread, and reject additive-identity candidates for nutrient-value questions unless the user explicitly asks about an additive. These boundaries improve answer continuity and provenance display; they do not establish semantic entailment.
 
+## 27 October 2026 — Keep source context separate from citation presentation
+
+Reuse bounded sources actually cited in non-outdated turns as model context; do not discard them through a current-question-only clinical gate. The server retains source applicability and numeric checks. For chat persistence, select cited records from the full returned evidence set BEFORE applying its three-record limit. Unused retrieval candidates are not presented as answer attribution. Free3.8 stays preferred, while real service failures and model changes are retained; this development exercise cannot freeze a final experimental model.
+
 27 October: reaffirm the 24 October natural-answer contract. Do not add lexical/keyword gates or reintroduce the retired root JSON claim-synthesis path to address unsupported non-numeric prose. Preserve the existing quantity and source-boundary checks; general scientific support for plain natural answers remains an open M2 gap pending a design compatible with the conversational route and distinct acceptance.
 
 27 October: after a failed remote turn, enabling Gemini from local-only mode must not send the package by itself. Offer a separate explicit retry after the mode change, preserve the active scan and replace the existing turn instead of duplicating it.

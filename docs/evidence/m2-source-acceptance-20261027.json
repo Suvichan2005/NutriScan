@@ -1,0 +1,1582 @@
+{
+  "scope": "bounded-development-not-frozen-comparison-or-human-scientific-accuracy",
+  "baseCommit": "8d3299c89c700eb1a2d727dd4046d224ad84ec72",
+  "preferredModel": "gemini-3.8-flash",
+  "mode": "free",
+  "paidRequests": 0,
+  "modelList": {
+    "checkedAt": "2026-10-26T19:13:10.906Z",
+    "preferredModel": "gemini-3.8-flash",
+    "pageSize": 60,
+    "models": [
+      {
+        "name": "models/gemini-3.5-flash-lite",
+        "version": "3.5-flash-lite-07-2026",
+        "supportedActions": [
+          "generateContent",
+          "countTokens",
+          "createCachedContent",
+          "batchGenerateContent"
+        ]
+      },
+      {
+        "name": "models/gemini-3.6-flash",
+        "version": "3.6-flash-07-2026",
+        "supportedActions": [
+          "generateContent",
+          "countTokens",
+          "createCachedContent",
+          "batchGenerateContent"
+        ]
+      },
+      {
+        "name": "models/gemini-3.7-flash",
+        "version": "3.7-flash-08-2026",
+        "supportedActions": [
+          "generateContent",
+          "countTokens",
+          "createCachedContent",
+          "batchGenerateContent"
+        ]
+      },
+      {
+        "name": "models/gemini-3.8-flash",
+        "version": "3.0",
+        "supportedActions": [
+          "generateContent",
+          "countTokens",
+          "createCachedContent",
+          "batchGenerateContent"
+        ]
+      }
+    ]
+  },
+  "logicalTurns": 10,
+  "successfulGenerations": 13,
+  "failedAttempts": [
+    {
+      "recordedAt": "2026-10-26T19:13:32.572Z",
+      "model": "gemini-3.8-flash",
+      "stage": "natural-agent-turn",
+      "elapsedMs": 20038,
+      "failure": {
+        "status": null,
+        "failureClass": "timeout",
+        "providerStatus": null,
+        "providerReasonClass": null,
+        "providerFieldPath": null
+      }
+    },
+    {
+      "recordedAt": "2026-10-26T19:13:36.071Z",
+      "model": "gemini-3.7-flash",
+      "stage": "natural-agent-turn",
+      "elapsedMs": 3493,
+      "failure": {
+        "status": 503,
+        "failureClass": "provider-unavailable",
+        "providerStatus": "UNAVAILABLE",
+        "providerReasonClass": null,
+        "providerFieldPath": null
+      }
+    },
+    {
+      "recordedAt": "2026-10-26T19:13:57.549Z",
+      "model": "gemini-3.6-flash",
+      "stage": "natural-agent-turn",
+      "elapsedMs": 6611,
+      "failure": {
+        "status": 503,
+        "failureClass": "provider-unavailable",
+        "providerStatus": "UNAVAILABLE",
+        "providerReasonClass": null,
+        "providerFieldPath": null
+      }
+    },
+    {
+      "recordedAt": "2026-10-26T19:20:43.720Z",
+      "model": "gemini-3.8-flash",
+      "stage": "natural-agent-turn",
+      "elapsedMs": 958,
+      "failure": {
+        "status": 503,
+        "failureClass": "provider-unavailable",
+        "providerStatus": "UNAVAILABLE",
+        "providerReasonClass": null,
+        "providerFieldPath": null
+      }
+    },
+    {
+      "recordedAt": "2026-10-26T19:20:44.811Z",
+      "model": "gemini-3.7-flash",
+      "stage": "natural-agent-turn",
+      "elapsedMs": 1083,
+      "failure": {
+        "status": 503,
+        "failureClass": "provider-unavailable",
+        "providerStatus": "UNAVAILABLE",
+        "providerReasonClass": null,
+        "providerFieldPath": null
+      }
+    },
+    {
+      "recordedAt": "2026-10-26T19:20:46.026Z",
+      "model": "gemini-3.6-flash",
+      "stage": "natural-agent-turn",
+      "elapsedMs": 1211,
+      "failure": {
+        "status": 503,
+        "failureClass": "provider-unavailable",
+        "providerStatus": "UNAVAILABLE",
+        "providerReasonClass": null,
+        "providerFieldPath": null
+      }
+    }
+  ],
+  "usage": {
+    "promptTokenCount": {
+      "reportedTotal": 98351,
+      "reportedCalls": 13,
+      "unknownCalls": 0
+    },
+    "candidatesTokenCount": {
+      "reportedTotal": 2318,
+      "reportedCalls": 13,
+      "unknownCalls": 0
+    },
+    "thoughtsTokenCount": {
+      "reportedTotal": 714,
+      "reportedCalls": 5,
+      "unknownCalls": 8
+    },
+    "cachedContentTokenCount": {
+      "reportedTotal": 6079,
+      "reportedCalls": 1,
+      "unknownCalls": 12
+    },
+    "totalTokenCount": {
+      "reportedTotal": 101383,
+      "reportedCalls": 13,
+      "unknownCalls": 0
+    }
+  },
+  "estimatedGenerationUsd": 0,
+  "actualGoogleBilling": null,
+  "rows": [
+    {
+      "inputPolicy": "tool-loop-only",
+      "caseId": "sodium",
+      "turn": 1,
+      "elapsedMs": 47338,
+      "diagnosticId": "471e86d0-afa5-497f-b80b-bc6f5197db2e",
+      "answerStatus": "answer-with-quantity-withheld",
+      "tools": [
+        "get_nutrition_guidance",
+        "search_knowledge"
+      ],
+      "routes": [
+        {
+          "recordedAt": "2026-10-26T19:13:45.414Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.8-flash",
+          "actualModel": "gemini-3.6-flash",
+          "fallback": true,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "failed",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042312575
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "failed",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042316074
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "used"
+            }
+          ]
+        },
+        {
+          "recordedAt": "2026-10-26T19:13:50.333Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.6-flash",
+          "actualModel": "gemini-3.6-flash",
+          "fallback": false,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042312575
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042316074
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "used"
+            }
+          ]
+        },
+        {
+          "recordedAt": "2026-10-26T19:13:59.717Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.6-flash",
+          "actualModel": "gemini-3.5-flash-lite",
+          "fallback": true,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042312575
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042316074
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "failed",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042337551
+            },
+            {
+              "model": "gemini-3.5-flash-lite",
+              "outcome": "used"
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "callId": "0cf85b0f-6288-4bd8-aa72-9037fdbeee13",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.6-flash",
+          "usage": {
+            "promptTokenCount": 7235,
+            "candidatesTokenCount": 31,
+            "totalTokenCount": 7411,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 7235
+              }
+            ],
+            "thoughtsTokenCount": 145,
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        },
+        {
+          "callId": "d7ed59f3-47dc-4f0f-a7b7-59ea48dc686e",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.6-flash",
+          "usage": {
+            "promptTokenCount": 8040,
+            "candidatesTokenCount": 27,
+            "totalTokenCount": 8095,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 8040
+              }
+            ],
+            "thoughtsTokenCount": 28,
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        },
+        {
+          "callId": "8c0dee54-6f49-4a41-9b92-d96b7bccbac5",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.5-flash-lite",
+          "usage": {
+            "promptTokenCount": 7959,
+            "candidatesTokenCount": 287,
+            "totalTokenCount": 8246,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 7959
+              }
+            ],
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        }
+      ],
+      "availableSourceIds": [
+        "who-healthy-diet-guidance"
+      ],
+      "citedSourceIds": [
+        "who-healthy-diet-guidance"
+      ],
+      "toolReturnedSourceIds": [
+        "who-healthy-diet-guidance"
+      ],
+      "generations": [
+        {
+          "callId": "a89cc315-c3e2-4d30-a0c3-5ad8ab314604",
+          "model": "gemini-3.8-flash",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        },
+        {
+          "callId": "80db2582-8d69-4c3b-b2d8-416c42ae8d13",
+          "model": "gemini-3.7-flash",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        },
+        {
+          "callId": "0cf85b0f-6288-4bd8-aa72-9037fdbeee13",
+          "model": "gemini-3.6-flash",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        },
+        {
+          "callId": "d7ed59f3-47dc-4f0f-a7b7-59ea48dc686e",
+          "model": "gemini-3.6-flash",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        },
+        {
+          "callId": "22f5d17b-4b9b-4c37-830e-3941e9bf72c8",
+          "model": "gemini-3.6-flash",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        },
+        {
+          "callId": "8c0dee54-6f49-4a41-9b92-d96b7bccbac5",
+          "model": "gemini-3.5-flash-lite",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        }
+      ]
+    },
+    {
+      "inputPolicy": "tool-loop-only",
+      "caseId": "sodium",
+      "turn": 2,
+      "elapsedMs": 2498,
+      "diagnosticId": "16af1128-fc70-44af-ae23-659c1a1e77b8",
+      "answerStatus": "answer-with-quantity-withheld",
+      "tools": [],
+      "routes": [
+        {
+          "recordedAt": "2026-10-26T19:14:02.249Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.5-flash-lite",
+          "actualModel": "gemini-3.5-flash-lite",
+          "fallback": false,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042312575
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042316074
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042337551
+            },
+            {
+              "model": "gemini-3.5-flash-lite",
+              "outcome": "used"
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "callId": "49b0d34c-36aa-4ef7-8b51-43226ba17a02",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.5-flash-lite",
+          "usage": {
+            "promptTokenCount": 7524,
+            "candidatesTokenCount": 269,
+            "totalTokenCount": 7793,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 7524
+              }
+            ],
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        }
+      ],
+      "availableSourceIds": [],
+      "citedSourceIds": [],
+      "toolReturnedSourceIds": [],
+      "generations": [
+        {
+          "callId": "49b0d34c-36aa-4ef7-8b51-43226ba17a02",
+          "model": "gemini-3.5-flash-lite",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        }
+      ]
+    },
+    {
+      "inputPolicy": "tool-loop-only",
+      "caseId": "claim",
+      "turn": 1,
+      "elapsedMs": 2512,
+      "diagnosticId": "7f80baaf-c5ec-4873-af77-bb06ae5d556d",
+      "answerStatus": "answer-with-quantity-withheld",
+      "tools": [],
+      "routes": [
+        {
+          "recordedAt": "2026-10-26T19:14:04.769Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.5-flash-lite",
+          "actualModel": "gemini-3.5-flash-lite",
+          "fallback": false,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042312575
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042316074
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042337551
+            },
+            {
+              "model": "gemini-3.5-flash-lite",
+              "outcome": "used"
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "callId": "9779de6c-9db5-43b6-aa6b-dae7c894194b",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.5-flash-lite",
+          "usage": {
+            "promptTokenCount": 7870,
+            "candidatesTokenCount": 285,
+            "totalTokenCount": 8155,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 7870
+              }
+            ],
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        }
+      ],
+      "availableSourceIds": [],
+      "citedSourceIds": [],
+      "toolReturnedSourceIds": [],
+      "generations": [
+        {
+          "callId": "9779de6c-9db5-43b6-aa6b-dae7c894194b",
+          "model": "gemini-3.5-flash-lite",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        }
+      ]
+    },
+    {
+      "inputPolicy": "tool-loop-only",
+      "caseId": "claim",
+      "turn": 2,
+      "elapsedMs": 2139,
+      "diagnosticId": "82e0e114-7594-48e7-a33c-5657da351632",
+      "answerStatus": "answer-ready",
+      "tools": [],
+      "routes": [
+        {
+          "recordedAt": "2026-10-26T19:14:06.920Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.5-flash-lite",
+          "actualModel": "gemini-3.5-flash-lite",
+          "fallback": false,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042312575
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042316074
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042337551
+            },
+            {
+              "model": "gemini-3.5-flash-lite",
+              "outcome": "used"
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "callId": "93c21b33-9a57-41ae-8133-4c7bbcee06ca",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.5-flash-lite",
+          "usage": {
+            "promptTokenCount": 8149,
+            "candidatesTokenCount": 156,
+            "totalTokenCount": 8305,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 8149
+              }
+            ],
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        }
+      ],
+      "availableSourceIds": [],
+      "citedSourceIds": [],
+      "toolReturnedSourceIds": [],
+      "generations": [
+        {
+          "callId": "93c21b33-9a57-41ae-8133-4c7bbcee06ca",
+          "model": "gemini-3.5-flash-lite",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        }
+      ]
+    },
+    {
+      "inputPolicy": "tool-loop-only",
+      "caseId": "allergy",
+      "turn": 1,
+      "elapsedMs": 3889,
+      "diagnosticId": "74f63acd-1fe5-4a7d-910f-1089612a09c1",
+      "answerStatus": "answer-ready",
+      "tools": [],
+      "routes": [
+        {
+          "recordedAt": "2026-10-26T19:14:10.811Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.5-flash-lite",
+          "actualModel": "gemini-3.5-flash-lite",
+          "fallback": false,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042312575
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042316074
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042337551
+            },
+            {
+              "model": "gemini-3.5-flash-lite",
+              "outcome": "used"
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "callId": "8d1ef903-8bca-43f8-abf5-a5ab49921f46",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.5-flash-lite",
+          "usage": {
+            "promptTokenCount": 6162,
+            "candidatesTokenCount": 141,
+            "totalTokenCount": 6303,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 6162
+              }
+            ],
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        }
+      ],
+      "availableSourceIds": [],
+      "citedSourceIds": [],
+      "toolReturnedSourceIds": [],
+      "generations": [
+        {
+          "callId": "8d1ef903-8bca-43f8-abf5-a5ab49921f46",
+          "model": "gemini-3.5-flash-lite",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        }
+      ]
+    },
+    {
+      "inputPolicy": "tool-loop-only",
+      "caseId": "allergy",
+      "turn": 2,
+      "elapsedMs": 3124,
+      "diagnosticId": "7437b65e-b0af-4f7a-b45c-83f13d0e8236",
+      "answerStatus": "answer-ready",
+      "tools": [],
+      "routes": [
+        {
+          "recordedAt": "2026-10-26T19:14:13.937Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.5-flash-lite",
+          "actualModel": "gemini-3.5-flash-lite",
+          "fallback": false,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042312575
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042316074
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042337551
+            },
+            {
+              "model": "gemini-3.5-flash-lite",
+              "outcome": "used"
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "callId": "0f3a5ca7-0ad0-4648-8c1a-6a219979595a",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.5-flash-lite",
+          "usage": {
+            "promptTokenCount": 6331,
+            "candidatesTokenCount": 163,
+            "totalTokenCount": 6494,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 6331
+              }
+            ],
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        }
+      ],
+      "availableSourceIds": [],
+      "citedSourceIds": [],
+      "toolReturnedSourceIds": [],
+      "generations": [
+        {
+          "callId": "0f3a5ca7-0ad0-4648-8c1a-6a219979595a",
+          "model": "gemini-3.5-flash-lite",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        }
+      ]
+    },
+    {
+      "inputPolicy": "consumer-context",
+      "caseId": "sodium",
+      "turn": 1,
+      "elapsedMs": 7114,
+      "diagnosticId": "734d88aa-3da3-4fcd-85f6-572a5f236f9e",
+      "answerStatus": "answer-with-quantity-withheld",
+      "retrievalStatus": "ok",
+      "suppliedSourceIds": [
+        "who-sodium"
+      ],
+      "tools": [],
+      "routes": [
+        {
+          "recordedAt": "2026-10-26T19:20:49.023Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.8-flash",
+          "actualModel": "gemini-3.5-flash-lite",
+          "fallback": true,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "failed",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042743721
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "failed",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042744814
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "failed",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042746028
+            },
+            {
+              "model": "gemini-3.5-flash-lite",
+              "outcome": "used"
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "callId": "2d29687f-e5c6-4ef0-ba26-d36f1bc729c5",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.5-flash-lite",
+          "usage": {
+            "promptTokenCount": 7413,
+            "candidatesTokenCount": 247,
+            "totalTokenCount": 7977,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 7413
+              }
+            ],
+            "thoughtsTokenCount": 317,
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        }
+      ],
+      "availableSourceIds": [
+        "who-sodium"
+      ],
+      "citedSourceIds": [
+        "who-sodium"
+      ],
+      "toolReturnedSourceIds": [],
+      "generations": [
+        {
+          "callId": "afb47f7a-c697-43ec-a1d5-65be48262dba",
+          "model": "gemini-3.8-flash",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        },
+        {
+          "callId": "31bb4f8d-578a-4e00-8e12-b580e350b899",
+          "model": "gemini-3.7-flash",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        },
+        {
+          "callId": "156f6314-ddc2-468d-8b98-4774a748eaec",
+          "model": "gemini-3.6-flash",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        },
+        {
+          "callId": "2d29687f-e5c6-4ef0-ba26-d36f1bc729c5",
+          "model": "gemini-3.5-flash-lite",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        }
+      ]
+    },
+    {
+      "inputPolicy": "consumer-context",
+      "caseId": "sodium",
+      "turn": 2,
+      "elapsedMs": 1787,
+      "diagnosticId": "db1c1aa4-2786-4259-a705-ab7da9238ade",
+      "answerStatus": "answer-with-quantity-withheld",
+      "retrievalStatus": "ok",
+      "suppliedSourceIds": [
+        "who-sodium"
+      ],
+      "tools": [],
+      "routes": [
+        {
+          "recordedAt": "2026-10-26T19:20:50.874Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.5-flash-lite",
+          "actualModel": "gemini-3.5-flash-lite",
+          "fallback": false,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042743721
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042744814
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042746028
+            },
+            {
+              "model": "gemini-3.5-flash-lite",
+              "outcome": "used"
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "callId": "aaf907b2-4df3-412f-87f9-36935041f583",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.5-flash-lite",
+          "usage": {
+            "promptTokenCount": 7665,
+            "candidatesTokenCount": 133,
+            "totalTokenCount": 7798,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 7665
+              }
+            ],
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        }
+      ],
+      "availableSourceIds": [
+        "who-sodium"
+      ],
+      "citedSourceIds": [
+        "who-sodium"
+      ],
+      "toolReturnedSourceIds": [],
+      "generations": [
+        {
+          "callId": "aaf907b2-4df3-412f-87f9-36935041f583",
+          "model": "gemini-3.5-flash-lite",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        }
+      ]
+    },
+    {
+      "inputPolicy": "consumer-context",
+      "caseId": "claim",
+      "turn": 1,
+      "elapsedMs": 3938,
+      "diagnosticId": "eaa485cf-06d4-4bfc-afae-c6bdf7905a84",
+      "answerStatus": "answer-with-quantity-withheld",
+      "retrievalStatus": "ok",
+      "suppliedSourceIds": [
+        "efsa-oat-beta-glucan-glycaemic-peak-2026",
+        "efsa-oat-barley-beta-glucan-glycaemic-2025"
+      ],
+      "tools": [],
+      "routes": [
+        {
+          "recordedAt": "2026-10-26T19:20:54.809Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.5-flash-lite",
+          "actualModel": "gemini-3.5-flash-lite",
+          "fallback": false,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042743721
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042744814
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042746028
+            },
+            {
+              "model": "gemini-3.5-flash-lite",
+              "outcome": "used"
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "callId": "ad453280-8bde-4408-b49c-0e3783b78f47",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.5-flash-lite",
+          "usage": {
+            "promptTokenCount": 8466,
+            "candidatesTokenCount": 310,
+            "totalTokenCount": 8776,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 8466
+              }
+            ],
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        }
+      ],
+      "availableSourceIds": [
+        "efsa-oat-beta-glucan-glycaemic-peak-2026",
+        "efsa-oat-barley-beta-glucan-glycaemic-2025"
+      ],
+      "citedSourceIds": [],
+      "toolReturnedSourceIds": [],
+      "generations": [
+        {
+          "callId": "ad453280-8bde-4408-b49c-0e3783b78f47",
+          "model": "gemini-3.5-flash-lite",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        }
+      ]
+    },
+    {
+      "inputPolicy": "consumer-context",
+      "caseId": "product-ingredients",
+      "turn": 1,
+      "elapsedMs": 11488,
+      "diagnosticId": "4a9bf006-2438-4af0-9e7f-75464fc774b0",
+      "answerStatus": "answer-ready",
+      "retrievalStatus": "ok",
+      "suppliedSourceIds": [
+        "fssai-labelling-allergen-faq-2023",
+        "fssai-labelling-display-2020",
+        "fssai-label-allergens-compendium-2025"
+      ],
+      "tools": [
+        "lookup_product"
+      ],
+      "routes": [
+        {
+          "recordedAt": "2026-10-26T19:20:59.610Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.5-flash-lite",
+          "actualModel": "gemini-3.5-flash-lite",
+          "fallback": false,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042743721
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042744814
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042746028
+            },
+            {
+              "model": "gemini-3.5-flash-lite",
+              "outcome": "used"
+            }
+          ]
+        },
+        {
+          "recordedAt": "2026-10-26T19:21:06.304Z",
+          "event": "provider_route",
+          "requestedTier": "free",
+          "actualTier": "free",
+          "requestedModel": "gemini-3.5-flash-lite",
+          "actualModel": "gemini-3.5-flash-lite",
+          "fallback": false,
+          "completedWithRequiredCapabilities": true,
+          "attempts": [
+            {
+              "model": "gemini-3.8-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042743721
+            },
+            {
+              "model": "gemini-3.7-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042744814
+            },
+            {
+              "model": "gemini-3.6-flash",
+              "outcome": "skipped",
+              "reason": "service-unavailable",
+              "retryAfterMs": null,
+              "cooldownUntil": 1793042746028
+            },
+            {
+              "model": "gemini-3.5-flash-lite",
+              "outcome": "used"
+            }
+          ]
+        }
+      ],
+      "calls": [
+        {
+          "callId": "516a4208-89a2-4987-8377-ba8654cbea34",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.5-flash-lite",
+          "usage": {
+            "promptTokenCount": 7076,
+            "candidatesTokenCount": 20,
+            "totalTokenCount": 7150,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 7076
+              }
+            ],
+            "thoughtsTokenCount": 54,
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        },
+        {
+          "callId": "6d7e7bf5-c2cf-4747-b1a7-43fb0ee686dc",
+          "stage": "natural-agent-turn",
+          "modelVersion": "gemini-3.5-flash-lite",
+          "usage": {
+            "promptTokenCount": 8461,
+            "candidatesTokenCount": 249,
+            "totalTokenCount": 8880,
+            "cachedContentTokenCount": 6079,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 8461
+              }
+            ],
+            "cacheTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 6079
+              }
+            ],
+            "thoughtsTokenCount": 170,
+            "serviceTier": "standard"
+          },
+          "cost": {
+            "estimatedTokenUsd": 0,
+            "groundingQueryCount": 0,
+            "estimatedGroundingUpperUsd": 0,
+            "estimatedTotalUsd": 0,
+            "fxRateInrPerUsd": 90,
+            "estimatedTotalInr": 0,
+            "pricesUsdPerMillion": {
+              "input": 0,
+              "cachedInput": 0,
+              "output": 0
+            },
+            "basis": "Configured token list rates and conservative search estimate; not a Google billing receipt."
+          }
+        }
+      ],
+      "availableSourceIds": [
+        "fssai-labelling-allergen-faq-2023",
+        "fssai-labelling-display-2020",
+        "fssai-label-allergens-compendium-2025",
+        "off-8901262202046",
+        "off-7906106220256"
+      ],
+      "citedSourceIds": [
+        "off-8901262202046"
+      ],
+      "toolReturnedSourceIds": [
+        "off-8901262202046",
+        "off-7906106220256"
+      ],
+      "generations": [
+        {
+          "callId": "516a4208-89a2-4987-8377-ba8654cbea34",
+          "model": "gemini-3.5-flash-lite",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        },
+        {
+          "callId": "6d7e7bf5-c2cf-4747-b1a7-43fb0ee686dc",
+          "model": "gemini-3.5-flash-lite",
+          "generationConfig": {
+            "maxOutputTokens": 4500,
+            "thinkingConfig": {
+              "thinkingLevel": "LOW"
+            },
+            "temperature": null,
+            "topP": null,
+            "seed": null
+          },
+          "toolDeclarationSha256": "2721f8acf19d68e8a2ddfdaa24ae7d97ed352eb034aef9b9739bcb76217c324f"
+        }
+      ]
+    }
+  ],
+  "acceptance": {
+    "sodium": "WHO source retrieved by native tools in first probe; consumer-context answer and follow-up cite WHO sodium guidance. Numeric withholding remains.",
+    "claim": "FAILED source-use acceptance. Consumer retrieval supplied oat-specific EFSA candidates; no applicable cited source used.",
+    "allergy": "FAILED lookup acceptance in initial tool-loop probe: model answered without source tools. No clinical correctness claim.",
+    "productIngredientLookup": "Native Open Food Facts lookup returned candidates, used one source with formulation caveats. Correct cited source survives application replay and React disclosure rendering.",
+    "browser": "BLOCKED: browser automation disabled in Work settings; no claim of interactive/visual acceptance."
+  },
+  "comparison": "Input policies and actual model sequences differ; not a matched model or modality experiment. No final model chosen.",
+  "privateArtifacts": ".data/m2-source-acceptance-20261027; .data/gemini-evaluations/<diagnosticId>/events.jsonl",
+  "privacy": "No prompts, answers, images, health profiles, tool arguments or hidden reasoning included in this shareable receipt.",
+  "failedAttemptUsage": "Not returned by provider; excluded from known token sums, not assumed zero.",
+  "runtimeScope": "Live calls used production assist and the retained authorised package snapshots. Consumer-context pass additionally used existing package/evidence helpers and the local semantic index, with no audit sources. Source helpers were uncommitted during development capture; native server source was unchanged from the recorded base. Not an exact production browser journey or frozen study.",
+  "replay": {
+    "scope": "same saved provider output; no new generation",
+    "productAvailableSources": 5,
+    "oldFirstThreeChatSources": [
+      "fssai-labelling-allergen-faq-2023",
+      "fssai-labelling-display-2020",
+      "fssai-label-allergens-compendium-2025"
+    ],
+    "newCitedChatSources": [
+      "off-8901262202046"
+    ],
+    "actualReactDisclosureHrefRendered": true,
+    "browserAccepted": false
+  },
+  "finalBuild": {
+    "implementationCommit": "2e5ca000d571ebbc469f8c1944568ad6a3827c21",
+    "fullNextTypecheckPassed": true,
+    "loopbackChecks": 14,
+    "allPassed": true,
+    "ownedServerStopped": true,
+    "buildLogSha256": "8d1ffe8b677bcc567721ca83787ff6542bec381b92af78b90c739b814cc7b088",
+    "browserAccepted": false
+  }
+}

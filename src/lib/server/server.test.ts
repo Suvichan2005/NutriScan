@@ -781,7 +781,7 @@ describe('provider validation, independent of provider invocation', () => {
       ingredients:[{position:0,name:'Peanuts',printedText:'PEANUTS',printedPercentage:null,normalizedName:'peanuts',status:'clear' as const,evidence:{observationIds:['peanut-line'],imageRegions:[]}}],
       additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Synthetic ingredient reading.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true,
     };
-    const data=assistInput.parse({consent:true,question,evidence:[source!],package:{id:'source-scope-answer',name:'Unidentified package',ingredients:['Peanuts'],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,observations:[observation],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
+    const data=assistInput.parse({consent:true,question,conversationContext:[{question:'How does carbohydrate relate to diabetes?',answer:'Earlier context cited IDF guidance.'}],evidence:[source!],package:{id:'source-scope-answer',name:'Unidentified package',ingredients:['Peanuts'],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,observations:[observation],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
 
     const result=await assist(data);
     expect(result.answer).toBe('The entered label text lists peanuts.\n\nI left out one or more source-linked statements because their reference was unavailable, off topic, or outside the stated jurisdiction.');
