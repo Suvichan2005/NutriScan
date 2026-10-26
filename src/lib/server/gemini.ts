@@ -1,3 +1,4 @@
+import {validateReconstructionSections} from './reconstruction-sections';
 import {checkReconstructionMasses} from '../nutrient-mass';
 import { createFunctionResponsePartFromBase64, createPartFromFunctionResponse, FunctionCallingConfigMode, ThinkingLevel, type Content, type FunctionCall, type FunctionDeclaration, type GroundingMetadata, type Part } from '@google/genai';
 import { z } from 'zod';
@@ -1732,7 +1733,12 @@ async function reconstructPackage(
   if(!call.id)throw new ApiError(502,'provider_invalid_tool_call','Gemini returned a package interpretation without a function-call identifier.');
   const args=normalizeGeminiPackageRegionCoordinates(replaceReferenceIds(call.args??{},referenceAliases.fromModel)) as Record<string,unknown>;
   await recordGeminiEvaluationEvent(analysisId,{event:'tool_call',stage:'package-reconstruction',round:0,toolCallId:call.id,name:call.name,arguments:args});
-  const parsed=packageReconstructionContentSchema.safeParse(args);
+  const sectionReview=validateReconstructionSections(args);
+  const parsed=sectionReview.parsed;
+  if(sectionReview.rejected.length){
+    await recordGeminiEvaluationEvent(analysisId,{event:'reconstruction_section_validation',status:'partial',rejected:sectionReview.rejected,policy:'Invalid independent entries withheld without altering valid values, units or source links; raw provider output retained.'});
+    await recordGeminiDiagnostic({event:'reconstruction_section_validation',analysisId,rejectedEntryCount:sectionReview.rejected.length,sections:[...new Set(sectionReview.rejected.map(item=>item.section))]});
+  }
   if(!parsed.success){
     await recordGeminiEvaluationEvent(analysisId,{event:'tool_result',stage:'package-reconstruction',round:0,toolCallId:call.id,name:call.name,status:'invalid_arguments',issues:parsed.error.issues.map(issue=>({path:issue.path.map(String).join('.'),code:issue.code}))});
     throw new ApiError(502,'package_reconstruction_invalid','Gemini returned package details that could not be validated. Your photos and OCR remain available.');
@@ -1742,7 +1748,9 @@ async function reconstructPackage(
     await recordGeminiEvaluationEvent(analysisId,{event:'tool_result',stage:'package-reconstruction',round:0,toolCallId:call.id,name:call.name,status:'unlinked_evidence'});
     throw new ApiError(502,'package_reconstruction_unavailable','Gemini could not link its interpretation to the supplied scan evidence. Your photos and OCR remain available.');
   }
-  const numericReview=checkReconstructionMasses(canonicalizeReconstructionRows(sanitized.content));
+  const notes=[...new Set(sectionReview.rejected.map(item=>item.section))].map(field=>({field,reason:'One or more model entries in this section could not be validated and were withheld. Other independently valid sections were retained.',evidence:{observationIds:[],imageRegions:[]}}));
+  const partialContent={...sanitized.content,unresolved:[...sanitized.content.unresolved,...notes.slice(0,Math.max(0,100-sanitized.content.unresolved.length))]};
+  const numericReview=checkReconstructionMasses(canonicalizeReconstructionRows(partialContent));
   const content=numericReview.content;
   if(numericReview.issues.length)await recordGeminiEvaluationEvent(analysisId,{event:'reconstruction_quantity_validation',issues:numericReview.issues,policy:'Impossible constituent masses are retained as conflicts, never corrected by guessing digits.'});
   await recordGeminiEvaluationEvent(analysisId,{

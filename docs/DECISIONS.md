@@ -1227,3 +1227,6 @@ Physical-mass protection must not remain confined to the historical local audit.
 
 
 26 October: retain the frozen five-method development pilot as exploratory evidence, including failed integrated extractions, optional-section rejection, provisional/wrong/missing fields and unavailable OCR timing. Do not choose the default or claim independent accuracy from three exposed products and model-assisted labels. Fix optional repeated-section validation at the shared boundary after preserving the original-study receipt; no prompt tuning during frozen execution.
+
+
+26 October: isolate malformed repeated entries at the reconstruction boundary using the existing strict shared schemas, not new semantic validators or prompt repairs. Rejected quantities/ingredients/nutrition rows remain withheld, valid independent sections survive, raw output is preserved and validation decisions are recorded. Required singleton validation, array limits, source linkage and physical-mass safety are unchanged. Preserve frozen046e8d2 metrics and label current saved-output replay separately.

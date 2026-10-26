@@ -68,13 +68,13 @@ it.each([...analysisMethods.map(m=>({method:m.value,sparse:false})),{method:'tes
 });
 
 
-it.each(analysisMethods)('controlled $value extraction uses the same stage once without answer or recovery',async policy=>{
+it.each(analysisMethods)('controlled $value extraction retains valid sections despite invalid optional metadata',async policy=>{
  resetGeminiUsageLedgerForTests();vi.stubEnv('NODE_ENV','development');vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-placeholder');vi.stubEnv('ENABLE_PAID_GEMINI_FALLBACK','false');vi.stubEnv('NUTRISCAN_GEMINI_EVAL_CAPTURE','0');
  const bodies:any[]=[];
  vi.stubGlobal('fetch',vi.fn(async(_input,init)=>{
   const body=JSON.parse(String(init?.body));bodies.push(body);
   const refs=policy.reader?{...evidence,observationIds:[`obs-${policy.reader}`]}:{...evidence,imageRegions:[{imageId:'photo-1',region:{x:0,y:0,width:1,height:1}}]};
-  const content={identity:{name:'Test source',brand:null,variant:null,status:'provisional',evidence:refs},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Synthetic contract, no accuracy claim'};
+  const content={identity:{name:'Test source',brand:null,variant:null,status:'provisional',evidence:refs},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],quantityDeclarations:[{kind:'servings-per-package',printedText:null,quantity:1,unit:'g',status:'provisional',evidence:refs}],interpretationNote:'Synthetic contract, no accuracy claim'};
   return new Response(JSON.stringify({candidates:[{content:{role:'model',parts:[{functionCall:{id:'one-stage',name:'submit_package_reconstruction',args:content}}]},finishReason:'STOP'}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:10,candidatesTokenCount:5,totalTokenCount:15}}),{headers:{'content-type':'application/json'}});
  }));
  const base64=(await sharp({create:{width:8,height:8,channels:3,background:'#ccc'}}).jpeg().toBuffer()).toString('base64');
@@ -82,7 +82,7 @@ it.each(analysisMethods)('controlled $value extraction uses the same stage once 
  expect(bodies).toHaveLength(1);expect(bodies[0].tools[0].functionDeclarations.map((t:any)=>t.name)).toEqual(['submit_package_reconstruction']);
  expect(JSON.stringify(bodies[0].contents).includes('OLD_PARSED')).toBe(false);
  expect(result).toMatchObject({actualStage:'initial-reconstruction',analysisMethod:policy.value,recoveryCalls:0,answerGenerationCalls:0,actualTier:'free',fallbackOccurred:false,usage:{promptTokenCount:10,candidatesTokenCount:5},actualInputSelection:{analysisMethod:policy.value,evidence:[...(policy.reader?[policy.reader+'-observations']:[]),...(policy.images?['original-images']:[])]}});
- expect(result.actualGenerationConfig.maxOutputTokens).toBe(bodies[0].generationConfig.maxOutputTokens);
+ expect(result.actualGenerationConfig.maxOutputTokens).toBe(bodies[0].generationConfig.maxOutputTokens);expect(result.packageReconstruction.quantityDeclarations).toEqual([]);expect(result.packageReconstruction.unresolved).toEqual(expect.arrayContaining([expect.objectContaining({field:'quantityDeclarations'})]));
 });
 it('controlled reconstruction is development-only and rejects profile/context before providers',async()=>{
  const input={analysisMethod:'tesseract-text',consent:true,question:'Read',package:packet()};
