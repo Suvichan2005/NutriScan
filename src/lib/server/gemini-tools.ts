@@ -20,7 +20,7 @@ import { matchesPackageRows, reconcileInterpretedNutrition } from '../interprete
 import { calculationsFromReconstruction } from '../portion';
 import { calculationRespectsCorrections } from '../correction';
 import { isGuidanceEvidenceInScope, isLocalEvidenceTopicallyRelevant } from '../followup-evidence';
-import { evidenceSources, findIngredientEvidence, ingredientFamilySources, lookupIngredientFamilies, indianStapleIdentitySources, lookupAdditive, lookupExplicitAdditiveMention, lookupIndianStapleIngredientIdentity, resolveTentativeAdditiveIdentity, jecfaAssessmentTerminology } from '../../modules/knowledge';
+import { evidenceSources, findIngredientEvidence, ingredientEvidenceForSource, ingredientEvidenceSubjectInText, ingredientFamilySources, lookupIngredientFamilies, indianStapleIdentitySources, lookupAdditive, lookupExplicitAdditiveMention, lookupIndianStapleIngredientIdentity, resolveTentativeAdditiveIdentity, jecfaAssessmentTerminology } from '../../modules/knowledge';
 import { searchOpenFoodTox, semanticRetrieve } from '../semantic';
 import { searchFoodComposition, type FoodCompositionFood } from './food-composition';
 import { readFoodCompositionSource, fdcRecordInput } from './food-composition-records';
@@ -418,11 +418,40 @@ async function searchKnowledge(args: z.infer<typeof toolArgs.search_knowledge>, 
     // topically weak hits must not crowd a useful source out of the three
     // records returned to the model.
     const response = await semanticRetrieve(args.query, 5);
+    const packageIngredientText = [
+      ...context.package.ingredients,
+      ...(context.package.reconstruction?.ingredients ?? []).flatMap(ingredient => [ingredient.name, ingredient.printedText, ingredient.normalizedName ?? '']),
+    ].join(' ');
+    const requestedSubjectText = `${args.query} ${context.question}`;
     const hits = response.results
       .filter(item => isLocalEvidenceTopicallyRelevant(item.source, args.query, item.exactIdentity))
       .filter(item => isGuidanceEvidenceInScope(item.source, context.question, context.profile?.country ?? ''))
+      // Some curated scientific records are linked to a named ingredient and
+      // outcome. Keep those records out of unrelated package searches unless
+      // the ingredient is present in the package or explicitly under inquiry.
+      .map(item => {
+        const relations = ingredientEvidenceForSource(item.source.id);
+        const packageRelations = relations.filter(relation => ingredientEvidenceSubjectInText(packageIngredientText, relation));
+        const requestedRelations = relations.filter(relation => ingredientEvidenceSubjectInText(requestedSubjectText, relation));
+        return { ...item, relations: packageRelations.length ? packageRelations : requestedRelations };
+      })
+      .filter(item => !ingredientEvidenceForSource(item.source.id).length || item.relations.length > 0)
       .slice(0, 3)
-      .map(item => ({ source: item.source, score: item.score, exactIdentity: item.exactIdentity }));
+      .map(item => ({
+        source: item.source,
+        score: item.score,
+        exactIdentity: item.exactIdentity,
+        ...(item.relations.length ? { relatedIngredientEvidence: item.relations.map(relation => ({
+          id: relation.id,
+          ingredient: relation.ingredient,
+          outcome: relation.outcome,
+          population: relation.population,
+          exposureContext: relation.exposureContext,
+          sourceIds: relation.sourceIds,
+          limitations: relation.limitations,
+          interpretationBoundary: 'This curated subject-outcome link is not proof of a package-specific effect; confirm the measured exposure, endpoint, population, and source wording.'
+        })) } : {}),
+      }));
     const evidence = hits.map(hit => asEvidenceSource(hit.source)).filter((item): item is EvidenceSource => item !== null);
     return { status: evidence.length ? 'ok' : 'empty', resultCount: evidence.length, evidence, output: { status: evidence.length ? 'ok' : 'empty', mode: response.mode, corpusVersion: response.corpusVersion, results: hits.filter(hit => evidence.some(item => item.id === hit.source.id)), limitations: response.limitations.slice(0, 4), message: evidence.length ? response.message ?? 'Relevant local source candidates are available.' : 'No candidate passed the topical relevance and applicability checks. This does not establish that no relevant evidence exists.' } };
   } catch {

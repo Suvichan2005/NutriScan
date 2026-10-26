@@ -27,14 +27,25 @@ export const ingredientEvidenceRelations: readonly IngredientEvidenceRelation[] 
     topicTerms: ['cholesterol', 'ldl', 'lipid', 'heart', 'cardiovascular'],
   },
   {
-    id: 'oat-beta-glucan-postprandial-glucose',
+    id: 'oat-beta-glucan-postprandial-glucose-peak-2026',
     ingredient: 'Oat beta-glucan',
     aliases: ['oat beta-glucan', 'beta-glucan from oats', 'oat bran', 'oats', 'oat'],
-    outcome: 'EFSA assessed evidence for postprandial glucose peaks separately from postprandial glucose incremental area under the curve.',
+    outcome: 'EFSA’s 2026 opinion concluded that oat beta-glucans can reduce postprandial glucose peaks under the assessed claim conditions.',
     population: 'The 2026 opinion describes individuals who wish to reduce postprandial glucose peaks; it is not diabetes-specific clinical guidance.',
-    exposureContext: 'The 2026 assessed claim condition is at least 3 g oat beta-glucan per 30 g available carbohydrate in a portion containing at least 30 g available carbohydrate. A separate 2025 opinion did not establish a consistent iAUC effect under a proposed lower condition of at least 2 g per 30 g available carbohydrate.',
-    sourceIds: ['efsa-oat-beta-glucan-glycaemic-peak-2026', 'efsa-oat-barley-beta-glucan-glycaemic-2025'],
-    limitations: 'These are EU scientific opinions on defined endpoints and conditions, not Indian claim law, treatment advice, or an individual target. Oats on a package do not establish beta-glucan quantity or a glucose response.',
+    exposureContext: 'The assessed condition is at least 3 g oat beta-glucan per 30 g available carbohydrate in a portion containing at least 30 g available carbohydrate.',
+    sourceIds: ['efsa-oat-beta-glucan-glycaemic-peak-2026'],
+    limitations: 'This is an EU scientific opinion on a defined endpoint and condition, not Indian claim law, treatment advice, or an individual target. Oats on a package do not establish beta-glucan quantity or a glucose response.',
+    topicTerms: ['glucose', 'glycemic', 'glycaemic', 'blood sugar', 'postprandial', 'diabetes', 'diabetic'],
+  },
+  {
+    id: 'oat-beta-glucan-postprandial-glucose-iAUC-2025',
+    ingredient: 'Oat and barley beta-glucans',
+    aliases: ['oat beta-glucan', 'beta-glucan from oats', 'oat bran', 'oats', 'oat', 'barley beta-glucan'],
+    outcome: 'EFSA’s 2025 opinion did not establish a consistent reduction in postprandial glucose incremental area under the curve under the proposed conditions.',
+    population: 'The 2025 opinion assessed proposed food-claim substantiation; it is not diabetes-specific clinical guidance.',
+    exposureContext: 'The proposed condition assessed at least 2 g oat or barley beta-glucan per 30 g available carbohydrate.',
+    sourceIds: ['efsa-oat-barley-beta-glucan-glycaemic-2025'],
+    limitations: 'This is an EU scientific opinion on a distinct endpoint and proposed condition, not Indian claim law, treatment advice, or an individual target. Do not conflate it with the 2026 glucose-peak opinion.',
     topicTerms: ['glucose', 'glycemic', 'glycaemic', 'blood sugar', 'postprandial', 'diabetes', 'diabetic'],
   },
 ];
@@ -50,6 +61,16 @@ function containsPhrase(text: string, phrase: string): boolean {
   const normalizedText = ` ${normalize(text)} `;
   const normalizedPhrase = ` ${normalize(phrase)} `;
   return normalizedPhrase.length > 2 && normalizedText.includes(normalizedPhrase);
+}
+
+/** Curated subject links for a source; exact source identity is required. */
+export function ingredientEvidenceForSource(sourceId: string): IngredientEvidenceRelation[] {
+  return ingredientEvidenceRelations.filter(relation => relation.sourceIds.includes(sourceId));
+}
+
+/** Match a named ingredient entity without treating a related outcome as proof. */
+export function ingredientEvidenceSubjectInText(text: string, relation: IngredientEvidenceRelation): boolean {
+  return relation.aliases.some(alias => containsPhrase(text, alias));
 }
 
 /** Return only source-linked outcomes relevant to both the ingredient and question. */

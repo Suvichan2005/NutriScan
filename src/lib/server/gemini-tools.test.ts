@@ -380,6 +380,72 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.evidence?.map(source => source.id)).not.toContain('efsa-oat-beta-glucan-glycaemic-peak-2026');
   });
 
+  it('does not offer ingredient-linked outcome evidence for a package that does not name that ingredient', async () => {
+    const oatEvidence = evidenceSources.find(source => source.id === 'efsa-oat-beta-glucan-glycaemic-peak-2026')!;
+    mocks.semanticRetrieve.mockResolvedValue({
+      status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
+      results: [{ source: oatEvidence, score: 0.96, exactIdentity: false }],
+    });
+
+    const result = await executeGeminiTool(
+      'search_knowledge',
+      { query: 'Does the sugar-free claim establish the product has no blood-glucose effect?' },
+      context('Does the sugar-free claim establish the product has no blood-glucose effect?', 'CLAIM: SUGAR FREE'),
+    );
+
+    expect(result.status).toBe('empty');
+    expect(result.evidence).toEqual([]);
+    expect(result.output).toMatchObject({ status: 'empty' });
+  });
+
+  it('passes the linked ingredient outcome and exposure boundary when the package names that ingredient', async () => {
+    const oatEvidence = evidenceSources.find(source => source.id === 'efsa-oat-beta-glucan-glycaemic-peak-2026')!;
+    mocks.semanticRetrieve.mockResolvedValue({
+      status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
+      results: [{ source: oatEvidence, score: 0.88, exactIdentity: false }],
+    });
+    const toolContext = context('Could this package affect post-meal glucose?');
+    toolContext.package.ingredients = ['whole oats', 'salt'];
+
+    const result = await executeGeminiTool('search_knowledge', { query: 'post-meal glucose peaks' }, toolContext);
+
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.map(source => source.id)).toEqual(['efsa-oat-beta-glucan-glycaemic-peak-2026']);
+    expect(result.output.results).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        relatedIngredientEvidence: [expect.objectContaining({
+          id: 'oat-beta-glucan-postprandial-glucose-peak-2026',
+          sourceIds: ['efsa-oat-beta-glucan-glycaemic-peak-2026'],
+          interpretationBoundary: expect.stringMatching(/not proof of a package-specific effect/i),
+        })],
+      }),
+    ]));
+    const modelResult = toolResultForModel(result.output, result.evidence);
+    expect(modelResult.results).toEqual(expect.arrayContaining([
+      expect.objectContaining({ relatedIngredientEvidence: [expect.objectContaining({ ingredient: 'Oat beta-glucan' })] }),
+    ]));
+    expect(modelResult.citationEvidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({ sourceId: 'efsa-oat-beta-glucan-glycaemic-peak-2026' }),
+    ]));
+  });
+
+  it('allows a clearly named ingredient research question even when the active package lacks that ingredient', async () => {
+    const oatEvidence = evidenceSources.find(source => source.id === 'efsa-oat-beta-glucan-glycaemic-peak-2026')!;
+    mocks.semanticRetrieve.mockResolvedValue({
+      status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
+      results: [{ source: oatEvidence, score: 0.88, exactIdentity: false }],
+    });
+
+    const result = await executeGeminiTool(
+      'search_knowledge',
+      { query: 'What evidence is available for oat beta-glucan and glucose peaks?' },
+      context('What evidence is available for oat beta-glucan and glucose peaks?'),
+    );
+
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.map(source => source.id)).toEqual(['efsa-oat-beta-glucan-glycaemic-peak-2026']);
+  });
+
   it('returns relevant oat outcome evidence alongside local ingredient identity lookup', async () => {
     const result = await executeGeminiTool(
       'resolve_ingredient',

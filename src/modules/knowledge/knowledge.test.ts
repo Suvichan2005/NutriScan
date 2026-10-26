@@ -62,7 +62,8 @@ describe('knowledge module offline contract', () => {
       { id: 'oat-beta-glucan-lipid-outcomes', sourceIds: ['pubmed-oat-beta-glucan-lipids-2022'] },
     ]);
     expect(findIngredientEvidence('rolled oats', 'What evidence is there about post-meal glucose peaks?')).toMatchObject([
-      { id: 'oat-beta-glucan-postprandial-glucose', sourceIds: ['efsa-oat-beta-glucan-glycaemic-peak-2026', 'efsa-oat-barley-beta-glucan-glycaemic-2025'] },
+      { id: 'oat-beta-glucan-postprandial-glucose-peak-2026', sourceIds: ['efsa-oat-beta-glucan-glycaemic-peak-2026'] },
+      { id: 'oat-beta-glucan-postprandial-glucose-iAUC-2025', sourceIds: ['efsa-oat-barley-beta-glucan-glycaemic-2025'] },
     ]);
     expect(findIngredientEvidence('oats', 'What is the serving size?')).toEqual([]);
     expect(findIngredientEvidence('almonds', 'Can this affect cholesterol?')).toEqual([]);

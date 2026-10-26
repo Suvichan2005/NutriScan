@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — scope curated outcome evidence by its linked subject
+
+For a source explicitly linked to an ingredient/outcome relationship, include that relationship in native knowledge-tool results only when the active package names the ingredient or the current question explicitly asks about it. Include its population, exposure, outcome, exact source IDs and limitations. A semantic similarity match alone must not make an ingredient-specific study appear applicable to another product. This gate does not establish source entailment or a package-specific effect; Gemini still interprets, and exposure/dose remains unproven unless supported independently.
+
 ## 27 October 2026 — pasted label text keeps its browser-only boundary
 
 The `Read label text` action must not send the entered label or its initial question to Gemini merely because cloud analysis is available. Build the initial reply through the local audit path so the browser-only disclosure stays accurate and the conversation cannot remain pending without a request. A missing requested nutrient is reported as unrecorded, never zero; failed-provider local fallback may show several explicitly requested values but must not substitute an unrelated nutrient. Any later cloud action remains separate from this text-reading action.
