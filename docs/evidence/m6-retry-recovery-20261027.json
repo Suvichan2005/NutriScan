@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "kind": "provider-free local UI recovery acceptance",
+  "viewports": [
+    {
+      "width": 390,
+      "height": 844,
+      "mockedAssistFailures": 1,
+      "mockedAssistSuccesses": 1,
+      "providerCalls": 0,
+      "externalRequests": 0,
+      "pageErrors": 0,
+      "localModeSwitchSentRequest": false,
+      "retryReplacedSameTurn": true,
+      "savedPackagePreserved": true
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "mockedAssistFailures": 1,
+      "mockedAssistSuccesses": 1,
+      "providerCalls": 0,
+      "externalRequests": 0,
+      "pageErrors": 0,
+      "localModeSwitchSentRequest": false,
+      "retryReplacedSameTurn": true,
+      "savedPackagePreserved": true
+    }
+  ],
+  "privacy": "No user profile, source image, question, package identity, provider answer, or screenshot is included in this receipt. The test used an ignored local development package and Playwright-intercepted responses.",
+  "limits": [
+    "The successful retry response was mocked; this is not fresh Gemini or scientific-answer acceptance.",
+    "The replay verifies client recovery and saved package continuity only."
+  ],
+  "implementation": "src/components/nutriscan.tsx",
+  "privateScreenshots": [
+    ".data/m2-answer-usefulness-20261026/retry-success-ui-390.png",
+    ".data/m2-answer-usefulness-20261026/retry-success-ui-1440.png"
+  ]
+}
