@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — calculated results retain their own portion basis
+
+Native arithmetic can support a result stated per the calculated portion even when that portion differs from the printed label denominator. Match the adjacent numerator to the same typed result and the denominator to its exact compatible mass/volume portion. Do not admit arbitrary amounts by globally adding a calculated denominator, trust old assistant prose, or weaken correction/mass guards. Preserve rejected spans/reasons in the existing private opt-in trace, never general operational logs. The real follow-up comparison failure remains open: carry vetted calculation provenance rather than treating previous answer text as numeric evidence.
+
 ## 26 October 2026 — restore IdeaPad source faithfully; make history mutations atomic
 
 Use the integration branch as source authority and separately preserve the five owner modifications; the downloaded archive's Git HEAD matches remote and all other 426 tracked files match after newline normalization. Do not transfer archived Python environments or build outputs. Missing private-state/knowledge ZIPs remain explicit dependencies, not permission to reacquire extensive corpora. Latest semester scope supersedes historical expansion requests and teammate-specific tasks in chat exports.

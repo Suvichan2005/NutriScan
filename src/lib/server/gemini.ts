@@ -2284,11 +2284,13 @@ export async function assist(data: z.infer<typeof assistInput>) {
     const allCalculations=new Map([...(data.calculations??[]),...generated.calculations].map(calculation=>[calculation.id,calculation]));
     const effectiveEvidence=[...allEvidence.values()].slice(0,30);
     const effectiveCalculations=[...allCalculations.values()].slice(0,20);
+    const withheldSpans: Array<{text:string;reason:'unsupported-quantity'|'unsupported-basis'}> = [];
     const answerCheck=validateNaturalAnswerText(generated.answer,{
       package:activePackage,
       question:data.question,
       evidence:effectiveEvidence,
       calculations:effectiveCalculations,
+      onWithheldSentence:decision=>withheldSpans.push(decision),
     });
     const answerStatus=answerCheck.answer
       ?answerCheck.withheldUnsupportedQuantitySentenceCount?'answer-with-quantity-withheld':'answer-ready'
@@ -2329,6 +2331,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       decisions:{
         acceptedSentences:answerCheck.acceptedSentenceCount,
         withheldQuantitySentences:answerCheck.withheldUnsupportedQuantitySentenceCount,
+        withheldSpans,
         policy:'Only unsupported precise quantities or bases are withheld. Natural-language wording is not required to quote OCR or match lexical source spans.',
       },
       summary:diagnostics,

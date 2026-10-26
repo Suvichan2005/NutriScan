@@ -680,20 +680,37 @@ function hasMeasuredAmount(text:string,contextIdentifiers:ReadonlySet<string>=ne
   });
 }
 
-function basisMentionsAreSupported(text: string, evidenceTexts: string[],contextIdentifiers:ReadonlySet<string>=new Set()): boolean {
+function basisMentionsAreSupported(text: string, evidenceTexts: string[],contextIdentifiers:ReadonlySet<string>=new Set(), calculations: readonly Pick<Calculation, 'result' | 'unit' | 'portion' | 'portionUnit'>[] = []): boolean {
   // Without a measured amount, allow discussion of standard denominators and
   // per-serving notation. Applying any actual amount still requires the
   // matching printed basis below and a separately supported quantity.
   if(!hasMeasuredAmount(text,contextIdentifiers))return true;
   const mentions = [
-    ...[...text.matchAll(/\bper\s*\d+(?:[.,]\d+)?\s*(?:g|grams?|mg|milligrams?|kg|ml|millilit(?:er|re)s?)\b/gi)].map(match => match[0]),
-    ...[...text.matchAll(/\bper\s*(?:(?:each|a|one)\s+)?(?:servings?|portions?|packs?|packages?|biscuits?|pieces?)\b/gi)].map(match => match[0]),
+    ...text.matchAll(/\bper\s*\d+(?:[.,]\d+)?\s*(?:g|grams?|mg|milligrams?|kg|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?)\b/gi),
+    ...text.matchAll(/\bper\s*(?:(?:each|a|one)\s+)?(?:servings?|portions?|packs?|packages?|biscuits?|pieces?)\b/gi),
   ];
   if (!mentions.length) return true;
   const evidence = evidenceTexts.map(normalizeLabelText);
   return mentions.every(mention => {
-    const normalized = normalizeLabelText(mention);
-    return evidence.some(text => text.includes(normalized));
+    const normalized = normalizeLabelText(mention[0]);
+    if (evidence.some(text => text.includes(normalized))) return true;
+    // A native result may be expressed per its requested portion, rather than
+    // the label's printed denominator. Bind that basis to its adjacent result;
+    // never add the calculated portion as a general-purpose evidence string.
+    const denominator = numericMentions(mention[0].replace(/^per\s*/i, ''))[0];
+    if (!denominator || denominator.localeAmbiguous) return false;
+    const prefix = text.slice(0, mention.index);
+    const numerator = numericOccurrences(prefix).at(-1);
+    if (!numerator || numerator.operator !== null || numerator.timeBasis !== null) return false;
+    const resultText = prefix.slice(numerator.index);
+    if (/[;!?\n]|\.(?!\d)/.test(resultText)) return false;
+    return calculations.some(calculation => {
+      const portion = numericMentions(`${calculation.portion} ${calculation.portionUnit}`)[0];
+      const tolerance = Number.EPSILON * Math.max(1, Math.abs(portion.value), Math.abs(denominator.value)) * 8;
+      return denominator.dimension === portion.dimension && !denominator.literalUnit
+        && Math.abs(denominator.value - portion.value) <= tolerance
+        && numericMentionsAreSupported(resultText, [], [{ value: calculation.result, unit: calculation.unit }]);
+    });
   });
 }
 
@@ -768,7 +785,9 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[],calcula
  */
 export function validateNaturalAnswerText(
   answer: string,
-  context: Pick<AssistValidationContext, 'package' | 'question' | 'evidence' | 'calculations'>,
+  context: Pick<AssistValidationContext, 'package' | 'question' | 'evidence' | 'calculations'> & {
+    onWithheldSentence?: (decision: { text: string; reason: 'unsupported-quantity' | 'unsupported-basis' }) => void;
+  },
 ): { answer: string; acceptedSentenceCount: number; withheldUnsupportedQuantitySentenceCount: number } {
   const normalized = answer.replace(/\r\n?/g, '\n').trim().slice(0, 7000);
   const pkg = context.package;
@@ -849,9 +868,11 @@ export function validateNaturalAnswerText(
       // Strong-emphasis delimiters are presentation, not part of an amount,
       // comparator or basis. Keep the original prose for rendering.
       const checkingText=numericPresentationText(sentence);
-      if (!numericMentionsAreSupported(checkingText, evidenceTexts, calculatedResults,contextIdentifiers)
-        || !basisMentionsAreSupported(checkingText, evidenceTexts,contextIdentifiers)) {
+      const quantitySupported = numericMentionsAreSupported(checkingText, evidenceTexts, calculatedResults,contextIdentifiers);
+      const basisSupported = quantitySupported && basisMentionsAreSupported(checkingText, evidenceTexts,contextIdentifiers,currentCalculations);
+      if (!quantitySupported || !basisSupported) {
         withheldUnsupportedQuantitySentenceCount += 1;
+        context.onWithheldSentence?.({ text: sentence, reason: quantitySupported ? 'unsupported-basis' : 'unsupported-quantity' });
         continue;
       }
       acceptedSentences.push(sentence);
