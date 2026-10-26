@@ -807,6 +807,25 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.calculations).toContainEqual(expect.objectContaining({ portion: 30, result: 18 }));
     expect(result.calculations.length).toBeLessThanOrEqual(20);
   });
+  it.each(['g','ml'] as const)('retains an explicitly cited historical %s calculation without inventing an interactive calculator',async(unit)=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const evidence={observationIds:['protein-line'],imageRegions:[]};
+    const reconstruction={identity:{brand:null,name:null,variant:null,status:'unreadable',evidence},serving:null,nutritionRows:[{rowId:'protein-row',nutrient:'Protein',nutrientKey:'protein',printedLabel:'Protein',printedValue:'42 g',value:42,unit:'g',columnLabel:`per 100 ${unit}`,basisText:`per 100 ${unit}`,basisAmount:100,basisUnit:unit,qualifier:null,status:'provisional',evidence}],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Synthetic historical-reference fixture.',revision:1,updatedAt:'2026-10-26T00:00:00.000Z',model:'fixture',current:true};
+    const calculation={id:'prior-protein',label:'Saved protein operation',nutrient:'protein',input:42,inputUnit:'g',basisAmount:100,portion:10,portionUnit:unit,result:4.2,unit:'g',formula:'42 × 10 ÷ 100',observationIds:['protein-line'],assumptions:[]};
+    const data=assistInput.parse({consent:true,question:'Explain the saved result.',workspacePortion:{amount:35,unit},calculations:[calculation],package:{id:'historical-reference',name:'Synthetic fixture',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[{id:'protein-line',field:'label-note',text:`Protein 42 g per 100 ${unit}`,side:'text',confidence:null,origin:'user'}],rawText:'',warnings:[],synthetic:true,createdAt:'2026-10-26T00:00:00.000Z',reconstruction}});
+    const fetcher=vi.fn().mockImplementation(()=>Promise.resolve(new Response(modelResponse([{text:`The saved result is 4.2 g protein in 10 ${unit}, from CALC_1.`}]),{status:200,headers:{'content-type':'application/json'}})));vi.stubGlobal('fetch',fetcher);
+    const result=await assist(data);
+    expect(result.calculations).toHaveLength(1);
+    expect(result.calculations[0]).toMatchObject({id:'prior-protein',portion:10,portionUnit:unit,result:4.2});
+    expect(result.answer).toContain('from saved calculation');
+    expect(result.uiComponents.some(component=>component.type==='portion-calculator')).toBe(false);
+    fetcher.mockImplementation(()=>Promise.resolve(new Response(modelResponse([{text:`The saved result is 99 g protein in 10 ${unit}, from CALC_1. The label basis still needs review.`}]),{status:200,headers:{'content-type':'application/json'}})));
+    const rejected=await assist(data);
+    expect(rejected.calculations).toEqual([]);
+    expect(rejected.agentDiagnostics.withheldQuantitySentences).toBe(1);
+    fetcher.mockImplementation(()=>Promise.resolve(new Response(modelResponse([{text:'The label basis still needs review; CALC_99 is unavailable.'}]),{status:200,headers:{'content-type':'application/json'}})));
+    expect((await assist(data)).calculations).toEqual([]);
+  });
   it('returns only deterministic calculations referenced by validated claims or generative UI', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
     const calculation = { id: 'calc-carbohydrate-30g', label: 'Carbohydrate in 30 g', nutrient: 'carbohydrate', input: 60, inputUnit: 'g', basisAmount: 100, portion: 30, portionUnit: 'g', result: 18, unit: 'g', formula: '60 g × 30 g ÷ 100 g', observationIds: ['input-1'], assumptions: ['Provisional package reading.'] } as const;

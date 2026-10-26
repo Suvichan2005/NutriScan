@@ -2230,6 +2230,13 @@ export async function assist(data: z.infer<typeof assistInput>) {
       if(sourceCard.success)uiComponents=[...uiComponents,sourceCard.data].slice(0,6);
     }
     const referencedCalculationIds=new Set(uiComponents.flatMap(component=>component.calculationIds));
+    // A natural answer can explicitly reuse a supplied historical operation
+    // without requesting a new calculator. Preserve that typed provenance on
+    // the saved turn, but only when its reference survived quantity validation.
+    for(const match of answerCheck.answer.matchAll(/\bCALC_[A-Z0-9]+\b/g)){
+      const id=referenceAliases.fromModel.get(match[0]);
+      if(id)referencedCalculationIds.add(id);
+    }
     const responseCalculations=effectiveCalculations.filter(calculation=>referencedCalculationIds.has(calculation.id)).slice(0,20);
     const agentEvidence=effectiveEvidence
       .map(toConversationEvidence)

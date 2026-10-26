@@ -24,6 +24,8 @@ Keep one primary worktree (maximum two if genuinely justified), existing private
 
 ## Retained historical task IDs and dispositions
 
+M2 reused-operation continuation (26 October): a valid historical calculation cited by the actual claim answer was validated yet dropped from the returned turn without a calculator card. Exact accepted native references now retain existing typed operations; withheld/unknown references do not. Full797/two skips, TypeScript/build and production desktop/mobile save/reload/reopen retention pass. Same12 actual free calls, no final-study execution. Continue source applicability/answer breadth, without another migration or evaluation-preparation loop.
+
 M2 native-reference continuation (26 October): actual claim probe with local prefetch attributes lipid research and preserves unknown packet beta-glucan; source-free probe ignores requested retrieval. A leaked internal calculation alias is now rendered through current request references, with source-handle transfer and unknown-reference safeguards. Full795/two skips, build/typecheck and production desktop/mobile replay pass. Scientific entailment and reliable model retrieval remain partial, not acceptance closed.
 
 M2 attribution continuation (26 October): post-noun temporal-rate handling restores a WHO statement and existing source reference in unchanged actual-text replay; unsupported differences remain withheld. General attribution instruction stays below2,000 characters. Final792 tests/two skips, TypeScript/build and desktop/mobile reference-display replay pass. Continue distinct transfer requests against the final prompt; this single exposed example does not close source depth, medical usefulness or independent M4/M5 gates.

@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — persist explicitly reused native operations
+
+A typed operation referenced by accepted natural text remains provenance even when the model did not request another calculator. Add only exact request-native calculation handles from quantity-validated text to response selection, intersecting the existing effective operation set and preserving its20-operation bound/new-result priority. Do not parse amounts from assistant prose, return operations referenced only in withheld text, accept fabricated handles or create an unsolicited calculator card.
+
 ## 26 October 2026 — render native references after numerical validation
 
 An actual source-grounded answer leaked a prompt calculation alias. Resolve reserved native handles through the same request's alias map and effective evidence/calculations after existing quantity validation. Source titles support existing identity linking; unknown or excluded references are explicitly unavailable. Preserve layout and unrelated label/trial identifiers. Retain raw model, validated and displayed text separately in opt-in private events. No repair generation, source entailment claim or reinterpretation of measured quantities.

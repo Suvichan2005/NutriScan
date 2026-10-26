@@ -1,5 +1,11 @@
 # NutriScan current runtime handoff
 
+## M2 explicitly reused operation provenance — 26 October 2026
+
+After8722af9, the same actual grounded answer exposed a separate response-selection gap: its accepted CALC_7 referred to a valid supplied40g fibre operation, but response calculations were empty because no interactive calculator was generated. Response selection now also retains exact native calculation references surviving numerical validation, intersected with effective typed operations. No arithmetic from prose, arbitrary-ID acceptance or unsolicited calculator. Mass/volume tests reproduce the original0-operation failure and verify positive, withheld-sentence and unknown-handle behavior. Exact original-output full-assist mock replay now returns the single40g/4.96g fibre operation with unchanged answer/withholding/source decisions.
+
+Desktop/mobile production intercepted-response acceptance verifies real Save chat checkbox, persistence completion, reload/reopen and the retained typed operation in IndexedDB. Client also stores its existing declared-serving operations; this does not mean additional provider calls occurred. Full797 passed/two skipped, TypeScript and final production build pass. Owner-file hashes and evidence bytes reverified. Same12 actual free development calls; offline replays use test ledger only. Primary3400 production free-enabled, paid/fallback/search/capture/trace disabled. Continue actual M2 source/claim/condition transfer and applicability work; M4/M5 require independent inputs, final questions/defaults unchanged.
+
 ## M2 native-reference presentation — 26 October 2026
 
 New exposed-development cholesterol-claim probe6f25b4ef-9e84-439b-a9fc-1393c57dd460, no source prefetch: one free generation/no tools, package uncertainty retained but explicit lookup request not fulfilled. Same question with candidates from the actual same-origin local retrieval/filter path019d967b-defc-4c7f-a6b2-77345c903730: one generation/no tools, lipid review attributed, trial/population findings described and total fibre distinguished from unknown packet beta-glucan. Model interpretations are not independently verified; source summary does not establish every generated scientific detail. Direct assist probes are distinct from a fresh complete browser/provider journey.
