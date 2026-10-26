@@ -16,7 +16,8 @@ NutriScan is a Next.js 16 / React / TypeScript India-first package understanding
 - Local conversation preservation now avoids replacing explanatory/regulatory answers with missing-value boilerplate and retains topic-matched sources linked by selected findings, subject to existing scope filters.
 - Merged identity/lookup safeguards prevent ambiguous parser text from becoming the package title or default product query.
 - Latest focused browser acceptance used synthetic trans-fat label text at 390×844 and 1440×900. It displayed WHO and dated FSSAI source cards, retained uncertainty, withheld a numeric calculation and abstained on current-law status. It made no provider/external calls; receipt: `docs/evidence/trans-fat-browser.json`.
-- Latest full offline suite: 847 passed, 2 skipped. TypeScript and optimized production build passed on this revision.
+- Historical local development receipts under `.data/m2-source-acceptance-20261027/` show a broad sugar/carbohydrate-claim answer accepted numeric facts from a Gemini package reconstruction while making no source-tool call. The answer's withheld-number notice did not distinguish those accepted but unverified reconstructed quantities. The shared natural-answer validator now keeps those readings usable while adding a concise package-details confirmation notice; user-corrected values are excluded from that notice. Focused tests, Gemini-agent/diagnostics tests and TypeScript pass. No new provider request was made.
+- Latest full offline suite: 849 passed, 2 skipped. TypeScript and optimized production build passed on this revision.
 
 These checks establish local behavior and integration/build health only. They do not establish photo reconstruction accuracy, live Gemini tool use, scientific entailment, current legal status or independent human-reviewed answer quality.
 
@@ -24,7 +25,7 @@ These checks establish local behavior and integration/build health only. They do
 
 **M2 source-grounded conversational intelligence remains ACTIVE.** Verify across distinct development scenarios that Gemini appropriately selects eligible source tools, uses their returned records, presents relevant citations in the actual UI and maintains relevant context on follow-up. Separate model tool-selection failures from missing data, retrieval applicability, execution failures, and UI/citation losses. Do not force retrieval solely from health keywords or tune to one food/example.
 
-This checkout currently has no `.env.local` and no Gemini environment credential variables, so no live provider acceptance was performed. Continue provider-free contract and local integration work until a valid authorized development configuration is available; do not claim model adherence from fixtures.
+This checkout currently has no `.env.local` and no Gemini environment credential variables, so no live provider acceptance was performed. The current change improves uncertainty presentation only; it does not resolve selective source-tool use or establish model adherence. Continue provider-free contract and local integration work until a valid authorized development configuration is available; do not claim model adherence from fixtures.
 
 M3 image/package reconstruction accuracy, knowledge completeness, unfamiliar-package transfer, human-reviewed evaluation, and final academic results remain incomplete. Historical pilot and source status are recorded in the queue, dataset coverage file and engineering journal.
 

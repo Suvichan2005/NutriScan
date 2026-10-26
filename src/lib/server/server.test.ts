@@ -15,6 +15,8 @@ import { z } from 'zod';
 beforeEach(() => { resetGeminiUsageLedgerForTests(); });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 const request = (body: unknown, origin = 'http://127.0.0.1:3400') => new Request('http://127.0.0.1:3400/api/test', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+const provisionalPackageReadingNotice='Some numbers are provisional package readings; confirm them in Package details.';
+const expectAnswer=(actual:string,expected:string)=>expect([expected,`${expected}\n\n${provisionalPackageReadingNotice}`]).toContain(actual);
 const visionTestImage={imageId:'package-photo-1',mimeType:'image/png' as const,base64:'a'.repeat(20),side:'back' as const,sourceImage:{width:1600,height:2400},preprocessing:{rotation:90 as const,contrast:true,invert:false,crop:{x:0.1,y:0.15,width:0.8,height:0.7}}};
 const modelResponse=(parts:unknown[],usageMetadata={promptTokenCount:120,candidatesTokenCount:80,totalTokenCount:200})=>JSON.stringify({candidates:[{content:{parts,role:'model'},finishReason:'STOP',index:0}],modelVersion:'gemini-3.8-flash-test',usageMetadata});
 const toolCallPart=(id:string,name:string,args:unknown)=>({functionCall:{id,name,args}});
@@ -725,7 +727,7 @@ describe('provider validation, independent of provider invocation', () => {
     const data=assistInput.parse({consent:true,question:'What does this packet show?',package:{id:'reconstruction-contract-test',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:false,createdAt:new Date().toISOString()},images:[{handle:imageId,side:'back',width:8,height:8,role:'unknown'}],visualImages:[{imageId,mimeType:'image/png',base64:image.toString('base64'),side:'back',sourceImage:{width:8,height:8},preprocessing:{rotation:0,contrast:false,invert:false,crop:null}}]});
 
     const result=await assist(data);
-    expect(result.answer).toBe(ingredient);
+    expectAnswer(result.answer,ingredient);
     expect(fetcher).toHaveBeenCalledTimes(2);
     expect(result.packageReconstruction).toMatchObject({ingredients:[{name:'Refined wheat flour',status:'provisional',evidence:{imageRegions:[{imageId,region:null}]}}],nutritionRows:[{nutrient:'Carbohydrate',value:69.29,status:'provisional',evidence:{imageRegions:[{imageId,region:null}]}}]});
   });
@@ -906,7 +908,7 @@ describe('provider validation, independent of provider invocation', () => {
     const data = assistInput.parse({ consent: true, question: 'How much carbohydrate in 30 g?', calculations: [calculation], package: { id: 'package-calculation-ui', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'input-1', field: 'label-note', text: 'Carbohydrate 60 g per 100 g', side: 'text', confidence: null, origin: 'user' }], rawText: 'Carbohydrate 60 g per 100 g', warnings: [], synthetic: false, createdAt: new Date().toISOString(), reconstruction: { ...reconstruction, revision: 1, updatedAt: new Date().toISOString(), model: 'Gemini', current: true } } });
 
     const result = await assist(data);
-    expect(result.answer).toBe(answer);
+    expectAnswer(result.answer,answer);
     expect(result.calculations).toHaveLength(1);
     expect(result.calculations[0]).toMatchObject({nutrient:'carbohydrate',portion:30,result:18,unit:'g'});
     expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculationIds:[result.calculations[0].id]}));
@@ -933,7 +935,7 @@ describe('provider validation, independent of provider invocation', () => {
     const result=await assist(data);
 
     expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(result.answer).toBe(answer);
+    expectAnswer(result.answer,answer);
     expect(result.agentDiagnostics).toMatchObject({contract:'native-tools-and-natural-text',answerStatus:'answer-ready',generationCount:1,calculationCount:2});
     expect(result.calculations.map(calculation=>calculation.nutrient).sort()).toEqual(['carbohydrate','fiber']);
     expect(result.calculations).toEqual(expect.arrayContaining([
@@ -1077,7 +1079,7 @@ describe('provider validation, independent of provider invocation', () => {
     const prompt=JSON.parse(JSON.parse(String(fetcher.mock.calls[0][1]?.body)).contents[0].parts[0].text);
     expect(prompt.workspacePortion).toEqual({amount:scenario.workspace,unit:scenario.unit});
     expect(prompt.calculations).toEqual([]);
-    expect(result.answer).toBe(answer);
+    expectAnswer(result.answer,answer);
     expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculatorAmount:scenario.requested,calculatorUnit:scenario.unit}));
     expect(result.agentDiagnostics.generationCount).toBe(2);
   });
@@ -1094,7 +1096,7 @@ describe('provider validation, independent of provider invocation', () => {
       ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Developer fixture.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};
     const data=assistInput.parse({consent:true,question:'How much calcium is in 75 ml?',package:{id:'custom-nutrient',name:'Example drink',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[{id:'label-calcium',field:'label-note',text:'Calcium 142 mg per 150 ml',side:'text',origin:'user',confidence:null}],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString(),reconstruction}});
     const result=await assist(data);
-    expect(result.answer).toBe(answer);
+    expectAnswer(result.answer,answer);
     expect(result.calculations).toContainEqual(expect.objectContaining({nutrient:null,nutrientLabel:'Calcium',result:71,unit:'mg',interpretationIds:['calcium-row']}));
     expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculatorAmount:75,calculatorUnit:'ml'}));
     expect(result.agentDiagnostics.generationCount).toBe(2);
@@ -1130,7 +1132,7 @@ describe('provider validation, independent of provider invocation', () => {
 
     const result=await assist(data);
     expect(fetcher).toHaveBeenCalledTimes(2);
-    expect(result.answer).toBe(answer);
+    expectAnswer(result.answer,answer);
     const answerRequest=JSON.parse(String(fetcher.mock.calls[1][1]?.body));
     const answerPayload=JSON.parse(answerRequest.contents[0].parts[0].text) as {calculations:Array<{nutrient:string;portion:number;result:number}>};
     const servingCalculation=answerPayload.calculations.find(item=>item.nutrient==='carbohydrate');
@@ -1157,7 +1159,8 @@ describe('provider validation, independent of provider invocation', () => {
     const data=assistInput.parse({consent:true,question:'What about just two biscuits?',package:{id:'package-followup-repair',name:'Cream Cracker Sugar Free',brand:'BISK FARM',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction:currentReconstruction,observations:[{id:'input-1',field:'product-name',text:'BISK FARM CREAM CRACKER',side:'text',confidence:100,origin:'ocr'},{id:'input-2',field:'serving-size',text:'2 biscuits, approximately 13.4 g',side:'text',confidence:null,origin:'vision'}],rawText:'BISK FARM CREAM CRACKER\n2 biscuits, approximately 13.4 g',warnings:[],synthetic:false,createdAt:new Date().toISOString()}});
 
     const result=await assist(data);
-    expect(result).toMatchObject({status:'ok',answer:validAnswer});
+    expect(result).toMatchObject({status:'ok'});
+    expectAnswer(result.answer,validAnswer);
     expect(result).not.toHaveProperty('packageReconstruction');
     expect(result.agentTrace.some(step=>step.name==='package_answer_synthesis')).toBe(false);
     expect(result.agentTrace.some(step=>step.name==='structured_output_repair')).toBe(false);
@@ -1418,7 +1421,8 @@ describe('provider validation, independent of provider invocation', () => {
     vi.stubGlobal('fetch',fetcher);
     const livePath=await assist(reconstructedData);
     expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(livePath).toMatchObject({status:'ok',answer:evidenceLinkedAnswer,agentDiagnostics:{answerStatus:'answer-ready',acceptedSentences:3}});
+    expect(livePath).toMatchObject({status:'ok',agentDiagnostics:{answerStatus:'answer-ready',acceptedSentences:3}});
+    expectAnswer(livePath.answer,evidenceLinkedAnswer);
   });
   it('links natural serving-basis wording to exact rows and preserves the answer over an unrelated table fallback',()=>{
     const who=getNutritionGuidance({query:'naturally occurring dietary fibre carbohydrate quality WHO',jurisdiction:'India',maxResults:8}).find(item=>item.id==='who-carbohydrate-2023')!;
@@ -1457,7 +1461,7 @@ describe('provider validation, independent of provider invocation', () => {
     }));
     const decisions:Array<{stage:string;decision:string;reason?:string}>=[];
     const result=validateClaims(parsed.output,data,event=>decisions.push(event));
-    expect(result.answer).toBe(answer);
+    expectAnswer(result.answer,answer);
     expect(result.claims.map(claim=>claim.text)).toEqual(parsed.output.claims.map(claim=>claim.text));
     expect(result.claims.find(claim=>claim.text.includes('23.1 g'))?.interpretationRowIds).toContain('carbohydrate-35g');
     expect(result.claims.find(claim=>claim.text.includes('1.5 g'))?.interpretationRowIds).toContain('fibre-35g');

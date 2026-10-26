@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M2 reconstructed-quantity certainty in conversational answers (27 October 2026)
+
+Saved development receipts show that an accepted numeric sentence can rely on a current Gemini package reconstruction without being independently confirmed. Keep these readings usable, but append a concise Package details confirmation notice. User-corrected values are not mislabeled as model readings. Unsupported quantities and bases remain withheld. Focused inference/agent/diagnostics tests passed (98); the full suite passed 849 tests with 2 skipped; TypeScript and optimized production build pass. No new provider call. This closes only the certainty-presentation gap; selective source-tool use, scientific applicability and answer usefulness remain active M2 acceptance gates.
+
 ## M6 ambiguous identity, lookup and evidence display (27 October 2026)
 
 Integrated shared guard against using the same parsed label line as both product identity and a different semantic field; the default catalog action also avoids searching that ambiguous line. Preserved the feature branch's confidence/photo-provenance requirement for ordinary OCR identity and kept corrections, user descriptions, and barcode paths. Allergy output now quotes the line once. Verification on combined integration: 847 tests passed/2 skipped; TypeScript and optimized production build pass; provider-free browser acceptance covers 390×844/1440×900, source card scrolling, no-photo state, generic title, no inappropriate record lookup, and a bounded wait for local evidence lookup to finish before screenshot; no outbound/provider calls, Axe/page errors or overflow. This is not real-photo, Gemini, or scientific evidence. M2 source-use work remains active.

@@ -202,6 +202,29 @@ describe('provider-independent inference output validation', () => {
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(0);
   });
 
+  it('marks numeric prose based only on an unverified package reconstruction as provisional',()=>{
+    const pkg=packageSchema.parse({...fixturePackage,reconstruction:{
+      ...reconstructionFixture(),revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture-model',current:true,
+    }});
+    const checked=validateNaturalAnswerText('The photographed label appears to list 69.29 g of carbohydrate per 100 g.',{package:pkg});
+    expect(checked.answer).toContain('69.29 g of carbohydrate');
+    expect(checked.answer).toContain('Some numbers are provisional package readings');
+    expect(checked.provisionalReconstructionQuantitySentenceCount).toBe(1);
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(0);
+  });
+
+  it('does not mark user-corrected package values as unverified model readings',()=>{
+    const pkg=packageSchema.parse({...fixturePackage,
+      nutrients:[{key:'carbohydrate',value:69.29,unit:'g',basis:{amount:100,unit:'g',description:'per 100 g'},observationIds:['user-correction'],status:'corrected'}],
+      observations:[...fixturePackage.observations,{id:'user-correction',field:'carbohydrate',text:'Carbohydrate corrected to 69.29 g per 100 g',side:'text',confidence:null,origin:'user'}],
+      reconstruction:{...reconstructionFixture(),revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture-model',current:true},
+    });
+    const checked=validateNaturalAnswerText('The corrected package value is 69.29 g carbohydrate per 100 g.',{package:pkg});
+    expect(checked.answer).toContain('69.29 g carbohydrate');
+    expect(checked.provisionalReconstructionQuantitySentenceCount).toBe(0);
+    expect(checked.answer).not.toContain('unverified package interpretation');
+  });
+
   it('keeps useful natural prose and gives a concise notice when unsupported quantity detail is withheld', () => {
     const checked = validateNaturalAnswerText(
       'This is a refined-flour-heavy cracker. It contains 99 g carbohydrate per 100 g.',
