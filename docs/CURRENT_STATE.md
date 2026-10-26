@@ -1,7 +1,7 @@
 # NutriScan current runtime handoff
-## Current integration checkpoint — M2 source evidence gate (27 October 2026)
+## Current integration checkpoint — M2 natural source attribution (27 October 2026)
 
-The prior pushed local source/browser checkpoint is `d157458`. The current production `assist()` path now requires an exact quoted record excerpt (24–300 characters) in any sentence linked to a retrieved source, in addition to identity, topic and jurisdiction checks. A provider-free mocked-route regression retains useful package prose and withholds an unsupported product-safety assertion despite a topical sodium record. Source/route/prompt suites pass160/160 and the natural-answer instruction remains below2,000 characters. This establishes stricter evidence traceability only; it does not establish semantic entailment, uncited-claim rejection, live Gemini behavior or independent science review. See `docs/DECISIONS.md` and the new M2 entries in `docs/STATUS.md` and `docs/COMPLETION_QUEUE.md`.
+Current verified integration HEAD is `e7114e45d7a3954123d5bdb2b390bb08dff06f40`; PR #2 was already merged in its history as `b65cae40`. The latest local correction removes a brittle requirement to quote 24–300 characters from a retrieved record's summary in every cited answer sentence. Local summaries and limitations are NutriScan-prepared, not verbatim publisher text. Answers cite the identified record naturally; the optional evidence card labels the text as a NutriScan summary and links the original. Source identity, topic and applicability checks remain, and numeric validation is unchanged. These checks do not prove semantic entailment; that remains a known model-quality limitation. Focused answer/conversation/agent/server suites pass172/172, TypeScript and `git diff --check` pass. No live provider, scientific entailment or independent human review is claimed.
 
 ## M2 source continuity and live development acceptance — 27 October 2026
 

@@ -1218,3 +1218,6 @@ Checkpoint checks:756 passed/one skipped with four workers, TypeScript and final
 
 - Rechecked the current `.data` tree for `academic-preparation`, `academic-completion`, and `.docx` files. Neither report directory nor any DOCX is present. This conflicts with the prior handoff's historical statement that the owner-controlled17-page report/template was preserved, so CURRENT_STATE and the queue now distinguish prior existence from current checkout availability.
 - No replacement report/template was created and no external archive was retried. R1 report editing waits for restoration of the original owner artifact; product engineering remains active under M2/M3.
+# 27 October — Natural source attribution review
+
+Reviewed the exact-source-summary quote requirement introduced at `e7114e4`. The cited text in this codebase is a NutriScan-authored summary, so requiring a double-quoted copy in the final response could misrepresent it as publisher wording and make prose brittle. Removed that output-format gate while retaining resolved citation identity and subject/jurisdiction checks; labeled the evidence-card text as a NutriScan summary. A relevant topic match still cannot prove a scientific claim is entailed, and this limitation is now explicit. Focused four-suite verification passed172/172, TypeScript and diff check passed. No live Gemini request was made.

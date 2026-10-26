@@ -60,21 +60,21 @@ describe('production answer source scope',()=>{
     expect(result.withheldSentenceCount).toBe(2);
   });
 
-  it('withholds a topical but unsupported scientific assertion and keeps useful package facts',()=>{
+  it('keeps a topic-matched citation in scope without treating scope as proof of entailment',()=>{
     const aliases=new Map([['SRC_1',salt.id]]);
     const question='What does WHO say about sodium and blood pressure?';
-    const answer='The package lists 420 mg sodium per 100 g. WHO says this packet is safe to eat every day SRC_1.';
+    const answer='The package lists 420 mg sodium per 100 g. WHO discusses sodium intake and blood pressure at a population level SRC_1.';
     expect(isLocalEvidenceTopicallyRelevant(salt,question)).toBe(true);
     expect(isGuidanceEvidenceInScope(salt,question)).toBe(true);
     const result=filterAnswerBySourceScope(answer,[salt],aliases,question);
-    expect(result.answer).toBe('The package lists 420 mg sodium per 100 g.');
-    expect(result.withheldSentenceCount).toBe(1);
+    expect(result.answer).toBe(answer);
+    expect(result.withheldSentenceCount).toBe(0);
   });
 
-  it('retains a topical source explanation when its exact record excerpt is visible',()=>{
+  it('retains a natural source-attributed paraphrase without requiring a copied summary',()=>{
     const aliases=new Map([['SRC_1',salt.id]]);
-    const quote=salt.summary;
-    const answer=`WHO guidance describes “${quote}” SRC_1.`;
+    const answer='WHO guidance discusses limiting sodium intake to reduce blood pressure risk at the population level SRC_1.';
+    expect(answer).not.toContain(salt.summary);
     expect(filterAnswerBySourceScope(answer,[salt],aliases,'What does WHO say about sodium and blood pressure?').answer).toBe(answer);
   });
 
@@ -82,14 +82,14 @@ describe('production answer source scope',()=>{
     const us={...peanut,id:'us-peanut-guidance',jurisdiction:'United States'};
     const aliases=new Map([['SRC_1',us.id]]);
     expect(filterAnswerBySourceScope('This US source says peanut warnings vary by product SRC_1.',[us],aliases,'How are peanut warnings handled in India?').withheldSentenceCount).toBe(1);
-    const suppliedSourceAnswer=`The supplied reference says “${us.summary}” SRC_1.`;
+    const suppliedSourceAnswer='The supplied US reference describes ingredient-label context SRC_1.';
     expect(filterAnswerBySourceScope(suppliedSourceAnswer,[us],aliases,'Explain the supplied reference.').answer).toBe(suppliedSourceAnswer);
   });
 
   it('uses only prior user questions to resolve a contextual multi-turn source reference',()=>{
     const diabetes={...salt,id:'diabetes-guidance',title:'Diabetes and carbohydrate choices',publisher:'International Diabetes Federation',summary:'People living with diabetes may consider carbohydrate amounts and food choices with individual context.'};
     const aliases=new Map([['SRC_1',diabetes.id]]);
-    const answer=`The International Diabetes Federation discusses “${diabetes.summary}” SRC_1.`;
+    const answer='The International Diabetes Federation discusses individualized food choices in the diabetes context SRC_1.';
     const history=['Does this snack fit with type 2 diabetes?','What about just two biscuits?'];
     expect(filterAnswerBySourceScope(answer,[diabetes],aliases,'Does that change for 25 g?', '',history).answer).toBe(answer);
     expect(filterAnswerBySourceScope(answer,[diabetes],aliases,'And for 25 g?', '',history).answer).toBe(answer);
