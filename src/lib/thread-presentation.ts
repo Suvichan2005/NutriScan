@@ -192,12 +192,14 @@ export function packageDisplayIdentity(
   pkg: { name: string; brand?: string; observations?: Pick<Observation,'origin'|'field'|'text'>[]; reconstruction?: { current?: boolean; identity: { name: string | null; brand: string | null; variant: string | null; status: string } } | null },
   candidates: TentativeStructuredCandidate[],
 ): DisplayIdentity {
-  const supported = cleanIdentity(pkg.name) ?? cleanIdentity(pkg.brand);
   // Explicit application-recorded corrections outrank interpretations. Keep
   // compatibility with older corrections that stored the name in their note.
   const correctedName = pkg.observations?.some(observation => observation.origin === 'user'
     && ((observation.field === 'productName' && observation.text === pkg.name)
       || observation.text.endsWith('; product name supplied by user: ' + pkg.name)));
+  const nameAlsoClassifiedAsAnotherField = !correctedName && pkg.observations?.some(observation =>
+    observation.text.trim() === pkg.name && observation.field !== 'name' && observation.field !== 'productName');
+  const supported = cleanIdentity(nameAlsoClassifiedAsAnotherField ? undefined : pkg.name) ?? cleanIdentity(pkg.brand);
   if (correctedName && cleanIdentity(pkg.name)) return { title: cleanIdentity(pkg.name)!, source: 'package' };
 
   const interpretation = pkg.reconstruction?.identity;

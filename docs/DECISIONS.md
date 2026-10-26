@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — do not treat cross-field label text as product identity
+
+When the same user-entered line is represented both as a parsed package name and as another typed field, treat the name as ambiguous for display and default catalog search. Preserve explicit product-name corrections, separate user descriptions and valid barcode lookup. Resolve this at presentation/query boundaries using provenance; do not add phrase-based rules or alter contributor-owned OCR parsing.
+
 ## 27 October 2026 — describe zero-photo label-text investigations explicitly
 
 When a package is created from entered label text with no attached images, say “No package photos,” omit an empty photo group, and offer “Add photos.” Keep photo counts and per-photo controls for scans that include images.

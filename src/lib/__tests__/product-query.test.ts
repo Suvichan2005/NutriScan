@@ -39,6 +39,17 @@ describe('product catalog request construction', () => {
     expect(productQuerySource({ ...base, observations: [observation('ocr')] })).toBe('label-text');
     expect(productQuerySource({ ...base, barcode: '8901088068758', observations: [observation('user')] })).toBe('barcode');
   });
+  it('withholds a parsed name and catalog lookup when the same line has another typed field role', () => {
+    const name = 'Label line without an identity role';
+    const observations = [
+      { id: 'name-line', field: 'name', text: name, side: 'text' as const, confidence: null, origin: 'user' as const },
+      { id: 'other-field-line', field: 'allergens', text: name, side: 'text' as const, confidence: null, origin: 'user' as const },
+    ];
+    const data = { barcode: undefined, identityConflict: false, name, userDescription: undefined, observations };
+    expect(productQuerySource(data)).toBe('label-text');
+    expect(defaultProductLookup(data)).toBe('');
+    expect(defaultProductLookup({ ...data, barcode: '8901088068758' })).toBe('8901088068758');
+  });
   it('does not confuse an exact search barcode with verified package identity', () => {
     expect(productIdentityDisclosure(undefined, '8902710100150', 'barcode')).toMatch(/exactly matches the barcode entered in search.*No package barcode was established.*unverified/i);
     expect(productIdentityDisclosure('12345678', '8902710100150', 'candidate')).toMatch(/text-search candidate.*barcode differs.*candidate or alternative only/i);

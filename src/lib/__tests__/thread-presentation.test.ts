@@ -49,6 +49,17 @@ describe('package display identity', () => {
     )).toEqual({ title: 'Unidentified food package', source: 'generic' });
   });
 
+  it('does not promote a label line that is also typed as another package field', () => {
+    const name = 'Label line without an identity role';
+    expect(packageDisplayIdentity({
+      name,
+      observations: [
+        { origin: 'user', field: 'name', text: name },
+        { origin: 'user', field: 'allergens', text: name },
+      ],
+    }, [])).toEqual({ title: 'Unidentified food package', source: 'generic' });
+  });
+
   it('does not promote a one-word front-of-pack slogan to package identity', () => {
     expect(packageDisplayIdentity({ name: 'FREE' }, [])).toEqual({ title: 'Unidentified food package', source: 'generic' });
   });

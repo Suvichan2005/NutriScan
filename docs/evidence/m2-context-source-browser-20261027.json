@@ -30,6 +30,8 @@
     "textOnlyHeaderSaysNoPackagePhotos": true,
     "textOnlyPhotoActionSaysAddPhotos": true,
     "emptyPhotoGroupRendered": false,
+    "ambiguousTypedLabelLinePromotedToProductIdentity": false,
+    "catalogLookupShownForAmbiguousTypedLabelLine": false,
     "pageErrors": 0,
     "axeViolations": 0,
     "horizontalOverflow": false

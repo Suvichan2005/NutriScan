@@ -68,6 +68,8 @@ try {
     ].join('\n'));
     await page.getByRole('button', { name: 'Read label text' }).click();
     await page.locator('.thread-workspace').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('.thread-package-identity strong').innerText(), 'Unidentified food package');
+    assert.equal(await page.locator('.thread-public-lookup-action').count(), 0);
     assert.equal(await page.locator('.thread-package-identity .badge').innerText(), 'No package photos');
     await page.getByRole('button', { name: 'Add photos' }).waitFor({ state: 'visible' });
     assert.equal(await page.locator('.thread-photo-strip').count(), 0);
