@@ -283,7 +283,8 @@ describe('local evidence follow-ups', () => {
     );
     expect(combined.answer).toContain('18 g carbohydrate');
     expect(combined.answer).toContain('May-contain precautionary wording');
-    expect(combined.answer).toMatch(/does not establish actual allergen presence.*individual risk or safety/i);
+    expect(combined.answer).toMatch(/does not confirm allergen presence/i);
+    expect(combined.answer).toMatch(/cannot establish amount or personal safety/i);
     expect(combined.answer).toMatch(/cannot establish individual suitability/i);
     expect(combined.evidence).toBeUndefined();
   });

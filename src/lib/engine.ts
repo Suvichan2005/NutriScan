@@ -165,7 +165,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
         ?`A recorded label term is related to “${mention.term}” through a source-backed food-label vocabulary crosswalk.`
         :'';
     const detail=mention.matched
-      ?`${matchDescription} Recorded line${matchingEvidence.length===1?'':'s'}: ${matchingEvidence.join('; ')}. ${hasPrecautionaryWording?'The “May contain” category describes precautionary cross-contact wording only; it does not confirm that an allergen is present.':'No matching “May contain” line for this term appears among these retained observations, which does not rule out cross-contact.'} These are unverified package-reading observations, not verified composition. This is not a medical determination or individual-safety assessment and does not establish actual allergen presence, amount or exposure, individual risk or safety; inspect the original label.`
+      ?`${matchDescription} Recorded line${matchingEvidence.length===1?'':'s'}: ${matchingEvidence.join('; ')}. ${hasPrecautionaryWording?'“May contain” is precautionary cross-contact wording; it does not confirm allergen presence.':'This label mention is unverified and does not establish exposure or an individual reaction.'} The reading cannot establish amount or personal safety.`
       :labelTextPresent
         ?`No direct or supported label-term match for “${mention.term}” was found in the extracted ingredient/allergen wording. OCR omissions, unlisted derivatives and cross-contact remain possible; this is not a safety clearance.`
         :'No readable ingredient/allergen wording is available to compare with “'+mention.term+'”. Its absence from the extraction is not evidence that it is absent from the product.';

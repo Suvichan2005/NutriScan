@@ -311,7 +311,7 @@ describe('nutrition numerical invariants',()=>{
     const intolerance=audit.findings.find(f=>f.title==='Food intolerance: not established');
     expect(allergy?.status).toBe('uncertain');
     expect(allergy?.observationIds.length).toBeGreaterThan(0);
-    expect(allergy?.detail).toMatch(/not a medical determination|not an individual-safety assessment/i);
+    expect(allergy?.detail).toMatch(/does not establish exposure or an individual reaction/i);
     expect(intolerance?.detail).toMatch(/No direct or supported label-term match/);
     expect(intolerance?.detail).toMatch(/not a safety clearance/);
   });
@@ -329,7 +329,7 @@ describe('nutrition numerical invariants',()=>{
     for(const finding of [milk,gluten]){
       expect(finding?.observationIds.every(id=>pkg.observations.some(observation=>observation.id===id))).toBe(true);
       expect(finding?.sourceIds.every(id=>audit.sources.some(source=>source.id===id))).toBe(true);
-      expect(finding?.detail).toMatch(/not a medical determination|does not establish actual allergen presence/i);
+      expect(finding?.detail).toMatch(/cannot establish amount or personal safety/i);
     }
   });
   it('applies declared restrictions to the current reconstructed ingredient list when OCR rows were not parsed as ingredients',()=>{
@@ -354,7 +354,7 @@ describe('nutrition numerical invariants',()=>{
     expect(wheat?.observationIds).toEqual(['merged-column-ocr']);
     expect(wheat?.detail).toMatch(/saved package interpretation proposes a possible match.*still provisional/i);
     expect(wheat?.detail).toMatch(/provisional reconstructed ingredient-list wording.*still unverified/i);
-    expect(wheat?.detail).toMatch(/does not establish actual allergen presence|not a medical determination/i);
+    expect(wheat?.detail).toMatch(/cannot establish amount or personal safety/i);
     expect(gluten?.sourceIds).toContain('fssai-atta-maida-nomenclature-2019');
     expect(gluten?.observationIds).toEqual(['merged-column-ocr']);
     expect(wheat?.detail).not.toMatch(/A direct text match/);
@@ -368,8 +368,9 @@ describe('nutrition numerical invariants',()=>{
     expect(allergy?.observationIds).toContain(warning?.id);
     expect(allergy?.detail).toContain('May-contain precautionary wording');
     expect(allergy?.detail).toContain('"May contain traces of peanuts"');
-    expect(allergy?.detail).toMatch(/does not confirm that an allergen is present/i);
-    expect(allergy?.detail).toMatch(/does not establish actual allergen presence, amount or exposure, individual risk or safety/i);
+    expect(allergy?.detail).toMatch(/does not confirm allergen presence/i);
+    expect(allergy?.detail).toMatch(/cannot establish amount or personal safety/i);
+    expect(allergy?.detail?.length).toBeLessThan(600);
     expect(allergy?.detail).not.toMatch(/No matching “May contain” line|label may not show cross-contact/i);
     expect(allergy?.status).toBe('uncertain');
   });

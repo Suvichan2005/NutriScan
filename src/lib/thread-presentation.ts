@@ -166,6 +166,7 @@ export function geminiFailureMessage(code: string, timedOut = false): string {
 
 const nutrientWords = /\b(?:energy|kcal|kilojoules?|carbohydrates?|carbs?|protein|proten|fat|sodium|salt|sugars?|fibre|fiber|serving|nutrition|nutritional|quantity|per\s*100)\b/gi;
 const numericMeasurement = /\b\d+(?:[.,]\d+)?\s*(?:g|mg|kcal|kj|ml|%|percent)\b/i;
+const minIdentityOcrConfidence = 80;
 
 function cleanIdentity(value: string | undefined): string | null {
   const cleaned = value?.replace(/\s+/g, ' ').trim();
@@ -189,10 +190,9 @@ function cleanIdentity(value: string | undefined): string | null {
 export type DisplayIdentity = { title: string; source: 'package' | 'gemini' | 'generic' };
 
 export function packageDisplayIdentity(
-  pkg: { name: string; brand?: string; observations?: Pick<Observation,'origin'|'field'|'text'>[]; reconstruction?: { current?: boolean; identity: { name: string | null; brand: string | null; variant: string | null; status: string } } | null },
+  pkg: { name: string; brand?: string; userDescription?: string; observations?: (Pick<Observation,'origin'|'field'|'text'> & Partial<Pick<Observation,'imageId'|'confidence'>>)[]; reconstruction?: { current?: boolean; identity: { name: string | null; brand: string | null; variant: string | null; status: string } } | null },
   candidates: TentativeStructuredCandidate[],
 ): DisplayIdentity {
-  const supported = cleanIdentity(pkg.name) ?? cleanIdentity(pkg.brand);
   // Explicit application-recorded corrections outrank interpretations. Keep
   // compatibility with older corrections that stored the name in their note.
   const correctedName = pkg.observations?.some(observation => observation.origin === 'user'
@@ -208,6 +208,30 @@ export function packageDisplayIdentity(
     if (reconstructed.length) return { title: [...new Set(reconstructed)].join(' '), source: 'gemini' };
   }
 
+  // A parser's `name`/`brand` field is still only a best-effort classification
+  // of label text. Do not promote pasted OCR fragments (for example, an
+  // allergen precaution) into the package header. Trust a value only when the
+  // user supplied it as product detail, corrected it explicitly, or OCR linked
+  // the exact field to a high-confidence photographed observation.
+  const explicitDescription = cleanIdentity(pkg.userDescription);
+  if (explicitDescription) return { title: explicitDescription, source: 'package' };
+  const photoIdentity = pkg.observations?.find(observation =>
+    observation.origin === 'ocr'
+    && observation.field === 'name'
+    && observation.text.trim() === pkg.name
+    && Boolean(observation.imageId)
+    && typeof observation.confidence === 'number'
+    && observation.confidence >= minIdentityOcrConfidence,
+  );
+  const photoBrand = pkg.observations?.find(observation =>
+    observation.origin === 'ocr'
+    && observation.field === 'brand'
+    && observation.text.trim() === pkg.brand
+    && Boolean(observation.imageId)
+    && typeof observation.confidence === 'number'
+    && observation.confidence >= minIdentityOcrConfidence,
+  );
+  const supported = photoIdentity ? cleanIdentity(pkg.name) : photoBrand ? cleanIdentity(pkg.brand) : null;
   if (supported) return { title: supported, source: 'package' };
 
   const suggestion = candidates.find(candidate => candidate.kind === 'product-identity' && cleanIdentity(candidate.proposedValue));

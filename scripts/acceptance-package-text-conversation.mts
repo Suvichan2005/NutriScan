@@ -63,7 +63,7 @@ try {
     const allergyFinding = page.locator('.finding').filter({ hasText: /Food allergy: literal mention/ }).first();
     await allergyFinding.waitFor({ state: 'visible' });
     const allergyFindingText = await allergyFinding.innerText();
-    const precautionaryAllergyDistinguished = /May-contain precautionary wording: "May contain traces of peanuts"/.test(allergyFindingText) && /does not confirm that an allergen is present/i.test(allergyFindingText) && /does not establish actual allergen presence, amount or exposure, individual risk or safety/i.test(allergyFindingText);
+    const precautionaryAllergyDistinguished = /May-contain precautionary wording: "May contain traces of peanuts"/.test(allergyFindingText) && /does not confirm allergen presence/i.test(allergyFindingText) && /cannot establish amount or personal safety/i.test(allergyFindingText);
     await page.locator('.provider-details > summary').click();
     const geminiHistoryOptIn = page.getByRole('checkbox', { name: /Include up to four recent local question-and-answer turns/ });
     const geminiHistoryStartsUnchecked = !(await geminiHistoryOptIn.isChecked());
@@ -105,7 +105,7 @@ try {
     const crossContactReply = page.locator('.assistant-message').filter({ hasText: /FSSAI distinguishes a separate “Contains \[allergen\]” declaration/ }).last();
     await crossContactReply.waitFor({ state: 'visible' });
     const crossContactAnswer = await crossContactReply.innerText();
-    const crossContactGuidanceAnswered = /cross-contamination/i.test(crossContactAnswer) && /does not establish actual allergen presence, amount or exposure, individual risk or safety, or package compliance/i.test(crossContactAnswer);
+    const crossContactGuidanceAnswered = /cross-contamination/i.test(crossContactAnswer) && /does not confirm allergen presence/i.test(crossContactAnswer) && /cannot establish amount or personal safety/i.test(crossContactAnswer);
     const crossContactSourceVisible = await page.locator('.finding').filter({ hasText: /Reference to inspect: FAQ on Food Safety and Standards \(Labelling & Display\) Regulations, 2020/ }).isVisible();
     const conversationAxe = await new AxeBuilder({ page }).analyze();
     await page.screenshot({ path: path.join(captureDir, `${prefix}-02-grounded-conversation.png`), fullPage: true });

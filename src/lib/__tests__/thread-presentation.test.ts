@@ -32,12 +32,12 @@ describe('package display identity', () => {
   });
 
   it.each(['unreadable','conflict','ambiguous'])('does not promote a %s reconstruction identity',status=>{
-    expect(packageDisplayIdentity({name:'Existing product',reconstruction:{current:true,identity:{brand:'New',name:'Identity',variant:null,status}}},[])).toEqual({title:'Existing product',source:'package'});
-    expect(packageDisplayIdentity({name:'Existing product',reconstruction:{current:false,identity:{brand:'Old',name:'Identity',variant:null,status:'clear'}}},[])).toEqual({title:'Existing product',source:'package'});
+    expect(packageDisplayIdentity({name:'Existing product',userDescription:'Existing product',reconstruction:{current:true,identity:{brand:'New',name:'Identity',variant:null,status}}},[])).toEqual({title:'Existing product',source:'package'});
+    expect(packageDisplayIdentity({name:'Existing product',userDescription:'Existing product',reconstruction:{current:false,identity:{brand:'Old',name:'Identity',variant:null,status:'clear'}}},[])).toEqual({title:'Existing product',source:'package'});
   });
   it('keeps a structured package identity ahead of model suggestions', () => {
     expect(packageDisplayIdentity(
-      { name: 'Bisk Farm Cream Cracker' },
+      { name: 'Bisk Farm Cream Cracker', observations:[{origin:'ocr',field:'name',text:'Bisk Farm Cream Cracker',imageId:'front-photo',confidence:91}] },
       [identityCandidate('PROTEN TOTALFAT 17.79g 11.429 1539 238g')],
     )).toEqual({ title: 'Bisk Farm Cream Cracker', source: 'package' });
   });
@@ -51,6 +51,16 @@ describe('package display identity', () => {
 
   it('does not promote a one-word front-of-pack slogan to package identity', () => {
     expect(packageDisplayIdentity({ name: 'FREE' }, [])).toEqual({ title: 'Unidentified food package', source: 'generic' });
+  });
+
+  it('does not promote a precautionary observation from pasted label text into package identity', () => {
+    expect(packageDisplayIdentity({name:'May contain traces of peanuts',observations:[{origin:'user',field:'name',text:'May contain traces of peanuts',confidence:null}]},[]))
+      .toEqual({title:'Unidentified food package',source:'generic'});
+  });
+
+  it('does not promote an unlinked or low-confidence OCR name into package identity', () => {
+    expect(packageDisplayIdentity({name:'Cream cracker',observations:[{origin:'ocr',field:'name',text:'Cream cracker',confidence:79}]},[]))
+      .toEqual({title:'Unidentified food package',source:'generic'});
   });
 
   it('shows a plausible Gemini-only identity with its source available for a visible label', () => {
