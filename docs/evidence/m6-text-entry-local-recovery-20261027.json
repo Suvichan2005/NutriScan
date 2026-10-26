@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "kind": "synthetic pasted-label first-question browser acceptance",
+  "status": "passed",
+  "mockedClientGeminiAvailability": "enabled free route; no provider credentials or calls",
+  "viewports": [
+    {
+      "width": 390,
+      "height": 844,
+      "answerCompletedLocally": true,
+      "syntheticRequestedValues": ["18 g carbohydrate", "228 mg sodium"],
+      "assistRequests": 0,
+      "evidenceRequests": 0,
+      "visionRequests": 0,
+      "externalOrigins": [],
+      "pageErrors": 0,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "answerCompletedLocally": true,
+      "syntheticRequestedValues": ["18 g carbohydrate", "228 mg sodium"],
+      "assistRequests": 0,
+      "evidenceRequests": 0,
+      "visionRequests": 0,
+      "externalOrigins": [],
+      "pageErrors": 0,
+      "horizontalOverflow": false
+    }
+  ],
+  "privacy": "Only synthetic label text was entered. The app status was mocked as Gemini-available, and local API routes were intercepted; the text-entry journey made no assist, evidence, vision, or outbound request.",
+  "limits": [
+    "This checks browser-local text analysis and display, not photo OCR, live Gemini, source selection, or scientific answer quality.",
+    "The provider-failure nutrient fallback is covered separately by the focused unit test."
+  ],
+  "implementation": "src/components/nutriscan.tsx"
+}

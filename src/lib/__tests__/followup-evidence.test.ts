@@ -322,6 +322,37 @@ describe('local evidence follow-ups', () => {
     expect(reply.answer).not.toContain('Nutrition information per 100 g');
   });
 
+  it('reports requested nutrients without substitutions or collapsing added and total sugars', () => {
+    const pkg = parseLabel([
+      'Synthetic cracker label',
+      'Nutrition information per 100 g',
+      'Carbohydrate 60 g',
+      'Sugars 4 g',
+      'Sodium 760 mg',
+    ].join('\n'), { origin: 'user' });
+    const question = 'How much carbohydrate and sodium are in a 30 g portion?';
+    const reply = buildLocalPackageFallbackReply(buildAudit(pkg, 30, 'g', defaultProfile, question), question, pkg);
+
+    expect(reply.answer).toContain('18 g carbohydrate for 30 g');
+    expect(reply.answer).toContain('228 mg sodium for 30 g');
+
+    const missingQuestion = 'How much protein and sodium are in a 30 g portion?';
+    const missingReply = buildLocalPackageFallbackReply(
+      buildAudit(pkg, 30, 'g', defaultProfile, missingQuestion), missingQuestion, pkg,
+    );
+    expect(missingReply.answer).toContain('228 mg sodium for 30 g');
+    expect(missingReply.answer).toMatch(/No protein amount is recorded.*does not establish that the package contains none/i);
+    expect(missingReply.answer.includes('18 g carbohydrate')).toBe(false);
+
+    const distinctNutrientQuestion = 'How much added sugar and total sugars are in a 30 g portion?';
+    const distinctNutrientReply = buildLocalPackageFallbackReply(
+      buildAudit(pkg, 30, 'g', defaultProfile, distinctNutrientQuestion), distinctNutrientQuestion, pkg,
+    );
+    expect(distinctNutrientReply.answer).toMatch(/No added sugar amount is recorded.*does not establish that the package contains none/i);
+    expect(distinctNutrientReply.answer).toContain('1.2 g sugars for 30 g');
+    expect(distinctNutrientReply.answer.includes('1.2 g added sugar')).toBe(false);
+  });
+
   it('bounds restored conversation citations and removes unsafe links', () => {
     const sources = safeConversationEvidence([
       source,

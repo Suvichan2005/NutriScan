@@ -252,13 +252,35 @@ export function buildLocalPackageFallbackReply(audit: Audit, question: string, p
   if (claim) facts.push(`The package reading includes the claim “${compact(claim.text, 140)}”.`);
   else if ((asksClaim || foodChoice) && pkg.claims.length) facts.push(`The recorded package claim is “${compact(pkg.claims[0], 140)}”.`);
 
-  const requested = question.match(/\b(protein|carbohydrates?|carbs?|sugars?|sodium|salt|fibre|fiber|fat|energy|calories?)\b/i)?.[1]?.toLowerCase();
-  const nutrientAliases: Record<string, string> = { carbs: 'carbohydrate', carbohydrate: 'carbohydrate', carbohydrates: 'carbohydrate', sugar: 'sugars', sugars: 'sugars', calories: 'energy', calorie: 'energy', fibre: 'fiber' };
-  const requestedKey = requested ? nutrientAliases[requested] ?? requested : undefined;
+  const requestedMatches = [...question.matchAll(/\b(added\s+sugars?|saturated\s+fat|trans\s+fat|total\s+sugars?|total\s+fat|protein|carbohydrates?|carbs?|sugars?|sodium|salt|dietary\s+fib(?:er|re)|fibre|fiber|fat|energy|calories?)\b/gi)];
+  const nutrientAliases: Record<string, string> = {
+    carb: 'carbohydrate', carbs: 'carbohydrate', carbohydrate: 'carbohydrate', carbohydrates: 'carbohydrate', sugar: 'sugars', sugars: 'sugars',
+    'total sugar': 'sugars', 'total sugars': 'sugars', 'added sugar': 'addedSugars', 'added sugars': 'addedSugars',
+    'saturated fat': 'saturatedFat', 'trans fat': 'transFat', 'total fat': 'fat',
+    'dietary fiber': 'fiber', 'dietary fibre': 'fiber', calories: 'energy', calorie: 'energy', fibre: 'fiber',
+  };
+  const nutrientDisplayNames: Record<string, string> = {
+    carbohydrate: 'carbohydrate', sugars: 'sugar', addedSugars: 'added sugar', saturatedFat: 'saturated fat',
+    transFat: 'trans fat', fat: 'fat', energy: 'energy', fiber: 'fiber',
+  };
+  const allRequestedNutrients = [...new Map<string, { key: string; phrase: string; label: string }>(requestedMatches.map(match => {
+    const phrase = match[0].toLocaleLowerCase('en-IN').replace(/\s+/g, ' ');
+    const key = nutrientAliases[phrase] ?? phrase;
+    return [key, { key, phrase, label: nutrientDisplayNames[key] ?? phrase }];
+  })).values()];
+  const requestedNutrients = allRequestedNutrients.slice(0, 5);
+  const normalizeNutrientLabel = (value: string) => value.toLocaleLowerCase('en-IN').replace(/[^a-z0-9]/g, '');
+  const matchesRequest = (calculation: typeof audit.calculations[number], request: typeof requestedNutrients[number]) =>
+    calculation.nutrient === request.key
+      || (calculation.nutrient === null && normalizeNutrientLabel(calculation.nutrientLabel ?? '') === normalizeNutrientLabel(request.phrase));
+  const requestIndex = (calculation: typeof audit.calculations[number]) => requestedNutrients.findIndex(request => matchesRequest(calculation, request));
   const defaultOrder = ['carbohydrate', 'sugars', 'sodium', 'salt', 'protein', 'fat', 'fiber', 'energy'];
-  const uniqueOrder = requestedKey ? [requestedKey, ...defaultOrder.filter(key => key !== requestedKey)] : defaultOrder;
-  const calculations = [...audit.calculations].sort((a, b) => uniqueOrder.indexOf(a.nutrient??'') - uniqueOrder.indexOf(b.nutrient??''))
-    .filter(calculation => uniqueOrder.includes(calculation.nutrient??'')).slice(0, foodChoice ? 2 : 1);
+  const calculations = [...audit.calculations]
+    .filter(calculation => requestedNutrients.length ? requestIndex(calculation) >= 0 : defaultOrder.includes(calculation.nutrient ?? ''))
+    .sort((a, b) => requestedNutrients.length
+      ? requestIndex(a) - requestIndex(b)
+      : defaultOrder.indexOf(a.nutrient ?? '') - defaultOrder.indexOf(b.nutrient ?? ''))
+    .slice(0, requestedNutrients.length ? requestedNutrients.length : foodChoice ? 2 : 1);
   if (calculations.length) {
     const details = calculations.map(calculation => {
       const nutrient = (calculation.nutrientLabel??calculation.nutrient??'nutrient').replace(/([A-Z])/g, ' $1').toLocaleLowerCase('en-IN');
@@ -269,11 +291,28 @@ export function buildLocalPackageFallbackReply(audit: Audit, question: string, p
       const qualifier = calculation.interpretationIds?.length ? 'provisional image reading' : 'saved label reading';
       return `${result} ${calculation.unit} ${nutrient} for ${portion} ${calculation.portionUnit}, scaled from ${input} ${calculation.inputUnit} per ${basis} ${calculation.portionUnit} (${qualifier})`;
     });
-    facts.push(`The recorded calculation gives ${details.join('; ')}.`);
+    facts.push(`The recorded calculation${calculations.length === 1 ? '' : 's'} ${calculations.length === 1 ? 'gives' : 'give'} ${details.join('; ')}.`);
   }
 
-  if (foodChoice && !calculations.some(calculation => calculation.nutrient === 'carbohydrate')) {
+  const labelText = [pkg.rawText, ...pkg.observations.map(observation => observation.text)].join('\n').toLocaleLowerCase('en-IN');
+  const labelTermsByNutrient: Record<string, string[]> = {
+    energy: ['energy', 'calorie'], carbohydrate: ['carbohydrate', 'carb'], sugars: ['sugar'], addedSugars: ['added sugar'],
+    saturatedFat: ['saturated fat'], transFat: ['trans fat'], fiber: ['fiber', 'fibre'],
+  };
+  for (const request of requestedNutrients) {
+    if (calculations.some(calculation => matchesRequest(calculation, request))) continue;
+    const labelTerms = labelTermsByNutrient[request.key] ?? [request.label];
+    const mentionsNutrient = labelTerms.some(term => labelText.includes(term));
+    facts.push(mentionsNutrient
+      ? `The entered label text mentions ${request.label}, but no usable ${request.label} amount is recorded for calculation. Check that line in the package inspector or add a clearer label reading.`
+      : `No ${request.label} amount is recorded in the label text entered so far. That does not establish that the package contains none; add a clearer nutrition-panel reading to check it.`);
+  }
+
+  if (foodChoice && !requestedNutrients.some(request => request.key === 'carbohydrate') && !calculations.some(calculation => calculation.nutrient === 'carbohydrate')) {
     facts.push('A usable carbohydrate amount for the selected portion is not present in this saved reading.');
+  }
+  if (allRequestedNutrients.length > requestedNutrients.length) {
+    facts.push('This short local fallback shows up to five requested nutrient values; open Package details for additional values.');
   }
   const answer = facts.length
     ? `${facts.join(' ')} ${foodChoice ? 'This on-device summary describes unverified label readings; it does not determine individual suitability.' : 'These on-device package readings remain unverified.'}`.slice(0, 1500)

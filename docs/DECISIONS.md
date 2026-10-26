@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — pasted label text keeps its browser-only boundary
+
+The `Read label text` action must not send the entered label or its initial question to Gemini merely because cloud analysis is available. Build the initial reply through the local audit path so the browser-only disclosure stays accurate and the conversation cannot remain pending without a request. A missing requested nutrient is reported as unrecorded, never zero; failed-provider local fallback may show several explicitly requested values but must not substitute an unrelated nutrient. Any later cloud action remains separate from this text-reading action.
+
 ## 27 October 2026 — withhold source-linked sentences that fail topic or jurisdiction checks
 
 Before quantitative validation, resolve source handles and named source identities against the current supplied-plus-tool evidence set. Withhold a sentence when its cited record is unavailable, does not match the active question/profile topic, or is guidance outside a user-named jurisdiction. For a clearly contextual follow-up, include only the bounded prior user questions needed for topic continuity; prior assistant answers remain conversational context, not evidence. Standalone new topics do not inherit prior questions. Keep other useful sentences and package evidence, retain the record in the evidence inspector, and explain that the citation was omitted. An explicit request to inspect a supplied reference can show that record regardless of its topic or jurisdiction. This is a relevance/scope guard, not semantic entailment validation; it does not reject unsupported claims that lack source references or prove that a topical source supports the stated conclusion.
