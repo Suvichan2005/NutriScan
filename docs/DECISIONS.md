@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — preserve community allergen declarations and trace tags separately
+
+Carry Open Food Facts `allergens_tags` and `traces_tags` through lookup as distinct optional fields and label them separately in the community-record UI. Neither field is package verification; an empty list does not establish allergen absence or no cross-contact. Photographed package observations remain separate evidence.
+
 ## 27 October 2026 — reserve bounded evidence slots for cited sources
 
 When carried conversation sources and newly selected tool records share a bounded evidence list, retain records the answer actually cites before unused candidates. Apply this at both agent and response boundaries, then keep existing source-topic, jurisdiction and quantity validation. A citation remains traceability, not proof of entailment.

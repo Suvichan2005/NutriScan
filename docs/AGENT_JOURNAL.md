@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — preserve Open Food Facts precautionary allergen traces
+
+- Production product search requested allergen declaration tags but omitted the separate `traces_tags` field; the visible community-record detail therefore could not show precautionary trace tags even though exact original-record inspection supported them.
+- Added an optional `allergenTraces` value through the shared product record type, lookup request and normalization. The product card now separates allergen tags from precautionary traces, and says empty trace tags do not confirm no cross-contact. No package fact is inferred from a community record.
+- Focused server route and rendered-card tests:100 passed; local knowledge module tests:42 passed. The app browser target is unavailable and the existing build is older than current source, so no browser/build acceptance is claimed. Drive handoff inspection found the manifest and checksum sidecar but not the ZIP; no archive was restored.
+
 ## 2026-10-27 — preserve tool-selected sources through answer bounds
 
 - Reproduced a production-route failure with30 carried records: the local `get_nutrition_guidance` tool selected WHO sodium guidance and the mocked model cited it, but the final evidence cap removed it before source-scope validation. NutriScan withheld the explanation and omitted the source card.

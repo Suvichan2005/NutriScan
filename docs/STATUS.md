@@ -1,4 +1,8 @@
 # Current engineering status
+## M2/M6 preserve community allergen and precautionary-trace fields (27 October 2026)
+
+The product lookup/card path now retains Open Food Facts `traces_tags` separately from `allergens_tags` and displays them under distinct headings. Empty trace tags are not described as evidence of no cross-contact. Route and rendered-component acceptance:100 passed; local knowledge suite:42 passed. No browser/build or live external lookup is claimed. The selected Drive handoff folder has its manifest and checksum sidecar but not the ZIP; detailed FoodOn/USDA/WHO stores remain absent locally.
+
 ## M2 align sentence-level source topics (27 October 2026)
 
 The final answer guard previously accepted an unrelated scientific sentence when it reused a source that matched the question and named its publisher. It now checks each cited sentence against source topic text with publisher identity removed; publisher names alone do not count as scientific support. Numeric validation also strips internal evidence handles so their IDs are not read as quantities. Provider-mocked route acceptance keeps a supported WHO population-scope explanation and source card and withholds an unrelated claim. Focused tests:122 passed. No live provider or browser acceptance; this improves topic alignment, not semantic entailment.

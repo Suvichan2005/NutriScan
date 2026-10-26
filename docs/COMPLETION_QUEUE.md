@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M2/M6 preserve community precautionary allergen traces (27 October 2026)
+
+Open Food Facts exact-record inspection already exposed `allergens_tags` and `traces_tags` separately, but the product search/card path requested and displayed only allergen declarations. Candidate and exact-barcode lookups now carry `traces_tags` in a separate optional `allergenTraces` field, and the product card labels precautionary traces separately. Empty tags explicitly do not establish allergen or cross-contact absence. Provider-free route and rendered-card checks pass (100 tests); local knowledge module suite passes (42 tests). No browser/build or live Open Food Facts acceptance was run. The missing curated ZIP and full local stores remain unavailable; the original private report/template blocker remains.
+
 ## M2 align cited sources with each answer sentence (27 October 2026)
 
 A mocked `assist()` replay showed that a source relevant to the user's sodium question could be attached to an unrelated health assertion in the same answer; mentioning the publisher acronym itself also counted as a topic match. Cited sentences now need their own topic match against the record's title, summary and limitations after publisher self-attribution is removed. Validation also ignores provider evidence-handle suffixes (`SRC_1`, `CALC_2`, etc.) as quantities. The supported population-scope explanation and its source card survive while the unrelated sentence is withheld with a scope notice. Focused server/evidence/inference suites:122 passed. Full `tsc` remains blocked by repository Vitest `.not` typing errors; none point to changed implementation or new test lines. No live Gemini or browser acceptance; semantic entailment remains unproven.

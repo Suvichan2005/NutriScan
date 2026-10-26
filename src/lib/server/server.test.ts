@@ -234,13 +234,13 @@ describe('paid Gemini spend accounting', () => {
 
 describe('public source normalization', () => {
   it('uses the current Open Food Facts v3 endpoint for exact barcode records and keeps its source fields separate', async () => {
-    const code = '8901088068758';
-    const payload = { product: { code, product_name: 'Saffola Masala Veggie Twist Oats', brands: 'Saffola', countries_tags: ['en:india'], nutrition_data_per: '100g', product_quantity_unit: 'g', nutriments: { 'energy-kcal_100g': 376, sugars_100g: 5.1 }, ingredients_text: 'Community record ingredient string', allergens_tags: ['en:milk'], last_modified_t: 1791608054 } };
+    const code = '8901234567890';
+    const payload = { product: { code, product_name: 'Synthetic snack record', brands: 'Example brand', countries_tags: ['en:india'], nutrition_data_per: '100g', product_quantity_unit: 'g', nutriments: { 'energy-kcal_100g': 376, sugars_100g: 5.1 }, ingredients_text: 'Community record ingredient string', allergens_tags: ['en:milk'], traces_tags: ['en:soy'], last_modified_t: 1791608054 } };
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), { headers: { 'content-type': 'application/json' } })); vi.stubGlobal('fetch', fetcher);
     const result = await lookupProducts({ barcode: code });
     const url = fetcher.mock.calls[0][0] as URL;
-    expect(url.hostname).toBe('world.openfoodfacts.org'); expect(url.pathname).toBe(`/api/v3/product/${code}.json`); expect(url.searchParams.get('fields')).toContain('ingredients_text');
-    expect(result.products[0]).toMatchObject({ name: 'Saffola Masala Veggie Twist Oats', barcode: code, ingredients: 'Community record ingredient string', allergens: ['en:milk'], countries: ['en:india'], match: 'barcode' });
+    expect(url.hostname).toBe('world.openfoodfacts.org'); expect(url.pathname).toBe(`/api/v3/product/${code}.json`); expect(url.searchParams.get('fields')).toContain('ingredients_text'); expect(url.searchParams.get('fields')).toContain('traces_tags');
+    expect(result.products[0]).toMatchObject({ name: 'Synthetic snack record', barcode: code, ingredients: 'Community record ingredient string', allergens: ['en:milk'], allergenTraces: ['en:soy'], countries: ['en:india'], match: 'barcode' });
   });
   it('preserves missing vs zero, sodium conversion, and explicit liquid basis', () => {
     const product = normalizeProduct({ code: '8901234567890', product_name: 'Drink', nutrition_data_per: '100ml', nutriments: { sugars_100g: 0, sodium_100g: 0.02, fat_100g: -1 } }, '8901234567890')!;
