@@ -1,5 +1,9 @@
 # NutriScan final semester completion queue
 
+## M2 continuation — dated claims source and uncited retrieval (26 October 2026)
+
+Added a bounded official FSSAI compendium source and authorized-term-only refusal guidance. Actual free retrieval demonstrates selectable text for two distinct claim rows, while the generated answer omitted the requested clinical study and did not cite the retrieved source; UI replay correctly showed no source card. This is partial retrieval evidence, not scientific/legal or answer-quality acceptance. Newly concise prompt asks for both evidence types, but provider quota exhaustion prevented verification. Continue with a bounded free run when available; do not use paid calls or change M4/M5 gates. Focused67 passed/one skipped.
+
 Updated 26 October 2026. Owner's **Authoritative Final-Phase Overhaul** supersedes expansion-first priorities (directive SHA-256 `ff940c17555c19e6ba15f69ef04b40e14821fa7d140c4fca9ec86c25504d9f41`). This is the only execution queue. CURRENT_STATE is the runtime handoff; AGENT_JOURNAL is chronology. Original queue is recoverable in Git at385d4ea and the private pre-scope byte backup. All25 historical IDs remain below; deferral preserves implementation and receipts.
 
 ## Submission scope and controls

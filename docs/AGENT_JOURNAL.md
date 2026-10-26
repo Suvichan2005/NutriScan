@@ -1,5 +1,10 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — add bounded FSSAI live source and safe query guidance
+
+- The actual free development trace `0e98bac0-192d-4001-9674-8651eddfd4a9` used two generations and one research call. The bounded official FSSAI Version IV PDF extraction returned the soluble-dietary-fibre/cholesterol row and a separate oat beta-glucan/blood-glucose row. It is dated 2022-12-14, not a current-law determination. The model preserved package total fibre and unknown beta-glucan and separated the topics, but omitted the requested clinical lipid study and failed to cite the retrieved source. Response replay at 1440×900 and 390×844 had no photos, profile, or page errors; no source card appeared because there was no explicit citation. Replay used saved provider text, not a fresh generation.
+- External-query rejection now suggests only terms permitted by explicit caller context and performs no request. A distinct FSSAI live-source ID avoids collision with the curated source. Prompt language requests both study and official evidence when available; fresh provider verification is pending because the free model quota was exhausted. Focused tests67 passed/one skipped. No paid calls; M2 and human M4/M5 gates remain open.
+
 ## 2026-10-26 — retain study counts with their subjects
 
 - Shortened the general Gemini instruction to use tools for requested lookups when evidence is insufficient. A fresh free development request called local knowledge search twice over three generations; one search returned the PubMed 2022 oat beta-glucan systematic review and the follow-up search was empty. The model stated 13 trials and 927 participants, plus unsupported serving/regulatory numbers.

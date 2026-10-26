@@ -117,7 +117,7 @@ export const geminiToolDeclarations: FunctionDeclaration[] = [
   { name: 'get_substance_assessments', description: 'Find an EFSA OpenFoodTox substance by name, synonym, CAS or PubChem identifier. Returns identity, a limited reference-value overview and available detailed sections. It does not return full study methods, results or population context. For those questions use get_assessment_records with the returned substanceId and relevant section/record. Follow source-declared literature links or search_research when the original opinion is needed. These records do not establish package exposure, Indian authorization or personal safety. No network request is made.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A substance name, synonym, CAS number or PubChem CID from the question, package text or a locally resolved ingredient identity.' } }, required: ['query'] } },
   { name: 'calculate_nutrition', description: 'Use deterministic results already supplied with the package when they cover the requested nutrient and exact portion; do not repeat those calculations. Call this tool for missing portion results, including comparisons between piece counts, servings, or a whole/partial package. To calculate any other printed nutrient (including micronutrients and separately printed subcomponents), provide its exact saved nutrition rowId as candidateId and omit nutrient. Do not assign an unrelated standard nutrient key. Never perform package arithmetic in answer text. Pieces and servings use the saved evidence-linked printed serving definition; package amounts use only one current, evidence-linked printed net-content declaration and a compatible nutrient basis. Do not derive net contents from an item count or serving size. Calculate from an unconflicted user-confirmed package nutrient, a currently attached evidence-linked interpretation, or an exact rowId from the saved package reconstruction. Interpretation-based arithmetic remains provisional and never confirms or changes the package. Missing or conflicting definitions withhold the calculation.', parameters: { type: Type.OBJECT, properties: { nutrient: { type: Type.STRING, enum: [...nutrientKeys] }, amount: { type: Type.NUMBER, description: 'Requested amount in the selected unit. For package, this is the number of packages (for example 1 for one package or 0.5 for half a package); otherwise grams, millilitres, pieces or declared servings.' }, unit: { type: Type.STRING, enum: ['g', 'ml', 'pieces', 'servings', 'package'] }, candidateId:{type:Type.STRING,description:'Exact candidateId or saved rowId. Required when nutrient is omitted; selects any complete printed nutrient row without guessing a standard identity.'} }, required: ['amount', 'unit'] } },
   { name: 'lookup_product', description: 'Read-only Open Food Facts search by an exact barcode or product text explicitly present in the user question or package observations. Sends only that query to the public catalog; never sends images or profile data. Results are community candidates, not confirmed package facts.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'A product name or brand present in the question or visible package OCR.' }, barcode: { type: Type.STRING, description: 'An exact 8–14 digit barcode present in the question or package OCR.' } } } },
-  { name: 'search_research', description: 'Read-only search of Europe PMC or NutriScan’s fixed official India regulation sources. External query terms must be present in the user question/package OCR or a successful exact local identity lookup. If a local registry supplies only publication links and the user asks for the assessment finding, search the linked entity/topic rather than inferring the finding from metadata. Search results are candidates, not an evidence synthesis.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'Focused terms drawn from the explicit question, package OCR or successful exact local identity results.' }, topic: { type: Type.STRING, enum: ['science', 'regulation', 'claims'] } }, required: ['query', 'topic'] } },
+  { name: 'search_research', description: 'Read-only search of Europe PMC or NutriScan’s fixed official India regulation sources. External query terms must be present in the user question/package OCR or a successful exact local identity lookup. If withheld, retry using only the already-authorized terms listed in the tool result; do not add synonyms, doses, jurisdictions, dates or inferred topics. If a local registry supplies only publication links and the user asks for the assessment finding, search the linked entity/topic rather than inferring the finding from metadata. Search results are candidates, not an evidence synthesis.', parameters: { type: Type.OBJECT, properties: { query: { type: Type.STRING, description: 'Focused terms drawn from the explicit question, package OCR or successful exact local identity results.' }, topic: { type: Type.STRING, enum: ['science', 'regulation', 'claims'] } }, required: ['query', 'topic'] } },
 ];
 
 export type GeminiToolImage = {
@@ -242,7 +242,7 @@ function researchTextTokens(value: string) {
 }
 
 /** Public lookups may only send terms already present in the explicit question or package evidence. */
-function externalQueryIsSupported(query: string, context: GeminiToolContext) {
+function externalQueryTerms(query: string, context: GeminiToolContext) {
   const allowed = new Set(tokens([
     context.question,
     context.package.name,
@@ -252,7 +252,14 @@ function externalQueryIsSupported(query: string, context: GeminiToolContext) {
     ...context.package.observations.filter(item => item.origin === 'ocr').map(item => item.text),
     ...context.searchTerms,
   ].join(' ')));
-  return tokens(query).filter(token => token.length > 2).every(token => allowed.has(token));
+  const requested = tokens(query).filter(token => token.length > 2);
+  return {
+    unsupported: requested.filter(token => !allowed.has(token)),
+    authorized: [...new Set(requested.filter(token => allowed.has(token)))],
+  };
+}
+function externalQueryIsSupported(query: string, context: GeminiToolContext) {
+  return externalQueryTerms(query, context).unsupported.length === 0;
 }
 
 const codexInsSearchUrl = 'https://codex.fao.org/codex-texts/codex-online-databases/gsfa/gsfa-database-search/SearchAdditivesByInsNumber/';
@@ -1011,7 +1018,8 @@ function additiveIdentitiesMentioned(text: string) {
 }
 
 async function searchResearch(args: z.infer<typeof toolArgs.search_research>, context: GeminiToolContext): Promise<GeminiToolResult> {
-  if (!externalQueryIsSupported(args.query, context)) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'External research search was not run because its terms are absent from the explicit question and package evidence.' } };
+  const queryTerms=externalQueryTerms(args.query,context);
+  if (queryTerms.unsupported.length) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'External research search was not run because some terms were not in the explicit question or package evidence. Retry using only these already-authorized terms, and omit additions: ' + queryTerms.authorized.join(' ') + '.' } };
   if (args.topic === 'science' && !researchTextTokens(args.query).length) return { status: 'withheld', resultCount: 0, output: { status: 'withheld', message: 'A numeric additive code alone cannot identify relevant research. Resolve the substance name first, then search the named substance and outcome.' } };
   let query = args.query;
   if (args.topic !== 'science' && /\b(?:india|indian|fssai)\b/i.test(context.question)) {

@@ -691,6 +691,17 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(new URL(String(fetcher.mock.calls[0][0])).hostname).toBe('www.ebi.ac.uk');
   });
 
+  it('returns only authorized question terms when an external research query adds unsupported terms',async()=>{
+    const fetcher=vi.fn();vi.stubGlobal('fetch',fetcher);
+    const toolContext=context('Does this dietary fibre establish enough oat beta-glucan to support a cholesterol-lowering claim? Please look up relevant evidence.');
+    const result=await executeGeminiTool('search_research',{query:'oat beta glucan cholesterol lowering claim daily dose regulation science',topic:'claims'},toolContext);
+    expect(result.status).toBe('withheld');
+    expect(result.output.message).toContain('oat beta glucan cholesterol lowering claim');
+    expect(result.output.message).not.toMatch(/daily|dose|regulation|science/i);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(mocks.research).not.toHaveBeenCalled();
+  });
+
   it('expands an India regulation lookup with one exactly resolved additive identity', async () => {
     mocks.research.mockResolvedValueOnce({
       status: 'ok',

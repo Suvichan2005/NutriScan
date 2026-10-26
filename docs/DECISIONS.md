@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — bound research retries and add dated official claims source
+
+When external research terms exceed the explicit question/package/OCR/source context, make no request and suggest only the already-authorized terms; do not disclose denied terms or invent synonyms. Add the official FSSAI 2022 claims compendium as a bounded live source with a distinct ID from the curated knowledge source. Preserve its date and applicability caveat, and keep soluble-fibre/cholesterol criteria separate from oat beta-glucan/blood-glucose criteria. A retrieval candidate is not a cited answer: source cards continue to require an explicit answer reference. Prompt for both clinical and official sources when both are requested and available, but require a fresh provider run before claiming the behavior works.
+
 ## 26 October 2026 — persist explicitly reused native operations
 
 A typed operation referenced by accepted natural text remains provenance even when the model did not request another calculator. Add only exact request-native calculation handles from quantity-validated text to response selection, intersecting the existing effective operation set and preserving its20-operation bound/new-result priority. Do not parse amounts from assistant prose, return operations referenced only in withheld text, accept fabricated handles or create an unsolicited calculator card.
