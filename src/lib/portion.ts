@@ -1,5 +1,5 @@
 import {nutrientMassConflict} from './nutrient-mass';
-import type { Calculation, NutrientKey, PackageData, PackageReconstructionContent } from './contracts';
+import { calculationEvidenceText, type Calculation, type NutrientKey, type PackageData, type PackageReconstructionContent } from './contracts';
 
 export type PortionChoice = { value: number; unit: 'g' | 'ml' };
 export type ReconstructedServingPortion = {
@@ -179,6 +179,40 @@ export function calculationsFromReconstruction(pkg: PackageData, portion: number
       assumptions: [`Uses a traceable ${row.status} package interpretation; the printed reading has not been independently verified.`],
     } satisfies Calculation];
   });
+}
+
+/**
+ * Supply a typed absolute portion difference when the same active interpreted
+ * row already has a saved calculation at another portion. This avoids asking
+ * the language model to repeat deterministic arithmetic while keeping the
+ * evidence tied to the current reconstruction revision.
+ */
+export function calculationsForSavedPortionDifferences(
+  pkg: PackageData,
+  previous: Calculation[],
+  requested: PortionChoice,
+): Calculation[] {
+  const correctedNutrients = new Set(pkg.nutrients.filter(item => item.status === 'corrected').map(item => item.key));
+  const current = calculationsFromReconstruction(pkg, requested.value, requested.unit)
+    .filter(item => !item.nutrient || !correctedNutrients.has(item.nutrient));
+  if (!current.length) return [];
+  const activeByRow = new Map(current.flatMap(item => (item.interpretationIds ?? []).map(id => [id, item] as const)));
+  const result = new Map<string, Calculation>();
+  for (const prior of previous) {
+    if (prior.inputOrigin || prior.countedPortion || prior.packagePortion || prior.portionUnit !== requested.unit
+      || Math.abs(prior.portion - requested.value) <= Number.EPSILON * Math.max(1, prior.portion, requested.value) * 8) continue;
+    for (const rowId of prior.interpretationIds ?? []) {
+      const currentItem = activeByRow.get(rowId);
+      if (!currentItem || currentItem.input !== prior.input || currentItem.inputUnit !== prior.inputUnit
+        || currentItem.basisAmount !== prior.basisAmount || currentItem.unit !== prior.unit || currentItem.nutrient !== prior.nutrient) continue;
+      const amount = Math.abs(requested.value - prior.portion);
+      for (const difference of calculationsFromReconstruction(pkg, amount, requested.unit)) {
+        if (!(difference.interpretationIds ?? []).includes(rowId)) continue;
+        result.set(difference.id, { ...difference, evidenceText: calculationEvidenceText(difference) });
+      }
+    }
+  }
+  return [...result.values()].slice(0, 20);
 }
 
 /** Choose a neutral calculation reference from the label, never a user-specific serving guess. */

@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 automatic typed portion-difference evidence (26 October 2026)
+
+When the active reconstruction has an evidence-linked row and a saved calculation for that same row at a different gram/millilitre amount, the server now derives the absolute difference calculation before answer generation. The value is recomputed from the current row; corrected nutrients, unrelated rows, counted portions, package portions and cross-unit comparisons do not qualify. A mocked server replay confirms the 40 g→30 g case gets a typed 10 g result, validates the 37.6 kcal sentence, and retains a single 30 g calculator card without a model calculator call. Server suite93/93, TypeScript and diff check pass. This is deterministic transfer evidence, not fresh Gemini behavior or independent package verification. M2 remains active.
+
 ## M2 comparison UI transfer acceptance (26 October 2026)
 
 The saved mixed-portion comparison response now passes intercepted browser replay at390×844 and1440×900. The answer displays the 10 g deltas (37.6 kcal,6.92 g carbohydrate,228.3 mg sodium) while its portion card contains only eight 30 g rows; all three difference calculations remain answer evidence but are not duplicate interactive rows. Both replays had one intercepted local assist request, no photos/profile/external requests and no page errors. Receipts/screenshots: `.data/m2-answer-usefulness-20261026/portion-difference-ui-{390,1440}.{json,png}`. This is saved-response presentation/arithmetic evidence, not fresh Gemini adherence or independent quality validation. M2 remains active.

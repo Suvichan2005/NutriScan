@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { packageSchema } from '../contracts';
 import { parseLabel } from '../parser';
-import { calculationsFromReconstruction, defaultPortion, hasExplicitPortionRequest, normalizeReconstructedServing, resolveQuestionPortion } from '../portion';
+import { calculationsForSavedPortionDifferences, calculationsFromReconstruction, defaultPortion, hasExplicitPortionRequest, normalizeReconstructedServing, resolveQuestionPortion } from '../portion';
 
 function reconstructedPackage(rows: Array<{
   rowId: string; nutrient: string; value: number | null; unit: string | null; basisAmount: number | null; basisUnit: 'g' | 'ml' | null; qualifier?: string | null;
@@ -97,6 +97,16 @@ describe('calculations from saved package reconstruction',()=>{
     expect(calculation).toMatchObject({nutrient:'carbohydrate',input:68.29,basisAmount:100,portion:13.4,result:68.29*13.4/100,unit:'g',imageIds:['package-back'],observationIds:[],interpretationIds:['carbs-r1']});
     expect(calculation.assumptions.join(' ')).toMatch(/not been independently verified/i);
     expect(calculation.evidenceText).toMatch(/unverified provisional package interpretation/i);
+  });
+
+  it('derives only same-row differences from a previous mass/volume operation',()=>{
+    const pkg=reconstructedPackage([{rowId:'energy-r1',nutrient:'Energy',value:376,unit:'kcal',basisAmount:100,basisUnit:'g'}]);
+    const previous=calculationsFromReconstruction(pkg,40,'g');
+    expect(calculationsForSavedPortionDifferences(pkg,previous,{value:30,unit:'g'})).toEqual([
+      expect.objectContaining({nutrient:'energy',portion:10,result:37.6,interpretationIds:['energy-r1']}),
+    ]);
+    expect(calculationsForSavedPortionDifferences(pkg,previous,{value:30,unit:'ml'})).toEqual([]);
+    expect(calculationsForSavedPortionDifferences(pkg,[],{value:30,unit:'g'})).toEqual([]);
   });
 
   it('calculates separately printed nutrient components without treating them as conflicts',()=>{

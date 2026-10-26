@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-26 — make saved portion comparisons a typed path
+
+- The saved 40 g→30 g trace previously needed an additional model calculator call for the 10 g difference, even though the current interpretation row and a prior typed 40 g calculation were already available.
+- Added server-side derivation of the absolute g/ml difference only for the same active interpretation row with matching nutrient input, unit and basis. The result is recalculated from the current row; corrected nutrients and counted/package conversions are excluded. The typed result is sent through the normal answer validation path and is not added to the current-portion card.
+- A mocked end-to-end server case verifies the 10 g energy result and accepted 37.6 kcal delta without a second tool call; the card contains only the requested 30 g row. Server suite93/93, TypeScript and `git diff --check` pass. No provider call or human review was made; fresh model behavior and independent label accuracy remain unverified.
+
 ## 2026-10-26 — make explicit guidance requests call the local guidance tool
 
 - Audited real saved follow-ups262a28bd-e5c8-40e1-bdad-e710cd1a3770 and408005b7-c455-48ee-92c6-5157ab3fd6a3. Both asked to use appropriate nutrition guidance and had `get_nutrition_guidance` available, but neither made a guidance-tool call or emitted an explicit citation. Both requests already carried the local `who-carbohydrate-2023` record. The later answer's WHO25 g/day fibre statement is supported as population guidance by that record; its initial withholding was a temporal-wording mismatch, resolved by the subsequent time-unit validator update.

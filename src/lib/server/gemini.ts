@@ -15,7 +15,7 @@ import {selectAgentTools,toolAccessInput} from './gemini-tool-access';
 import { ApiError } from './http';
 import { recordGeminiDiagnostic } from './gemini-diagnostics';
 import { finishGeminiEvaluation, recordGeminiEvaluationEvent, startGeminiEvaluation } from './gemini-evaluation-recorder';
-import { calculationsFromReconstruction, defaultPortion, hasExplicitPortionRequest, resolveQuestionPortion } from '../portion';
+import { calculationsForSavedPortionDifferences, calculationsFromReconstruction, defaultPortion, hasExplicitPortionRequest, resolveQuestionPortion } from '../portion';
 import { renderAnswerEvidenceReferences, selectCitedEvidence } from '../answer-evidence';
 import { reconstructionRowIsSuperseded } from '../correction';
 import { workspacePortionSchema } from '../contracts';
@@ -2212,12 +2212,14 @@ export async function assist(data: z.infer<typeof assistInput>) {
       const reconstructionCalculations=calculationsFromReconstruction(activePackage,requestedPortion.value,requestedPortion.unit)
         .filter(calculation=>(!calculation.nutrient||!correctedNutrients.has(calculation.nutrient)))
         .map(calculation=>({...calculation,evidenceText:calculationEvidenceText(calculation)}));
+      const differenceCalculations=calculationsForSavedPortionDifferences(activePackage,data.calculations??[],requestedPortion);
       const combined=new Map<string,Calculation>();
-      for(const calculation of [...(data.calculations??[]),...reconstructionCalculations])if(!combined.has(calculation.id))combined.set(calculation.id,calculation);
+      for(const calculation of [...(data.calculations??[]),...reconstructionCalculations,...differenceCalculations])if(!combined.has(calculation.id))combined.set(calculation.id,calculation);
       const all=[...combined.values()];
       const matchesRequestedPortion=(calculation:Calculation)=>calculation.portionUnit===requestedPortion.unit
         &&Math.abs(calculation.portion-requestedPortion.value)<=Number.EPSILON*Math.max(1,calculation.portion,requestedPortion.value)*8;
-      const prioritized=[...all.filter(matchesRequestedPortion),...all.filter(calculation=>!matchesRequestedPortion(calculation))].slice(0,20);
+      const differenceIds=new Set(differenceCalculations.map(calculation=>calculation.id));
+      const prioritized=[...all.filter(matchesRequestedPortion),...all.filter(calculation=>differenceIds.has(calculation.id)),...all.filter(calculation=>!matchesRequestedPortion(calculation)&&!differenceIds.has(calculation.id))].slice(0,20);
       if(prioritized.length)data=assistInput.parse({...data,package:activePackage,calculations:prioritized});
     }
 

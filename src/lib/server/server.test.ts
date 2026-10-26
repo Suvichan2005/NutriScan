@@ -8,6 +8,7 @@ import { getNutritionGuidance } from './nutrition-guidance';
 import { packageReconstructionContentSchema, packageSchema, type Observation, type PackageReconstructionContent } from '../contracts';
 import type { GeminiToolImage } from './gemini-tools';
 import { packageForAssist } from '../../modules/inference';
+import { calculationsFromReconstruction } from '../portion';
 import sharp from 'sharp';
 import { z } from 'zod';
 
@@ -933,6 +934,34 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.calculations.map(calculation=>calculation.portion).sort((a,b)=>a-b)).toEqual([10,30]);
     const calculator=result.uiComponents.find(component=>component.type==='portion-calculator');
     expect(calculator).toMatchObject({type:'portion-calculator',calculatorAmount:30,calculatorUnit:'g'});
+    expect(calculator?.calculationIds).toHaveLength(1);
+    expect(result.calculations.find(calculation=>calculation.portion===calculator?.calculatorAmount)?.portion).toBe(30);
+  });
+  it('provides a current-row difference result from saved prior typed calculations without a second model tool call',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const observation={id:'energy-label',field:'label-note',text:'Energy 376 kcal per 100 g',side:'back' as const,confidence:null,origin:'user' as const};
+    const reconstruction={identity:{brand:null,name:'Example oats',variant:null,status:'provisional' as const,evidence:{observationIds:[observation.id],imageRegions:[]}},serving:null,
+      nutritionRows:[{rowId:'energy-row',nutrient:'energy',nutrientKey:'energy' as const,printedLabel:'Energy',printedValue:'376 kcal',value:376,unit:'kcal',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[observation.id],imageRegions:[]}}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Saved evidence-linked interpretation.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};
+    const pkg={id:'saved-portion-difference',name:'Example oats',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[observation],rawText:observation.text,warnings:[],synthetic:false,createdAt:new Date().toISOString(),reconstruction};
+    const prior=calculationsFromReconstruction(pkg,40,'g');
+    const fetcher=vi.fn(async(_input:RequestInfo|URL,init?:RequestInit)=>{
+      const request=JSON.parse(String(init?.body));
+      const prompt=JSON.parse(request.contents[0].parts[0].text);
+      expect(prompt.calculations).toContainEqual(expect.objectContaining({portion:10,result:37.6,interpretationIds:['ROW_1']}));
+      return new Response(modelResponse([{text:'That is 37.6 kcal less than the 40 g amount.'}]),{status:200,headers:{'content-type':'application/json'}});
+    });
+    vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question:'What about 30 g now? Compare the energy.',calculations:prior,conversationContext:[{question:'How much energy was in 40 g?',answer:'I used the saved package reading.'}],package:pkg});
+
+    const result=await assist(data);
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(result.answer).toContain('37.6 kcal');
+    expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-ready',withheldQuantitySentences:0});
+    expect(result.calculations.map(calculation=>calculation.portion).sort((a,b)=>a-b)).toEqual([10,30]);
+    const calculator=result.uiComponents.find(component=>component.type==='portion-calculator');
+    expect(calculator).toMatchObject({type:'portion-calculator',calculatorAmount:30});
     expect(calculator?.calculationIds).toHaveLength(1);
     expect(result.calculations.find(calculation=>calculation.portion===calculator?.calculatorAmount)?.portion).toBe(30);
   });
