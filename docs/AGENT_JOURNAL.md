@@ -1,4 +1,11 @@
 # Sanitized engineering journal
+## 2026-10-27 — preserve the second FSSAI claim source in the conversation
+
+- Running the existing claim journey against the current app exposed test drift (first-run onboarding/current controls) and a real presentation gap: the local criteria answer included the amendment-listing result, but only the compendium was selected as an answer citation. The current-status answer also said a dated reference was linked without naming it.
+- The local audit now takes both exact titles from the source catalog and names them in claim-criteria, package-compliance and current-status answers. This lets existing citation selection render both source cards and their scope/limitations without a title heuristic or a current-law conclusion.
+- Updated the browser journey for the current onboarding and conversation flow. Synthetic FSSAI claims passed in installed Chrome at390×844 and1440×900; both source cards appeared in both turns, the pasted claim stayed unverified, current compliance abstained, and Axe/page/provider/non-loopback checks were clean. Receipt: `docs/evidence/nutrient-claim-browser.json`.
+- Limits: local dated evidence only. No current-law verification, live Gemini selection, scientific/legal review or photo accuracy is claimed.
+
 ## 2026-10-27 — require quoted record support for cited answer sentences
 
 - The active `assist()` path returned ordinary model prose, then validated cited source identity/topic/jurisdiction and quantities; a topical source reference alone could accompany an unsupported product-level claim.

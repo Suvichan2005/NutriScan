@@ -20,6 +20,10 @@ const nutrientQuestionPatterns:Record<NutrientKey,RegExp>={
 const rounded=(n:number)=>Math.round((n+Number.EPSILON)*10000)/10000;
 const amountText=(n:number)=>n!==0&&Math.abs(n)<.0001?'<0.0001':String(rounded(n));
 const unique=<T,>(values:T[])=>[...new Set(values)];
+const nutrientClaimSourceTitles=()=>nutrientContentClaimSourceIds.flatMap(id=>{
+  const source=evidenceSources.find(item=>item.id===id);
+  return source?[source.title]:[];
+});
 function isExplicitlyUnder18(ageGroup:string){
   if(/\b(child(?:ren)?|adolescent|teen(?:ager)?s?|pediatric|paediatric|minor|under\s*18)\b/i.test(ageGroup))return true;
   const range=ageGroup.match(/^\s*(?:age\s*)?(\d{1,2})\s*[-–]\s*(\d{1,2})(?:\s*(?:years?|y\/o|old))?\s*$/i);
@@ -309,7 +313,8 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     answerIntent='current regulatory question';answer='Current legal or regulatory status is unresolved. The next evidence is a dated official notice for the exact product and jurisdiction, checked for later amendments or orders.';
     if(relevantClaimGuidance.length){
       addNutrientClaimFinding(relevantClaimGuidance);
-      answer+=' A dated FSSAI claim reference is linked below, but it does not establish current applicability or compliance.';
+      const titles=nutrientClaimSourceTitles();
+      answer+=titles.length?` The dated references are ${titles.join('; ')}; they do not establish current applicability or compliance.`:' No dated FSSAI claim source is available in the local evidence set, so applicability and compliance remain unresolved.';
       trace.push({tool:'explain_nutrient_content_claim',reason:'Attach dated FSSAI claim context without treating the local corpus as current law.',status:'current applicability unresolved; live official research required'});
     }
   }else if(transFatTopic){
@@ -338,7 +343,8 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
   }else if(asksNutrientClaimCompliance){
     answerIntent='nutrient-content claim applicability';
     const evidence=addNutrientClaimFinding(relevantClaimGuidance);
-    answer=`This local audit does not determine whether the package qualifies for or complies with the claim. ${relevantClaimGuidance.map(topic=>`${topic.label}: ${topic.criteria}.`).join(' ')}${evidence.rows.length?' The linked package text is an unverified reading, not a verified nutrient value or compliance result.':' No matching claim line is retained in this package record.'} The applicable basis, product facts and current regulatory status require independent official review.`;
+    const titles=nutrientClaimSourceTitles();
+    answer=`This local audit does not determine whether the package qualifies for or complies with the claim. ${relevantClaimGuidance.map(topic=>`${topic.label}: ${topic.criteria}.`).join(' ')}${evidence.rows.length?' The linked package text is an unverified reading, not a verified nutrient value or compliance result.':' No matching claim line is retained in this package record.'}${titles.length?` Dated references: ${titles.join('; ')}. These references do not establish current applicability or compliance.`:''} The applicable basis, product facts and current regulatory status require independent official review.`;
     limitations.push('Nutrient-content claim explanations do not determine whether a package meets claim criteria or current legal requirements.');
     trace.push({tool:'explain_nutrient_content_claim',reason:'Provide generic criteria while withholding a package-compliance decision.',status:'no product-compliance classification'});
   }else if(asksNutrientContentClaimMeaning){
@@ -346,7 +352,10 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
     const evidence=addNutrientClaimFinding(relevantClaimGuidance);
     const criteria=relevantClaimGuidance.map(topic=>`${topic.label}: ${topic.criteria}.`).join(' ');
     const rdaContext=relevantClaimGuidance.some(topic=>topic.key==='high-protein')?' The protein criteria use RDA percentages; no RDA or reference group is inferred here.':'';
-    answer=`FSSAI’s Version IV Advertising and Claims compendium (14 December 2022) lists these generic criteria: ${criteria}${evidence.rows.length?` The recorded package line is ${evidence.rows.slice(0,3).map(observation=>`“${observation.text.slice(0,200)}${observation.text.length>200?'…':''}” (${observation.origin==='ocr'?'OCR observation':observation.origin==='user'?'user-entered observation':'recorded observation'})`).join('; ')}; it may be misread or transcribed incorrectly.`:' No matching claim wording is retained in this package record, so this is a general explanation.'}${rdaContext} The FSSAI amendment index checked on 22 October 2026 lists three amendments, latest dated 13 December 2022. This dated explanation does not determine which product basis applies, classify the food, verify any OCR value, or establish whether the product makes or meets the claim. It does not establish current legal status.`;
+    const [compendiumTitle,amendmentIndexTitle]=nutrientClaimSourceTitles();
+    const compendiumReference=compendiumTitle?`The ${compendiumTitle} (14 December 2022)`: 'The dated FSSAI compendium';
+    const amendmentReference=amendmentIndexTitle?`The ${amendmentIndexTitle}`:'The dated FSSAI amendment index';
+    answer=`${compendiumReference} lists these generic criteria: ${criteria}${evidence.rows.length?` The recorded package line is ${evidence.rows.slice(0,3).map(observation=>`“${observation.text.slice(0,200)}${observation.text.length>200?'…':''}” (${observation.origin==='ocr'?'OCR observation':observation.origin==='user'?'user-entered observation':'recorded observation'})`).join('; ')}; it may be misread or transcribed incorrectly.`:' No matching claim wording is retained in this package record, so this is a general explanation.'}${rdaContext} ${amendmentReference} checked on 22 October 2026 lists three amendments, latest dated 13 December 2022. This dated explanation does not determine which product basis applies, classify the food, verify any OCR value, or establish whether the product makes or meets the claim. It does not establish current legal status.`;
     limitations.push('Dated FSSAI nutrient-content claim criteria explain wording only; they do not validate package values, infer an RDA or determine current compliance.');
     trace.push({tool:'explain_nutrient_content_claim',reason:'Match supported claim wording to dated FSSAI criteria; retain any package line as unverified evidence.',status:'source-backed deterministic explanation; no compliance classifier'});
   }else if(wholeDietCarbohydrateGuidance){

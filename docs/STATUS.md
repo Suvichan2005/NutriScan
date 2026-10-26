@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 show both dated claim sources in answers and source cards (27 October 2026)
+
+A current desktop/mobile development journey found that FSSAI claim answers stated a dated amendment-index result but only rendered the compendium citation; a current-status follow-up said a source was linked without giving an inspectable source identity. Local answer generation now uses the catalog titles for both the Version IV compendium and the amendments index in claim-criteria, package-compliance and current-status answers. UI citation selection now exposes both records with their summaries, retrieval date and limitations. The updated provider-free synthetic-label Chrome acceptance passes at390×844 and1440×900: claim criteria, unverified pasted wording, no product-compliance verdict, both source cards and current-law abstention; zero Axe violations, page errors, provider calls or non-loopback requests. Receipt: `docs/evidence/nutrient-claim-browser.json`. This is dated local-source and UI evidence, not current-law verification, Gemini behavior or scientific/legal review.
+
 ## M2 linked-source recall (27 October 2026)
 
 Source `7b25688` decouples exact curated ingredient/outcome links from semantic-index rank while keeping subject and outcome checks anchored in package ingredients and current user-authorized context. Model-generated retrieval text alone cannot add a subject or outcome. The two EFSA beta-glucan opinions remain separate source records and endpoints. Focused suites:91 passed/1 skipped; full suite:840 passed/2 skipped; TypeScript and diff check pass. No live Gemini, browser, human science review or held-out acceptance was run. Live claim/allergy tool selection and answer use remain incomplete.

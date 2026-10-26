@@ -517,6 +517,8 @@ describe('nutrition numerical invariants',()=>{
     expect(audit.answer).toContain('10% per 100 kcal');
     expect(audit.answer).toContain('20% per serving');
     expect(audit.answer).toContain('“High protein” (user-entered observation)');
+    expect(audit.answer).toContain('Food Safety and Standards (Advertising and Claims) Regulations, 2018: Version IV Compendium');
+    expect(audit.answer).toContain('Food Safety and Standards (Advertising and Claims) Regulations: Amendments index');
     expect(audit.answer).toMatch(/does not infer an applicable RDA|no RDA or reference group is inferred/i);
     expect(audit.answer).toMatch(/does not determine which product basis applies.*establish whether the product makes or meets the claim/i);
     expect(audit.answer).not.toContain('2.4 g protein');
@@ -542,7 +544,9 @@ describe('nutrition numerical invariants',()=>{
     expect(notClassified.answer).not.toMatch(/the package (?:does|does not) qualify|the claim is compliant/i);
     const current=buildAudit(pkg,30,'g',defaultProfile,'Is this high protein package compliant under current FSSAI rules?');
     expect(current.answer).toMatch(/Current legal or regulatory status is unresolved/i);
-    expect(current.answer).toMatch(/does not establish current applicability or compliance/i);
+    expect(current.answer).toMatch(/(?:does|do) not establish current applicability or compliance/i);
+    expect(current.answer).toContain('Food Safety and Standards (Advertising and Claims) Regulations, 2018: Version IV Compendium');
+    expect(current.answer).toContain('Food Safety and Standards (Advertising and Claims) Regulations: Amendments index');
     expect(current.sources.map(source=>source.id)).toEqual(expect.arrayContaining(['fssai-advertising-claims-compendium-2022','fssai-advertising-claims-amendment-index']));
     expect(current.trace.some(entry=>entry.tool==='check_regulatory_updates'&&entry.status.includes('live research required'))).toBe(true);
   });

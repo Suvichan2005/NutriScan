@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## Current integration checkpoint — M2 FSSAI claim source attribution (27 October 2026)
+
+Local nutrient-claim answers now name the exact Version IV compendium and amendments-index source titles from the catalog, allowing both inspected records to appear in the answer’s source disclosure. The desktop/mobile synthetic claim journey now checks both cards for criteria and current-status answers, claim text remains an unverified user observation, and current compliance remains unresolved. Provider-free Chrome acceptance passed at390×844 and1440×900. Receipt: `docs/evidence/nutrient-claim-browser.json`. Focused engine/source-filter suites passed93/93 before the browser run; no live Gemini, current-law or independent scientific/legal conclusion is claimed. The claim-entry browser runner now follows the current onboarding and thread-composer UI.
+
 ## Current integration checkpoint — M2 source evidence gate (27 October 2026)
 
 The prior pushed local source/browser checkpoint is `d157458`. The current production `assist()` path now requires an exact quoted record excerpt (24–300 characters) in any sentence linked to a retrieved source, in addition to identity, topic and jurisdiction checks. A provider-free mocked-route regression retains useful package prose and withholds an unsupported product-safety assertion despite a topical sodium record. Source/route/prompt suites pass160/160 and the natural-answer instruction remains below2,000 characters. This establishes stricter evidence traceability only; it does not establish semantic entailment, uncited-claim rejection, live Gemini behavior or independent science review. See `docs/DECISIONS.md` and the new M2 entries in `docs/STATUS.md` and `docs/COMPLETION_QUEUE.md`.

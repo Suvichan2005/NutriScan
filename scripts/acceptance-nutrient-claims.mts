@@ -39,15 +39,29 @@ try {
 
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
-    await page.getByRole('button', { name: 'Paste label text' }).click();
+    await page.waitForFunction(() => {
+      const dialog = document.querySelector('dialog.onboarding-dialog');
+      const button = [...document.querySelectorAll('button')].find(item => item.textContent?.includes('Enter label text'));
+      return !!dialog?.open || (!!button && !button.disabled);
+    });
+    const onboarding = page.getByRole('dialog', { name: 'Make NutriScan yours' });
+    if (await onboarding.isVisible()) {
+      await onboarding.getByRole('radio', { name: 'Understand a food claim' }).check();
+      await onboarding.getByRole('button', { name: 'Continue' }).click();
+    }
+    await page.waitForFunction(() => {
+      if (document.querySelector('dialog.onboarding-dialog')?.open) return false;
+      const button = [...document.querySelectorAll('button')].find(item => item.textContent?.includes('Enter label text'));
+      return !!button && !button.disabled;
+    });
+    await page.getByRole('button', { name: 'Enter label text' }).click();
     await page.getByRole('textbox', { name: 'Label text' }).fill(label);
     await page.getByRole('button', { name: 'Read label text' }).click();
-    await page.locator('.results-section').waitFor({ state: 'visible' });
-
-    await page.getByRole('textbox', { name: 'Ask about this package' }).fill('What do high protein, high fibre and low sugars mean under FSSAI?');
+    const composer = page.getByRole('textbox', { name: 'Ask about this package' });
+    await composer.fill('What do high protein, high fibre and low sugars mean under FSSAI?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
-    const response = page.locator('.assistant-message').last();
-    await response.getByText(/Version IV Advertising and Claims compendium/i).waitFor({ state: 'visible' });
+    const response = page.locator('.thread-turn').last();
+    await response.getByText(/lists these generic criteria/i).waitFor({ state: 'visible' });
     const responseText = await response.innerText();
     const criteriaExplained = /20% of RDA per 100 g for solids/.test(responseText)
       && /6 g per 100 g for solids/.test(responseText)
@@ -56,15 +70,23 @@ try {
       && /may be misread or transcribed incorrectly/i.test(responseText);
     const noComplianceVerdict = /does not determine which product basis applies.*establish whether the product makes or meets the claim/i.test(responseText)
       && !/the package (?:does|does not) qualify|the claim is compliant/i.test(responseText);
-    const sourceText = await page.locator('.sources-section').innerText();
-    const compendiumVisible = /Food Safety and Standards \(Advertising and Claims\) Regulations, 2018: Version IV Compendium/i.test(sourceText);
-    const amendmentIndexVisible = /Food Safety and Standards \(Advertising and Claims\) Regulations: Amendments index/i.test(sourceText);
+    const firstEvidence = response.locator('details.conversation-evidence');
+    if (await firstEvidence.count()) await firstEvidence.locator('summary').click();
+    const citedTitles = await response.locator('.conversation-evidence-title').allInnerTexts();
+    const compendiumVisible = citedTitles.some(title => /Food Safety and Standards \(Advertising and Claims\) Regulations, 2018: Version IV Compendium/i.test(title));
+    const amendmentIndexVisible = citedTitles.some(title => /Food Safety and Standards \(Advertising and Claims\) Regulations: Amendments index/i.test(title));
 
-    await page.getByRole('textbox', { name: 'Ask about this package' }).fill('Does the high protein claim meet current FSSAI rules?');
+    await composer.fill('Does the high protein claim meet current FSSAI rules?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
-    const currentRules = page.locator('.assistant-message').last();
+    const currentRules = page.locator('.thread-turn').last();
     await currentRules.getByText(/Current legal or regulatory status is unresolved/i).waitFor({ state: 'visible' });
-    const currentStatusAbstained = /does not establish current applicability or compliance/i.test(await currentRules.innerText());
+    const currentRulesText = await currentRules.innerText();
+    const currentEvidence = currentRules.locator('details.conversation-evidence');
+    if (await currentEvidence.count()) await currentEvidence.locator('summary').click();
+    const currentEvidenceTitles = await currentRules.locator('.conversation-evidence-title').allInnerTexts();
+    const currentSourcesVisible = currentEvidenceTitles.some(title => /Version IV Compendium/i.test(title))
+      && currentEvidenceTitles.some(title => /Amendments index/i.test(title));
+    const currentStatusAbstained = /(?:does|do) not establish current applicability or compliance/i.test(currentRulesText);
 
     const axe = await new AxeBuilder({ page }).analyze();
     const outcome = {
@@ -75,6 +97,7 @@ try {
       noComplianceVerdict,
       compendiumVisible,
       amendmentIndexVisible,
+      currentSourcesVisible,
       currentStatusAbstained,
       axeViolationIds: axe.violations.map(violation => violation.id),
       pageErrors,
@@ -96,6 +119,7 @@ const passed = outcomes.length === 2 && outcomes.every(outcome =>
   && outcome.noComplianceVerdict === true
   && outcome.compendiumVisible === true
   && outcome.amendmentIndexVisible === true
+  && outcome.currentSourcesVisible === true
   && outcome.currentStatusAbstained === true
   && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0
   && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0

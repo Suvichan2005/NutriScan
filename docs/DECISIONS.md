@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — identify every dated claim source used in deterministic answers
+
+When the local FSSAI nutrient-claim explanation uses both the Version IV compendium and the amendments-index snapshot, include each catalogued source title in the answer so source selection produces two inspectable cards. Apply this to general claim criteria, package-claim questions and current-status abstentions. Keep the dated snapshot boundary explicit: these records do not decide current law or product compliance. Do not imply that a source is linked if its identity is absent from the answer.
+
 ## 27 October 2026 — scope curated outcome evidence by its linked subject
 
 For a source explicitly linked to an ingredient/outcome relationship, include that relationship in native knowledge-tool results only when the active package names the ingredient or the current question explicitly asks about it. Include its population, exposure, outcome, exact source IDs and limitations. A semantic similarity match alone must not make an ingredient-specific study appear applicable to another product. This gate does not establish source entailment or a package-specific effect; Gemini still interprets, and exposure/dose remains unproven unless supported independently.
