@@ -54,10 +54,12 @@ export function selectCitedEvidence<T extends SourceIdentity>(answer:string,sour
     if(urls.has(source.url))return true;
     if(title.length>=12&&includesIdentity(text,title)){
       const sameTitle=sources.filter(item=>normalized(item.title)===title);
-      const moreSpecific=sources.some(item=>{
-        const other=normalized(item.title);
-        return other.length>title.length&&includesIdentity(other,title)&&includesIdentity(text,other);
-      });
+      const longerTitles=[...new Set(sources.map(item=>normalized(item.title)))]
+        .filter(other=>other.length>title.length&&includesIdentity(other,title))
+        .sort((a,b)=>b.length-a.length);
+      let independentMentions=` ${text} `;
+      for(const other of longerTitles)independentMentions=independentMentions.replaceAll(` ${other} `,' ');
+      const moreSpecific=!includesIdentity(independentMentions,title);
       if(!moreSpecific&&sameTitle.length===1)return true;
       const year=source.publishedAt?.match(/^\d{4}(?:-|$)/)?.[0].slice(0,4);
       if(!moreSpecific&&year&&sameTitle.filter(item=>item.publishedAt?.startsWith(year)).length===1

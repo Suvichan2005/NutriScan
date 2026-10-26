@@ -82,6 +82,7 @@ describe('citation record identity collisions',()=>{
     const a=source('overview','Dietary evidence review','Example Institute','2024');
     const b=source('specific','Dietary evidence review for adults','Example Institute','2024');
     expect(selectCitedEvidence('See [Dietary evidence review for adults].',[a,b])).toEqual([b]);
+    expect(selectCitedEvidence('Compare [Dietary evidence review] with [Dietary evidence review for adults].',[a,b])).toEqual([a,b]);
     expect(selectCitedEvidence(`See ${a.url}.`,[a,b])).toEqual([a]);
   });
   it('does not silently choose two versions sharing the same complete title',()=>{
