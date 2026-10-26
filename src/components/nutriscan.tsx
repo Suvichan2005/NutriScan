@@ -15,7 +15,7 @@ import { buildProductLookupRequest, defaultProductLookup, productQuerySource } f
 import { appendVisionEvidence } from '@/lib/reconcile';
 import { mergePackageEvidence } from '@/lib/merge-evidence';
 import { readOcrImages, readPaddleOcrImages } from '@/modules/ocr';
-import { conversationContextForAssist } from '@/lib/conversation-context';
+import { conversationContextForAssist, conversationCalculationsForAssist } from '@/lib/conversation-context';
 import { buildLocalAuditConversationReply, buildLocalEvidenceFollowUp, buildLocalEvidenceUnavailableFollowUp, buildLocalPackageFallbackReply, isGuidanceEvidenceInScope, parseLocalEvidenceResponse, safeConversationEvidence, shouldSearchLocalEvidence } from '@/lib/followup-evidence';
 import { requestLocalEvidence } from '@/lib/local-evidence-client';
 import { measureScanStage, recordScanDuration } from '@/lib/scan-performance';
@@ -604,10 +604,11 @@ export default function NutriScan(){
     const localSearch=await localSearchPromise;
     const inScope=(source:EvidenceSource)=>isGuidanceEvidenceInScope(source,targetQuestion,sharedCountry);
     const historyEvidence=safeConversationEvidence(usableHistory.flatMap(turn=>selectCitedEvidence(turn.answer,turn.evidence??[])).filter(inScope));
+    const previousCalculations=reusingReconstruction?conversationCalculationsForAssist(usableHistory,targetPackage):[];
     const evidence=assistEvidenceContext({auditSources:(targetAudit?.sources??[]).filter(inScope),localSearch:localSearch.filter(hit=>inScope(hit.source)).map(({source,score})=>({...source,score})),research:[],...(conversationContext?{conversationEvidence:historyEvidence}:{})});
     if(selectedProductSource&&!targetPackage.identityConflict&&evidence.length<15&&!evidence.some(source=>source.id===selectedProductSource.id))evidence.push(selectedProductSource);
     for(const image of visualImages)reconstructionVisionCaptures.push({runId:`vision-${crypto.randomUUID()}`,imageId:image.imageId,side:image.side,sourceImage:image.sourceImage,processing:image.preprocessing,model:'Gemini'});
-    body={consent:true,...(requestMethod?{analysisMethod:requestMethod}:{}),toolAccess:{mode:specializedTools?'specialized':'ordinary'},question:questionText,workspacePortion:{amount,unit:amountUnit},package:packageForAssist(packageContext??targetPackage),...(requestCandidates.length?{interpretedCandidates:requestCandidates}:{}),...(includeProfileWithGemini&&hasProfile(profile)?{profile}:{}),evidence,images:targetImages.slice(0,10).map(x=>({handle:x.id,side:x.side,width:x.width,height:x.height,role:x.role,description:x.description})),...(visualImages.length?{visualImages}:{}),...(conversationContext?{conversationContext}:{})};
+    body={consent:true,...(requestMethod?{analysisMethod:requestMethod}:{}),toolAccess:{mode:specializedTools?'specialized':'ordinary'},question:questionText,workspacePortion:{amount,unit:amountUnit},package:packageForAssist(packageContext??targetPackage),...(requestCandidates.length?{interpretedCandidates:requestCandidates}:{}),...(includeProfileWithGemini&&hasProfile(profile)?{profile}:{}),evidence,...(previousCalculations.length?{calculations:previousCalculations}:{}),images:targetImages.slice(0,10).map(x=>({handle:x.id,side:x.side,width:x.width,height:x.height,role:x.role,description:x.description})),...(visualImages.length?{visualImages}:{}),...(conversationContext?{conversationContext}:{})};
    }
    const {response,data}=await measureScanStage('cloud-roundtrip',async()=>{const response=await fetch('/api/'+(vision?'vision':'assist'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:requestController.signal});const serverTiming=response.headers.get('Server-Timing')?.match(/(?:^|,)\s*nutriscan-assist;dur=([\d.]+)/i);if(serverTiming)recordScanDuration('assist-server',Number(serverTiming[1]));return {response,data:await response.json()};});if(stamp!==epoch.current)return;
    if(!response.ok){requestState.failureCode=typeof data.code==='string'?data.code:typeof data.error==='string'?data.error:'';throw new Error(data.message??'Gemini is not available.');}

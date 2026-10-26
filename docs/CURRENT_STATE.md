@@ -1,5 +1,13 @@
 # NutriScan current runtime handoff
 
+## M2 typed conversation arithmetic — 26 October 2026
+
+Follow-up requests now carry at most20 source-validated typed operations from the four latest non-outdated turns. Reuse the same package-provenance validator as assist input; reject tampered results, missing source IDs, changed readings, incompatible bases and superseded corrections. Historical prose remains non-authoritative. Request-local historical operation IDs prevent legacy same-ID/different-portion collisions. Fresh tool calculations take precedence within the20-operation validation/UI budget; a reproduced full-history starvation case is fixed. No unsolicited default portions are computed.
+
+Exact actual follow-up text replayc320a5ac changes5→2 withheld sentences; correct energy/sodium/portion comparison returns, while wrong27.76g and unperformed25% stay withheld. Desktop/mobile production UI replays verify eight prior40g operations in the request, zero photos and no page errors. Real fresh browser follow-up262a28bd-e5c8-40e1-bdad-e710cd1a3770: two free generations/four native calls,21.505s browser runtime, correct30g/40g values and zero withheld quantities. One stochastic example, not latency/clinical validation. Source attribution and depth remain partial: one supplied WHO summary, no fresh guidance-tool call or explicit citation. Next M2 task is source attribution/usefulness across a distinct transfer request.
+
+Full bounded suite789 passed/two skipped; added volume-continuity test passes separately. TypeScript and optimized reusable production build pass. Six completed free3.5-Flash-Lite generations so far in this cycle:38,286 input/2,671 output, local estimate$0, billing unverified; thinking known for only one call, unknown elsewhere. Main127.0.0.1:3400 production is now free-enabled, paid/fallback/search/capture/operational trace disabled. Original five owner-file bytes restored after build; ignored launcher now uses literal true for explicit free enablement.
+
 ## M2 answer-provenance continuation — 26 October 2026
 
 Owner accepts5793475 as the engineering baseline; do not restart migration. The missing curated ZIP was checked once and remains absent. A real same-origin `/api/evidence` request returned503 because MiniLM was missing; explicit existing embeddings preparation restored six pinned files/23,916,680 bytes, all hashes equal the recorded manifest. Original tracked semantic index/manifest bytes were retained (freshly generated vectors differ slightly); the endpoint now returns200/hybrid results. No source corpus expansion.

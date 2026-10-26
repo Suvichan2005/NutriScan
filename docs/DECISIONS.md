@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — carry current-package typed operations across turns
+
+Reuse at most20 validated calculations from the same four-turn window as conversation context, newest first and only for saved reconstruction follow-ups. Apply the exact existing assist package-provenance rules in a shared pure module plus strict calculation arithmetic/schema checks; reject outdated/corrected/rechecked/tampered operations. Rebase request-local operation IDs to avoid legacy collisions, leaving source identifiers intact. Do not mine prior assistant prose for amounts or introduce a second calculator. Prefer new tool operations within bounded response validation/UI so historical context cannot starve current results. Source attribution remains the next separate M2 issue.
+
 ## 26 October 2026 — calculated results retain their own portion basis
 
 Native arithmetic can support a result stated per the calculated portion even when that portion differs from the printed label denominator. Match the adjacent numerator to the same typed result and the denominator to its exact compatible mass/volume portion. Do not admit arbitrary amounts by globally adding a calculated denominator, trust old assistant prose, or weaken correction/mass guards. Preserve rejected spans/reasons in the existing private opt-in trace, never general operational logs. The real follow-up comparison failure remains open: carry vetted calculation provenance rather than treating previous answer text as numeric evidence.

@@ -24,6 +24,8 @@ Keep one primary worktree (maximum two if genuinely justified), existing private
 
 ## Retained historical task IDs and dispositions
 
+M2 continuation (26 October): real free provider/browser traces now drive answer-boundary repairs. Native result/portion pairs survive validation and bounded typed prior calculations survive follow-up/reopen; strict wrong-value/basis/correction and current-operation budget guards remain. Required pinned MiniLM runtime restored and hybrid retrieval verified. One corrected actual30g/40g conversation is quantity-complete, but source attribution/clinical usefulness and transfer breadth remain partial. Continue those unblocked M2 tasks; do not mark M2 or M4/M5 complete. CURRENT_STATE/dated journal distinguish saved replay, actual provider and independent validation.
+
 IdeaPad continuation note for M2/M6 (26 October): source restoration is faithful for all tracked files/five owner modifications, but private knowledge/report archives remain missing. Scoped end-to-end work fixes atomic history save/clear/remove ordering and restores native nutrition correction access for local packages in the current inspector. Desktop/mobile production correction→calculation→save/reopen→follow-up and actual known-photo OCR dispatch are checked separately from research accuracy. Current machine evidence lives under `.data/ideapad-restoration-20261026`; CURRENT_STATE and the dated journal record exact scope. This does not complete M2, M4/M5 or final M6 acceptance. Continue selected source/answer usefulness with the unchanged reference/freeze gates; do not restart source expansion.
 
 Old detailed receipts remain in Git/journal, private source/evaluation directories and DATASET_COVERAGE. These rows do not create competing P0 expansion work.

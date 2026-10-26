@@ -778,6 +778,24 @@ describe('provider validation, independent of provider invocation', () => {
     expect(requestBody.generationConfig).not.toHaveProperty('responseMimeType');
     expect(result.agentTrace.some(step=>/repair|final_structure/.test(step.name))).toBe(false);
   });
+  it('keeps newly requested calculations ahead of a full historical calculation budget', async () => {
+    vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
+    const evidence = { observationIds: ['carbohydrate-line'], imageRegions: [] };
+    const saved = { identity: { brand: null, name: null, variant: null, status: 'unreadable', evidence }, serving: null,
+      nutritionRows: [{ rowId: 'carbohydrate-row', nutrient: 'Carbohydrate', nutrientKey: 'carbohydrate', printedLabel: 'Carbohydrate', printedValue: '60 g', value: 60, unit: 'g', columnLabel: 'per 100 g', basisText: 'per 100 g', basisAmount: 100, basisUnit: 'g', qualifier: null, status: 'provisional', evidence }],
+      ingredients: [], additives: [], statements: [], regions: [], unresolved: [], interpretationNote: 'Synthetic continuity fixture.', revision: 1, updatedAt: '2026-10-26T00:00:00.000Z', model: 'fixture', current: true };
+    const calculations = Array.from({ length: 20 }, (_, index) => ({ id: `prior-${index}`, label: 'Historical carbohydrate operation', nutrient: 'carbohydrate', input: 60, inputUnit: 'g', basisAmount: 100, portion: index + 1, portionUnit: 'g', result: 60 * (index + 1) / 100, unit: 'g', formula: '60 × portion ÷ 100', observationIds: ['carbohydrate-line'], assumptions: [] }));
+    const answer = 'That works out to 18 g carbohydrate in 30 g.';
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('calculate-new', 'calculate_nutrition', { nutrient: 'carbohydrate', amount: 30, unit: 'g' })]), { status: 200, headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(modelResponse([{ text: answer }]), { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetcher);
+    const data = assistInput.parse({ consent: true, question: 'What about 30 g?', workspacePortion: { amount: 40, unit: 'g' }, calculations, package: { id: 'full-history-budget', name: 'Synthetic fixture', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [{ id: 'carbohydrate-line', field: 'label-note', text: 'Carbohydrate 60 g per 100 g', side: 'text', confidence: null, origin: 'user' }], rawText: '', warnings: [], synthetic: true, createdAt: '2026-10-26T00:00:00.000Z', reconstruction: saved } });
+    const result = await assist(data);
+    expect(result.answer).toBe(answer);
+    expect(result.calculations).toContainEqual(expect.objectContaining({ portion: 30, result: 18 }));
+    expect(result.calculations.length).toBeLessThanOrEqual(20);
+  });
   it('returns only deterministic calculations referenced by validated claims or generative UI', async () => {
     vi.stubEnv('ENABLE_GEMINI', 'true'); vi.stubEnv('GEMINI_PROVIDER', 'free'); vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash'); vi.stubEnv('FREE_GEMINI_API_KEY', 'offline-test-key');
     const calculation = { id: 'calc-carbohydrate-30g', label: 'Carbohydrate in 30 g', nutrient: 'carbohydrate', input: 60, inputUnit: 'g', basisAmount: 100, portion: 30, portionUnit: 'g', result: 18, unit: 'g', formula: '60 g × 30 g ÷ 100 g', observationIds: ['input-1'], assumptions: ['Provisional package reading.'] } as const;
