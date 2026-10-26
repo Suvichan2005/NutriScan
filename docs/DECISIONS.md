@@ -1437,3 +1437,7 @@ Do not require ordinary assistant prose to reproduce exact spans from `EvidenceS
 # 27 October 2026 — Resolve natural changed-quantity follow-ups from user turns
 
 When a user asks a referential follow-up with a new explicit mass or volume after a quantity question, retain the immediately preceding user question as conversational context. Use the amount in the current follow-up for native calculations, not the earlier amount. Do not use previous assistant prose as evidence, and do not carry an unrelated topic when either turn lacks an explicit supported amount or the current turn is not referential. This keeps calculation inputs typed and local while supporting ordinary multi-turn wording.
+
+# 27 October 2026 — Render provider-mode disclosure from effective server status
+
+Do not hardcode a paid-fallback warning in the consumer composer. Render the existing server-derived tier disclosure so free mode with paid fallback disabled does not imply a possible paid charge. Preserve the user's selected cloud/local mode and keep provider-routing diagnostics out of normal chat. Browser assertions cover the free-mode text and omission of the paid warning; saved-response rendering does not establish live provider behavior.

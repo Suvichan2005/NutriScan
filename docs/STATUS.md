@@ -1431,3 +1431,7 @@ Replaced the stale structured-synthesis diagram with the current local-first and
 # 27 October M2 answer-source boundary correction
 
 Removed the final-answer exact-summary-quote gate because source summaries are NutriScan-authored paraphrases, not publisher quotations. The user-facing source card now labels the summary and links the original. Source identity/topic/applicability filters remain; numerical safeguards are unchanged. Focused answer-evidence, conversation-context, Gemini-agent and server suites:172 passed; TypeScript and diff check passed. Provider-free only. Semantic entailment remains unverified and is not established by a citation or a topic match.
+
+## 27 October — source-bearing answer rendering and tier disclosure
+
+Saved free-provider guidance output renders linked WHO source cards in the conversation at mobile and desktop sizes. A 50 g follow-up reuses package/context, sends no photos, and shows no stale citation. The UI replay uses saved provider output and a synthetic UI observation mapping; no new provider request or scientific accuracy claim. Also replaced static “Paid fallback may charge” text with the effective server-tier disclosure. TypeScript, 89 focused tests and optimized build pass. Private receipt/screenshots: `.data/m2-source-acceptance-20261027/rendered-source-citations/`.
