@@ -418,7 +418,7 @@ export default function NutriScan(){
    const firstQuestion=initialQuestion.trim();const selected=resolveQuestionPortion(firstQuestion,defaultPortion(data),data.netWeight);setPortion(selected.value);setUnit(selected.unit);
     const firstAudit=firstQuestion?buildAudit(data,selected.value,selected.unit,profile,firstQuestion):null;const turnAt=new Date().toISOString();
     const useGemini=!!firstQuestion&&cloudMode&&statusRef.current.gemini?.enabled&&!data.synthetic;
-    const firstReply=firstAudit&&!useGemini?buildLocalAuditConversationReply(firstAudit,firstQuestion):null;
+     const firstReply=firstAudit&&!useGemini?buildLocalAuditConversationReply(firstAudit,firstQuestion,data):null;
     const firstTurn:Message|null=firstQuestion?{question:firstQuestion,answer:firstReply?.answer??'',answerOrigin:useGemini?'gemini':'local',at:turnAt,...(useGemini?{status:'pending' as const}:{}),...(firstReply?.evidence?{evidence:firstReply.evidence}:{})}:null;
     setMessages(firstTurn?[firstTurn]:[]);
     setRemoteCandidates([]);setProducts([]);setProductLookupNotice('');setResearch([]);setSelectedProduct(null);setSemantic([]);setActiveQuestion(initialQuestion);setAuditQuestion(initialQuestion);setQuestion('');setInspection(null);setLookup(defaultLookup(data));
@@ -452,7 +452,7 @@ export default function NutriScan(){
      setNotice('Photos ready. Earlier evidence and your corrections are preserved.');
      if(initialQuestion){
       const selectedPortion=resolveQuestionPortion(initialQuestion,defaultPortion(next),next.netWeight);setPortion(selectedPortion.value);setUnit(selectedPortion.unit);setActiveQuestion(initialQuestion);setAuditQuestion(initialQuestion);
-      const response=buildAudit(next,selectedPortion.value,selectedPortion.unit,profile,initialQuestion);const turnAt=new Date().toISOString();const useGemini=cloudMode&&providerStatus.gemini?.enabled&&!next.synthetic;const localReply=useGemini?null:buildLocalAuditConversationReply(response,initialQuestion);
+      const response=buildAudit(next,selectedPortion.value,selectedPortion.unit,profile,initialQuestion);const turnAt=new Date().toISOString();const useGemini=cloudMode&&providerStatus.gemini?.enabled&&!next.synthetic;const localReply=useGemini?null:buildLocalAuditConversationReply(response,initialQuestion,next);
       setMessages(previous=>[...previous,{question:initialQuestion,answer:localReply?.answer??'',answerOrigin:useGemini?'gemini':'local',at:turnAt,...(useGemini?{status:'pending' as const}:{}),...(localReply?.evidence?{evidence:localReply.evidence}:{})}]);if(!useGemini&&localReply)searchLocalEvidenceForTurn(initialQuestion,localReply.answer,turnAt,epoch.current,shouldSearchLocalEvidence(response));setQuestion('');
       if(cloudMode&&!providerStatus.gemini?.enabled&&!next.synthetic)setRemoteNotice('Gemini is unavailable right now. This local reply is limited to the recorded label observations and calculations.');
        if(useGemini)void gemini(false,{packageData:next,question:initialQuestion,auditData:response,imageAssets:selected,analysisMethod,messages:[],replaceTurnAt:turnAt,portion:selectedPortion.value,unit:selectedPortion.unit});
@@ -483,7 +483,7 @@ export default function NutriScan(){
     setMessages(current=>supersedePackageAnswers(current));
     setNotice('Added your label text. Earlier answers are marked as based on the previous label evidence.');
     const prompt=question.trim()||'What can you tell me about this package?';const selected=resolveQuestionPortion(prompt,defaultPortion(next),next.netWeight);setPortion(selected.value);setUnit(selected.unit);setActiveQuestion(prompt);setAuditQuestion(prompt);
-    const response=buildAudit(next,selected.value,selected.unit,profile,prompt);const at=new Date().toISOString();const localReply=buildLocalAuditConversationReply(response,prompt);
+    const response=buildAudit(next,selected.value,selected.unit,profile,prompt);const at=new Date().toISOString();const localReply=buildLocalAuditConversationReply(response,prompt,next);
     setMessages(current=>[...current,{question:prompt,answer:localReply?.answer??'',answerOrigin:'local',at,...(localReply?.evidence?{evidence:localReply.evidence}:{})}]);setQuestion('');
     if(localReply&&shouldSearchLocalEvidence(response))searchLocalEvidenceForTurn(prompt,localReply.answer,at,epoch.current,true);
     return;
@@ -496,7 +496,7 @@ export default function NutriScan(){
  async function ask(text=question){
    if(!profileReady){setNotice('Loading this browser’s optional context. Try again in a moment.');return;}if(!pkg||!text.trim())return;const providerStatus=cloudMode?await ensureProviderStatus():statusRef.current;const prompt=text.trim().slice(0,1000);const serving=pkg.reconstruction?.current?pkg.reconstruction.serving:undefined;const useGemini=cloudMode&&providerStatus.gemini?.enabled&&!pkg.synthetic;const selected=useGemini?{value:portion,unit}:resolveQuestionPortion(prompt,{value:portion,unit},pkg.netWeight,serving);setPortion(selected.value);setUnit(selected.unit);
   setActiveQuestion(prompt);setAuditQuestion(prompt);const response=buildAudit(pkg,selected.value,selected.unit,profile,prompt,remoteCandidates,images.map(image=>image.id));
-   const at=new Date().toISOString();const localReply=useGemini?null:buildLocalAuditConversationReply(response,prompt);
+    const at=new Date().toISOString();const localReply=useGemini?null:buildLocalAuditConversationReply(response,prompt,pkg);
    setMessages(prev=>[...prev,{question:prompt,answer:localReply?.answer??'',answerOrigin:useGemini?'gemini':'local',at,...(useGemini?{status:'pending' as const}:{}),...(localReply?.evidence?{evidence:localReply.evidence}:{})}]);setQuestion('');
    if(!useGemini&&shouldSearchLocalEvidence(response)){setSemantic([]);searchLocalEvidenceForTurn(prompt,localReply?.answer??'',at,epoch.current,true);}
    if(useGemini)void gemini(false,{packageData:pkg,question:prompt,auditData:response,imageAssets:images,messages,replaceTurnAt:at,portion:selected.value,unit:selected.unit,interpretedCandidates:remoteCandidates});

@@ -154,7 +154,7 @@ export function safeConversationEvidence(sources: readonly EvidenceSource[] | un
 }
 
 /** Carry source-linked audit context into the local chat reply without adding unsupported findings. */
-export function buildLocalAuditConversationReply(audit: Audit, question: string): {
+export function buildLocalAuditConversationReply(audit: Audit, question: string, pkg?: PackageData): {
   answer: string;
   evidence?: ConversationEvidenceSource[];
 } {
@@ -163,13 +163,41 @@ export function buildLocalAuditConversationReply(audit: Audit, question: string)
     (asksForEvidenceContext && finding.status === 'context') || finding.status === 'calculated'
   ));
   const referencedSourceIds = new Set(relevantFindings.flatMap((finding) => finding.sourceIds));
-  const evidence = safeConversationEvidence(audit.sources.filter((source) => referencedSourceIds.has(source.id) && isGuidanceEvidenceInScope(source, question)));
+  const evidence = safeConversationEvidence(audit.sources.filter((source) => referencedSourceIds.has(source.id)
+    && isLocalEvidenceTopicallyRelevant(source, question)
+    && isGuidanceEvidenceInScope(source, question)));
   // A local fallback is a concise status, not a second research essay. Keep
   // source summaries in the evidence inspector, where their jurisdiction and
   // limitations remain visible on demand.
   const lead = audit.answer.trim().split(/\n\s*\n/, 1)[0]?.trim() ?? '';
   const sentence = lead.match(/^(.{1,700}?[.!?])(?:\s|$)/s)?.[1];
-  const answer = (sentence ?? lead.slice(0, 700)).trim();
+  let answer = (sentence ?? lead.slice(0, 700)).trim();
+
+  // A package-only response should say when the requested nutrient was not
+  // captured, while preserving the distinction between missing evidence and
+  // an actual zero or absence from the product.
+  const requestedNutrient = question.match(/\b(calcium|iron|potassium|magnesium|zinc|cholesterol|trans\s+fat|saturated\s+fat|vitamin\s+[a-z](?:\d{1,2})?|protein|carbohydrates?|carbs?|sugars?|sodium|salt|fibre|fiber|fat|energy|calories?)\b/i)?.[1]?.toLocaleLowerCase('en-IN').replace(/\s+/g, ' ');
+  const nutrientAliases: Record<string, string> = { carbs: 'carbohydrate', carbohydrate: 'carbohydrate', carbohydrates: 'carbohydrate', sugar: 'sugars', calories: 'energy', calorie: 'energy', fibre: 'fiber', 'saturated fat': 'saturatedFat' };
+  const requestedKey = requestedNutrient ? nutrientAliases[requestedNutrient] ?? requestedNutrient : undefined;
+  const hasRequestedCalculation = !!requestedKey && audit.calculations.some(calculation => calculation.nutrient === requestedKey);
+  if (pkg && requestedNutrient && !hasRequestedCalculation) {
+    const labelText = [pkg.rawText, ...pkg.observations.map(observation => observation.text)].join('\n');
+    const missing = labelText.toLocaleLowerCase('en-IN').includes(requestedNutrient)
+      ? `The entered label text mentions ${requestedNutrient}, but no usable ${requestedNutrient} amount is recorded for calculation. Check that line in the package inspector or add a clearer label reading.`
+      : `No ${requestedNutrient} amount is recorded in the label text entered so far. That does not establish that the package contains none; add a clearer nutrition-panel reading to check it.`;
+    answer = missing;
+  }
+
+  const asksAllergenContext = /\b(?:allerg\w*|intoler\w*|may\s+contain|cross[- ]?contact|cross[- ]?contamination|safe|suitab\w*)\b/i.test(question);
+  if (asksAllergenContext) {
+    const suitabilityLimit = audit.answer.match(/[^.!?]*cannot establish individual suitability[^.!?]*[.!?]/i)?.[0]?.trim();
+    if (suitabilityLimit && !answer.includes(suitabilityLimit)) answer = `${answer} ${suitabilityLimit}`.trim();
+  }
+  if (asksAllergenContext) {
+    const finding = audit.findings.find(item => /^(?:food allergy|food intolerance|avoided ingredient):/i.test(item.title) && item.detail.trim());
+    if (finding && !answer.includes(finding.detail)) answer = `${answer} ${finding.detail}`.trim();
+  }
+  answer = answer.slice(0, 1500);
 
   return { answer, ...(evidence.length ? { evidence } : {}) };
 }
@@ -242,6 +270,8 @@ export function buildLocalPackageFallbackReply(audit: Audit, question: string, p
     ? `${facts.join(' ')} ${foodChoice ? 'This on-device summary describes unverified label readings; it does not determine individual suitability.' : 'These on-device package readings remain unverified.'}`.slice(0, 1500)
     : 'Gemini could not complete this answer, and the saved package record has no linked structured detail suitable for a short local summary. Open Package details to inspect the retained readings, or retry the analysis.';
   const sourceIds = new Set(audit.findings.filter(finding => finding.status === 'context' && finding.sourceIds.length > 0).flatMap(finding => finding.sourceIds));
-  const evidence = safeConversationEvidence(audit.sources.filter(source => sourceIds.has(source.id) && isGuidanceEvidenceInScope(source, question)));
+  const evidence = safeConversationEvidence(audit.sources.filter(source => sourceIds.has(source.id)
+    && isLocalEvidenceTopicallyRelevant(source, question)
+    && isGuidanceEvidenceInScope(source, question)));
   return { answer, ...(evidence.length ? { evidence } : {}) };
 }

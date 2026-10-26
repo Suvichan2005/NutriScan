@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 local answer breadth (26 October 2026)
+
+Fixed a user-visible local fallback gap: missing calcium now reads as unrecorded in the provided label text (not zero or confirmed absence), and combined allergy/health-context answers retain relevant package quantities plus linked precautionary allergen uncertainty and the individual-suitability limit. Local source cards now require topical and jurisdiction relevance. The reusable provider-free acceptance script passed at390×844 and1440×900 with no provider or external requests, errors, overflow or Axe findings. Scoped app typecheck passes; focused suite13/13 passes. Next compile succeeded, while repo-wide typechecking remains blocked by `Assertion.not` errors in existing test files. No fresh Gemini, held-out or human evaluation. Local Gemini, paid fallback, search and transcript capture are disabled.
+
 ## M3/M6 incomplete-label recovery (26 October 2026)
 
 Pasting label text now remains local and can supplement an active scan. The new footer action is reachable after OCR; user-entered ingredient/allergen text appears with entered-text provenance and supports separate natural follow-ups. Real exploratory Amul Lassi photos reproduced a local OCR gap; user-supplied wording resolved the interaction while remaining explicitly unverified. Mobile acceptance: zero Gemini/external calls, page errors, horizontal overflow or Axe violations. A keyboard focus target was added to the conversation scroller. Synthetic text transfer at mobile/desktop retained the original600 mg/100 g reading. `tsc --noEmit` and diff check pass. This is recovery UX evidence, not OCR accuracy, independent truth or Gemini behavior.

@@ -1,4 +1,8 @@
 # Chronological decisions
+## 26 October 2026 — preserve missing nutrient and allergen meaning in local answers
+
+When a user requests a nutrient with no captured amount, say it is not recorded in the supplied label text, explicitly avoid implying zero or product absence, and suggest adding a clearer panel reading. When a question combines suitability/allergy context with package nutrition, preserve both the deterministic portion facts and the linked allergen finding/caveat; do not convert either into a personal-safety verdict. Source cards require topic relevance as well as jurisdiction fit. This improves the existing local answer path without changing the analysis method or remote prompt.
+
 ## 26 October 2026 — keep explicit label-text entry local and available after scan
 
 The label-text dialog tells users that entered text stays in the browser, so submitting it must not initiate Gemini. Keep the merge and immediate answer local regardless of the selected cloud mode; users can choose a separately disclosed Gemini analysis or follow-up afterward. Expose the same correction path from an active package so unreadable OCR fields can be supplied without discarding existing scan evidence. Preserve user-entered provenance and uncertainty. Browser acceptance on exploratory photos establishes the interaction and privacy boundary, not label truth or OCR accuracy.
