@@ -1,5 +1,13 @@
 # Chronological decisions
 
+## 26 October 2026 — restore IdeaPad source faithfully; make history mutations atomic
+
+Use the integration branch as source authority and separately preserve the five owner modifications; the downloaded archive's Git HEAD matches remote and all other 426 tracked files match after newline normalization. Do not transfer archived Python environments or build outputs. Missing private-state/knowledge ZIPs remain explicit dependencies, not permission to reacquire extensive corpora. Latest semester scope supersedes historical expansion requests and teammate-specific tasks in chat exports.
+
+History save/remove operations must read and write within one IndexedDB transaction. Separate `get` then `set` loses concurrent records and can undo a later clear; real Chromium reproduces these failures. Use the existing idb-keyval atomic update primitive, including across tabs, while preserving schema validation, profile separation and the 20-record cap. Regression checks use isolated synthetic browser storage and make no scientific-accuracy claim.
+
+The package inspector must expose the existing nutrition editor for local packages even when there is no Gemini reconstruction or generated widget. Corrections and deterministic calculations are native functionality and must remain available while the provider is unavailable. Preserve the dedicated arbitrary-row reconstruction editor for reconstructed packages. Reuse existing correction/provenance logic; do not introduce dietary templates or change study inputs. Browser evidence separately reports actual local OCR dispatch, synthetic arithmetic/persistence acceptance and accessibility findings.
+
 ## 25 October 2026 — let exact saved rows identify non-standard nutrition calculations
 
 - Keep model semantic interpretation separate from arithmetic: a native calculation can identify a current reconstructed row by its exact rowId, omitting a standard nutrient key. Preserve its printed/interpreted name, source identity, absolute unit, basis and uncertainty. Do not expand ingredient/nutrient keyword rules to make calcium or other unenumerated rows calculable.

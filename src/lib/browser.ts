@@ -1,4 +1,4 @@
-import { get, set, del } from 'idb-keyval';
+import { get, set, del, update } from 'idb-keyval';
 import { hasUserContext, profileSchema, savedScanSchema, type ImageAsset, type Observation, type OcrCapture, type Profile, type SavedScanRecord } from './contracts';
 import { detectRetailBarcodes } from './barcode';
 import { measureScanStage } from './scan-performance';
@@ -14,21 +14,24 @@ const rememberedProfileKey = 'nutriscan.user-context.v1';
 const sessionProfileKey = 'nutriscan.user-context.session.v1';
 const onboardingCompleteKey = 'nutriscan.onboarding.complete.v1';
 
-export async function readHistory(): Promise<SavedScan[]> {
-  const data: unknown = await get(historyKey);
+function validHistory(data: unknown): SavedScan[] {
   return Array.isArray(data) ? data.flatMap(item => {
     const parsed = savedScanSchema.safeParse(item);
     return parsed.success ? [parsed.data] : [];
   }).slice(0, 20) : [];
 }
+export async function readHistory(): Promise<SavedScan[]> {
+  return validHistory(await get(historyKey));
+}
 export async function saveScan(input: SavedScan) {
   const scan = savedScanSchema.parse(input);
-  const history = await readHistory();
-  await set(historyKey, [scan, ...history.filter(item => item.id !== scan.id)].slice(0, 20));
+  // Keep the read and write in one IndexedDB transaction, including across tabs.
+  // A later clear/remove must not be undone by an earlier save's stale read.
+  await update(historyKey, (data: unknown) =>
+    [scan, ...validHistory(data).filter(item => item.id !== scan.id)].slice(0, 20));
 }
 export async function removeSavedScan(id: string) {
-  const history = await readHistory();
-  await set(historyKey, history.filter(scan => scan.id !== id));
+  await update(historyKey, (data: unknown) => validHistory(data).filter(scan => scan.id !== id));
 }
 export async function clearHistory() { await del(historyKey); }
 

@@ -47,13 +47,13 @@ export function ThreadPackageLabelDetails({ pkg, canInspect, isInspecting, onIns
     <div className="thread-label-details-content">
       <p className="thread-label-caveat"><CircleHelp size={14}/>Unconfirmed text. Open a photo region to check the package.</p>
       {groups.filter(group => group.field === 'ingredients').map(group => <section key={group.field} className="thread-label-group">
-        <h3>{group.label} <span>{group.observations.length}</span></h3><ul>{group.observations.map(row)}</ul>
+        <h2>{group.label} <span>{group.observations.length}</span></h2><ul>{group.observations.map(row)}</ul>
       </section>)}
       {groups.filter(group => group.field === 'allergens').map(group => <section key={group.field} className="thread-label-group">
-        <h3>{group.label} <span>{group.observations.length}</span></h3><ul>{group.observations.map(row)}</ul>
+        <h2>{group.label} <span>{group.observations.length}</span></h2><ul>{group.observations.map(row)}</ul>
       </section>)}
       {groups.filter(group => group.field === 'claim').map(group => <section key={group.field} className="thread-label-group">
-        <h3>{group.label} <span>{group.observations.length}</span></h3><ul>{group.observations.map(row)}</ul>
+        <h2>{group.label} <span>{group.observations.length}</span></h2><ul>{group.observations.map(row)}</ul>
       </section>)}
       {!hasGroupedAllergenText && <p className="thread-label-missing">No allergen statement was recognized. Check the package; absence is not confirmed.</p>}
       {otherLines.length > 0 && <details className="thread-other-ocr-lines" open={openByDefault || undefined}>
