@@ -1,5 +1,10 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — confirm the local clinical study source is retrievable
+
+- Same-origin `/api/evidence` on the refreshed 3400 runtime returned the PubMed 2022 oat beta-glucan/lipid systematic review as the top hit for a focused query (semantic0.854, lexical1.0). Its existing curated summary reports13 trials and927 participants and explicitly says package beta-glucan dose and individual effects are unknown.
+- Compared with the earlier actual model trace: research mode exposed both `search_knowledge` and `search_research`, but the model called only external research. The source was available locally, so this omission is attributable to model tool selection for that request, not absent corpus coverage. Updated prompt wording asks for both kinds of evidence where requested, but a new free generation is still needed to test transfer. No paid request, independent scientific judgment or product claim was made.
+
 ## 2026-10-26 — refresh the local runtime to the live FSSAI source build
 
 - Inspection of the saved uncited answer trace showed the process on 3400 was serving an older optimized build: its output carried the curated FSSAI source ID, while current source code assigns the new live-registry ID. This explains the identifier mismatch and means the prior answer trace does not evaluate the latest tool/source ID wiring.

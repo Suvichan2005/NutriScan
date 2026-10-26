@@ -1,5 +1,9 @@
 # NutriScan final semester completion queue
 
+## M2 source-selection evidence — local study match (26 October 2026)
+
+Current same-origin local retrieval finds the relevant oat beta-glucan lipid review. The earlier real model trace had the knowledge tool available but did not call it; this is model-selection evidence. Verify updated dual-source prompting through a fresh bounded free-provider transfer run when quota is available. Continue unblocked M2 transfer work meanwhile; no formal study or human gate change.
+
 ## M2 runtime verification — current build on 3400 (26 October 2026)
 
 Resolved local build drift that made the old uncited trace appear to use the curated FSSAI ID. Current 3400 build and live same-origin research endpoint return the distinct live source ID/date and bounded text; status is free tier with paid fallback/search off. No provider run occurred. Re-evaluate live answer citation only in a bounded free transfer run when available; continue other M2 work meanwhile.
