@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — keep sodium evidence visible in a compound context question
+
+- A synthetic provider-free 75 g noodle scenario produced a 1,050 mg sodium calculation and a source-linked WHO whole-day context finding. The final local conversation reply kept the arithmetic, but the source-card topical filter dropped WHO because the question also named diabetes and hypertension.
+- The source was already selected by the local audit for sodium. The relevance check now retains it on a direct substantive-topic match while leaving jurisdiction/scope checks in place; a regression assertion verifies both the calculation and source card.
+- Focused `followup-evidence` suite: 16 passed. No paid/free provider call or browser run. Full `tsc --noEmit` still reports existing Vitest `Assertion.not` type errors across unrelated tests, so a clean project typecheck is not established.
+
 ## 2026-10-27 — preserve the second FSSAI claim source in the conversation
 
 - Running the existing claim journey against the current app exposed test drift (first-run onboarding/current controls) and a real presentation gap: the local criteria answer included the amendment-listing result, but only the compendium was selected as an answer citation. The current-status answer also said a dated reference was linked without naming it.
