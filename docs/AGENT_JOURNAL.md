@@ -3,7 +3,7 @@
 ## 2026-10-26 — correct the quantity-withholding notice for multi-sentence answers
 
 - A saved real browser response had five unsupported numerical statements withheld, but the validator appended a fixed singular notice (“a numerical detail”). Changed the generic notice to “one or more numerical statements”; rejected text and the validator policy remain untouched.
-- Exact saved provider text replay re-ran the current validator and retained the original five withheld statements, with the new notice. Private receipt: `.data/m2-answer-usefulness-20261026/withheld-notice-replay.json`. Inference tests38/38, TypeScript and optimized build passed. Current production3400 reports free/local with paid fallback/search/transcript capture off; five owner files and27 preserved evidence files were reverified. No provider call or human score; this is presentation accuracy only.
+- Exact saved provider text replay re-ran the current validator and retained the original five withheld statements, with the new notice. Intercepted-response Chromium replays at390×844 and1440×900 showed the notice with no page errors. Private receipts/screenshots are under `.data/m2-answer-usefulness-20261026/`. Inference tests38/38, TypeScript and optimized build passed. Current production3400 reports free/local with paid fallback/search/transcript capture off; five owner files and27 preserved evidence files were reverified. No provider call or human score; this is presentation accuracy only.
 
 
 ## 2026-10-26 — preserve relevant numeric guidance in combined-condition retrieval

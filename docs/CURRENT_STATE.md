@@ -2,7 +2,7 @@
 
 ## M2 quantity-withholding notice — 26 October 2026
 
-The natural-answer validator now uses a count-neutral notice when it withholds unsupported numerical statements, so the message remains accurate when one or many sentences are removed. Exact saved real response replay tied to diagnostic `c320a5ac-ea92-4046-9c2e-4c6bc3569c11` confirms all five unsupported statements remain withheld and the notice is now accurate. Private receipt: `.data/m2-answer-usefulness-20261026/withheld-notice-replay.json`. Inference suite38/38, TypeScript and optimized production build pass; current loopback3400 is free/local with paid fallback, search and transcript capture off. This does not recover claims or establish answer usefulness; M2 remains open.
+The natural-answer validator now uses a count-neutral notice when it withholds unsupported numerical statements, so the message remains accurate when one or many sentences are removed. Exact saved real response replay tied to diagnostic `c320a5ac-ea92-4046-9c2e-4c6bc3569c11` confirms all five unsupported statements remain withheld and the notice is now accurate. Intercepted-response Chromium replay at390×844 and1440×900 confirms the UI displays it with no page errors. Private receipts/screenshots: `.data/m2-answer-usefulness-20261026/`. Inference suite38/38, TypeScript and optimized production build pass; current loopback3400 is free/local with paid fallback, search and transcript capture off. This does not recover claims or establish answer usefulness; M2 remains open.
 
 ## M2 combined-condition guidance retrieval — 26 October 2026
 
