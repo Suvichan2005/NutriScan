@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — connect WHO sodium evidence to the condition-guidance tool
+
+- Ran the real local `getNutritionGuidance` function without a provider call. Focused India hypertension/sodium terms returned only the broad WHO healthy-diet summary even though the specific WHO sodium-reduction record was already catalogued. The missing link was the curated local guidance entry, not source acquisition.
+- Added the existing `who-sodium` source to the local tool with numeric coverage patterns for `<2000 mg/day sodium` and `400 mg sodium per gram of salt`. A tool-level regression exercises the production executor, ensures the source stays labeled global/general-adult and not individualized, excludes the U.S.-only AHA target for India, and checks no network request. Full `gemini-tools.test.ts` passed (68 passed, 1 skipped), TypeScript passed, optimized build passed. New build is live on loopback3400; free tier, paid fallback/search/transcript capture off. No model answer was generated, so answer selection and usefulness remain open.
+
+
 ## 2026-10-26 — make condition-guidance retrieval queries more focused
 
 - A direct tool replay for India hypertension returned empty with “packaged food sodium carbohydrate practical guidance”, while focused “hypertension sodium salt population guidance” returned the WHO healthy-diet summary. Updated the tool schema to ask for focused condition/goal and nutrient/behavior terms, omitting unrelated package facts. This is an instruction change, not a new rule/source or fallback.

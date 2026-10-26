@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — expose the existing WHO sodium record through focused guidance
+
+The local nutrition-guidance tool must return the source that directly supports a sodium question, not rely on a broad healthy-diet summary alone. Reuse the catalog’s existing WHO sodium-reduction record, preserve its global general-adult scope and daily-intake caveat, and pass its numeric support facts through the ordinary tool adapter. India routing must not surface U.S.-only sodium targets as local guidance. No product-level pass/fail interpretation, personalized daily balance, or new clinical rule is introduced.
+
 ## 26 October 2026 — focus local guidance queries on the condition and nutrient
 
 The condition-guidance reader ranks by the supplied query; broad unrelated package details can suppress an otherwise relevant population source. Ask the model for a focused condition/goal and nutrient/behavior query, retaining only caller-authorized context. Do not expand to unrelated sources or infer a personal target. Validate actual model query selection before claiming behavioral improvement.

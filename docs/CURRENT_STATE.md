@@ -1,5 +1,9 @@
 # NutriScan current runtime handoff
 
+## M2 local sodium-guidance wiring — 26 October 2026
+
+Focused provider-free retrieval found the condition-guidance function was exposing broad WHO healthy-diet guidance but omitted the more directly relevant WHO sodium-reduction source already present in the catalog. The local tool now includes `who-sodium` with its global/general-adult scope, limitations and numeric coverage facts for the daily sodium and salt-conversion figures. A regression exercises India hypertension guidance through the production tool executor, confirms no U.S.-only AHA source is returned, and confirms no external request. Focused test and TypeScript passed; optimized production build passed and was restarted at `127.0.0.1:3400`. Status endpoint reports free/local, paid fallback off, search off and transcript capture off. No Gemini response was generated, so source selection by the model and end-user usefulness remain unverified. Next M2 continuation needs a bounded free-provider run; M3 profile conversations need human-reviewed fixed product snapshots before execution.
+
 ## M2 focused condition-guidance queries — 26 October 2026
 
 Provider-free `get_nutrition_guidance` replay found a precision gap: the broad query “packaged food sodium carbohydrate practical guidance” returned no India-scoped hypertension summary, while focused “hypertension sodium salt population guidance” returned the WHO healthy-diet source. The tool schema now asks for the explicit condition/goal and relevant nutrient or behavior, omitting unrelated package details. This is a model-facing retrieval hint grounded in the observed query behavior; no code path manufactures a fallback or target. Focused tests117 passed/one skipped, TypeScript/build pass. Refreshed3400 status is free/local with paid fallback and search off; owner/evidence hashes verified. No fresh Gemini response, so improved query selection and answer usefulness remain unverified.

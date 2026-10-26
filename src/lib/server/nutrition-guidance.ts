@@ -88,6 +88,15 @@ const entries: readonly GuidanceEntry[] = [
     conditions: [],
   },
   {
+    source: curatedGuidanceSource('who-sodium'),
+    terms: ['sodium', 'salt', 'sodium reduction', 'sodium intake', 'adult sodium', 'salt intake'],
+    conditions: [],
+    numericCoverage: {
+      queryTerms: ['sodium', 'salt'],
+      requiredValuePatterns: ['\\b2,?000\\s*mg\\s*(?:\\/|per\\s+)day\\b', '\\b400\\s*mg\\b'],
+    },
+  },
+  {
     source: guidanceSource({
       id: 'who-free-sugars-guideline-2015',
       title: 'Guideline: sugars intake for adults and children',

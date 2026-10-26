@@ -1,5 +1,9 @@
 # NutriScan final semester completion queue
 
+## M2 WHO sodium guidance tool integration (26 October 2026)
+
+An actual provider-free query through the local guidance function found that `who-sodium` existed in the source catalog and semantic corpus but was absent from `get_nutrition_guidance`; hypertension queries received only the broad WHO healthy-diet summary. Added the catalog source to focused local guidance with explicit population scope and numeric coverage for the 2,000 mg sodium and 400 mg sodium-per-gram-of-salt statements. Tool-level regressions verify an India hypertension query returns the global adult source, excludes U.S.-only AHA targets, retains both numeric support patterns, and performs no external request. The full `gemini-tools.test.ts` suite passes (68 passed, 1 skipped), TypeScript and optimized build pass. The new production build is running at loopback 3400 in free/local mode, with paid fallback, search and readable transcript capture off. No Gemini answer was generated; model selection and answer quality remain unverified. Next: continue M2 source-use transfer only when free quota is available; proceed with fixed-snapshot profile conversations after human-reviewed package snapshots exist.
+
 ## M2 focused guidance query follow-up (26 October 2026)
 
 Observed that broad package queries can return no condition-guidance source while a concise condition/nutrient query finds relevant global evidence. Tool instructions now favor focused caller-authorized query terms. Tests/build pass, but fresh provider adherence is unverified. Continue multi-condition transfer work without changing human gates.

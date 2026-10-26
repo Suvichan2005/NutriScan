@@ -488,6 +488,33 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it('returns WHO population sodium guidance for an India hypertension query with its numeric scope', async () => {
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+
+    const result = await executeGeminiTool('get_nutrition_guidance', {
+      query: 'hypertension sodium salt',
+      condition: 'hypertension',
+      jurisdiction: 'India',
+    }, context('How should adults in India with hypertension think about sodium and salt?'));
+
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.map(source => source.id)).toContain('who-sodium');
+    expect(result.evidence?.find(source => source.id === 'who-sodium')).toMatchObject({
+      jurisdiction: 'Global; general adult population',
+      limitations: expect.stringMatching(/not an individualized prescription/i),
+    });
+    expect(result.evidence?.map(source => source.id)).not.toContain('aha-sodium-guidance');
+    expect(result.output.guidanceCoverageFacts).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        sourceId: 'who-sodium',
+        requiredValuePatterns: expect.arrayContaining(['\\b2,?000\\s*mg\\s*(?:\\/|per\\s+)day\\b', '\\b400\\s*mg\\b']),
+      }),
+    ]));
+    expect(result.output).toMatchObject({ externalRequestMade: false });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it('passes source-linked numeric guidance through the actual tool-result adapter without a wording gate', async () => {
     const result = await executeGeminiTool('get_nutrition_guidance', {
       query: 'free sugars added sugar intake',
@@ -569,8 +596,8 @@ describe('Gemini tool retrieval boundaries', () => {
   it('honors each authorized condition in a multi-condition investigation instead of replaying the dominant topic',async()=>{
     const toolContext=context('For this fictional scenario, my dad has diabetes, hypertension and CKD in India. Is this snack suitable?');
     const bloodPressure=await executeGeminiTool('get_nutrition_guidance',{query:'hypertension sodium salt intake',condition:'hypertension',jurisdiction:'India'},toolContext);
-    expect(bloodPressure.evidence?.map(source=>source.id)).toEqual(['who-healthy-diet-guidance']);
-    expect(bloodPressure.evidence?.[0].limitations).toContain('General population');
+    expect(bloodPressure.evidence?.map(source=>source.id)).toEqual(['who-sodium','who-healthy-diet-guidance']);
+    expect(bloodPressure.evidence?.find(source=>source.id==='who-sodium')?.limitations).toMatch(/not an individualized prescription/i);
     const kidney=await executeGeminiTool('get_nutrition_guidance',{query:'CKD sodium restriction',condition:'CKD',jurisdiction:'India'},toolContext);
     expect(kidney.evidence?.map(source=>source.id)).toEqual(['kdigo-ckd-2024-sodium']);
     const diabetes=await executeGeminiTool('get_nutrition_guidance',{query:'diabetes carbohydrate portions',condition:'diabetes',jurisdiction:'India'},toolContext);
