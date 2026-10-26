@@ -1,7 +1,7 @@
 # Chronological decisions
 ## 26 October 2026 — retain typed operations as the basis for portion deltas
 
-A saved 30 g answer's comparison between 40 g and 30 g values remained withheld when validation received eight typed operations for each portion, because the derived differences were not themselves typed operations. Keep this boundary: previous/current values do not by themselves certify model-generated arithmetic. If comparison answers are to include precise deltas, represent them as validated derived operations and preserve their provenance rather than weakening quantity validation. The trace-supplied WHO carbohydrate record does explicitly support the population fibre guidance sentence; paired replay confirms it is retained with that source and withheld without it.
+A saved 30 g answer's comparison between 40 g and 30 g values remained withheld when validation received typed operations for both portions, because the derived differences were not themselves typed operations. Existing calculator calls for the exact 10 g difference independently returned 37.6 kcal, 6.92 g carbohydrate and 228.3 mg sodium, after which the unchanged comparison passed validation. Keep the provenance boundary: previous/current values alone do not certify model-generated arithmetic. Integrate comparison calculations through a typed evidence path that does not duplicate nutrient rows in the interactive portion card. The trace-supplied WHO carbohydrate record supports the population fibre guidance sentence.
 
 ## 26 October 2026 — use local guidance for explicit guidance requests
 

@@ -1,7 +1,7 @@
 # Current engineering status
 ## M2 saved 30 g comparison replay (26 October 2026)
 
-Current validation of saved trace `408005b7-c455-48ee-92c6-5157ab3fd6a3`, with 8 prior and 8 current typed nutrient operations, continues to withhold the 40 g→30 g delta sentence because no typed delta operations exist. The trace-supplied `who-carbohydrate-2023` record explicitly supports population 25 g/day naturally occurring fibre guidance and distinguishes it from an individualized target; current validation retains the sentence with the record and withholds it without the record. Provider-free paired replay receipt: `.data/m2-answer-usefulness-20261026/30g-prior-calculation-validation-replay.json`. No new provider call or human review. M2 remains active.
+Current validation of saved trace `408005b7-c455-48ee-92c6-5157ab3fd6a3` with prior/current typed calculations withholds the 40 g→30 g delta sentence. Existing local calculator calls for the exact 10 g difference return 37.6 kcal, 6.92 g carbohydrate and 228.3 mg sodium; with those typed results, the unchanged sentence passes. The trace-supplied `who-carbohydrate-2023` record supports its population 25 g/day naturally occurring fibre guidance and distinguishes this from an individualized target. Provider-free receipts: `.data/m2-answer-usefulness-20261026/30g-prior-calculation-validation-replay.json` and `30g-delta-portion-calculation-replay.json`. This has not verified model selection or the UI for mixed-portion result sets. M2 remains active.
 
 ## M2 guidance retrieval request (26 October 2026)
 
