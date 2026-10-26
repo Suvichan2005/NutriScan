@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — ambiguous package identity and concise label evidence
+
+- Merged integration commit `9936b8b`, which prevents a parsed line typed as another package field from becoming a catalog-search query. Preserved the feature branch's stronger provenance rule for displaying OCR identity, plus explicit user correction, user detail, reconstructed suggestions, and barcode paths.
+- Browser review showed that the allergy evidence line still repeated its field label. The local finding now quotes the package text once and keeps the precautionary cross-contact caveat.
+- Verification on the combined source: full suite 847 passed/2 skipped, TypeScript and optimized production build clean, local-only Chrome acceptance at 390×844 and 1440×900 with no provider/external requests, page errors, Axe violations or horizontal overflow. No Gemini generation, real-photo accuracy or scientific validation claimed.
+
 ## 2026-10-27 — prevent cross-field label text from becoming a product title
 
 - The broader local-only text scenario reproduced an identity mismatch: one synthetic allergen precaution was typed as both `name` and `allergens`, surfaced as the package title, and enabled a catalog lookup despite no stated identity.

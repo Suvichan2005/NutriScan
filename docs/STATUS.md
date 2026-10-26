@@ -1,4 +1,8 @@
 # Current engineering status
+## M6 identity, catalog-query and label-evidence boundaries (27 October 2026)
+
+The default UI and product lookup now reject parsed identity text when that same line is also typed as another package field, while preserving explicit corrections, user detail, barcode lookup, photo-free scans, and source-card access. The feature branch retains confidence/provenance checks before displaying non-conflicting OCR identity. Allergy evidence quotes the exact package text without duplicated field labels and preserves the “May contain” uncertainty. Final combined verification: 847 passed/2 skipped; `tsc --noEmit` and optimized production build pass; local-only browser acceptance passes at 390×844 and 1440×900. No live Gemini, real-photo reconstruction or scientific validation was performed.
+
 ## M6 package identity and local finding copy (27 October 2026)
 
 Header identity is no longer taken from arbitrary parser `name`/`brand`: it requires an explicit correction, active Gemini reconstruction, user-provided product detail, high-confidence photo-linked OCR field, or clearly marked provisional model suggestion. Otherwise the header is generic. Local allergy findings retain evidence and uncertainty in shorter, non-repetitive wording. Full suite: 845 passed/2 skipped; `tsc --noEmit` clean; optimized production build passed; provider-free Playwright acceptance passed at mobile 390×844 and desktop 1440×900 with no provider/external calls, page errors, Axe violations or overflow. It used synthetic pasted-label input and establishes presentation/local behavior only. Real Gemini source use and scientific answer quality remain unverified M2 work.
