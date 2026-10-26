@@ -72,3 +72,17 @@ This importer supports only the existing exposed semester conversation pilot. It
 The returned answer is labeled server-returned, not observed browser rendering. The packet prominently says DEVELOPMENT and package facts not independently human verified. Contexts include fictional profiles and model-assisted package readings; reviewers must not treat them as gold labels. No treatment/no-knowledge pair or human ratings are invented. Source inputs and historical runner bytes remain hashed in manifest.json. Keep both contexts and custodian metadata private; share authorized reviewer material only after custodian review. The generic reviewer form still requires actual browser acceptance.
 
 Actual preparation26 October:26 responses, A-D turn3 `provider_incomplete` retained,0 returned source records among26 answers. Archived completed-call usage:33 generations,235161 prompt/4351 output tokens,4562 thinking tokens reported in17/33 calls,18174 cached prompt tokens reported in4/33 calls. Missing thinking/cache fields remain unknown. Recorded estimates total$0 for these free calls; billed cost and failed-request usage remain unknown. Initial reconstruction cost excluded. This is retained development evidence and does not establish scientific answer quality or final study success.
+
+## Retained development operational tables
+
+```powershell
+python tools/semester-study-ops/summarize_development.py --pilot ../NutriScan/.data/semester-conversation-pilot-20261026 --output .data/study-ops/development-operations-next
+# Run using the bundled report Python with Pillow:
+python scripts/evaluation/generate_report_evidence.py --manifest .data/study-ops/development-operations-next/report-manifest.json --out .data/study-ops/development-operations-next/report-generated
+```
+
+The first command validates the27 logical turns against exact authoritative scripts and reconciles each summary with its original response/failure receipt. It writes per-turn.csv, operational-summary.json and a manifest for the unchanged existing report generator. Every source input remains hash-linked and stable after reading. The second command verifies metric JSON pointers/hashes and generates existing CSV/PNG/SVG report artifacts. Use a fresh output each time; original files remain read-only.
+
+Actual artifacts: `.data/study-ops/development-operations-verified-20261026/`. Retained run metrics:26 completed/1 failed;33 completed generations;10 tool calls;0/26 answers with returned sources; median completed direct-assist task5757.5ms, range2611–28099ms;8 withheld quantity sentences. No nutrient/answer accuracy score or independent result is produced. Assistant-task time is not browser/full-scan latency. Failed-call usage and initial reconstruction cost remain outside these completed-generation totals and must not be silently described as free/zero. Historical free estimates and actual billing are separate.
+
+The generated median figure was visually inspected for readable labels and development-exploratory scope. These are individual operational receipt figures, not final scientific comparison plots. Human reference/rating results remain PENDING.
