@@ -1,4 +1,8 @@
 # Current engineering status
+## M2/M6 free-model exhaustion message (26 October 2026)
+
+The client now distinguishes an exhausted configured free-model route from a project spend guard or ordinary response failure. It tells users their package/conversation remain saved and does not imply a paid fallback. Focused presentation suite36/36 and TypeScript pass; browser-visible acceptance remains pending.
+
 ## M2 replay the saved study-count boundary (26 October 2026)
 
 Added an inference regression using the actual PubMed review record and the saved answer sentence naming its 2022 date, 13 trials and 927 participants. The validator retains that source-supported sentence, while still withholding the adjacent unsupported 12.4 g/100 g-to-4.7 g/38 g package conversion (no native calculation supplied) and the 1 g/serving claim threshold (not supported by that study record). Focused `numeric-reference-roles.test.ts`6/6, TypeScript and diff check pass. This validates the numeric boundary only; it does not establish fresh model citation, source-card rendering, user usefulness or an official India rule.

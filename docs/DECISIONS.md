@@ -1,4 +1,8 @@
 # Chronological decisions
+## 26 October 2026 — explain exhausted free-only routing without implying paid fallback
+
+When configured free Gemini models cannot finish a request, tell the user that the free route did not complete and that package/conversation state is saved. Keep this explanation distinct from Google quota/rate limits and paid-spend guards; never imply that NutriScan will retry on paid service. This follows the explicit free-first authorization boundary and makes transient service failures actionable without changing routing behavior.
+
 ## 26 October 2026 — keep research access explicit and name the next step
 
 Ordinary mode intentionally omits `search_research`; the specialized profile is selected by the user and exposes it. Do not add automatic question-based profile switching or expose every tool in ordinary mode. When an explicitly requested source class is missing or its tool is unavailable, state which class is missing, suggest specialized mode when needed, and do not substitute memory or another jurisdiction.
