@@ -20,7 +20,7 @@ import { matchesPackageRows, reconcileInterpretedNutrition } from '../interprete
 import { calculationsFromReconstruction } from '../portion';
 import { calculationRespectsCorrections } from '../correction';
 import { isGuidanceEvidenceInScope, isLocalEvidenceTopicallyRelevant } from '../followup-evidence';
-import { evidenceSources, findIngredientEvidence, ingredientEvidenceForSource, ingredientEvidenceSubjectInText, ingredientFamilySources, lookupIngredientFamilies, indianStapleIdentitySources, lookupAdditive, lookupExplicitAdditiveMention, lookupIndianStapleIngredientIdentity, resolveTentativeAdditiveIdentity, jecfaAssessmentTerminology } from '../../modules/knowledge';
+import { evidenceSources, findIngredientEvidence, ingredientEvidenceForSource, ingredientFamilySources, lookupIngredientFamilies, indianStapleIdentitySources, lookupAdditive, lookupExplicitAdditiveMention, lookupIndianStapleIngredientIdentity, resolveTentativeAdditiveIdentity, jecfaAssessmentTerminology } from '../../modules/knowledge';
 import { searchOpenFoodTox, semanticRetrieve } from '../semantic';
 import { searchFoodComposition, type FoodCompositionFood } from './food-composition';
 import { readFoodCompositionSource, fdcRecordInput } from './food-composition-records';
@@ -422,24 +422,50 @@ async function searchKnowledge(args: z.infer<typeof toolArgs.search_knowledge>, 
       ...context.package.ingredients,
       ...(context.package.reconstruction?.ingredients ?? []).flatMap(ingredient => [ingredient.name, ingredient.printedText, ingredient.normalizedName ?? '']),
     ].join(' ');
-    const requestedSubjectText = `${args.query} ${context.question}`;
-    const hits = response.results
+    const authorizedContextText = [context.question, context.profile?.dietaryPattern, context.profile?.healthConsiderations, context.profile?.goals].filter(Boolean).join(' ');
+    const requestedSubjectText = `${args.query} ${authorizedContextText}`;
+    // Both subject and outcome must be present in package/user-authorized
+    // context; the model's retrieval query alone cannot authorize a relation.
+    const linkedRelations = [
+      ...findIngredientEvidence(packageIngredientText, authorizedContextText),
+      ...findIngredientEvidence(authorizedContextText, authorizedContextText),
+    ].filter((relation, index, all) => all.findIndex(candidate => candidate.id === relation.id) === index);
+    const linkedRelationIds = new Set(linkedRelations.map(relation => relation.id));
+    const semanticHits = response.results
       .filter(item => isLocalEvidenceTopicallyRelevant(item.source, args.query, item.exactIdentity))
       .filter(item => isGuidanceEvidenceInScope(item.source, context.question, context.profile?.country ?? ''))
       // Some curated scientific records are linked to a named ingredient and
       // outcome. Keep those records out of unrelated package searches unless
       // the ingredient is present in the package or explicitly under inquiry.
       .map(item => {
-        const relations = ingredientEvidenceForSource(item.source.id);
-        const packageRelations = relations.filter(relation => ingredientEvidenceSubjectInText(packageIngredientText, relation));
-        const requestedRelations = relations.filter(relation => ingredientEvidenceSubjectInText(requestedSubjectText, relation));
-        return { ...item, relations: packageRelations.length ? packageRelations : requestedRelations };
+        const relations = ingredientEvidenceForSource(item.source.id).filter(relation => linkedRelationIds.has(relation.id));
+        return { ...item, relations };
       })
       .filter(item => !ingredientEvidenceForSource(item.source.id).length || item.relations.length > 0)
-      .slice(0, 3)
       .map(item => ({
         source: item.source,
         score: item.score,
+        retrieval: 'semantic' as const,
+        exactIdentity: item.exactIdentity,
+        relations: item.relations,
+      }));
+    // Curated relationship links are exact, source-attributed knowledge edges.
+    // Resolve them independently of vector rank so a semantically weak index
+    // match cannot hide a directly relevant ingredient/outcome record.
+    const semanticSourceIds = new Set(semanticHits.map(item => item.source.id));
+    const linkedHits = linkedRelations.flatMap(relation => relation.sourceIds.flatMap(sourceId => {
+      if (semanticSourceIds.has(sourceId)) return [];
+      const source = evidenceSources.find(candidate => candidate.id === sourceId);
+      if (!source || !isGuidanceEvidenceInScope(source, context.question, context.profile?.country ?? '')) return [];
+      return [{ source, retrieval: 'curated-relationship' as const, exactIdentity: false, relations: [relation] }];
+    }));
+    const hits = [...linkedHits, ...semanticHits]
+      .filter((item, index, all) => all.findIndex(candidate => candidate.source.id === item.source.id) === index)
+      .slice(0, 3)
+      .map(item => ({
+        source: item.source,
+        ...(item.retrieval === 'semantic' ? { score: item.score } : {}),
+        retrieval: item.retrieval,
         exactIdentity: item.exactIdentity,
         ...(item.relations.length ? { relatedIngredientEvidence: item.relations.map(relation => ({
           id: relation.id,

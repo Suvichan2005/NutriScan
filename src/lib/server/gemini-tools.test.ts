@@ -410,7 +410,10 @@ describe('Gemini tool retrieval boundaries', () => {
     const result = await executeGeminiTool('search_knowledge', { query: 'post-meal glucose peaks' }, toolContext);
 
     expect(result.status).toBe('ok');
-    expect(result.evidence?.map(source => source.id)).toEqual(['efsa-oat-beta-glucan-glycaemic-peak-2026']);
+    expect(result.evidence?.map(source => source.id)).toEqual(expect.arrayContaining([
+      'efsa-oat-beta-glucan-glycaemic-peak-2026',
+      'efsa-oat-barley-beta-glucan-glycaemic-2025',
+    ]));
     expect(result.output.results).toEqual(expect.arrayContaining([
       expect.objectContaining({
         relatedIngredientEvidence: [expect.objectContaining({
@@ -443,7 +446,31 @@ describe('Gemini tool retrieval boundaries', () => {
     );
 
     expect(result.status).toBe('ok');
-    expect(result.evidence?.map(source => source.id)).toEqual(['efsa-oat-beta-glucan-glycaemic-peak-2026']);
+    expect(result.evidence?.map(source => source.id)).toEqual(expect.arrayContaining([
+      'efsa-oat-beta-glucan-glycaemic-peak-2026',
+      'efsa-oat-barley-beta-glucan-glycaemic-2025',
+    ]));
+  });
+
+  it('retrieves an exact curated subject/outcome source when semantic ranking misses it', async () => {
+    const unrelated = evidenceSources.find(source => source.id === 'fssai-labelling-allergen-faq-2023')!;
+    mocks.semanticRetrieve.mockResolvedValue({
+      status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
+      results: [{ source: unrelated, score: 0.94, exactIdentity: false }],
+    });
+    const question = 'What evidence is available about oat beta-glucan and post-meal glucose peaks?';
+
+    const result = await executeGeminiTool('search_knowledge', { query: question }, context(question));
+
+    expect(result.status).toBe('ok');
+    expect(result.evidence?.map(source => source.id)).toEqual(expect.arrayContaining([
+      'efsa-oat-beta-glucan-glycaemic-peak-2026',
+      'efsa-oat-barley-beta-glucan-glycaemic-2025',
+    ]));
+    expect(result.output.results).toEqual(expect.arrayContaining([
+      expect.objectContaining({ retrieval: 'curated-relationship', relatedIngredientEvidence: [expect.objectContaining({ id: 'oat-beta-glucan-postprandial-glucose-peak-2026', sourceIds: ['efsa-oat-beta-glucan-glycaemic-peak-2026'], exposureContext: expect.stringContaining('3 g oat beta-glucan') })] }),
+      expect.objectContaining({ retrieval: 'curated-relationship', relatedIngredientEvidence: [expect.objectContaining({ id: 'oat-beta-glucan-postprandial-glucose-iAUC-2025', sourceIds: ['efsa-oat-barley-beta-glucan-glycaemic-2025'] })] }),
+    ]));
   });
 
   it('returns relevant oat outcome evidence alongside local ingredient identity lookup', async () => {
@@ -466,7 +493,7 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(JSON.stringify(result.output)).toMatch(/do not establish package composition, dose, exposure/i);
   });
 
-  it('abstains when semantically ranked candidates lack topical evidence for an ingredient-effect question', async () => {
+  it('recovers a linked ingredient outcome when semantic ranking returns only an unrelated source', async () => {
     const unrelated = evidenceSources.find(source => source.id === 'fssai-labelling-allergen-faq-2023')!;
     mocks.semanticRetrieve.mockResolvedValue({
       status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
@@ -475,10 +502,42 @@ describe('Gemini tool retrieval boundaries', () => {
 
     const result = await executeGeminiTool('search_knowledge', { query: 'Does beta-glucan in oats affect blood cholesterol?' }, context('Does beta-glucan in oats affect blood cholesterol?'));
 
+    expect(result.status).toBe('ok');
+    expect(result.resultCount).toBe(1);
+    expect(result.evidence?.map(source => source.id)).toEqual(['pubmed-oat-beta-glucan-lipids-2022']);
+    expect(result.output.results).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        retrieval: 'curated-relationship',
+        relatedIngredientEvidence: [expect.objectContaining({ id: 'oat-beta-glucan-lipid-outcomes' })],
+      }),
+    ]));
+  });
+
+  it('does not treat an agent-invented retrieval query as a user-authorized ingredient subject', async () => {
+    const oatEvidence = evidenceSources.find(source => source.id === 'efsa-oat-beta-glucan-glycaemic-peak-2026')!;
+    mocks.semanticRetrieve.mockResolvedValue({
+      status: 'ok', mode: 'hybrid-local-embedding', corpusVersion: 'test', limitations: [], message: null,
+      results: [{ source: oatEvidence, score: 0.95, exactIdentity: false }],
+    });
+
+    const result = await executeGeminiTool(
+      'search_knowledge',
+      { query: 'oat beta-glucan and post-meal glucose peaks' },
+      context('Does a sugar-free claim establish anything about this package?', 'CLAIM: SUGAR FREE'),
+    );
+
     expect(result.status).toBe('empty');
-    expect(result.resultCount).toBe(0);
     expect(result.evidence).toEqual([]);
-    expect(result.output).toMatchObject({ status: 'empty', message: expect.stringMatching(/topical relevance and applicability/i) });
+
+    const packageContext = context('Does a sugar-free claim establish anything about this package?', 'CLAIM: SUGAR FREE');
+    packageContext.package.ingredients = ['rolled oats'];
+    const unrelatedOutcome = await executeGeminiTool(
+      'search_knowledge',
+      { query: 'oat beta-glucan and post-meal glucose peaks' },
+      packageContext,
+    );
+    expect(unrelatedOutcome.status).toBe('empty');
+    expect(unrelatedOutcome.evidence).toEqual([]);
   });
 
   it('does not pass general fibre guidance off as evidence about a named substance', async () => {
