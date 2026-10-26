@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — require quoted record support for cited answer sentences
+
+- The active `assist()` path returned ordinary model prose, then validated cited source identity/topic/jurisdiction and quantities; a topical source reference alone could accompany an unsupported product-level claim.
+- Source-linked sentences now need an exact, visible, double-quoted excerpt of24–300 characters from that record’s summary or limitations. Existing source scope checks still apply, and the filter keeps independent package prose, retains retrieved records for inspection, and avoids making an omitted citation into a consumer source card. The compact model instruction remains below2,000 characters.
+- Provider-free mocked-route regression: an unsupported “safe every day” assertion with a topical sodium source is withheld while package explanation remains. Source/route/prompt suites pass160/160. Exact excerpts prove traceability, not entailment; misleading use of a real excerpt, uncited science assertions, and live Gemini adherence remain open.
+
 ## 2026-10-27 — verify local source continuity through a full browser journey
 
 - Extended the provider-free synthetic-label journey to inspect WHO fibre guidance in the UI and ask the natural follow-up “And for children?” The answer retained bounded prior-question context, included age-group population guidance and kept the package-specific 30 g calculation separate from whole-day intake.

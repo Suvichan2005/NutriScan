@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {filterAnswerBySourceScope,renderAnswerEvidenceReferences,selectCitedEvidence} from '../answer-evidence';
+import {isGuidanceEvidenceInScope,isLocalEvidenceTopicallyRelevant} from '../followup-evidence';
 
 const source=(id:string,title:string,publisher:string,publishedAt:string|null)=>({id,title,publisher,publishedAt,url:`https://example.org/${id}`});
 
@@ -53,23 +54,42 @@ describe('production answer source scope',()=>{
 
   it('keeps a relevant cited explanation and package prose while withholding a mismatched scientific citation',()=>{
     const aliases=new Map([['SRC_1',peanut.id],['SRC_2',salt.id],['SRC_9','missing-source']]);
-    const answer='The label lists peanuts among its ingredients. Peanut guidance explains that ingredient warnings need context SRC_1. WHO guidance recommends limiting population sodium intake. Unknown reference SRC_9 is unavailable.';
+    const answer='The label lists peanuts among its ingredients. Peanut guidance describes “Food ingredient labels can identify peanuts and related allergen warnings.” SRC_1. WHO guidance recommends limiting population sodium intake SRC_2. Unknown reference SRC_9 is unavailable.';
     const result=filterAnswerBySourceScope(answer,[peanut,salt],aliases,'Does the package list peanuts?');
-    expect(result.answer).toBe('The label lists peanuts among its ingredients. Peanut guidance explains that ingredient warnings need context SRC_1.');
+    expect(result.answer).toBe('The label lists peanuts among its ingredients. Peanut guidance describes “Food ingredient labels can identify peanuts and related allergen warnings.” SRC_1.');
     expect(result.withheldSentenceCount).toBe(2);
+  });
+
+  it('withholds a topical but unsupported scientific assertion and keeps useful package facts',()=>{
+    const aliases=new Map([['SRC_1',salt.id]]);
+    const question='What does WHO say about sodium and blood pressure?';
+    const answer='The package lists 420 mg sodium per 100 g. WHO says this packet is safe to eat every day SRC_1.';
+    expect(isLocalEvidenceTopicallyRelevant(salt,question)).toBe(true);
+    expect(isGuidanceEvidenceInScope(salt,question)).toBe(true);
+    const result=filterAnswerBySourceScope(answer,[salt],aliases,question);
+    expect(result.answer).toBe('The package lists 420 mg sodium per 100 g.');
+    expect(result.withheldSentenceCount).toBe(1);
+  });
+
+  it('retains a topical source explanation when its exact record excerpt is visible',()=>{
+    const aliases=new Map([['SRC_1',salt.id]]);
+    const quote=salt.summary;
+    const answer=`WHO guidance describes “${quote}” SRC_1.`;
+    expect(filterAnswerBySourceScope(answer,[salt],aliases,'What does WHO say about sodium and blood pressure?').answer).toBe(answer);
   });
 
   it('withholds guidance outside a user-named jurisdiction but allows explicit source inspection',()=>{
     const us={...peanut,id:'us-peanut-guidance',jurisdiction:'United States'};
     const aliases=new Map([['SRC_1',us.id]]);
     expect(filterAnswerBySourceScope('This US source says peanut warnings vary by product SRC_1.',[us],aliases,'How are peanut warnings handled in India?').withheldSentenceCount).toBe(1);
-    expect(filterAnswerBySourceScope('The supplied reference is SRC_1.',[us],aliases,'Explain the supplied reference.').answer).toBe('The supplied reference is SRC_1.');
+    const suppliedSourceAnswer=`The supplied reference says “${us.summary}” SRC_1.`;
+    expect(filterAnswerBySourceScope(suppliedSourceAnswer,[us],aliases,'Explain the supplied reference.').answer).toBe(suppliedSourceAnswer);
   });
 
   it('uses only prior user questions to resolve a contextual multi-turn source reference',()=>{
     const diabetes={...salt,id:'diabetes-guidance',title:'Diabetes and carbohydrate choices',publisher:'International Diabetes Federation',summary:'People living with diabetes may consider carbohydrate amounts and food choices with individual context.'};
     const aliases=new Map([['SRC_1',diabetes.id]]);
-    const answer='The International Diabetes Federation discusses carbohydrate choices in diabetes SRC_1.';
+    const answer=`The International Diabetes Federation discusses “${diabetes.summary}” SRC_1.`;
     const history=['Does this snack fit with type 2 diabetes?','What about just two biscuits?'];
     expect(filterAnswerBySourceScope(answer,[diabetes],aliases,'Does that change for 25 g?', '',history).answer).toBe(answer);
     expect(filterAnswerBySourceScope(answer,[diabetes],aliases,'And for 25 g?', '',history).answer).toBe(answer);

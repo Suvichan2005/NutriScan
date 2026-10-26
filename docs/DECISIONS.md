@@ -2,6 +2,9 @@
 ## 27 October 2026 — scope curated outcome evidence by its linked subject
 
 For a source explicitly linked to an ingredient/outcome relationship, include that relationship in native knowledge-tool results only when the active package names the ingredient or the current question explicitly asks about it. Include its population, exposure, outcome, exact source IDs and limitations. A semantic similarity match alone must not make an ingredient-specific study appear applicable to another product. This gate does not establish source entailment or a package-specific effect; Gemini still interprets, and exposure/dose remains unproven unless supported independently.
+## 27 October 2026 — require visible source excerpts for source-dependent answer sentences
+
+In the production natural-answer path, a source-linked sentence must carry a usable source identity and an exact, double-quoted excerpt of 24–300 characters from that returned record’s summary or limitations in the same sentence. Keep topical and jurisdiction checks; when a sentence fails, withhold that sentence while retaining independently useful package prose and explain the omission. A request to inspect a supplied source still bypasses topic/jurisdiction checks but must show the exact record excerpt for source-dependent content. This is a traceability gate, not semantic entailment validation: a quote can still be framed misleadingly, and uncited unsupported prose is not generally classified.
 
 ## 27 October 2026 — pasted label text keeps its browser-only boundary
 

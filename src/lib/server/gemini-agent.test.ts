@@ -475,16 +475,17 @@ describe('natural NutriScan agent contract', () => {
   it('uses one concise natural-answer instruction and exposes operation tools rather than a UI catalog', () => {
     const instruction = getAgentSystemInstruction();
     const tools = getAgentToolDeclarations(false, false);
-    expect(instruction).toContain('Answer directly in plain text');
-    expect(instruction).toContain('cite its exact provided SRC_... handle and name/date');
-    expect(instruction).toContain('retrieve study and applicable official evidence separately; never substitute one for the other');
-    expect(instruction).toContain('Disclose a missing source class');
-    expect(instruction).toContain('If a requested source class is unavailable or returns no relevant record, name the missing lookup and suggest specialized mode when needed; never fill its details from memory');
-    expect(instruction).toContain('give the judgment first');
-    expect(instruction).toContain('Before making a health-specific suitability recommendation, retrieve the narrowest applicable guidance or research evidence');
-    expect(instruction).toContain('a condition mentioned in an unrelated request alone does not justify clinical lookup');
-    expect(instruction).toContain('use an exact printed row or supplied deterministic calculation when its nutrient, value, unit and basis match the request');
-    expect(instruction).toContain('If a needed quantity is absent, call the appropriate calculator');
+    expect(instruction).toContain('answer in plain text');
+    expect(instruction).toContain('cite the exact SRC handle and source name/date');
+    expect(instruction).toContain('double-quoted exact excerpt (24–300 characters)');
+    expect(instruction).toContain('Omit source-dependent claims when no exact excerpt is available');
+    expect(instruction).toContain('Keep official claim rules separate from evidence of effects');
+    expect(instruction).toContain('disclose missing source classes rather than filling them from memory');
+    expect(instruction).toContain('state judgment first');
+    expect(instruction).toContain('For health-specific suitability, retrieve the narrowest relevant guidance or research');
+    expect(instruction).toContain('a condition mention alone does not justify lookup');
+    expect(instruction).toContain('Use a matching printed row or supplied typed calculation for quantities');
+    expect(instruction).toContain('call the appropriate calculator when needed and never calculate in prose');
     expect(instruction.length).toBeLessThan(2_000);
     expect(tools.map(tool => tool.name)).toContain('calculate_nutrition');
     expect(tools.find(tool => tool.name === 'calculate_nutrition')?.description).toContain('do not repeat those calculations');

@@ -455,7 +455,7 @@ describe('provider validation, independent of provider invocation', () => {
     expect(reconstruction).toContain('image geometry');
     expect(reconstruction).toContain('Do not answer the user’s food or health question');
     expect(reconstruction).not.toContain('Before making a health-specific suitability recommendation');
-    expect(conversation).toContain('Answer directly in plain text');
+    expect(conversation).toContain('answer in plain text');
     expect(conversation).not.toContain('readingOrder.runId');
   });
   it('reuses the complete saved package while omitting raw OCR from ordinary follow-ups',()=>{
@@ -645,7 +645,7 @@ describe('provider validation, independent of provider invocation', () => {
     expect(answerRequest.generationConfig).not.toHaveProperty('responseMimeType');
     expect(answerRequest.generationConfig).not.toHaveProperty('responseJsonSchema');
     expect(JSON.stringify(answerRequest.contents)).not.toContain('inlineData');
-    expect(JSON.stringify(answerRequest.systemInstruction)).toContain('Answer directly in plain text');
+    expect(JSON.stringify(answerRequest.systemInstruction)).toContain('answer in plain text');
     expect(JSON.stringify(answerRequest.systemInstruction)).not.toContain('readingOrder.runId');
     expect(JSON.stringify(answerRequest.systemInstruction)).not.toContain('questionCoverageInstruction');
   });
@@ -734,7 +734,7 @@ describe('provider validation, independent of provider invocation', () => {
     const question = 'Is this good to have for diabetic patients daily for snacking?';
     const source = getNutritionGuidance({ query: question, jurisdiction: 'India', maxResults: 3 }).find(item => item.id === 'idf-healthy-nutrition-diabetes-2024');
     expect(source).toBeDefined();
-    const answer = 'IDF patient education says refined carbohydrates can raise blood glucose more quickly than high-fibre choices, and that snack choices should be individualized.';
+    const answer = `IDF patient education says “${source!.summary.slice(0,140)}” SRC_1.`;
     const fetcher = vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]), { status: 200, headers: { 'content-type': 'application/json' } })); vi.stubGlobal('fetch', fetcher);
     const data = assistInput.parse({ consent: true, question, evidence:[source!], package: { id: 'guidance-ui-test', name: 'Unidentified package', ingredients: [], additives: [], allergens: [], claims: [], nutrients: [], observations: [], rawText: '', warnings: [], synthetic: false, createdAt: new Date().toISOString() } });
 
@@ -746,11 +746,11 @@ describe('provider validation, independent of provider invocation', () => {
   it('renders an explicit native source reference and returns its source card without a repair generation',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const source=getNutritionGuidance({query:'diabetes carbohydrate',jurisdiction:'India',maxResults:3})[0];
-    const answer='The supplied reference is SRC_1.\n\nIt is contextual guidance, not a personal target.';
+    const answer=`The supplied reference says “${source.summary.slice(0,100)}” SRC_1.\n\nIt is contextual guidance, not a personal target: “${source.limitations.slice(0,200)}” SRC_1.`;
     const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
     const data=assistInput.parse({consent:true,question:'Explain the supplied reference.',evidence:[source],package:{id:'native-source-reference-ui',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
     const result=await assist(data);
-    expect(result.answer).toBe(`The supplied reference is ${source.title}.\nIt is contextual guidance, not a personal target.`);
+    expect(result.answer).toBe(`The supplied reference says “${source.summary.slice(0,100)}” ${source.title}.\nIt is contextual guidance, not a personal target: “${source.limitations.slice(0,200)}” ${source.title}.`);
     expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[source.id],calculationIds:[]});
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
@@ -784,7 +784,7 @@ describe('provider validation, independent of provider invocation', () => {
     const data=assistInput.parse({consent:true,question,conversationContext:[{question:'How does carbohydrate relate to diabetes?',answer:'Earlier context cited IDF guidance.'}],evidence:[source!],package:{id:'source-scope-answer',name:'Unidentified package',ingredients:['Peanuts'],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,observations:[observation],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
 
     const result=await assist(data);
-    expect(result.answer).toBe('The entered label text lists peanuts.\n\nI left out one or more source-linked statements because their reference was unavailable, off topic, or outside the stated jurisdiction.');
+    expect(result.answer).toBe('The entered label text lists peanuts.\n\nI left out one or more source-linked statements because the record lacked an exact supporting excerpt, was off topic, or was outside the requested jurisdiction.');
     expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-with-source-scope-withheld',acceptedSentences:1,withheldSourceScopeSentences:1});
     expect(result.agentEvidence.map(item=>item.id)).toContain(source!.id);
     expect(result.uiComponents.some(item=>item.type==='source-reference-cards')).toBe(false);
@@ -795,7 +795,7 @@ describe('provider validation, independent of provider invocation', () => {
     const source=getNutritionGuidance({query:'diabetes carbohydrate',jurisdiction:'India',maxResults:3}).find(item=>item.id==='idf-healthy-nutrition-diabetes-2024');
     expect(source).toBeDefined();
     const question='Does that change for 25 g?';
-    const answer='IDF guidance says food choices should be considered in the broader diabetes context.';
+    const answer=`IDF guidance says “${source!.summary.slice(0,100)}” SRC_1.`;
     const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
     vi.stubGlobal('fetch',fetcher);
     const observation={id:'peanut-line',field:'ingredients',text:'INGREDIENTS: PEANUTS',side:'back' as const,confidence:100,origin:'user' as const};
@@ -811,9 +811,27 @@ describe('provider validation, independent of provider invocation', () => {
     const data=assistInput.parse({consent:true,question,conversationContext,evidence:[source!],package:{id:'source-scope-multiturn',name:'Unidentified package',ingredients:['Peanuts'],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,observations:[observation],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
 
     const result=await assist(data);
-    expect(result.answer).toBe(answer);
+    expect(result.answer).toBe(answer.replace('SRC_1',source!.title));
     expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-ready',acceptedSentences:1,withheldSourceScopeSentences:0});
     expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[source!.id],calculationIds:[]});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it('withholds a topical but unsupported source claim while retaining package explanation',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const source=getNutritionGuidance({query:'sodium blood pressure',jurisdiction:'India',maxResults:3})[0];
+    expect(source).toBeDefined();
+    const question='What does WHO say about sodium and blood pressure for this product?';
+    const answer='The supplied label lists sodium in its nutrition panel. The retrieved guidance says this product is safe to eat every day SRC_1.';
+    const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const observation={id:'sodium-line',field:'sodium',text:'Sodium is listed on the nutrition panel.',side:'back' as const,confidence:100,origin:'user' as const};
+    const reconstruction={identity:{brand:null,name:null,variant:null,status:'unreadable' as const,evidence:{observationIds:[],imageRegions:[]}},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Synthetic package summary.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};
+    const data=assistInput.parse({consent:true,question,evidence:[source!],package:{id:'unsupported-source-claim',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,observations:[observation],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
+    const result=await assist(data);
+    expect(result.answer).toBe('The supplied label lists sodium in its nutrition panel.\n\nI left out one or more source-linked statements because the record lacked an exact supporting excerpt, was off topic, or was outside the requested jurisdiction.');
+    expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-with-source-scope-withheld',acceptedSentences:1,withheldSourceScopeSentences:1});
+    expect(result.agentEvidence.map(item=>item.id)).toContain(source!.id);
+    expect(result.uiComponents.some(item=>item.type==='source-reference-cards')).toBe(false);
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
   it('accepts ordinary prose without a structured-answer repair generation',async()=>{
@@ -1148,8 +1166,8 @@ describe('provider validation, independent of provider invocation', () => {
     expect(initialRequest.contents[0].parts.some((part:{inlineData?:unknown})=>part.inlineData)).toBe(false);
     expect(initialRequest.contents[0].parts[0].text).toContain('Cream Cracker Sugar Free');
     expect(initialRequest.contents[0].parts[0].text).not.toContain('BISK FARM CREAM CRACKER');
-    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Track intent across turns.');
-    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Answer directly in plain text');
+    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('Track context');
+    expect(JSON.stringify(initialRequest.systemInstruction)).toContain('answer in plain text');
   });
   it('normalizes package-native reconstruction fields while preserving explicit claim links', () => {
     const answer='The package appears to list a two-biscuit serving and a nutrition table.';
