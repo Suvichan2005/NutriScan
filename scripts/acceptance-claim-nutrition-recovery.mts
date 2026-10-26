@@ -29,6 +29,7 @@ try {
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();
     const assistantAttempts: string[] = [];
+    let previousQuestionReachedSecondTurn = false;
     const externalRequests: string[] = [];
     const pageErrors: string[] = [];
     page.on('pageerror', error => pageErrors.push(error.message));
@@ -44,6 +45,10 @@ try {
     });
     await page.route('**/api/assist', async route => {
       assistantAttempts.push(`${route.request().method()} /api/assist`);
+      if (assistantAttempts.length === 2) {
+        const requestBody = route.request().postDataJSON() as { conversationContext?: Array<{ question?: string }> };
+        previousQuestionReachedSecondTurn = requestBody.conversationContext?.some(turn => turn.question?.includes('I am adding spinach')) ?? false;
+      }
       await route.fulfill({
         status: 503,
         contentType: 'application/json',
@@ -68,30 +73,43 @@ try {
     if (await advancedSettings.getAttribute('open') === null) await advancedSettings.locator(':scope > summary').click();
     await page.getByLabel('Product name or detail').fill(labelText);
     await advancedSettings.locator(':scope > summary').click();
-    await page.getByLabel('What would you like to know?').fill('Does the sugar-free claim mean this is carbohydrate-free? What is the amount in a 30 g portion?');
+    const firstQuestion = 'I am adding spinach with these crackers. Does the sugar-free claim mean carbohydrate-free? What is the amount in 30 g?';
+    await page.getByLabel('What would you like to know?').fill(firstQuestion);
     await page.getByRole('button', { name: 'Analyze details' }).click();
 
-    const turn = page.locator('.thread-turn').last();
-    await turn.locator('.thread-turn-fallback').waitFor({ state: 'visible' });
-    const visibleAnswer = await turn.locator('.thread-assistant-message').innerText();
-    const failureDetail = await turn.locator('.thread-turn-fallback').innerText();
-    const retryAvailable = await turn.getByRole('button', { name: 'Retry Gemini' }).isVisible();
-    const usefulCalculationsRetained = /21\.6 g carbohydrate for 30 g/.test(visibleAnswer) && /0\.15 g sugars for 30 g/.test(visibleAnswer);
-    const claimDistinctionShown = /printed claim and the requested nutrition-panel amount are separate/i.test(visibleAnswer);
+    const firstTurn = page.locator('.thread-turn').last();
+    await firstTurn.locator('.thread-turn-fallback').waitFor({ state: 'visible' });
+    const firstAnswer = await firstTurn.locator('.thread-assistant-message').innerText();
+    const failureDetail = await firstTurn.locator('.thread-turn-fallback').innerText();
+    const retryAvailable = await firstTurn.getByRole('button', { name: 'Retry Gemini' }).isVisible();
+    const usefulCalculationsRetained = /21\.6 g carbohydrate for 30 g/.test(firstAnswer) && /0\.15 g sugars for 30 g/.test(firstAnswer);
+    const claimDistinctionShown = /printed claim and the requested nutrition-panel amount are separate/i.test(firstAnswer);
+    await page.getByLabel('Ask about this package').fill('Would that change the meal total?');
+    await page.getByRole('button', { name: 'Send follow-up' }).click();
+    const followupTurn = page.locator('.thread-turn').last();
+    await followupTurn.locator('.thread-turn-fallback').waitFor({ state: 'visible' });
+    const followupAnswer = await followupTurn.locator('.thread-assistant-message').innerText();
+    const packageOnlyBoundaryShown = /package-only calculation; a combined meal total needs separate amounts and nutrition data for any other foods/i.test(followupAnswer);
+    const followupRetainsSupportedCalculation = /21\.6 g carbohydrate for 30 g/.test(followupAnswer);
     const failureExplained = /unavailable|could not reach/i.test(failureDetail);
     const axe = await new AxeBuilder({ page }).analyze();
+    const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
     const screenshotName = viewport.width === 390 ? 'mobile.png' : 'desktop.png';
     await page.screenshot({ path: path.join(privateScreenshotDirectory, screenshotName), fullPage: true });
     outcomes.push({
       viewport,
       mockedProviderUnavailable: true,
       assistantRequestsIntercepted: assistantAttempts.length,
+      previousQuestionReachedSecondTurn,
       claimDistinctionShown,
       usefulCalculationsRetained,
+      packageOnlyBoundaryShown,
+      followupRetainsSupportedCalculation,
       failureExplained,
       retryAvailable,
       pageErrors,
       axeViolationIds: axe.violations.map(violation => violation.id),
+      horizontalOverflow,
       externalRequests: [...new Set(externalRequests)],
     });
     await context.close();
@@ -101,19 +119,23 @@ try {
 }
 
 const passed = outcomes.length === 2 && outcomes.every(outcome =>
-  outcome.assistantRequestsIntercepted === 1
+  outcome.assistantRequestsIntercepted === 2
+  && outcome.previousQuestionReachedSecondTurn === true
   && outcome.claimDistinctionShown === true
   && outcome.usefulCalculationsRetained === true
+  && outcome.packageOnlyBoundaryShown === true
+  && outcome.followupRetainsSupportedCalculation === true
   && outcome.failureExplained === true
   && outcome.retryAvailable === true
   && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0
   && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0
+  && outcome.horizontalOverflow === false
   && Array.isArray(outcome.externalRequests) && outcome.externalRequests.length === 0);
 const receipt = {
   schemaVersion: 1,
-  kind: 'mocked-provider-failure-claim-nutrition-browser-acceptance',
+  kind: 'mocked-provider-failure-claim-and-added-food-followup-browser-acceptance',
   generatedAt: new Date().toISOString(),
-  evidenceClass: 'fictional sugar-free claim and carbohydrate development journey with browser-intercepted 503; not a real Gemini failure, regulatory opinion or independent answer-quality result',
+  evidenceClass: 'fictional sugar-free cracker and spinach-follow-up development journey with browser-intercepted 503; not a real Gemini failure, regulatory opinion or independent answer-quality result',
   baseOrigin: origin.origin,
   providerCallsReached: 0,
   outcomes,

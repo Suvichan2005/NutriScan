@@ -366,6 +366,7 @@ describe('local evidence follow-ups', () => {
 
     expect(reply.answer).toContain('18 g carbohydrate for 30 g');
     expect(reply.answer).toContain('228 mg sodium for 30 g');
+    expect(reply.answer).toContain('This is a package-only calculation; a combined meal total needs separate amounts and nutrition data for any other foods.');
 
     const missingQuestion = 'How much protein and sodium are in a 30 g portion?';
     const missingReply = buildLocalPackageFallbackReply(

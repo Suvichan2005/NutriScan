@@ -48,9 +48,9 @@ export function conversationContextForAssist(
 }
 
 /**
- * Resolve one explicit age-group follow-up from the preceding user question.
- * Prior assistant text is deliberately ignored; it is conversational context,
- * not evidence. Only the supported WHO fibre-guidance topic is carried forward.
+ * Resolve supported quantity changes and explicit referential follow-ups from
+ * the preceding user question. Prior assistant text is deliberately ignored:
+ * conversational context can retain what the user said, but is not evidence.
  */
 export function resolveLocalFollowUpQuestion(
   question: string,
@@ -64,6 +64,11 @@ export function resolveLocalFollowUpQuestion(
     || /\binstead\b/i.test(current);
   const previousQuestion = previousTurns.at(-1)?.question.trim() ?? '';
   if (continuesPriorAmount && explicitMassOrVolume.test(current) && explicitMassOrVolume.test(previousQuestion)) {
+    return `${previousQuestion.slice(0, 1000)} Follow-up: ${current.slice(0, 1000)}`;
+  }
+
+  const explicitReferenceFollowUp = /^(?:(?:and\s+)?(?:would|will|can|could|does|is)\s+(?:that|this|it|those|they|them)\b|(?:and\s+)?(?:what|how)\s+(?:would|will|can|could|does)\s+(?:that|this|it|those|they|them)\b|(?:and\s+)?(?:what|how)\s+about\s+(?:that|this|it|those|them)\b)/i.test(current);
+  if (explicitReferenceFollowUp && previousQuestion) {
     return `${previousQuestion.slice(0, 1000)} Follow-up: ${current.slice(0, 1000)}`;
   }
 
