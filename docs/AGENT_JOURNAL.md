@@ -1,5 +1,13 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — separate scientific effects from applicable claim rules
+
+- Saved ordinary-mode answer 131fb293-faa8-4fff-8ce2-dcdb4ca4518c retrieved a PubMed review but stated claim thresholds and cited EFSA/US FDA without an applicable official source result for the India-market question.
+- Extended the general source-use contract: retrieve research and official claim-rule evidence as separate classes, never substitute one for the other, and disclose a missing source class. This is not a jurisdiction or product-specific answer rule.
+- Agent tests50/50, TypeScript and optimized Webpack build pass;3400 status healthy/free-local, paid fallback/search/readable capture disabled. Protected owner files match archive. Fresh model transfer and clinical review remain unverified.
+
+
+
 ## 2026-10-26 — ground explicit lookups in returned records
 
 - A saved actual answer trace for an explicit study request had `search_knowledge` available in ordinary mode but made no tool call, then included a trial count and study findings without a retrieved source. The relevant PubMed review exists in the local evidence index.

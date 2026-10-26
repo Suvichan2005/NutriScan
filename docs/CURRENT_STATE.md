@@ -1,5 +1,9 @@
 # NutriScan current runtime handoff
 
+## M2 separate study and claim-rule evidence (26 October 2026)
+
+Saved trace `131fb293-faa8-4fff-8ce2-dcdb4ca4518c` asked for evidence behind a cholesterol claim. Ordinary-mode retrieval returned a PubMed review, but the answer also asserted thresholds and named EFSA/US FDA without retrieving an applicable official claim-rule record. Tightened the general agent contract: when an answer needs both research effects and claim rules, retrieve a study source and applicable official source separately, never substitute one class for the other, and disclose a missing class. Focused agent suite50/50, TypeScript and optimized Webpack production build passed; loopback3400 healthy in free/local mode with paid fallback/search/readable capture off. Five protected owner files match archive. This is a prompt-contract improvement only; no new model adherence or clinical review claimed.
+
 ## M2 explicit source-lookup grounding — 26 October 2026
 
 A saved actual Gemini answer trace showed an explicit study-source question answered with trial counts/findings from memory without a tool call, although ordinary mode exposed `search_knowledge` and the relevant PubMed review existed locally. The general agent instruction now requires a source lookup via the relevant enabled tool and grounds study details/rules only in returned records; if unavailable or empty it must say the lookup was not completed rather than fill details from memory. The local search tool description now directs explicit source requests to use it. Focused `gemini-agent.test.ts`50/50, TypeScript and diff check pass; instruction1999 chars. Optimized production build passed; rebuilt loopback3400 reports healthy in free/local mode with paid fallback, search and readable capture off. This is an instruction/source-selection change; no fresh model behavior or human review claimed.

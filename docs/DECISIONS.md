@@ -1,5 +1,11 @@
 # Chronological decisions
 
+## 26 October 2026 — retrieve effects and claim rules as separate evidence classes
+
+A saved answer retrieved a PubMed study for a product-claim question but added claim thresholds attributed to other jurisdictions without retrieving an applicable official record. When users ask about both effects and claim substantiation, require a study source and applicable official source independently. Never let one evidence class stand in for the other; disclose any missing class rather than completing it from memory. Preserve source jurisdiction and the no-current-law-verdict boundary.
+
+
+
 ## 26 October 2026 — do not substitute memory for an explicit source lookup
 
 A saved real model trace answered a user-requested literature lookup without calling any source tool, even though local `search_knowledge` was available and the relevant PubMed record existed. The model supplied source-specific study details without retrieved evidence. For explicit study/source lookups, call the relevant enabled source tool and ground study details/rules only in returned records; if the tool is unavailable or no relevant record is returned, disclose that lookup was not completed and omit source-specific assertions from memory. Keep capability selection explicit; this does not add query-based tool routing.

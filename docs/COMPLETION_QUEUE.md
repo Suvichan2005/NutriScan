@@ -1,5 +1,9 @@
 # NutriScan final semester completion queue
 
+## M2 separate study and claim-rule evidence (26 October 2026)
+
+Saved trace `131fb293-faa8-4fff-8ce2-dcdb4ca4518c` asked for evidence behind a cholesterol claim. Ordinary-mode retrieval returned a PubMed review, but the answer also asserted thresholds and named EFSA/US FDA without retrieving an applicable official claim-rule record. Tightened the general agent contract: when an answer needs both research effects and claim rules, retrieve a study source and applicable official source separately, never substitute one class for the other, and disclose a missing class. Focused agent suite50/50, TypeScript and optimized Webpack production build passed; loopback3400 healthy in free/local mode with paid fallback/search/readable capture off. Five protected owner files match archive. This is a prompt-contract improvement only; no new model adherence or clinical review claimed.
+
 ## M2 bind explicit source lookups to returned evidence (26 October 2026)
 
 A saved real Gemini trace for an explicit study lookup had `search_knowledge` available in ordinary mode but made no tool call, then supplied study-specific counts/findings from memory without a retrieved source. The requested PubMed review is present in the local index. Tightened the general agent contract: explicit source lookups must use the relevant enabled source tool; source-specific details must come from its returned record; if unavailable/no relevant record, disclose that lookup was not completed. Clarified `search_knowledge` is for explicit research/source requests. Focused agent suite50 passed, TypeScript passes, prompt remains1999 characters. Optimized production build passed and loopback3400 is healthy in free/local mode; paid fallback, search and readable capture are off. No fresh model verification or clinical review.

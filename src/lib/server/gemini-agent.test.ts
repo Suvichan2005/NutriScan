@@ -477,7 +477,8 @@ describe('natural NutriScan agent contract', () => {
     const tools = getAgentToolDeclarations(false, false);
     expect(instruction).toContain('Answer directly in plain text');
     expect(instruction).toContain('cite its exact provided SRC_... handle and name/date');
-    expect(instruction).toContain('retrieve both when asked and available');
+    expect(instruction).toContain('retrieve study and applicable official evidence separately; never substitute one for the other');
+    expect(instruction).toContain('Disclose a missing source class');
     expect(instruction).toContain('If no relevant source is returned or that tool is not enabled, say the lookup was not completed; do not fill source-specific details from memory');
     expect(instruction).toContain('give the judgment first');
     expect(instruction).toContain('Before making a health-specific suitability recommendation, retrieve the narrowest applicable guidance or research evidence');
