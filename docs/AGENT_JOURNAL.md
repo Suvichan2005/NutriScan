@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — prevent sodium-only KDIGO evidence from answering a potassium-only query
+
+- A real local `getNutritionGuidance` transfer probe for “potassium kidney guidance” with India/CKD returned `kdigo-ckd-2024-sodium`. The relevance path admitted a narrow nutrient source on condition match alone, despite the stored summary covering sodium only.
+- Added a direct topic-term requirement (`sodium` or `salt`) for this narrow KDIGO record unless it is explicitly requested, and clarified that the local paraphrase supplies no potassium target. Production tool regressions preserve sodium + potassium retrieval, reject potassium-only source use for India, and retain WHO population sodium context. Full `gemini-tools.test.ts` passed (70 passed, 1 skipped), TypeScript and optimized build passed; owner/evidence hashes verified; loopback3400 refreshed with paid fallback/search/capture off. No provider answer or human clinical review; this verifies retrieval scope only.
+
+
 ## 2026-10-26 — correct the quantity-withholding notice for multi-sentence answers
 
 - A saved real browser response had five unsupported numerical statements withheld, but the validator appended a fixed singular notice (“a numerical detail”). Changed the generic notice to “one or more numerical statements”; rejected text and the validator policy remain untouched.

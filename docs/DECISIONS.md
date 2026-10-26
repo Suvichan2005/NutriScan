@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — require direct nutrient-topic fit for the CKD sodium summary
+
+Condition match alone must not make a narrow nutrient source appear applicable to every question about that condition. The local KDIGO summary stored here covers sodium; require sodium/salt topic overlap unless the user explicitly requests KDIGO, and state in its limitations that this summary supplies no potassium target. A potassium-only India query should abstain from this source rather than imply an answer from its CKD context. Do not infer that no external or individualized potassium guidance exists.
+
 ## 26 October 2026 — make withheld-quantity notices count-neutral
 
 The answer validator may remove one or several unsupported numerical statements while retaining supported prose. Its notice must remain true for either case and must not reproduce rejected claims. Use a generic “one or more numerical statements” explanation. This does not relax the quantity/basis validator, add an action based on unknown reasons, or claim that withheld values were recovered.

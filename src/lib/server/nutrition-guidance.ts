@@ -8,6 +8,8 @@ type GuidanceEntry = {
   source: EvidenceSource;
   terms: readonly string[];
   conditions: readonly string[];
+  /** Direct topical evidence required before applying a narrow source to a condition. */
+  topicTerms?: readonly string[];
   numericCoverage?: {
     queryTerms: readonly string[];
     requiredValuePatterns: readonly string[];
@@ -62,11 +64,12 @@ const entries: readonly GuidanceEntry[] = [
       effectiveAt: null,
       retrievedAt: snapshotRetrievedAt,
       summary: 'For people with CKD, KDIGO suggests dietary sodium below 2 g/day (equivalent to less than 5 g sodium chloride/day); the guideline notes that this restriction is usually inappropriate in sodium-wasting nephropathy.',
-      limitations: 'A conditional recommendation for people with CKD, not a universal consumer target. KDIGO notes this restriction is usually inappropriate in sodium-wasting nephropathy. Individual clinical circumstances, age, nutritional status, climate, laboratory results, and treatment matter; a single package label cannot determine daily suitability.',
+      limitations: 'A conditional recommendation for people with CKD, not a universal consumer target. This summary addresses sodium and provides no potassium target. KDIGO notes this sodium restriction is usually inappropriate in sodium-wasting nephropathy. Individual clinical circumstances, age, nutritional status, climate, laboratory results, and treatment matter; a single package label cannot determine daily suitability.',
       license: 'Source-linked, NutriScan-authored paraphrase only. Guideline text and figures are not redistributed.',
     }),
     terms: ['ckd', 'chronic kidney', 'kidney', 'renal', 'sodium', 'salt', 'blood pressure', 'hypertension'],
     conditions: ['ckd', 'chronic kidney disease', 'kidney disease', 'kidney', 'renal'],
+    topicTerms: ['sodium', 'salt'],
     numericCoverage: { queryTerms: ['sodium', 'salt'], requiredValuePatterns: ['\\b2\\s*g(?:rams?)?\\s*(?:\\/|per\\s+)day\\b'] },
   },
   {
@@ -296,6 +299,7 @@ export function getNutritionGuidance(input: {
       if(input.condition&&entry.conditions.length&&!entry.conditions.some(condition=>mentions(input.condition!,condition)))return {entry,score:0,matchedTerms};
       if (!jurisdictionCompatible(entry.source, input.jurisdiction, explicitSource)) return { entry, score: 0, matchedTerms };
       const matchedCondition = entry.conditions.some(condition => mentions(contextualText, condition));
+      if (entry.topicTerms?.length && !entry.topicTerms.some(term => mentions(contextualText, term)) && !explicitSource) return { entry, score: 0, matchedTerms };
       if (entry.conditions.length > 0 && !matchedCondition && !explicitSource) return { entry, score: 0, matchedTerms };
       const score = matchedTerms.length + (matchedCondition ? 3 : 0) + (explicitSource ? 2 : 0);
       return { entry, score, matchedTerms };

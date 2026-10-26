@@ -1,5 +1,9 @@
 # NutriScan current runtime handoff
 
+## M2 source-topic applicability — 26 October 2026
+
+The local guidance retriever no longer returns the sodium-only KDIGO summary for a potassium-only India CKD query. Its entry requires a direct sodium/salt topic match unless KDIGO is explicitly requested, and its limitations state that this stored summary provides no potassium target. Transfer: potassium-only India CKD returns no source; CKD sodium + potassium returns KDIGO and WHO sodium, with source scopes retained; India hypertension sodium returns WHO. Full tool test suite70 passed/one skipped, TypeScript/build pass. Production3400 is rebuilt and reports free/local with paid fallback, search and transcript capture off. This is source retrieval evidence only, not a generated answer or independent clinical review.
+
 ## M2 quantity-withholding notice — 26 October 2026
 
 The natural-answer validator now uses a count-neutral notice when it withholds unsupported numerical statements, so the message remains accurate when one or many sentences are removed. Exact saved real response replay tied to diagnostic `c320a5ac-ea92-4046-9c2e-4c6bc3569c11` confirms all five unsupported statements remain withheld and the notice is now accurate. Intercepted-response Chromium replay at390×844 and1440×900 confirms the UI displays it with no page errors. Private receipts/screenshots: `.data/m2-answer-usefulness-20261026/`. Inference suite38/38, TypeScript and optimized production build pass; current loopback3400 is free/local with paid fallback, search and transcript capture off. This does not recover claims or establish answer usefulness; M2 remains open.
