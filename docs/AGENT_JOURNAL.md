@@ -1,4 +1,9 @@
 # Sanitized engineering journal
+## 2026-10-26 — replay neutral-user quantity and unknown-allergen transfer
+
+- Located the distinct 45 g travel question in saved real-provider trace `3d7e5cc6-1519-475e-ab04-9b0efbc8a70f`; it requested energy, fibre, sodium and whether milk could be confirmed, with earlier health discussion explicitly out of scope.
+- Replayed its saved final UI response against the current production build at390×844 and1440×900. Portion amounts remain visible, milk stays unknown without an ingredient/allergen declaration, and the UI labels interpretation-derived results unverified. Zero profile/photo/external/provider requests; no page errors. Private screenshots/receipts: `.data/m2-answer-usefulness-20261026/neutral-45g-transfer-*`.
+- This is saved real-answer presentation evidence, not a fresh provider run or independent label accuracy. The returned calculator card includes an extra fat result the user did not request; keep this as a transfer observation rather than adding nutrient-specific routing.
 ## 2026-10-26 — verify exhausted-free-route recovery UI
 
 - Rebuilt the reusable local production output after preserving hashes for the five owner-modified files; all five hashes matched after build.

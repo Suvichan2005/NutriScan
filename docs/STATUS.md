@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 neutral-user answer transfer (26 October 2026)
+
+Current UI replay of saved actual answer `3d7e5cc6-1519-475e-ab04-9b0efbc8a70f` at390×844 and1440×900 retains all requested portion results, keeps milk unknown without label evidence and visibly marks provisional readings. No profile/photos or external/provider requests; no page errors. This is presentation/continuity evidence, not new model or extraction accuracy. An unrequested fat calculation is also present in the card.
+
 ## M2/M6 free-model exhaustion message (26 October 2026)
 
 The client now distinguishes an exhausted configured free-model route from a project spend guard or ordinary response failure. It says the current package/conversation remain available in the scan without implying opt-in history persistence or a paid fallback. Focused presentation suite36/36 and production build TypeScript pass. Local intercepted-response Chromium replay at390×844 and1440×900 verifies the visible message/retry action and retained IndexedDB package/prior conversation, with zero external/provider requests and no page errors. This closes browser presentation acceptance only; provider failure behavior and answer usefulness remain separate.
