@@ -2241,6 +2241,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       referenceAliases.fromModel,
       [data.question,...Object.values(data.profile??{})].join(' '),
       data.profile?.country??'',
+      data.conversationContext?.map(turn=>turn.question)??[],
     );
     const withheldSpans: Array<{text:string;reason:'unsupported-quantity'|'unsupported-basis'}> = [];
     const answerCheck=validateNaturalAnswerText(sourceScopeCheck.answer,{

@@ -11,6 +11,7 @@ flowchart TD
   M --> S[Source-reference scope guard: availability, topic, guideline jurisdiction]
   E --> S
   Q --> S
+  H[Recent user questions for clear contextual follow-ups] --> S
   S -->|eligible prose| V[Quantity and printed-basis validation]
   P[Current package observations and reconstruction] --> V
   C[Typed calculations] --> V
@@ -25,7 +26,7 @@ flowchart TD
 
 ## What the implementation establishes
 
-- The conversation route merges records supplied with the request and records returned by tools into the effective evidence set. Before numeric validation, a sentence with an explicit source handle, URL, title or uniquely identifiable publisher is retained only if its source is in this set, topically relevant to the question and in jurisdictional scope when it is a guideline. A user asking to inspect a supplied reference can inspect it directly.
+- The conversation route merges records supplied with the request and records returned by tools into the effective evidence set. Before numeric validation, a sentence with an explicit source handle, URL, title or uniquely identifiable publisher is retained only if its source is in this set, topically relevant to the question and in jurisdictional scope when it is a guideline. Clear contextual follow-ups can also use bounded prior user questions for topic continuity; prior assistant text is not evidence, and standalone new topics do not inherit history. A user asking to inspect a supplied reference can inspect it directly.
 - The natural answer validator verifies numeric values and printed bases against current package evidence, eligible source text and typed calculations. It withholds unsupported numeric sentences while preserving independently supported prose.
 - Consumer source cards are selected from source identities named in the surviving prose; unused or scope-filtered retrieval candidates do not automatically become citations, though they remain available in the inspector.
 - These checks establish data flow, numeric support, traceable references and topical/jurisdiction scope. They do not show that a source semantically entails every qualitative scientific statement in the natural answer. Unreferenced assertions and incorrect claims linked to a merely topical source are still not deterministically rejected.

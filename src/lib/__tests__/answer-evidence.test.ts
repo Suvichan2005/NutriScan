@@ -65,4 +65,14 @@ describe('production answer source scope',()=>{
     expect(filterAnswerBySourceScope('This US source says peanut warnings vary by product SRC_1.',[us],aliases,'How are peanut warnings handled in India?').withheldSentenceCount).toBe(1);
     expect(filterAnswerBySourceScope('The supplied reference is SRC_1.',[us],aliases,'Explain the supplied reference.').answer).toBe('The supplied reference is SRC_1.');
   });
+
+  it('uses only prior user questions to resolve a contextual multi-turn source reference',()=>{
+    const diabetes={...salt,id:'diabetes-guidance',title:'Diabetes and carbohydrate choices',publisher:'International Diabetes Federation',summary:'People living with diabetes may consider carbohydrate amounts and food choices with individual context.'};
+    const aliases=new Map([['SRC_1',diabetes.id]]);
+    const answer='The International Diabetes Federation discusses carbohydrate choices in diabetes SRC_1.';
+    const history=['Does this snack fit with type 2 diabetes?','What about just two biscuits?'];
+    expect(filterAnswerBySourceScope(answer,[diabetes],aliases,'Does that change for 25 g?', '',history).answer).toBe(answer);
+    expect(filterAnswerBySourceScope(answer,[diabetes],aliases,'And for 25 g?', '',history).answer).toBe(answer);
+    expect(filterAnswerBySourceScope(answer,[diabetes],aliases,'Does this package list peanuts?', '',history).withheldSentenceCount).toBe(1);
+  });
 });
