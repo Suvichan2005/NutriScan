@@ -1,5 +1,6 @@
+import { evidenceSources } from '@/modules/knowledge';
 import { describe, expect, it } from 'vitest';
-import { conversationContextForAssist, resolveLocalFollowUpQuestion } from '../conversation-context';
+import { answerEvidenceForConversation, conversationEvidenceForAssist, conversationContextForAssist, resolveLocalFollowUpQuestion } from '../conversation-context';
 import type { SavedConversationTurn } from '../contracts';
 
 const turns: SavedConversationTurn[] = Array.from({ length: 6 }, (_, index) => ({
@@ -57,5 +58,35 @@ describe('resolveLocalFollowUpQuestion', () => {
   it('keeps explicit current questions unchanged', () => {
     const turns = [{ question: 'What does WHO recommend about dietary fibre?', answer: 'Prior answer.', at: '2026-10-21T00:00:00.000Z' }];
     expect(resolveLocalFollowUpQuestion('What WHO dietary fibre guidance applies to children?', turns)).toBe('What WHO dietary fibre guidance applies to children?');
+  });
+});
+
+describe('conversationEvidenceForAssist', () => {
+  const source=evidenceSources.find(s=>s.id==='who-sodium')!;
+  const cited={...turns[0],answer:`See ${source.title}.`,evidence:[source]};
+  it('retains cited context without a current-question keyword gate',()=>{
+    expect(conversationEvidenceForAssist([cited],true).map(s=>s.id)).toEqual([source.id]);
+  });
+  it('does not promote an uncited candidate',()=>{
+    expect(conversationEvidenceForAssist([{...cited,answer:'A package-only observation.'}],true)).toEqual([]);
+  });
+  it('excludes outdated, unsafe and non-consented records',()=>{
+    expect(conversationEvidenceForAssist([cited],false)).toEqual([]);
+    expect(conversationEvidenceForAssist([{...cited,outdated:true}],true)).toEqual([]);
+    expect(conversationEvidenceForAssist([{...cited,evidence:[{...source,url:'http://127.0.0.1/private'}]}],true)).toEqual([]);
+  });
+  it('does not replay sources outside bounded history',()=>{
+    expect(conversationEvidenceForAssist([cited,...turns.slice(1)],true)).toEqual([]);
+  });
+});
+
+describe('answerEvidenceForConversation',()=>{
+  const cited=evidenceSources.find(s=>s.id==='who-sodium')!;
+  const candidates=evidenceSources.filter(s=>s.id!==cited.id).slice(0,4);
+  it('retains a cited record after more than three unused retrieval candidates',()=>{
+    expect(answerEvidenceForConversation(`See ${cited.title}.`,[...candidates,cited]).map(s=>s.id)).toEqual([cited.id]);
+  });
+  it('does not advertise unused candidates as answer citations',()=>{
+    expect(answerEvidenceForConversation('This is a package-only observation.',candidates)).toEqual([]);
   });
 });

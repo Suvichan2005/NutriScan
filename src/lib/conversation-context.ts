@@ -1,4 +1,6 @@
-import { calculationSchema, type Calculation, type PackageData, type SavedConversationTurn } from './contracts';
+import { selectCitedEvidence } from './answer-evidence';
+import { safeConversationEvidence } from './followup-evidence';
+import { calculationSchema, type Calculation, type EvidenceSource, type PackageData, type SavedConversationTurn } from './contracts';
 import { calculationHasPackageEvidence } from './calculation-provenance';
 
 /** Reuse typed operations, never numeric assertions copied from previous prose. */
@@ -64,4 +66,21 @@ export function resolveLocalFollowUpQuestion(
   if (!previousAskedWholeDietFibre) return current;
 
   return `${previousQuestion.slice(0, 1000)} Follow-up: ${current.slice(0, 1000)}`;
+}
+
+/** Carry bounded cited records as context, not as new findings or clinical authority.
+ * The model and server applicability checks see the current question AND history.
+ * A short follow-up must not discard its references through a question-only gate.
+ */
+export function conversationEvidenceForAssist(turns: SavedConversationTurn[], include: boolean) {
+  if (!include) return [];
+  return safeConversationEvidence(turns.slice(-4).reverse().filter(turn => !turn.outdated)
+    .flatMap(turn => selectCitedEvidence(turn.answer, turn.evidence ?? [])));
+}
+
+/** Apply citation selection BEFORE the bounded chat persistence limit.
+ * Retrieval candidates are not automatically evidence used by the answer.
+ */
+export function answerEvidenceForConversation(answer: string, sources: readonly EvidenceSource[]) {
+  return safeConversationEvidence(selectCitedEvidence(answer, sources));
 }
