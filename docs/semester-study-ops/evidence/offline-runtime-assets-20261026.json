@@ -1,0 +1,200 @@
+{
+  "scope": "offline-read-only-source-store-probe-not-gemini-use-or-clinical-validation",
+  "implementationCommit": "0c4f11ceb4dd1f3f6d065983c40b878847b5788a",
+  "readersFrom": "study-worktree",
+  "storesFrom": "original-read-only-checkout",
+  "checks": [
+    {
+      "name": "foodon-search",
+      "observed": "ok",
+      "expected": "ok",
+      "passed": true
+    },
+    {
+      "name": "foodon-original-properties",
+      "observed": "ok",
+      "expected": "ok",
+      "passed": true
+    },
+    {
+      "name": "foodon-unknown-id",
+      "observed": "no_match",
+      "expected": "no_match",
+      "passed": true
+    },
+    {
+      "name": "who-catalog",
+      "observed": "ok",
+      "expected": "ok",
+      "passed": true
+    },
+    {
+      "name": "who-three-selected-documents",
+      "observed": 3,
+      "expected": 3,
+      "passed": true
+    },
+    {
+      "name": "who-selected-page",
+      "observed": "ok",
+      "expected": "ok",
+      "passed": true
+    },
+    {
+      "name": "who-page-nonempty",
+      "observed": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "who-unknown-document",
+      "observed": "no_document",
+      "expected": "no_document",
+      "passed": true
+    },
+    {
+      "name": "usda-exact-source-record",
+      "observed": "ok",
+      "expected": "ok",
+      "passed": true
+    },
+    {
+      "name": "usda-unknown-food",
+      "observed": "no_match",
+      "expected": "no_match",
+      "passed": true
+    },
+    {
+      "name": "usda-missing-store",
+      "observed": "unavailable",
+      "expected": "unavailable",
+      "passed": true
+    },
+    {
+      "name": "pinned-model-hash:config.json",
+      "observed": "7135149f7cffa1a573466c6e4d8423ed73b62fd2332c575bf738a0d033f70df7",
+      "expected": "7135149f7cffa1a573466c6e4d8423ed73b62fd2332c575bf738a0d033f70df7",
+      "passed": true
+    },
+    {
+      "name": "pinned-model-hash:tokenizer.json",
+      "observed": "da0e79933b9ed51798a3ae27893d3c5fa4a201126cef75586296df9b4d2c62a0",
+      "expected": "da0e79933b9ed51798a3ae27893d3c5fa4a201126cef75586296df9b4d2c62a0",
+      "passed": true
+    },
+    {
+      "name": "pinned-model-hash:tokenizer_config.json",
+      "observed": "9261e7d79b44c8195c1cada2b453e55b00aeb81e907a6664974b4d7776172ab3",
+      "expected": "9261e7d79b44c8195c1cada2b453e55b00aeb81e907a6664974b4d7776172ab3",
+      "passed": true
+    },
+    {
+      "name": "pinned-model-hash:special_tokens_map.json",
+      "observed": "b6d346be366a7d1d48332dbc9fdf3bf8960b5d879522b7799ddba59e76237ee3",
+      "expected": "b6d346be366a7d1d48332dbc9fdf3bf8960b5d879522b7799ddba59e76237ee3",
+      "passed": true
+    },
+    {
+      "name": "pinned-model-hash:vocab.txt",
+      "observed": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3",
+      "expected": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3",
+      "passed": true
+    },
+    {
+      "name": "pinned-model-hash:onnx/model_quantized.onnx",
+      "observed": "afdb6f1a0e45b715d0bb9b11772f032c399babd23bfc31fed1c170afc848bdb1",
+      "expected": "afdb6f1a0e45b715d0bb9b11772f032c399babd23bfc31fed1c170afc848bdb1",
+      "passed": true
+    },
+    {
+      "name": "source-unchanged:.data/knowledge/foodon-records.sqlite",
+      "observed": "8d6c1c5c9a70fdfa43ee6096256c0c1e929e7185dd4aeacb63d189960dd7c150",
+      "expected": "8d6c1c5c9a70fdfa43ee6096256c0c1e929e7185dd4aeacb63d189960dd7c150",
+      "passed": true
+    },
+    {
+      "name": "source-unchanged:.data/knowledge/guidelines.sqlite",
+      "observed": "c8b075bf39fc6d2b31e0626931187b69eea04099a2a64293a00ac2fbd907aff0",
+      "expected": "c8b075bf39fc6d2b31e0626931187b69eea04099a2a64293a00ac2fbd907aff0",
+      "passed": true
+    },
+    {
+      "name": "source-unchanged:.data/food-composition/fdc-source-records.sqlite",
+      "observed": "b0ddab31764a0cf8757b308993b215bcb08f8dcc4e2c0ec89325bd64dad38ddc",
+      "expected": "b0ddab31764a0cf8757b308993b215bcb08f8dcc4e2c0ec89325bd64dad38ddc",
+      "passed": true
+    },
+    {
+      "name": "source-unchanged:.data/food-composition/fdc-foundation-2026-04.catalog.json",
+      "observed": "50515a6f1f8b8ad6702cc82b9923447969f2dcd42c0f94c95c849f415b67815c",
+      "expected": "50515a6f1f8b8ad6702cc82b9923447969f2dcd42c0f94c95c849f415b67815c",
+      "passed": true
+    },
+    {
+      "name": "source-unchanged:.data/food-composition/fdc-foundation-2026-04.records.jsonl",
+      "observed": "57fc123c8fb0ba794de488e10abd74be38fdcdb29fc7a2ccb7159a59d4f2051a",
+      "expected": "57fc123c8fb0ba794de488e10abd74be38fdcdb29fc7a2ccb7159a59d4f2051a",
+      "passed": true
+    },
+    {
+      "name": "source-unchanged:.data/food-composition/fdc-fndds-2021-2023.catalog.json",
+      "observed": "516a11ac4c1a235342bcd1e9a0e5521ae2ecea513a817fc4995b1f9cac0d2a80",
+      "expected": "516a11ac4c1a235342bcd1e9a0e5521ae2ecea513a817fc4995b1f9cac0d2a80",
+      "passed": true
+    },
+    {
+      "name": "source-unchanged:.data/food-composition/fdc-fndds-2021-2023.records.jsonl",
+      "observed": "2f856849dd767fcb599936682e6710f1d726e1eba1f064faa7c3837dabfb4a04",
+      "expected": "2f856849dd767fcb599936682e6710f1d726e1eba1f064faa7c3837dabfb4a04",
+      "passed": true
+    },
+    {
+      "name": "network-attempts",
+      "observed": 0,
+      "expected": 0,
+      "passed": true
+    }
+  ],
+  "inventory": [
+    {
+      "path": ".data/knowledge/foodon-records.sqlite",
+      "bytes": 153460736,
+      "sha256": "8d6c1c5c9a70fdfa43ee6096256c0c1e929e7185dd4aeacb63d189960dd7c150"
+    },
+    {
+      "path": ".data/knowledge/guidelines.sqlite",
+      "bytes": 2912256,
+      "sha256": "c8b075bf39fc6d2b31e0626931187b69eea04099a2a64293a00ac2fbd907aff0"
+    },
+    {
+      "path": ".data/food-composition/fdc-source-records.sqlite",
+      "bytes": 79511552,
+      "sha256": "b0ddab31764a0cf8757b308993b215bcb08f8dcc4e2c0ec89325bd64dad38ddc"
+    },
+    {
+      "path": ".data/food-composition/fdc-foundation-2026-04.catalog.json",
+      "bytes": 76917,
+      "sha256": "50515a6f1f8b8ad6702cc82b9923447969f2dcd42c0f94c95c849f415b67815c"
+    },
+    {
+      "path": ".data/food-composition/fdc-foundation-2026-04.records.jsonl",
+      "bytes": 2794320,
+      "sha256": "57fc123c8fb0ba794de488e10abd74be38fdcdb29fc7a2ccb7159a59d4f2051a"
+    },
+    {
+      "path": ".data/food-composition/fdc-fndds-2021-2023.catalog.json",
+      "bytes": 991187,
+      "sha256": "516a11ac4c1a235342bcd1e9a0e5521ae2ecea513a817fc4995b1f9cac0d2a80"
+    },
+    {
+      "path": ".data/food-composition/fdc-fndds-2021-2023.records.jsonl",
+      "bytes": 64278812,
+      "sha256": "2f856849dd767fcb599936682e6710f1d726e1eba1f064faa7c3837dabfb4a04"
+    }
+  ],
+  "sourceCopies": 0,
+  "providerCalls": 0,
+  "modelInference": false,
+  "originalsUnchanged": true,
+  "allPassed": true
+}

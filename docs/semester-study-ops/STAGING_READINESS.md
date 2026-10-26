@@ -66,3 +66,17 @@ python tools/semester-study-ops/local_staging_smoke.py --port 3422
 ```
 
 This always builds the current checkout into the same designated dist directory before starting its own bounded loopback process. It strips provider credentials from its child environment and disables Gemini/paid/capture flags. It does not deploy, enable access, touch original private data or start a public endpoint. A local smoke is one gate; remote reviewer readiness remains BLOCKED on the integration-owner proposals above.
+
+## Read-only knowledge runtime probe
+
+With the study worktree's pinned dependencies installed:
+
+```powershell
+node node_modules/tsx/dist/cli.mjs tools/semester-study-ops/runtime_asset_probe.mts --original-root ../NutriScan
+```
+
+The probe loads the study worktree's actual readers but resolves their local assets against the original ThinkBook corpus. It blocks fetch, clears provider keys in its own process, opens the existing SQLite readers read-only, and writes only a fresh receipt in the study worktree. It never calls the embedding pipeline or provider, copies corpora, opens held-out images/labels or rebuilds a store. The output path is exclusive so a repeat run requires intentional receipt handling.
+
+Actual25 checks passed: FoodOn exact terminology/source properties and unknown ID; WHO three-document catalog/selected page and unknown document; USDA exact nutrient source record/unknown food/missing store; six pinned MiniLM file hashes; all seven selected database/catalog/source hashes unchanged after queries; zero fetch attempts. Seven inventoried store/catalog/record files total304025780 bytes; model files are checked separately against the tracked manifest. These are local source-access results, not final answer/clinical applicability or hosted-mode acceptance. Sanitized receipt: evidence/offline-runtime-assets-20261026.json.
+
+For a future staging instance, mount only the selected approved stores in their expected `.data` paths (or supported reader overrides), alongside the tracked compact indexes/manifests. Keep them read-only and keep writable budget/operational state separate. This test does not authorize source redistribution or mounting the whole ThinkBook corpus. OpenFoodTox and private evaluation/reference data were not accessed. WHO non-commercial/share-alike and other source-specific conditions remain as documented in the knowledge handoff.
