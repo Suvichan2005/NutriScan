@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "kind": "provider-free local source and multi-turn browser acceptance",
+  "date": "2026-10-27",
+  "browser": "Installed Chrome via Playwright",
+  "server": "Local Next development server with Gemini, paid fallback, Search grounding and transcript capture disabled",
+  "input": "Synthetic package label and fictional session-only context; no package photographs",
+  "viewports": [
+    { "width": 390, "height": 844, "result": "pass" },
+    { "width": 1440, "height": 900, "result": "pass" }
+  ],
+  "scenarios": [
+    "Ingredient and precautionary allergen observations with uncertainty language",
+    "30 g sodium calculation",
+    "Sugar-free claim does not imply carbohydrate-free",
+    "Missing calcium remains unknown rather than zero",
+    "Combined allergy and diabetes context retains package values and suitability limits",
+    "Local WHO fibre guidance answer retains population and whole-day limitations",
+    "The natural follow-up 'And for children?' resolves to age-specific WHO population guidance and retains the package's 2.4 g fibre calculation for 30 g",
+    "The WHO conversation evidence card displays publisher, global population scope, publication date and source limitations"
+  ],
+  "checks": {
+    "assistRequests": 0,
+    "visionRequests": 0,
+    "externalOrigins": [],
+    "pageErrors": 0,
+    "axeViolationIds": [],
+    "horizontalOverflow": false,
+    "sourceCardExpandedAndInspected": true
+  },
+  "screenshots": ".data/m2-source-multiturn-acceptance/{mobile,desktop}.png",
+  "limits": [
+    "This verifies local retrieval, source presentation and natural follow-up behavior; it does not verify Gemini source selection or Gemini answer quality.",
+    "No held-out case, human scientific reference, live provider request, photo OCR or legal-compliance determination was used."
+  ]
+}

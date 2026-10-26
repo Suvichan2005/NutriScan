@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — verify local source continuity through a full browser journey
+
+- Extended the provider-free synthetic-label journey to inspect WHO fibre guidance in the UI and ask the natural follow-up “And for children?” The answer retained bounded prior-question context, included age-group population guidance and kept the package-specific 30 g calculation separate from whole-day intake.
+- Installed Chrome acceptance passed at390×844 and1440×900. The same flow exercised ingredients/allergen uncertainty, sugar-free claim limits, unknown calcium and combined allergy/diabetes context. No provider or external requests, page errors, Axe violations or horizontal overflow were observed.
+- Receipt: `docs/evidence/m2-local-source-multiturn-browser-20261027.json`; screenshots remain ignored under `.data/m2-source-multiturn-acceptance/`. This does not establish live Gemini source selection, semantic entailment, photo OCR or independent scientific validation.
+
 ## 2026-10-26 — make local answers specific about missing nutrients and allergy evidence
 
 - A guarded local-only browser journey showed useful ingredient text, portion arithmetic and sugar-free caveats, but an unrecorded calcium question returned a generic refusal. A combined peanut-allergy/diabetes question retained carbohydrate and sodium calculations while omitting the linked “May contain” uncertainty. Local source cards were selected by jurisdiction but not topic.
