@@ -1,5 +1,9 @@
 # NutriScan final semester completion queue
 
+## M2 focused guidance query follow-up (26 October 2026)
+
+Observed that broad package queries can return no condition-guidance source while a concise condition/nutrient query finds relevant global evidence. Tool instructions now favor focused caller-authorized query terms. Tests/build pass, but fresh provider adherence is unverified. Continue multi-condition transfer work without changing human gates.
+
 ## M2 multi-topic retrieval continuation (26 October 2026)
 
 Fixed a shared topical-filter failure that dropped sodium guidance in integrated diabetes/hypertension/carbohydrate/sodium searches. Provider-free replay of the actual local knowledge tool now returns the WHO sodium source and excludes unrelated beta-glucan claim sources; the existing named-ingredient negative still abstains. Full802/two skipped, TypeScript/build pass. Fresh Gemini answer transfer and independent usefulness remain unverified; continue M2 breadth.

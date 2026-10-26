@@ -1,5 +1,10 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — make condition-guidance retrieval queries more focused
+
+- A direct tool replay for India hypertension returned empty with “packaged food sodium carbohydrate practical guidance”, while focused “hypertension sodium salt population guidance” returned the WHO healthy-diet summary. Updated the tool schema to ask for focused condition/goal and nutrient/behavior terms, omitting unrelated package facts. This is an instruction change, not a new rule/source or fallback.
+- Focused agent/tool tests117 passed/one skipped, TypeScript and optimized build passed. Refreshed3400 status is free/local, paid fallback/search off; five owner modifications and27 evidence files reverified after build. No live provider request, so query selection and answer quality remain pending.
+
 ## 2026-10-26 — retain the directly relevant topic in mixed-condition searches
 
 - Provider-free replay against the actual hybrid index found WHO sodium ranked for a combined diabetes/hypertension/carbohydrate/sodium query, but `search_knowledge` returned only two oat beta-glucan glucose-claim assessments. Shared topical filtering let long context terms dominate and rejected sodium; it also overaccepted the assessments from one broad carbohydrate match.

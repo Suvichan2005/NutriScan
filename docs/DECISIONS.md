@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — focus local guidance queries on the condition and nutrient
+
+The condition-guidance reader ranks by the supplied query; broad unrelated package details can suppress an otherwise relevant population source. Ask the model for a focused condition/goal and nutrient/behavior query, retaining only caller-authorized context. Do not expand to unrelated sources or infer a personal target. Validate actual model query selection before claiming behavioral improvement.
+
 ## 26 October 2026 — preserve source matches for separate topics in combined queries
 
 A local evidence candidate may support one explicit part of a multi-topic query without repeating every condition or context term. Preserve a strong direct topic match such as sodium in a hypertension-plus-carbohydrate question, while retaining named-entity specificity: generic fibre guidance must not stand in for oligofructose evidence, and a source matching only one term of several named topics is insufficient. Keep source-jurisdiction and explicit-exclusion checks in force. Measure both candidate recall and off-topic leakage in regression cases.
