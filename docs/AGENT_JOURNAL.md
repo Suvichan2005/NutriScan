@@ -1,4 +1,7 @@
 # Sanitized engineering journal
+## M2 bounded free-provider transfer attempt — 26 October 2026
+
+One free-tier synthetic development request used the explicit specialized profile with no photo/profile, paid fallback off, search off and readable capture off. `/api/assist` returned `request_failed` without an answer, provider receipt or usage metadata. Operational trace capture was disabled, so provider-side generation count/outcome cannot be established. Do not infer model adherence; avoid repeating the unavailable route until conditions change.
 
 ## 2026-10-26 — separate scientific effects from applicable claim rules
 
