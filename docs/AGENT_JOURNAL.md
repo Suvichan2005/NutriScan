@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-26 — verify exhausted-free-route recovery UI
+
+- Rebuilt the reusable local production output after preserving hashes for the five owner-modified files; all five hashes matched after build.
+- Visual review found that “are saved” could overclaim persistence for a new scan when save-history is opt-in. Changed the message to say the package/conversation remain available in the current scan.
+- Rebuilt and used a fresh Chromium context with a locally seeded saved package/conversation and intercepted `/api/assist` as HTTP502 `free_models_exhausted`. At390×844 and1440×900, the visible fallback states the free route did not finish, makes no persistence promise, and offers Retry Gemini. IndexedDB retains the pre-existing package and prior turn; no provider/external request or page error occurred. Private receipts/screenshots: `.data/m2-answer-usefulness-20261026/free-route-failure-ui-*`.
+- This closes the UI-presentation gap only. No fresh provider run, user usefulness rating or health-content validation is claimed.
 ## 2026-10-26 — explain exhausted free-model requests
 
 - The bounded synthetic specialized-source run exhausted the configured free route without returning an answer. Added a dedicated client message for `free_models_exhausted`, preserving the distinction from Google quota errors and paid-spend guards; it says the package/conversation are saved and does not suggest paid fallback.

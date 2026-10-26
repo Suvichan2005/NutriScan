@@ -1,4 +1,10 @@
 # Chronological decisions
+## 26 October 2026 — verify free-route exhaustion in the client
+
+Keep configured-free-model exhaustion distinct from project spend guards and ordinary provider failures. State only that the current package/conversation remain available in the scan; do not imply the user opted into persistent history or imply paid fallback. Intercepted local UI replay confirms the wording and retry control at mobile and desktop sizes while making no provider request. This is presentation evidence, not evidence that Google failed for a particular reason in fresh runtime traffic.
+
+This supersedes the older “state is saved” wording below. Scan and conversation persistence is an explicit user choice.
+
 ## 26 October 2026 — explain exhausted free-only routing without implying paid fallback
 
 When configured free Gemini models cannot finish a request, tell the user that the free route did not complete and that package/conversation state is saved. Keep this explanation distinct from Google quota/rate limits and paid-spend guards; never imply that NutriScan will retry on paid service. This follows the explicit free-first authorization boundary and makes transient service failures actionable without changing routing behavior.

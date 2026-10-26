@@ -1,7 +1,7 @@
 # NutriScan final semester completion queue
 ## M2/M6 free-route failure clarity (26 October 2026)
 
-The synthetic specialized-source transfer exhausted free models without returning an answer. The client now explains that specific failure and reassures that package/conversation state remains saved, without suggesting paid fallback. Focused presentation suite36/36 and TypeScript pass. Browser-visible acceptance remains pending.
+The synthetic specialized-source transfer exhausted free models without returning an answer. The client distinguishes that failure and says the current package/conversation remain available in the scan, without claiming opt-in persistence or suggesting paid fallback. Focused presentation suite36/36 and TypeScript pass. Local intercepted-response UI replay verifies the exact message and retry action at390×844 and1440×900; the pre-existing saved package and prior turn remain in IndexedDB, with zero provider/external requests and no page errors. Private evidence: `.data/m2-answer-usefulness-20261026/free-route-failure-ui-390.json`, `free-route-failure-ui-1440.json`, and screenshots. This confirms client failure presentation only, not provider behavior or natural-answer usefulness.
 
 ## M2 replay the saved study-count boundary (26 October 2026)
 

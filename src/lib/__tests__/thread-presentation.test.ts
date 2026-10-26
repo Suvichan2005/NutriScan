@@ -322,7 +322,8 @@ describe('Gemini failure explanations', () => {
   it('explains when every configured free model failed without implying a paid retry', () => {
     const message = geminiFailureMessage('free_models_exhausted');
     expect(message).toMatch(/configured free Gemini models did not finish/i);
-    expect(message).toMatch(/package and conversation are saved/i);
+    expect(message).toMatch(/package and conversation are still available in this scan/i);
+    expect(message).not.toMatch(/saved/i);
     expect(message).not.toMatch(/paid|billing|upgrade/i);
   });
 });

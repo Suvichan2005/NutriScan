@@ -1,7 +1,7 @@
 # Current engineering status
 ## M2/M6 free-model exhaustion message (26 October 2026)
 
-The client now distinguishes an exhausted configured free-model route from a project spend guard or ordinary response failure. It tells users their package/conversation remain saved and does not imply a paid fallback. Focused presentation suite36/36 and TypeScript pass; browser-visible acceptance remains pending.
+The client now distinguishes an exhausted configured free-model route from a project spend guard or ordinary response failure. It says the current package/conversation remain available in the scan without implying opt-in history persistence or a paid fallback. Focused presentation suite36/36 and production build TypeScript pass. Local intercepted-response Chromium replay at390×844 and1440×900 verifies the visible message/retry action and retained IndexedDB package/prior conversation, with zero external/provider requests and no page errors. This closes browser presentation acceptance only; provider failure behavior and answer usefulness remain separate.
 
 ## M2 replay the saved study-count boundary (26 October 2026)
 
