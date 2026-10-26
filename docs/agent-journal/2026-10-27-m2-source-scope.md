@@ -27,3 +27,7 @@ The initial implementation trial added an English pattern gate for uncited healt
 ## M6 retry recovery — 27 October
 
 The fallback retry control could silently no-op after the user switched to local-only. It now offers a no-send mode re-enable step before the separate retry. Browser interception at390×844 and1440×900 verified that mode switching sends no request, retry replaces the existing turn, and the local package remains saved. Provider calls, external requests and page errors were zero. Sanitized receipt: `docs/evidence/m6-retry-recovery-20261027.json`; the mock success is not live Gemini or answer-quality evidence.
+
+## M6 architecture and evidence trace — 27 October
+
+Reworked the existing architecture diagram to match the current plain-text route, privacy/consent boundaries, source and numerical validation, browser-local fallback, and retry behavior. Added links from product stages to implementation and accepted receipts with their limits. This supports later report assembly without inventing the missing KIIT template or overstating provider/scientific evidence.
