@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — preserve exact declared profile crosswalks in ingredient tools
+
+When a source-backed alias already links an observed ingredient phrase to an explicitly shared allergy, intolerance or avoidance category, include that exact observation/source relationship in `resolve_ingredient` results. Keep it separate from ontology identity, dose, package certainty and individual suitability. Do not infer a relationship for a different condition such as lactose intolerance from a milk-allergy alias.
+
 ## 27 October 2026 — concise saved-context follow-ups
 
 Follow-up turns should answer the new question directly from relevant saved package facts and bounded prior evidence, avoiding a repeated overview unless needed. This is a natural-language instruction only; it does not force retrieval, change package facts or weaken numerical/source validation. A single matched synthetic live pair showed lower tokens but cannot establish broad quality or efficiency.

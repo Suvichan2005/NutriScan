@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — expose exact package/profile ingredient crosswalks to the agent
+
+- Real local-tool inspection found `resolve_ingredient("whey powder")` returned no identity even though the existing package/profile crosswalk and FSSAI source records already represented that exact alias. The general search tool could retrieve the source records but the resolver did not connect them to an authorized milk-allergy profile.
+- The resolver now emits the existing exact crosswalk only when a matching ingredient/allergen observation and an explicitly shared profile declaration are present. It carries observation IDs and source IDs and states that the relation is not an individual safety verdict. A negative lactose-intolerance case ensures milk-allergy terminology is not generalized into a different condition.
+- Focused `gemini-tools.test.ts`: 82 passed, 1 skipped; TypeScript passes. No provider call. Source-linked retrieval is verified at the tool boundary; Gemini selection and useful synthesis remain unverified. The separate India sugar-free claim query still surfaces general sugar sources rather than the dated FSSAI claim source.
+
 ## 2026-10-27 — direct answers from saved context on follow-up
 
 - Added a general follow-up instruction to answer the new question first from relevant saved package facts and bounded prior cited-source context, avoiding repetitive overviews unless useful. Regression assertions passed.

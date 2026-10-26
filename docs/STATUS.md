@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 source-backed ingredient/profile links (27 October 2026)
+
+Integrated the existing exact declared-food crosswalk into the `resolve_ingredient` native tool result. An exact package ingredient phrase may now surface linked source records when they match an explicitly shared profile declaration, while preserving package observation IDs and source scope. Positive milk-allergy/whey-powder and negative lactose-intolerance cases pass; this is a source-linked terminology signal, not an individual safety verdict. The local tool probe confirms the identity/science record for whey powder can be retrieved separately, but no live model response was tested. An India sugar-free claim query still over-retrieves general sugar guidance and misses the dated FSSAI nutrient-claim record; current claim criteria remain unresolved.
+
 ## M2/M6 preserve community allergen and precautionary-trace fields (27 October 2026)
 
 The product lookup/card path now retains Open Food Facts `traces_tags` separately from `allergens_tags` and displays them under distinct headings. Empty trace tags are not described as evidence of no cross-contact. Route and rendered-component acceptance:100 passed; local knowledge suite:42 passed. No browser/build or live external lookup is claimed. The selected Drive handoff folder has its manifest and checksum sidecar but not the ZIP; detailed FoodOn/USDA/WHO stores remain absent locally.

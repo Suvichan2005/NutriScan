@@ -19,6 +19,7 @@ import {
 import { matchesPackageRows, reconcileInterpretedNutrition } from '../interpreted-nutrients';
 import { calculationsFromReconstruction } from '../portion';
 import { calculationRespectsCorrections } from '../correction';
+import { findDeclaredFoodMentions } from '../ingredient-context';
 import { isGuidanceEvidenceInScope, isLocalEvidenceTopicallyRelevant } from '../followup-evidence';
 import { evidenceSources, findIngredientEvidence, ingredientEvidenceForSource, ingredientFamilySources, lookupIngredientFamilies, indianStapleIdentitySources, lookupAdditive, lookupExplicitAdditiveMention, lookupIndianStapleIngredientIdentity, resolveTentativeAdditiveIdentity, jecfaAssessmentTerminology } from '../../modules/knowledge';
 import { searchOpenFoodTox, semanticRetrieve } from '../semantic';
@@ -38,6 +39,8 @@ import { getNutritionGuidance, getNutritionGuidanceCoverageFacts } from './nutri
 
 const imageIdSchema = z.string().min(1).max(160);
 const querySchema = z.string().trim().min(2).max(180);
+const normalizeIngredientPhrase = (value: string) => value.normalize('NFKC').toLocaleLowerCase('en-IN')
+  .replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
 function matchesAuthorizedContext(contextText: string, candidate: string): boolean {
   const normalizedContext = ' ' + contextText.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
   const normalizedCandidate = candidate.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
@@ -620,20 +623,43 @@ async function resolveIngredient(args: z.infer<typeof toolArgs.resolve_ingredien
       },
     };
   }
+  // Surface an exact package-label crosswalk already established for an
+  // explicitly shared allergy/intolerance/avoidance profile. This gives the
+  // agent the source link at the point of ingredient interpretation while
+  // keeping the relationship separate from identity and safety conclusions.
+  const declaredProfileRelations = context.profile
+    ? findDeclaredFoodMentions(context.package, {
+        allergies: context.profile.allergies,
+        intolerances: context.profile.intolerances,
+        avoidedIngredients: context.profile.avoidedIngredients,
+      }).flatMap(match => match.evidence
+        .filter(item => normalizeIngredientPhrase(item.matchedLabelTerm) === normalizeIngredientPhrase(args.query))
+        .map(item => ({
+          kind: match.kind,
+          declaredTerm: match.term,
+          matchedLabelTerm: item.matchedLabelTerm,
+          matchBasis: item.matchBasis,
+          observationIds: [item.observationId],
+          sourceIds: item.sourceIds,
+        })))
+    : [];
+  const declaredProfileSources = [...new Set(declaredProfileRelations.flatMap(match => match.sourceIds))]
+    .map(id => evidenceSources.find(item => item.id === id))
+    .filter((item): item is EvidenceSource => Boolean(item));
   const relatedEvidence = findIngredientEvidence(args.query, context.question);
   const relatedSources = [...new Set(relatedEvidence.flatMap(relation => relation.sourceIds))]
     .map(id => evidenceSources.find(item => item.id === id))
     .filter((item): item is EvidenceSource => Boolean(item));
   const response = await searchFoodOn(args.query, 5);
-  if (response.status === 'unavailable' && !relatedSources.length) return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', reason: response.reason, message: 'NutriScan could not read its local FoodOn index. No ingredient identity was inferred.' } };
-  if (response.status === 'no_match' && !relatedSources.length) return { status: 'empty', resultCount: 0, output: { status: 'no_identity_match', query: args.query, message: 'The local FoodOn index has no sufficiently close label or synonym match. No ingredient identity was inferred.' } };
+  if (response.status === 'unavailable' && !relatedSources.length && !declaredProfileSources.length) return { status: 'unavailable', resultCount: 0, output: { status: 'unavailable', reason: response.reason, message: 'NutriScan could not read its local FoodOn index. No ingredient identity was inferred.' } };
+  if (response.status === 'no_match' && !relatedSources.length && !declaredProfileSources.length) return { status: 'empty', resultCount: 0, output: { status: 'no_identity_match', query: args.query, message: 'The local FoodOn index has no sufficiently close label or synonym match. No ingredient identity was inferred.' } };
   const identityHits = response.status === 'ok'
     ? response.results.slice(0, relatedSources.length ? 3 : 5)
     : [];
   const candidateEvidence = response.status === 'ok'
     ? identityHits.map(hit => foodOnEvidence(hit, response.source)).filter((item): item is EvidenceSource => item !== null)
     : [];
-  const allEvidence = [...candidateEvidence, ...relatedSources];
+  const allEvidence = [...new Map([...candidateEvidence, ...relatedSources, ...declaredProfileSources].map(source => [source.id, source])).values()];
   const identityCandidates = identityHits.slice(0, candidateEvidence.length).map(hit => ({ conceptId:hit.term.id, detailTool:'get_ingredient_concept', sourceId: `foodon-${hit.term.id.toLowerCase()}`, title: `${hit.term.label} (${hit.term.id})`, matchedBy: hit.matchedBy, matchedText: hit.matchedText, parents: hit.parents }));
   return {
     status: allEvidence.length ? 'ok' : 'empty',
@@ -641,13 +667,19 @@ async function resolveIngredient(args: z.infer<typeof toolArgs.resolve_ingredien
     evidence: allEvidence,
     searchTerms: relatedEvidence.map(item => item.ingredient),
     output: {
-      status: identityCandidates.length ? 'ontology_identity_candidates' : relatedEvidence.length ? 'ingredient_effect_evidence' : 'no_identity_match',
+      status: identityCandidates.length ? 'ontology_identity_candidates' : relatedEvidence.length ? 'ingredient_effect_evidence' : declaredProfileRelations.length ? 'declared_profile_label_relationship' : 'no_identity_match',
       query: args.query,
       ...(identityCandidates.length ? { candidates: identityCandidates } : {}),
       ...(response.status === 'ok' ? { sourceVersion: response.source.version } : { identityIndexStatus: response.status }),
       ...(relatedEvidence.length ? { relatedIngredientEvidence: relatedEvidence } : {}),
-      caveat: 'Ontology matches are identity candidates, not confirmed package ingredients. Related studies or assessments describe evidence for a defined ingredient and outcome; they do not establish package composition, dose, exposure, individual effect, clinical advice or product suitability.',
-      ...(!identityCandidates.length && !relatedEvidence.length ? { message: 'No linked ingredient identity or outcome evidence was found.' } : {}),
+      ...(declaredProfileRelations.length ? { declaredProfileLabelRelationships: declaredProfileRelations } : {}),
+      caveat: [
+        identityCandidates.length ? 'Ontology matches are identity candidates, not confirmed package ingredients.' : '',
+        relatedEvidence.length ? 'Related studies or assessments describe evidence for a defined ingredient and outcome; they do not establish dose, exposure, individual effect, clinical advice or product suitability.' : '',
+        declaredProfileRelations.length ? 'A source-backed label crosswalk links the observed wording to an explicitly shared profile category; it is not an individual safety decision or a current-law determination.' : '',
+        'These terminology matches do not establish package composition, dose, exposure or individual safety beyond the linked package observation itself.',
+      ].filter(Boolean).join(' '),
+      ...(!identityCandidates.length && !relatedEvidence.length && !declaredProfileRelations.length ? { message: 'No linked ingredient identity or outcome evidence was found.' } : {}),
     },
   };
 }
