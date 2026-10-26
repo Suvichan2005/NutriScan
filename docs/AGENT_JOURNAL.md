@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — retain study counts with their subjects
+
+- Shortened the general Gemini instruction to use tools for requested lookups when evidence is insufficient. A fresh free development request called local knowledge search twice over three generations; one search returned the PubMed 2022 oat beta-glucan systematic review and the follow-up search was empty. The model stated 13 trials and 927 participants, plus unsupported serving/regulatory numbers.
+- Fixed unitless numeric attribution to prefer the following noun (“13 trials”, “927 participants”) and bounded temporal parsing at clause/parenthesis punctuation. Exact saved provider text now retains the source-backed review sentence, while withholding the unsupported package amount and threshold. Regression coverage also rejects swapped noun/value pairs and preserves physical-unit behavior.
+- Production desktop1440/mobile390 API/UI response replay displays the evidence card and supported counts, with no page errors. This is not clinical/scientific validation or another provider generation. Full798 tests passed/two skipped, TypeScript and optimized build passed. Five protected owner files restored byte-for-byte; no paid call or formal-study execution.
+
 ## 2026-10-25 — make unenumerated nutrition rows useful in conversation
 
 - Extended the existing native calculator and shared calculation contract to select an exact current saved nutrition row without inventing a standard key. The route retains its label, numeric basis, unit, provenance and provisional status; %RDA, qualified/conflicting values, changed source inputs and superseded evidence abstain. Compatible standard-key corrections still override prior model values. No new model, semantic classifier or answer repair was added.

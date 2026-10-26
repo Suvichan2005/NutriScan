@@ -647,10 +647,10 @@ function numericOccurrences(text:string){
     // the next number or sentence boundary so another quantity cannot lend its
     // time basis to this one. Substance wording between a unit and "per day"
     // is allowed; no ingredient, condition or endpoint keywords are involved.
-    const suffix=text.slice(end,Math.min(matches[index+1]?.index??text.length,end+100)).split(/[.!?;\n]/,1)[0];
+    const suffix=text.slice(end,Math.min(matches[index+1]?.index??text.length,end+100)).split(/[.!?;,\n):\]}]/,1)[0];
     const previous=matches[index-1];
     const prefixStart=Math.max(0,previous?(previous.index??0)+previous[0].length:0,(match.index??0)-100);
-    const prefix=text.slice(prefixStart,match.index??0).split(/[.!?;\n]/).at(-1)??'';
+    const prefix=text.slice(prefixStart,match.index??0).split(/[.!?;,\n:([{]/).at(-1)??'';
     // Frequency adverbs describe the same temporal unit even when the measured
     // item appears between the quantity and the rate ("25 g of fibre daily").
     // Scope remains bounded by the next number and sentence/clause boundary.
@@ -725,14 +725,22 @@ function numericIdentifier(text:string,index:number,rawValue:string){
   if(!/^\d{1,4}$/.test(rawValue))return null;
   const word=/\b([\p{L}][\p{L}-]{0,39})\s+$/u.exec(text.slice(Math.max(0,index-45),index))?.[1];
   const following=/^\s+([\p{L}][\p{L}-]{0,39})\b/u.exec(text.slice(index+rawValue.length))?.[1]??'';
-  return word?`${word.toLocaleLowerCase('en')} ${rawValue} ${following.toLocaleLowerCase('en')}`:null;
+  // Counts follow their named subject ("13 trials", "927 participants").
+  // Prefix conjunctions/articles vary between source and prose ("with" vs
+  // "and"), so prefer the stable following noun; labels like "grade 3" and
+  // "INS 955" retain their preceding identifier when no noun follows.
+  return following?`${rawValue} ${following.toLocaleLowerCase('en')}`
+    :word?`${word.toLocaleLowerCase('en')} ${rawValue}`:null;
 }
 
 function numericMentionsAreSupported(claim: string, citedSpans: string[],calculatedResults:{value:number;unit:string}[]=[],contextIdentifiers:ReadonlySet<string>=new Set()): boolean {
   claim = numericPresentationText(claim);
   const claimed = numericOccurrences(claim);
   if (!claimed.length) return true;
-  const cited = citedSpans.flatMap(span => numericOccurrences(numericPresentationText(span)));
+  const cited = citedSpans.flatMap(span => {
+    const citationText=numericPresentationText(span);
+    return numericOccurrences(citationText).map(item=>({...item,citationText,identifier:numericIdentifier(citationText,item.index,item.mention.rawValue)}));
+  });
   // Calculations are typed application outputs, not locale-formatted strings.
   // A value such as 4.712 can look locale-ambiguous when parsed back from text,
   // which incorrectly rejects normal display rounding to 4.7. Keep the
@@ -747,8 +755,12 @@ function numericMentionsAreSupported(claim: string, citedSpans: string[],calcula
     const identifier=value.dimension==='unitless'&&!value.literalUnit&&operator===null&&timeBasis===null?numericIdentifier(claim,index,value.rawValue):null;
     if(identifier&&contextIdentifiers.has(identifier))return true;
     const approximate=isApproximateNumericClaim(claim,index);
-    const matchesEvidence=cited.some(({mention:evidence,operator:evidenceOperator,timeBasis:evidenceTimeBasis})=>{
+    const matchesEvidence=cited.some(candidate=>{
+      const {mention:evidence,operator:evidenceOperator,timeBasis:evidenceTimeBasis}=candidate;
       if(value.dimension!==evidence.dimension||value.literalUnit!==evidence.literalUnit||operator!==evidenceOperator||timeBasis!==evidenceTimeBasis)return false;
+      const unitlessIdentifier=value.dimension==='unitless'&&!value.literalUnit&&operator===null&&timeBasis===null
+        ?numericIdentifier(claim,index,value.rawValue):null;
+      if(unitlessIdentifier&&candidate.identifier&&unitlessIdentifier!==candidate.identifier)return false;
       if(value.localeAmbiguous||evidence.localeAmbiguous){
         if(value.localeAmbiguous&&evidence.localeAmbiguous)return value.rawValue===evidence.rawValue&&value.factor===evidence.factor;
         // In English output, comma-grouped thousands can be parsed as a

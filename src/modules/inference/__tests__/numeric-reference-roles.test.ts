@@ -30,3 +30,14 @@ it('recognizes a prefixed daily rate without dropping the comparator or acceptin
  expect(validateNaturalAnswerText('The daily intake reference is at least 25 g.',ctx).withheldUnsupportedQuantitySentenceCount).toBe(0);
  for(const text of ['The daily intake reference is more than 25 g.','The intake reference is at least 25 g per week.','The daily intake reference is at least 250 g.'])expect(validateNaturalAnswerText(text,ctx).withheldUnsupportedQuantitySentenceCount).toBeGreaterThan(0);
 });
+
+it('matches unitless study counts to the same named subject despite changed sentence connectors',()=>{
+ const review:EvidenceSource={...source,id:'review-counts',title:'Review',summary:'The meta-analysis included 13 trials with 927 participants.',publishedAt:'2022-05-13'};
+ const ctx={...context,evidence:[review]};
+ const supported='A 2022 systematic review included 13 trials and 927 participants.';
+ expect(validateNaturalAnswerText(supported,ctx).answer).toBe(supported);
+ const full='Clinical research and meta-analyses (such as a 2022 systematic review published in Clinical Nutrition ESPEN evaluating 13 trials and 927 participants) indicate that sufficient daily intakes can affect lipids.';
+ expect(validateNaturalAnswerText(full,ctx).answer).toBe(full);
+ for(const wrong of ['A 2022 systematic review included 13 participants and 927 trials.','A 2022 systematic review included 14 trials and 927 participants.','A 2022 systematic review included 13 trials and 928 participants.'])
+  expect(validateNaturalAnswerText(wrong,ctx).withheldUnsupportedQuantitySentenceCount).toBe(1);
+});
