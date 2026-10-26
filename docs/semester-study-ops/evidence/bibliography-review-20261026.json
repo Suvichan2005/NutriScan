@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-26",
+  "scope": "Primary metadata/documentation refresh; not a new systematic review or independent human appraisal",
+  "inputBibliographySha256": "b0563a552a99a6454ad09b690b083d50a8bd41828aa894677912e5071bd43c34",
+  "sourceBodiesArchived": false,
+  "records": [
+    {
+      "id": "L01",
+      "primaryUrl": "https://arxiv.org/abs/2510.03570",
+      "checkedAt": "2026-10-26",
+      "status": "PRIMARY_METADATA_OR_DOCUMENTATION_CHECKED",
+      "verificationDepth": "primary-abstract-and-version-history",
+      "note": "Primary abstract/history confirms title, authors, version date and declared product/image/reference-subset scope. This refresh did not independently re-audit full result tables."
+    },
+    {
+      "id": "L02",
+      "primaryUrl": "https://www.mdpi.com/2313-433X/11/8/271",
+      "checkedAt": "2026-10-26",
+      "status": "ACCESS_LIMITED",
+      "verificationDepth": "access-failure-only",
+      "note": "Publisher returned HTTP429; PubMed extraction returned no usable metadata. Historical abstract review is retained but not promoted to newly verified full methodology. No new numeric result accepted."
+    },
+    {
+      "id": "L03",
+      "primaryUrl": "https://arxiv.org/abs/2110.00061",
+      "checkedAt": "2026-10-26",
+      "status": "PRIMARY_METADATA_OR_DOCUMENTATION_CHECKED",
+      "verificationDepth": "primary-abstract-and-version-history",
+      "note": "Primary arXiv metadata confirms authors and v3 date18 November2021. Conference publication year2022 and preprint version date2021 are distinct."
+    },
+    {
+      "id": "L04",
+      "primaryUrl": "https://www.paddleocr.ai/main/en/version3.x/pipeline_usage/PP-StructureV3.html",
+      "checkedAt": "2026-10-26",
+      "status": "PRIMARY_METADATA_OR_DOCUMENTATION_CHECKED",
+      "verificationDepth": "official-documentation",
+      "note": "Official mutable pipeline documentation confirms region/table/reading-order capabilities. Date accessed is not a publication year or packaging accuracy result."
+    },
+    {
+      "id": "L05",
+      "primaryUrl": "https://link.springer.com/article/10.1007/s00138-024-01549-9",
+      "checkedAt": "2026-10-26",
+      "status": "PRIMARY_METADATA_OR_DOCUMENTATION_CHECKED",
+      "verificationDepth": "publisher-method-section-and-metadata",
+      "note": "Primary publisher confirms full author names, publication date7 June2024 and within-class80/20 training/validation split. This is grocery identity classification, not nutrient extraction or unseen-product generalization."
+    },
+    {
+      "id": "L06",
+      "primaryUrl": "https://data.mendeley.com/datasets/3cpx2fmn3r/2",
+      "checkedAt": "2026-10-26",
+      "status": "PRIMARY_METADATA_OR_DOCUMENTATION_CHECKED",
+      "verificationDepth": "versioned-dataset-landing-page",
+      "note": "Official v2 dataset landing page confirms contributor,15 June2026 version date, DOI and CC BY4.0 declaration. Archive not downloaded; annotation/India/split integrity not verified."
+    },
+    {
+      "id": "L07",
+      "primaryUrl": "https://arxiv.org/abs/2111.15664",
+      "checkedAt": "2026-10-26",
+      "status": "PRIMARY_METADATA_OR_DOCUMENTATION_CHECKED",
+      "verificationDepth": "primary-abstract-and-version-history",
+      "note": "Primary arXiv metadata confirms ECCV2022 status and v5 date6 October2022. No current Indian-package performance claim."
+    },
+    {
+      "id": "L08",
+      "primaryUrl": "https://arxiv.org/abs/2005.11401",
+      "checkedAt": "2026-10-26",
+      "status": "PRIMARY_METADATA_OR_DOCUMENTATION_CHECKED",
+      "verificationDepth": "primary-abstract-and-version-history",
+      "note": "Primary arXiv metadata confirms NeurIPS2020 status and v4 date12 April2021. Learned Wikipedia retrieval architecture differs from native clinical/regulatory tools."
+    },
+    {
+      "id": "L09",
+      "primaryUrl": "https://arxiv.org/abs/2104.08663",
+      "checkedAt": "2026-10-26",
+      "status": "PRIMARY_METADATA_OR_DOCUMENTATION_CHECKED",
+      "verificationDepth": "primary-abstract-and-version-history",
+      "note": "Primary arXiv metadata confirms full author spelling, v4 date21 October2021 and benchmark scope. No clinical/legal applicability conclusion follows."
+    }
+  ],
+  "fieldUpdates": [
+    {
+      "id": "L05",
+      "field": "authors",
+      "expectedValueSha256": "dbd55871606828a63b9d1762895a805dd4bbc65e3bb67b3c441abfa0372eac8e",
+      "value": "Tobias Pettersson, Maria Riveiro, Tuwe Löfström",
+      "primaryUrl": "https://link.springer.com/article/10.1007/s00138-024-01549-9",
+      "reason": "Correct corrupted Unicode author metadata against primary publication record; no scientific finding changed."
+    },
+    {
+      "id": "L09",
+      "field": "authors",
+      "expectedValueSha256": "0dc9da6f14577b4cf6e30608b8cd9e07d9ad7c8af1e91a6a5b6c046ade6f1785",
+      "value": "Nandan Thakur, Nils Reimers, Andreas Rücklé, Abhishek Srivastava, Iryna Gurevych",
+      "primaryUrl": "https://arxiv.org/abs/2104.08663",
+      "reason": "Correct corrupted Unicode author metadata against primary publication record; no scientific finding changed."
+    }
+  ]
+}
