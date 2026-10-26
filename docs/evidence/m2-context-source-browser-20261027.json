@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "kind": "provider-free local answer context and source-card acceptance",
+  "date": "2026-10-27",
+  "browser": "Installed Chrome via Playwright",
+  "server": "Loopback Next.js development server; Gemini, paid fallback, Search grounding and readable transcript capture disabled",
+  "input": {
+    "label": "Synthetic snack; nutrition per 100 g: carbohydrate 60 g, sodium 760 mg",
+    "question": "For my 30 g portion, what does the sodium mean with hypertension and diabetes?",
+    "profile": "Fictional session-only context"
+  },
+  "expected": [
+    "Retain the 228 mg sodium calculation for 30 g.",
+    "Explain that this is approximately 11.4% of the WHO general adult 2,000 mg/day reference.",
+    "State that the population reference is not a personal sodium allowance or product safety cutoff.",
+    "Show the Sodium reduction source card with its general-adult scope and limitation."
+  ],
+  "viewports": [
+    { "width": 390, "height": 844, "result": "pass" },
+    { "width": 1440, "height": 900, "result": "pass" }
+  ],
+  "checks": {
+    "assistantRequests": 0,
+    "visionRequests": 0,
+    "externalRequests": 0,
+    "sourceCardVisibleAndExpanded": true,
+    "publisherAndPopulationVisible": true,
+    "sourceLimitationVisible": true,
+    "pageErrors": 0,
+    "axeViolations": 0,
+    "horizontalOverflow": false
+  },
+  "limitations": [
+    "This verifies deterministic local calculation, source selection and browser presentation only.",
+    "It does not verify Gemini selection or answer quality, semantic entailment, photo OCR, human scientific judgment or individualized medical suitability."
+  ]
+}

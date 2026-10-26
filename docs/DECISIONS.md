@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — preserve scoped source context in local replies
+
+When the local audit already selects a source-backed context finding, the concise fallback may carry that finding into the answer only after its source survives topic and jurisdiction filtering. Preserve the source's population scope and non-personal-target limitation, and expose its source card. Avoid copying full source summaries or presenting population guidance as individualized advice.
+
 ## 27 October 2026 — identify every dated claim source used in deterministic answers
 
 When the local FSSAI nutrient-claim explanation uses both the Version IV compendium and the amendments-index snapshot, include each catalogued source title in the answer so source selection produces two inspectable cards. Apply this to general claim criteria, package-claim questions and current-status abstentions. Keep the dated snapshot boundary explicit: these records do not decide current law or product compliance. Do not imply that a source is linked if its identity is absent from the answer.

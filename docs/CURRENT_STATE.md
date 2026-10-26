@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## Current integration checkpoint — M2/M6 local source context is visible (27 October 2026)
+
+When a combined health-context question had a local WHO sodium finding, the local fallback kept only the arithmetic and the conversation UI hid the selected source card. `buildLocalAuditConversationReply` now carries through the source-linked, topic/scope-filtered context finding with its whole-day population reference and personal-target limit. The existing UI then renders the matching source card. Focused follow-up suite passed 16/16; local-only Chrome acceptance passed at 390×844 and 1440×900. Receipt: `docs/evidence/m2-context-source-browser-20261027.json`. This does not verify Gemini selection, entailment or clinical suitability. The five protected owner files remain preserved; the development server is stopped.
+
 ## Current integration checkpoint — M2 source attribution and FSSAI (27 October 2026)
 
 PR #2 was already merged in history at `b65cae40`. The latest local correction removes a brittle requirement to quote 24–300 characters from a retrieved record's summary in every cited answer sentence. Local summaries and limitations are NutriScan-prepared, not verbatim publisher text. Answers cite the identified record naturally; the optional evidence card labels the text as a NutriScan summary and links the original. Source identity, topic and applicability checks remain, and numeric validation is unchanged. These checks do not prove semantic entailment; that remains a known model-quality limitation. Focused answer/conversation/agent/server suites pass172/172, TypeScript and `git diff --check` pass. No live provider, scientific entailment or independent human review is claimed.

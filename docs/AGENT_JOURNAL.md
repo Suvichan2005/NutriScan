@@ -1,4 +1,11 @@
 # Sanitized engineering journal
+## 2026-10-27 — carry selected sodium context through to the visible source card
+
+- A 30 g synthetic snack scenario had a valid 228 mg sodium calculation and a source-linked WHO interpretation (11.4% of the 2,000 mg/day general-adult reference), but the local answer showed only the arithmetic. Tracing the UI showed `selectCitedEvidence` hid the otherwise-selected evidence because the answer did not name/cite the source.
+- The local fallback now appends only source-linked `context` findings whose source survived topical and jurisdiction filtering. This keeps the source-specific population and non-personal-target caveat visible and lets the existing UI render the source card.
+- Focused follow-up suite: 16 passed. Desktop/mobile local-only Chrome acceptance passed at 390×844 and 1440×900; source publisher, population, limits and answer caveat were visible. No provider/external requests, page errors, Axe violations or horizontal overflow. Receipt: `docs/evidence/m2-context-source-browser-20261027.json`.
+- Limits: synthetic/local-only acceptance; no Gemini selection, source entailment, human science judgment or individual medical suitability.
+
 ## 2026-10-27 — keep sodium evidence visible in a compound context question
 
 - A synthetic provider-free 75 g noodle scenario produced a 1,050 mg sodium calculation and a source-linked WHO whole-day context finding. The final local conversation reply kept the arithmetic, but the source-card topical filter dropped WHO because the question also named diabetes and hypertension.
