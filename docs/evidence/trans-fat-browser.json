@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "local-trans-fat-explanation-browser-acceptance",
-  "generatedAt": "2026-10-21T18:42:20.207Z",
+  "generatedAt": "2026-10-26T21:46:53.055Z",
   "evidenceClass": "synthetic typed-label product-flow acceptance; not photo accuracy, held-out retrieval, legal verification or model behavior",
   "baseOrigin": "http://127.0.0.1:3400",
   "providerCalls": 0,

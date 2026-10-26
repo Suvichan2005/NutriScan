@@ -259,6 +259,19 @@ describe('local evidence follow-ups', () => {
     expect(allergenReply.answer).toContain('does not establish actual allergen presence');
     expect(allergenReply.answer).toContain('FAQ on Food Safety and Standards (Labelling & Display) Regulations, 2020');
     expect(selectCitedEvidence(allergenReply.answer, allergenReply.evidence ?? []).map(item => item.id)).toContain('fssai-labelling-allergen-faq-2023');
+
+    const transFatPackage = parseLabel('Nutrition information per 100 g\nTrans fat 0 g\nIngredients: wheat flour, vegetable oil, salt', { origin: 'user' });
+    const transFatQuestion = 'What does the trans fat line mean?';
+    const transFatReply = buildLocalAuditConversationReply(buildAudit(transFatPackage, 30, 'g', defaultProfile, transFatQuestion), transFatQuestion, transFatPackage);
+    expect(transFatReply.answer).toContain('WHO describes trans-fatty acids');
+    expect(transFatReply.answer).toMatch(/“Trans fat 0 g” \(user-entered observation\).*not verified facts/i);
+    expect(transFatReply.answer).toMatch(/does not establish a numeric amount, zero, or a portion calculation/i);
+    expect(transFatReply.evidence?.map(item => item.id)).toEqual(expect.arrayContaining(['who-trans-fat-2024', 'fssai-industrial-trans-fat-2021']));
+
+    const currentLawQuestion = 'What is the current FSSAI law for trans fat?';
+    const currentLawReply = buildLocalAuditConversationReply(buildAudit(transFatPackage, 30, 'g', defaultProfile, currentLawQuestion), currentLawQuestion, transFatPackage);
+    expect(currentLawReply.answer).toMatch(/Current legal or regulatory status is unresolved/i);
+    expect(currentLawReply.answer).toMatch(/exact product and jurisdiction/i);
   });
 
   it('states when a requested nutrient is unrecorded and combines linked allergy uncertainty with portion facts', () => {

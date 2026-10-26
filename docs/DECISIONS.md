@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — preserve answer intent when a requested value is unavailable
+
+Report an unrecorded amount when the user asks for a quantity or asks whether that value is recorded. Do not replace contextual meaning or regulatory abstention answers merely because they also name a nutrient. Preserve the local finding-to-source relationship when the source title directly names the asked topic, but continue jurisdiction filtering and reject unrelated profile-only matches.
+
 ## 27 October 2026 — do not treat cross-field label text as product identity
 
 When the same user-entered line is represented both as a parsed package name and as another typed field, treat the name as ambiguous for display and default catalog search. Preserve explicit product-name corrections, separate user descriptions and valid barcode lookup. Resolve this at presentation/query boundaries using provenance; do not add phrase-based rules or alter contributor-owned OCR parsing.
