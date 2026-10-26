@@ -1441,3 +1441,7 @@ When a user asks a referential follow-up with a new explicit mass or volume afte
 # 27 October 2026 — align each cited answer sentence to source topic text
 
 A source selected for the user's question cannot support every sentence in the generated answer. For each cited sentence, require an independent topic match against the source's title, summary and limitations; strip publisher identity and self-attribution first so mentioning an acronym such as WHO is not treated as evidence. Keep question-level relevance, jurisdiction and supplied-source inspection behavior. This is a topic-alignment check, not semantic entailment. During quantity validation, ignore internal evidence handles such as `SRC_1` and `CALC_2`; their digits are identifiers, not food measurements.
+
+# 27 October 2026 — validate community product records through the current conversation UI
+
+Use a user-entered barcode to verify live community-record display without presenting catalog ingredients or allergens as package observations. Keep ingredient, declared-allergen, and precautionary trace tags in separately labeled expandable source detail with explicit missing-tag caveats. Browser acceptance checks current mobile/desktop layouts and source attribution; it does not claim photo/OCR identification or manufacturer verification.
