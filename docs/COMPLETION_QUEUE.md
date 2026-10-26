@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## Selected knowledge archive availability (26 October 2026)
+
+Checked the owner-designated Drive handoff folder and exact archive name. The handoff README, detailed source/licensing notes, transfer manifest and ZIP hash sidecar are accessible, but the declared `NutriScan-knowledge-runtime-20261026.zip` is not present in the folder and exact-name search returned no file. The local migration directory also has the manifest without the archive; `.data/knowledge` and `.data/food-composition` remain absent here, while the pinned MiniLM model is already restored. No source download or extraction was made. Do not repeat broad migration; restore only if the ZIP becomes available. This does not block M2 work.
+
 ## M2 comparison UI transfer acceptance (26 October 2026)
 
 Completed intercepted-response browser replays at390×844 and1440×900 using the saved package/answer and three real local typed 10 g calculator results. Both viewports rendered the supported comparison sentence; the calculator card showed exactly eight current 30 g rows and none of the three 10 g difference rows. Each replay made one intercepted `/api/assist` request, sent no photos/profile, made no external requests and had no page errors. Receipts/screenshots: `.data/m2-answer-usefulness-20261026/portion-difference-ui-{390,1440}.{json,png}`. The comparison flow is now verified as deterministic arithmetic + current validator + UI presentation; fresh Gemini tool selection/adherence and scientific answer breadth remain unverified. No provider call or human review.

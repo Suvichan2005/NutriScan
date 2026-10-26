@@ -1134,6 +1134,11 @@ Checkpoint checks:756 passed/one skipped with four workers, TypeScript and final
 - Updated four outdated `server.test.ts` assumptions: two expected superseded system-instruction wording, while two asked the topical guidance retriever for a source with the non-specific query “diabetes nutrition.” Replaced those with checks against current prompt text and a diabetes/carbohydrate query that retrieves an applicable record.
 - Full server suite92/92; full repository suite812 passed/2 skipped; TypeScript and `git diff --check` pass. No build, browser acceptance or provider call. This is software-contract evidence, not M2 scientific answer acceptance.
 
+## 2026-10-26 — verify whether the selected source archive is available
+
+- Searched the owner-designated Drive handoff folder and exact `NutriScan-knowledge-runtime-20261026.zip` name. The manifest, checksum sidecar and restore/licensing notes are present, but the ZIP itself is missing from the folder listing and exact-name searches return no result. The migration directory has the manifest but no matching archive.
+- In the active checkout `.data/knowledge` and `.data/food-composition` are absent; pinned MiniLM model files are already present. Did not attempt extraction, download a substitute, or overwrite existing source data. Archive-backed source-store acceptance remains unavailable; proceed with M2 work that uses currently available sources.
+
 ## 2026-10-26 — verify saved portion comparison at mobile and desktop widths
 
 - Browser replay first exposed that the existing local server was serving a stale Next manifest/chunk pairing: the page chunk returned500 and the error boundary replaced the app shell. The existing `next start` process was restarted against its intact configured build directory; app shell then loaded normally. No source changes were needed for this environment mismatch.
