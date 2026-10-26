@@ -137,7 +137,9 @@ def blind_responses(records, seed, batch_id='synthetic-batch'):
 
 def validate_ratings(ratings, key):
     _, experiment = definitions(); dimensions = experiment['humanReview']['dimensions']
-    joins = {r['blindResponseId']:r for r in key}; seen=set(); scores=defaultdict(list); reviewers=defaultdict(set)
+    joins = {r['blindResponseId']:r for r in key}
+    if len(joins)!=len(key): raise ValueError('Duplicate blind response ID in join key')
+    seen=set(); scores=defaultdict(list); reviewers=defaultdict(set)
     for r in ratings:
         if r.get('blindResponseId') not in joins: raise ValueError('Unknown blind response ID')
         j=joins[r['blindResponseId']]
@@ -155,11 +157,11 @@ def validate_ratings(ratings, key):
             if value is None:
                 if not r.get('notApplicableReasons',{}).get(dim): raise ValueError('N/A reason required; unfilled scores remain pending')
             elif type(value)!=int or not 0<=value<=4: raise ValueError('Score must be integer 0–4')
-            else:scores[(r['blindResponseId'],dim)].append(value)
+            scores[(r['blindResponseId'],dim)].append(value)
         if not isinstance(r.get('evidencePointers'),list) or not r['evidencePointers']: raise ValueError('Rating evidence pointers required')
         for e in r.get('criticalErrors',[]):
             if not all(e.get(k) for k in ('responseSpan','evidencePointer','reason')): raise ValueError('Critical error evidence incomplete')
-    return {'status':'PENDING' if any(len(reviewers[k])<2 for k in joins) else 'REQUIRES_HUMAN_ADJUDICATION','responses':len(joins),'humanRatingRows':len(ratings),'twoReviewerResponses':sum(len(reviewers[k])>=2 for k in joins),'criticalErrors':sum(len(r.get('criticalErrors',[])) for r in ratings),'perResponseDimensions':[{'blindResponseId':k,'dimension':d,'n':len(v),'mean':sum(v)/len(v),'disagreement':len(set(v))>1} for (k,d),v in scores.items()],'claimScope':'human-record-bookkeeping; provenance declaration cannot authenticate a human or establish scientific truth'}
+    return {'status':'PENDING' if not joins or any(len(reviewers[k])<2 for k in joins) else 'REQUIRES_HUMAN_ADJUDICATION','responses':len(joins),'humanRatingRows':len(ratings),'twoReviewerResponses':sum(len(reviewers[k])>=2 for k in joins),'criticalErrors':sum(len(r.get('criticalErrors',[])) for r in ratings),'perResponseDimensions':[{'blindResponseId':k,'dimension':d,'n':len([x for x in v if x is not None]),'notApplicable':v.count(None),'mean':sum(x for x in v if x is not None)/len([x for x in v if x is not None]) if any(x is not None for x in v) else None,'disagreement':len(set(v))>1} for (k,d),v in scores.items()],'claimScope':'human-record-bookkeeping; provenance declaration cannot authenticate a human or establish scientific truth'}
 
 
 
@@ -197,7 +199,7 @@ def export_review(records, seed, output, evidence_root):
         context=r.get('contextArtifact')
         if not artifact(evidence_root,context) or context['sha256']!=r['contextSha256']:
             raise ValueError('Reviewer context artifact absent/changed; do not export responses without context')
-    batch_id='batch-'+canonical({'responses':[r['responseSha256'] for r in records],'seed':seed})[:12]
+    batch_id='batch-'+canonical({'responses':[{k:r[k] for k in ('responseId','conversationId','turn','buildCommit','contextSha256','responseSha256','treatment')} for r in records],'seed':seed})[:12]
     result=blind_responses(records,seed,batch_id)
     output.mkdir(parents=True,exist_ok=False)
     (output/'custodian').mkdir();(output/'reviewer').mkdir()

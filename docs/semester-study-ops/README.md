@@ -50,3 +50,5 @@ python scripts/evaluation/validate_semester_inputs.py
 All bundled tests use explicitly synthetic structural data. They do not produce genuine reviewer ratings or package accuracy results. Private artifacts belong under ignored `.data`; no original photos, response bodies, reviewer identities or answer keys belong in Git.
 
 Additional operational interfaces: `RECEIPTS.md` documents the existing-runner comparison wrapper and proposed binding extension; `STAGING_READINESS.md` records actual remote-host blockers and reviewer acceptance; `REPORT_EVIDENCE.md` documents the actual-template audit and stale source anchors. Keep these workstream notes subordinate to the master completion queue.
+
+`ADJUDICATION.md` covers immutable reader disagreement packets and explicit human adjudicator records. It preserves N/A disagreements and every critical-error disposition; unresolved decisions stay pending.

@@ -23,3 +23,9 @@ Checks:20 structural/negative tests pass; existing semester preparation validato
 Human/cross-owner dependencies: actual two-reader references/adjudication, authoritative reviewed package contexts, genuine response ratings, final model/config/source freeze, agreed adapter binding, staging origin/auth/budget changes by IdeaPad. Next READY work is custodian preparation/validation of actual frozen response records once supplied; no need to rerun Gemini merely to exercise bookkeeping.
 
 A generated scripts/evaluation/__pycache__ file remains untracked after automatic policy rejected deletion. It is excluded from this checkpoint; subsequent imports suppress shared-runner bytecode writes.
+
+## Human adjudication checkpoint
+
+Implemented separate read-only disagreement packets and explicit adjudicator-decision validation, preserving original reviewer records and exact rating-set hashes. N/A-versus-score disagreement remains visible; means exclude N/A without converting it to zero. Distinct adjudicator, response/context/rating binding, timestamps, reasons for changed/disputed scores and a resolution for each critical error are mandatory. Unresolved errors or missing readers remain PENDING. Empty studies cannot become adjudicated. Review batch IDs now bind response identity/context/build/treatment as well as text and seed.
+
+Checks:26 unique synthetic structural tests pass; existing semester preparation validator remains PASS with independent references/final freeze PENDING. No genuine ratings generated or model/provider calls made. See ADJUDICATION.md for operational commands. Human authentication and scientific correctness cannot be inferred from a declared provenance field.
