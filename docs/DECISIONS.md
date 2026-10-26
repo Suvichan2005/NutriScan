@@ -1457,3 +1457,7 @@ When no jurisdiction is supplied, accept a source whose normalized jurisdiction 
 # 27 October 2026 — align each cited answer sentence to source topic text
 
 A source selected for the user's question cannot support every sentence in the generated answer. For each cited sentence, require an independent topic match against the source's title, summary and limitations; strip publisher identity and self-attribution first so mentioning an acronym such as WHO is not treated as evidence. Keep question-level relevance, jurisdiction and supplied-source inspection behavior. This is a topic-alignment check, not semantic entailment. During quantity validation, ignore internal evidence handles such as `SRC_1` and `CALC_2`; their digits are identifiers, not food measurements.
+
+# 27 October 2026 — preserve provider failure and routing reason separately
+
+For every failed model attempt, retain the sanitized provider failure class (for example, `timeout`) independently from the router's retry/cooldown category (for example, `service-unavailable`). Keep the existing category as the routing reason for compatibility; do not use it as a substitute for the observed provider failure. This improves diagnosis without changing model order, cooldown, or paid-fallback policy.

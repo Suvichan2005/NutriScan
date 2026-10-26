@@ -25,7 +25,7 @@ export const FREE_GEMINI_MODEL_PREFERENCE = [
 ] as const;
 
 type ModelCooldown = { until: number; kind: 'short-quota' | 'daily-quota' | 'model-unavailable' | 'unsupported-feature' | 'service-unavailable'; retryAfterMs: number | null };
-type ModelRouteAttempt = { model: string; outcome: 'used' | 'failed' | 'skipped'; reason?: string; retryAfterMs?: number | null; cooldownUntil?: number | null };
+type ModelRouteAttempt = { model: string; outcome: 'used' | 'failed' | 'skipped'; reason?: string; failureClass?: string; retryAfterMs?: number | null; cooldownUntil?: number | null };
 type GenerateDiagnosticContext = { analysisId?: string; stage?: string; round?: number; profileIncluded?: boolean; deadlineAt?: number };
 const cooldownPath = path.join(process.cwd(), '.data', 'gemini-routing-cooldowns.json');
 const modelCooldowns = new Map<string, ModelCooldown>();
@@ -827,7 +827,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
       const category = fallbackCategory(error, routeAttemptSignal, diagnosticContext.deadlineAt, parentSignal);
       if (requestedTier !== 'free' || context.purpose !== 'application' || !category) {
         const failure = safeProviderFailure(error, routeAttemptSignal);
-        attempts.push({ model, outcome: 'failed', reason: category ?? failure.failureClass });
+        attempts.push({ model, outcome: 'failed', reason: category ?? failure.failureClass, failureClass: failure.failureClass });
         const route = { requestedTier, actualTier: null, requestedModel, actualModel: null, fallback: attempts.length > 1, completedWithRequiredCapabilities: false, attempts };
         await recordGeminiDiagnostic({ event: 'provider_route', analysisId: diagnosticContext.analysisId, ...route });
         await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? '', { event: 'provider_route', ...route });
@@ -835,7 +835,8 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
       }
       const retryAfterMs = errorRetryAfterMs(error) ?? cooldownFor(model)?.retryAfterMs ?? null;
       const cooldownState = recordModelCooldown(model, category, retryAfterMs, params);
-      attempts.push({ model, outcome: 'failed', reason: category, retryAfterMs, cooldownUntil: cooldownState.until });
+      const failure = safeProviderFailure(error, routeAttemptSignal);
+      attempts.push({ model, outcome: 'failed', reason: category, failureClass: failure.failureClass, retryAfterMs, cooldownUntil: cooldownState.until });
       lastRetryableError = error;
 
       // Respect a very short provider Retry-After once without sleeping through
@@ -858,7 +859,8 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
           if (!retryCategory) throw retryError;
           const retryWait = errorRetryAfterMs(retryError) ?? null;
           const retryCooldown = recordModelCooldown(model, retryCategory, retryWait, params);
-          attempts[attempts.length - 1] = { model, outcome: 'failed', reason: retryCategory, retryAfterMs: retryWait, cooldownUntil: retryCooldown.until };
+          const retryFailure = safeProviderFailure(retryError, routeAttemptSignal);
+          attempts[attempts.length - 1] = { model, outcome: 'failed', reason: retryCategory, failureClass: retryFailure.failureClass, retryAfterMs: retryWait, cooldownUntil: retryCooldown.until };
           lastRetryableError = retryError;
         }
       }
