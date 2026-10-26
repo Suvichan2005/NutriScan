@@ -1864,9 +1864,19 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
     // while asking about a different amount (for example five biscuits vs the
     // two-biscuit serving); selecting the saved serving calculation here would
     // make the interactive calculator contradict the answer.
-    const usedCalculations=modelCalculatedPortions.length
-      ?modelCalculatedPortions
-      :precomputedRequestedCalculations;
+    const explicitQuestionPortion=hasExplicitPortionRequest(data.question,toolContext.package.netWeight,serving);
+    const targetPortion=explicitQuestionPortion||!data.workspacePortion
+      ?requestedPortion:{value:data.workspacePortion.amount,unit:data.workspacePortion.unit};
+    const hasRequestedPortion=explicitQuestionPortion||!!data.workspacePortion;
+    const calculationsAtRequestedPortion=modelCalculatedPortions.filter(calculation=>(calculation.portionUnit===targetPortion.unit
+      &&Math.abs(calculation.portion-targetPortion.value)<=Number.EPSILON*Math.max(1,calculation.portion,targetPortion.value)*8)
+      ||!!calculation.countedPortion||!!calculation.packagePortion);
+    // A model may calculate the size difference as a direct portion to support
+    // comparison prose. Keep those values available for answer validation,
+    // but render only the amount the user asked about in the interactive card.
+    const usedCalculations=hasRequestedPortion
+      ?calculationsAtRequestedPortion.length?calculationsAtRequestedPortion:precomputedRequestedCalculations
+      :modelCalculatedPortions.length?modelCalculatedPortions:precomputedRequestedCalculations;
     const distinctCalculatedPortions=new Set(usedCalculations.map(item=>`${item.portion}|${item.portionUnit}`));
     const initialCalculatorPortion=distinctCalculatedPortions.size===1&&usedCalculations[0].portion<=10000?usedCalculations[0]:undefined;
     if(usedCalculations.length){

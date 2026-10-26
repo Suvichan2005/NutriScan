@@ -905,6 +905,35 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.calculations).toEqual([expect.objectContaining({nutrient:'carbohydrate',portion:33.5,result:expect.closeTo(69.29*33.5/100,10),countedPortion:{amount:5,unit:'pieces',servingQuantity:13.4,servingUnit:'g',piecesPerServing:2}})]);
     expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculatorAmount:33.5,calculatorUnit:'g',calculationIds:[result.calculations[0].id]}));
   });
+  it('validates a portion difference without rendering its calculation as a duplicate requested-portion row',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const observation={id:'energy-label',field:'label-note',text:'Energy 376 kcal per 100 g',side:'back' as const,confidence:null,origin:'user' as const};
+    const reconstruction={identity:{brand:null,name:'Example oats',variant:null,status:'provisional' as const,evidence:{observationIds:[observation.id],imageRegions:[]}},serving:null,
+      nutritionRows:[{rowId:'energy-row',nutrient:'energy',nutrientKey:'energy' as const,printedLabel:'Energy',printedValue:'376 kcal',value:376,unit:'kcal',columnLabel:'Per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence:{observationIds:[observation.id],imageRegions:[]}}],
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Saved evidence-linked interpretation.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};
+    let calls=0;
+    const fetcher=vi.fn(async(_input:RequestInfo|URL,init?:RequestInit)=>{
+      calls++;
+      if(calls===1)return new Response(modelResponse([toolCallPart('ten-gram-energy-difference','calculate_nutrition',{nutrient:'energy',amount:10,unit:'g'})]),{status:200,headers:{'content-type':'application/json'}});
+      const request=JSON.parse(String(init?.body));
+      const handle=JSON.stringify(request.contents).match(/\bCALC_[A-Z0-9]+\b/)?.[0];
+      expect(handle).toBeTruthy();
+      return new Response(modelResponse([{text:`That is a 10 g reduction, equal to 37.6 kcal of energy (${handle}).`}]),{status:200,headers:{'content-type':'application/json'}});
+    });
+    vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question:'What about 30 g now? Compare the energy.',conversationContext:[{question:'How much energy was in 40 g?',answer:'I used the saved package reading.',}],package:{id:'portion-difference-ui',name:'Example oats',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[observation],rawText:observation.text,warnings:[],synthetic:false,createdAt:new Date().toISOString(),reconstruction}});
+
+    const result=await assist(data);
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result.answer).toContain('37.6 kcal');
+    expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-ready',withheldQuantitySentences:0});
+    expect(result.calculations.map(calculation=>calculation.portion).sort((a,b)=>a-b)).toEqual([10,30]);
+    const calculator=result.uiComponents.find(component=>component.type==='portion-calculator');
+    expect(calculator).toMatchObject({type:'portion-calculator',calculatorAmount:30,calculatorUnit:'g'});
+    expect(calculator?.calculationIds).toHaveLength(1);
+    expect(result.calculations.find(calculation=>calculation.portion===calculator?.calculatorAmount)?.portion).toBe(30);
+  });
   it('routes whole-package questions through the explicit net-content calculator and renders the package amount',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const observations=[

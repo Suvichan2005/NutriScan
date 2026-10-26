@@ -1,4 +1,8 @@
 # Chronological decisions
+## 26 October 2026 — validate comparison deltas as direct portions
+
+For same-basis gram/millilitre portion comparisons, the absolute size difference is itself a directly calculable portion (40 g vs30 g yields a10 g portion). Ask the existing native calculator for that amount instead of accepting model arithmetic from prose. Keep the difference calculation as answer evidence, but render only the user's requested/current amount in the interactive calculator so comparison support does not duplicate nutrient rows. Count, serving and package conversions retain their existing provenance and presentation behavior. This is a server contract/presentation replay only; fresh model selection and desktop/mobile acceptance remain open.
+
 ## 26 October 2026 — retain typed operations as the basis for portion deltas
 
 A saved 30 g answer's comparison between 40 g and 30 g values remained withheld when validation received typed operations for both portions, because the derived differences were not themselves typed operations. Existing calculator calls for the exact 10 g difference independently returned 37.6 kcal, 6.92 g carbohydrate and 228.3 mg sodium, after which the unchanged comparison passed validation. Keep the provenance boundary: previous/current values alone do not certify model-generated arithmetic. Integrate comparison calculations through a typed evidence path that does not duplicate nutrient rows in the interactive portion card. The trace-supplied WHO carbohydrate record supports the population fibre guidance sentence.

@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 typed portion-difference support (26 October 2026)
+
+Added model-visible guidance for direct calculator calls on requested gram/millilitre portion differences and separated comparison calculations from the interactive requested-portion card. A mocked end-to-end server regression validates the saved 30 g scenario, keeps the 10 g difference calculation via its `CALC_...` reference, and shows a single 30 g card. Portion/calculator server tests7/7, agent50/50, inference+tools77 passed/1 skipped and TypeScript pass. Whole server suite88/92: four unrelated prompt/source fixture failures remain. No live model adherence, production build, or desktop/mobile UI replay claimed.
+
 ## M2 saved 30 g comparison replay (26 October 2026)
 
 Current validation of saved trace `408005b7-c455-48ee-92c6-5157ab3fd6a3` with prior/current typed calculations withholds the 40 g→30 g delta sentence. Existing local calculator calls for the exact 10 g difference return 37.6 kcal, 6.92 g carbohydrate and 228.3 mg sodium; with those typed results, the unchanged sentence passes. The trace-supplied `who-carbohydrate-2023` record supports its population 25 g/day naturally occurring fibre guidance and distinguishes this from an individualized target. Provider-free receipts: `.data/m2-answer-usefulness-20261026/30g-prior-calculation-validation-replay.json` and `30g-delta-portion-calculation-replay.json`. This has not verified model selection or the UI for mixed-portion result sets. M2 remains active.
