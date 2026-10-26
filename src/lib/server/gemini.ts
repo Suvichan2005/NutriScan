@@ -2252,13 +2252,15 @@ export async function assist(data: z.infer<typeof assistInput>) {
       onWithheldSentence:decision=>withheldSpans.push(decision),
     });
     const answerStatus=sourceScopeCheck.withheldSentenceCount&&answerCheck.withheldUnsupportedQuantitySentenceCount?'answer-with-evidence-withheld'
-      :sourceScopeCheck.withheldSentenceCount?'answer-with-source-scope-withheld'
+      :sourceScopeCheck.withheldSourceSentenceCount?'answer-with-source-scope-withheld'
+        :sourceScopeCheck.withheldUnreferencedScientificSentenceCount?'answer-with-science-withheld'
         :answerCheck.answer
           ?answerCheck.withheldUnsupportedQuantitySentenceCount?'answer-with-quantity-withheld':'answer-ready'
           :'answer-quantities-withheld';
     const answerNotices=[
       ...(!answerCheck.answer&&answerCheck.withheldUnsupportedQuantitySentenceCount?['I could not verify the precise quantities in that response, so I have not used them. The reconstructed package remains available to inspect.']:[]),
-      ...(sourceScopeCheck.withheldSentenceCount?['I left out one or more source-linked statements because their reference was unavailable, off topic, or outside the stated jurisdiction.']:[]),
+      ...(sourceScopeCheck.withheldSourceSentenceCount?['I left out one or more source-linked statements because their reference was unavailable, off topic, or outside the stated jurisdiction.']:[]),
+      ...(sourceScopeCheck.withheldUnreferencedScientificSentenceCount?['I left out one or more health-effect or dietary-guidance statements because no supporting source was identified.']:[]),
     ];
     const answer=[
       ...(answerCheck.answer?[renderAnswerEvidenceReferences(answerCheck.answer,referenceAliases.fromModel,effectiveEvidence,effectiveCalculations)]:[]),
@@ -2317,7 +2319,8 @@ export async function assist(data: z.infer<typeof assistInput>) {
       answerStatus,
       acceptedSentences:answerCheck.acceptedSentenceCount,
       withheldQuantitySentences:answerCheck.withheldUnsupportedQuantitySentenceCount,
-      withheldSourceScopeSentences:sourceScopeCheck.withheldSentenceCount,
+      withheldSourceScopeSentences:sourceScopeCheck.withheldSourceSentenceCount,
+      withheldUnreferencedScientificSentences:sourceScopeCheck.withheldUnreferencedScientificSentenceCount,
       generationCount:reconstructionGenerationCount+generated.generationCount,
       toolCallCount:reconstructionGenerationCount+generated.trace.filter(item=>item.name!=='google_search_server_round').length,
       packageReconstructionRevision:reconstructionRevision,
@@ -2334,9 +2337,10 @@ export async function assist(data: z.infer<typeof assistInput>) {
       decisions:{
         acceptedSentences:answerCheck.acceptedSentenceCount,
         withheldQuantitySentences:answerCheck.withheldUnsupportedQuantitySentenceCount,
-        withheldSourceScopeSentences:sourceScopeCheck.withheldSentenceCount,
+        withheldSourceScopeSentences:sourceScopeCheck.withheldSourceSentenceCount,
+        withheldUnreferencedScientificSentences:sourceScopeCheck.withheldUnreferencedScientificSentenceCount,
         withheldSpans,
-        policy:'Unsupported quantities and source-linked statements with unavailable, off-topic or out-of-scope sources are withheld. Source-scope checks do not establish semantic entailment.',
+        policy:'Unsupported quantities, source-linked statements with unavailable/off-topic/out-of-scope references, and obvious unreferenced health-effect or dietary-guidance statements are withheld. A topical citation does not establish semantic entailment.',
       },
       summary:diagnostics,
       citedSourceIds:citedEvidence.map(source=>source.id),
@@ -2345,7 +2349,8 @@ export async function assist(data: z.infer<typeof assistInput>) {
       event:'natural_answer_validation',analysisId,status:answerStatus,
       acceptedSentences:answerCheck.acceptedSentenceCount,
       withheldQuantitySentences:answerCheck.withheldUnsupportedQuantitySentenceCount,
-      withheldSourceScopeSentences:sourceScopeCheck.withheldSentenceCount,
+      withheldSourceScopeSentences:sourceScopeCheck.withheldSourceSentenceCount,
+      withheldUnreferencedScientificSentences:sourceScopeCheck.withheldUnreferencedScientificSentenceCount,
       generationCount:diagnostics.generationCount,toolCallCount:diagnostics.toolCallCount,
       retrievedSourceCount:generated.evidence.length,reconstructionRevision,
     });
