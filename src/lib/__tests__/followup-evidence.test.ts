@@ -305,6 +305,14 @@ describe('local evidence follow-ups', () => {
     expect(combined.evidence).toBeUndefined();
   });
 
+  it('preserves the missing-ingredient caveat and next step in a natural follow-up',()=>{
+    const pkg=parseLabel('Nutrition information per 100 g\nSugars 10 g',{origin:'user'});
+    const question='What ingredients are listed?';
+    const reply=buildLocalAuditConversationReply(buildAudit(pkg,30,'g',defaultProfile,question),question,pkg);
+    expect(reply.answer).toMatch(/No readable ingredient text is recorded.*does not establish that the package has none/i);
+    expect(reply.answer).toMatch(/add or check a clear photo of the relevant panel/i);
+  });
+
   it('does not paste US-only diabetes education into the local fallback for an Indian-market snack question', () => {
     const pkg = parseLabel('Bisk Farm Sugar Free Cream Cracker\nIngredients: Refined wheat flour (maida) (89.98%)', { origin: 'user' });
     const question = 'Is this good to have for diabetic patients daily for snacking?';
@@ -375,6 +383,23 @@ describe('local evidence follow-ups', () => {
     expect(distinctNutrientReply.answer).toMatch(/No added sugar amount is recorded.*does not establish that the package contains none/i);
     expect(distinctNutrientReply.answer).toContain('1.2 g sugars for 30 g');
     expect(distinctNutrientReply.answer.includes('1.2 g added sugar')).toBe(false);
+  });
+
+  it('keeps a package claim separate from a calculated nutrient amount during local recovery', () => {
+    const pkg = parseLabel([
+      'Fictional development crackers',
+      'Sugar free',
+      'Nutrition information per 100 g',
+      'Carbohydrate 72 g',
+      'Sugars 0.5 g',
+    ].join('\n'), { origin: 'user' });
+    const question = 'Does its sugar-free claim mean carbohydrate-free for a 30 g portion?';
+    const reply = buildLocalPackageFallbackReply(buildAudit(pkg, 30, 'g', defaultProfile, question), question, pkg);
+
+    expect(reply.answer).toContain('The recorded package claim is “Sugar free”.');
+    expect(reply.answer).toContain('The printed claim and the requested nutrition-panel amount are separate package details');
+    expect(reply.answer).toContain('21.6 g carbohydrate for 30 g');
+    expect(reply.answer).toContain('0.15 g sugars for 30 g');
   });
 
   it('bounds restored conversation citations and removes unsafe links', () => {

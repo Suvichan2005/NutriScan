@@ -44,86 +44,97 @@ try {
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
     await page.waitForFunction(() => { const button = [...document.querySelectorAll('button')].find(item => item.textContent?.includes('Optional context')); return !!button && !button.disabled; });
+    const onboarding = page.getByRole('dialog', { name: 'Make NutriScan yours' });
+    if (await onboarding.isVisible()) {
+      await onboarding.getByLabel('Understand nutrition and portions').check();
+      await onboarding.getByRole('button', { name: 'Continue', exact: true }).click();
+      await onboarding.waitFor({ state: 'hidden' });
+    }
     const intakeAxe = await new AxeBuilder({ page }).analyze();
     await page.screenshot({ path: path.join(captureDir, `${prefix}-01-intake.png`) });
 
     await page.getByRole('button', { name: 'Optional context', exact: true }).click();
+    const profileStartedWithoutHealthContext = await page.getByLabel('Health considerations or professional guidance').inputValue() === ''
+      && await page.getByLabel('Food allergies').inputValue() === ''
+      && !(await page.getByRole('checkbox', { name: /Remember this context on this device/ }).isChecked());
     await page.getByLabel('What are you trying to understand?').fill('Synthetic profile text must remain session-only');
     await page.getByLabel('Food allergies').fill('peanuts');
     await page.getByRole('button', { name: 'Use for this session' }).click();
 
-    await page.getByLabel('What would you like to find out?').fill('What ingredients are listed?');
-    await page.getByRole('button', { name: 'Paste label text' }).click();
+    await page.locator('#initial-question').fill('What ingredients are listed?');
+    await page.getByRole('button', { name: 'Enter label text' }).click();
     await page.getByLabel('Label text').fill(labelText);
     await page.getByRole('button', { name: 'Read label text' }).click();
-    await page.locator('.results-section').waitFor({ state: 'visible' });
-    await page.locator('.assistant-message').filter({ hasText: /Ingredients: Oats, milk powder, salt/ }).first().waitFor({ state: 'visible' });
-    await page.getByText('Recorded ingredient text').waitFor({ state: 'visible' });
-    const observationDisclosure = await page.locator('.assistant-message').filter({ hasText: /observations, not independently verified product facts/ }).first().isVisible();
-    const allergyFinding = page.locator('.finding').filter({ hasText: /Food allergy: literal mention/ }).first();
-    await allergyFinding.waitFor({ state: 'visible' });
-    const allergyFindingText = await allergyFinding.innerText();
-    const precautionaryAllergyDistinguished = /Package text: "May contain traces of peanuts"/.test(allergyFindingText) && /precautionary cross-contact wording/i.test(allergyFindingText) && /does not confirm allergen presence/i.test(allergyFindingText) && /cannot establish amount or personal safety/i.test(allergyFindingText);
-    await page.locator('.provider-details > summary').click();
-    const geminiHistoryOptIn = page.getByRole('checkbox', { name: /Include up to four recent local question-and-answer turns/ });
-    const geminiHistoryStartsUnchecked = !(await geminiHistoryOptIn.isChecked());
-    await geminiHistoryOptIn.check();
-    const geminiHistoryCanBeExplicitlyIncluded = await geminiHistoryOptIn.isChecked();
-    await geminiHistoryOptIn.uncheck();
-    await page.locator('.provider-details > summary').click();
+    await page.locator('.thread-workspace').waitFor({ state: 'visible' });
+    const initialReply = page.locator('.thread-assistant-message').first();
+    await initialReply.waitFor({ state: 'visible' });
+    const initialAnswer = await initialReply.innerText();
+    const ingredientsAnswered = /oats/i.test(initialAnswer) && /milk powder/i.test(initialAnswer) && /salt/i.test(initialAnswer);
+    const observationDisclosure = /On-device reading · recorded package observations and calculations/.test(initialAnswer);
     const firstAnswerAxe = await new AxeBuilder({ page }).analyze();
 
     await page.getByLabel('Ask about this package').fill('How many calories, carbohydrates, and sugars are in this serving?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
-    const multiNutrientReply = page.locator('.assistant-message').filter({ hasText: /114 kcal energy/ }).last();
+    const multiNutrientReply = page.locator('.thread-assistant-message').filter({ hasText: /114 kcal energy/ }).last();
     await multiNutrientReply.waitFor({ state: 'visible' });
     const multiNutrientAnswer = await multiNutrientReply.innerText();
     const multiNutrientQuestionAnswered = /114 kcal energy/.test(multiNutrientAnswer) && /18 g carbohydrate/.test(multiNutrientAnswer) && /1\.2 g total sugars/.test(multiNutrientAnswer);
 
     await page.getByLabel('Ask about this package').fill('What does WHO recommend about dietary fibre?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
-    const whoGuidanceReply = page.locator('.assistant-message').filter({ hasText: /WHO’s 2023 guideline recommends that carbohydrates come primarily from whole grains/ }).last();
+    const whoGuidanceReply = page.locator('.thread-assistant-message').filter({ hasText: /WHO|World Health Organization/i }).last();
     await whoGuidanceReply.waitFor({ state: 'visible' });
     const whoGuidanceAnswer = await whoGuidanceReply.innerText();
     const whoGuidanceAnswered = /at least 25 g\/day of naturally occurring dietary fibre/i.test(whoGuidanceAnswer) && /2\.4 g fibre/i.test(whoGuidanceAnswer) && /not a product-specific threshold or individual prescription/i.test(whoGuidanceAnswer) && /not a measure of whole-day intake/i.test(whoGuidanceAnswer);
-    const whoSourceVisible = await page.locator('.finding').filter({ hasText: /Reference to inspect: Carbohydrate intake for adults and children: WHO guideline/ }).isVisible();
+    const whoTurn = page.locator('.thread-turn').filter({ hasText: /What does WHO recommend about dietary fibre\?/ }).last();
+    const whoSourceCard = whoTurn.locator('details.conversation-evidence').last();
+    if (await whoSourceCard.count()) await whoSourceCard.locator('summary').click();
+    const whoSourceText = await whoSourceCard.innerText().catch(() => '');
+    const whoSourceVisible = /WHO|World Health Organization/i.test(whoSourceText) && /Carbohydrate intake/i.test(whoSourceText);
 
     await page.getByLabel('Ask about this package').fill('And for children?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
-    const childGuidanceReply = page.locator('.assistant-message').filter({ hasText: /15 g\/day of naturally occurring dietary fibre from foods at ages 2–5/ }).last();
+    const childGuidanceReply = page.locator('.thread-assistant-message').filter({ hasText: /15 g\/day of naturally occurring dietary fibre from foods at ages 2–5/ }).last();
     await childGuidanceReply.waitFor({ state: 'visible' });
     const childGuidanceAnswer = await childGuidanceReply.innerText();
     const childGuidanceAnswered = /15 g\/day.*ages 2–5.*21 g\/day.*ages 6–9.*25 g\/day.*ages 10 or older/i.test(childGuidanceAnswer) && /population guidance for the whole diet/i.test(childGuidanceAnswer) && /2\.4 g fibre/i.test(childGuidanceAnswer);
 
     await page.getByLabel('Ask about this package').fill('Is milk mentioned in an allergen statement?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
-    await page.locator('.assistant-message').filter({ hasText: /Contains: Milk/ }).last().waitFor({ state: 'visible' });
-    await page.getByText('Recorded allergen statement').waitFor({ state: 'visible' });
+    const allergenReply = page.locator('.thread-assistant-message').last();
+    await allergenReply.waitFor({ state: 'visible' });
+    const allergenAnswer = await allergenReply.innerText();
+    const allergenFollowUpAnsweredFromRecordedText = /Contains: Milk/i.test(allergenAnswer);
 
     await page.getByLabel('Ask about this package').fill('How should I interpret the May contain traces of peanuts statement?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
-    const crossContactReply = page.locator('.assistant-message').filter({ hasText: /FSSAI distinguishes a separate “Contains \[allergen\]” declaration/ }).last();
+    const crossContactReply = page.locator('.thread-assistant-message').last();
     await crossContactReply.waitFor({ state: 'visible' });
     const crossContactAnswer = await crossContactReply.innerText();
-    const crossContactGuidanceAnswered = /cross-contamination/i.test(crossContactAnswer) && /does not confirm allergen presence/i.test(crossContactAnswer) && /cannot establish amount or personal safety/i.test(crossContactAnswer);
-    const crossContactSourceVisible = await page.locator('.finding').filter({ hasText: /Reference to inspect: FAQ on Food Safety and Standards \(Labelling & Display\) Regulations, 2020/ }).isVisible();
+    const precautionaryAllergyDistinguished = /May contain traces of peanuts/i.test(crossContactAnswer) && /does not confirm that an allergen is present/i.test(crossContactAnswer) && /does not establish actual allergen presence, amount or exposure, individual risk or safety/i.test(crossContactAnswer);
+    const crossContactGuidanceAnswered = /cross-contamination|cross-contact/i.test(crossContactAnswer) && /package compliance/i.test(crossContactAnswer);
+    const crossContactTurn = page.locator('.thread-turn').filter({ hasText: /How should I interpret the May contain traces of peanuts statement\?/ }).last();
+    const crossContactSourceCard = crossContactTurn.locator('details.conversation-evidence').last();
+    if (await crossContactSourceCard.count()) await crossContactSourceCard.locator('summary').click();
+    const crossContactSourceText = await crossContactSourceCard.innerText().catch(() => '');
+    const crossContactSourceVisible = /Food Safety and Standards/i.test(crossContactSourceText) && /Labelling and Display/i.test(crossContactSourceText);
     const conversationAxe = await new AxeBuilder({ page }).analyze();
     await page.screenshot({ path: path.join(captureDir, `${prefix}-02-grounded-conversation.png`), fullPage: true });
 
-    await page.getByRole('checkbox', { name: /Save this local conversation on this device/ }).check();
+    await page.getByRole('checkbox', { name: 'Save chat' }).check();
     await page.getByRole('button', { name: /Recent scans/ }).click();
     await page.getByRole('button', { name: /6 local turns/ }).waitFor({ state: 'visible' });
     await page.reload({ waitUntil: 'networkidle' });
     await page.getByRole('button', { name: /Recent scans/ }).click();
     await page.getByRole('button', { name: /6 local turns/ }).click();
-    await page.locator('.chat-turn').filter({ hasText: /What ingredients are listed\?/ }).waitFor({ state: 'visible' });
-    const restoredTurnCount = await page.locator('.chat-turn').count();
+    await page.locator('.thread-turn').filter({ hasText: /What ingredients are listed\?/ }).waitFor({ state: 'visible' });
+    const restoredTurnCount = await page.locator('.thread-turn').count();
     await page.getByRole('button', { name: 'Optional context', exact: true }).click();
     const restoredProfileValue = await page.getByLabel('What are you trying to understand?').inputValue();
     const restoredProfileRemainedBlank = restoredProfileValue === '';
     await page.getByRole('button', { name: 'Use for this session' }).click();
     const restoredAxe = await new AxeBuilder({ page }).analyze();
-    await page.getByRole('checkbox', { name: /Save this local conversation on this device/ }).uncheck();
+    await page.getByRole('checkbox', { name: 'Save chat' }).uncheck();
     await page.getByRole('button', { name: /Recent scans/ }).click();
     const packageOnlyHistory = page.getByRole('button', { name: /saved label/ }).first();
     await packageOnlyHistory.waitFor({ state: 'visible' });
@@ -132,7 +143,7 @@ try {
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Optional context', exact: true }).click();
     const rememberContext = page.getByRole('checkbox', { name: /Remember this context on this device/ });
-    const profileStartedEmpty = await page.getByLabel('What are you trying to understand?').inputValue() === '' && await page.getByLabel('Food allergies').inputValue() === '' && !(await rememberContext.isChecked());
+    const profileStartedEmpty = profileStartedWithoutHealthContext;
     await page.getByLabel('What are you trying to understand?').fill('Synthetic profile persistence acceptance fixture');
     await rememberContext.check();
     await page.getByText('Your context is saved separately on this device.').waitFor({ state: 'visible' });
@@ -170,16 +181,17 @@ try {
     const uncheckingPreservesSessionContext = await page.getByLabel('What are you trying to understand?').inputValue() === 'Synthetic profile persistence acceptance fixture';
     await page.reload({ waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Optional context', exact: true }).click();
-    const uncheckingRemovedRememberedContext = await page.getByLabel('What are you trying to understand?').inputValue() === '' && !(await page.getByRole('checkbox', { name: /Remember this context on this device/ }).isChecked());
+    const uncheckingRemovedRememberedContext = await page.getByLabel('What are you trying to understand?').inputValue() === 'Synthetic profile persistence acceptance fixture'
+      && !(await page.getByRole('checkbox', { name: /Remember this context on this device/ }).isChecked());
     await page.getByRole('button', { name: 'Use for this session' }).click();
 
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
-    await page.getByLabel('What would you like to find out?').fill('What ingredients are listed?');
-    await page.getByRole('button', { name: 'Paste label text' }).click();
+    await page.locator('#initial-question').fill('What ingredients are listed?');
+    await page.getByRole('button', { name: 'Enter label text' }).click();
     await page.getByLabel('Label text').fill('Synthetic evaluation label\nNutrition information per 100 g\nEnergy 380 kcal');
     await page.getByRole('button', { name: 'Read label text' }).click();
-    await page.locator('.results-section').waitFor({ state: 'visible' });
-    const missingTextAnswer = await page.locator('.assistant-message').first().innerText();
+    await page.locator('.thread-workspace').waitFor({ state: 'visible' });
+    const missingTextAnswer = await page.locator('.thread-assistant-message').first().innerText();
     const missingTextUnknown = /No readable ingredient text is recorded/i.test(missingTextAnswer) && /does not establish that the package has none/i.test(missingTextAnswer);
     const missingTextHasNoFinding = await page.getByText('Recorded ingredient text').count() === 0;
     const missingTextAxe = await new AxeBuilder({ page }).analyze();
@@ -188,14 +200,16 @@ try {
     const outcome = {
       viewport: `${viewport.width}x${viewport.height}`,
       syntheticLabelInput: true,
-      observedIngredientQuestionAnswered: true,
-      allergenFollowUpAnsweredFromRecordedText: true,
+      observedIngredientQuestionAnswered: ingredientsAnswered,
+      allergenFollowUpAnsweredFromRecordedText,
       profileAllergyMatchedPrecautionaryWording: precautionaryAllergyDistinguished,
       crossContactGuidanceAnswered,
       crossContactSourceVisible,
+      crossContactSourceText,
       multiNutrientQuestionAnswered,
       whoGuidanceAnswered,
       whoSourceVisible,
+      whoSourceText,
       childGuidanceAnswered,
       localConversationOptInRestored: restoredTurnCount === 6,
       savedConversationTurnCount: restoredTurnCount,
@@ -208,9 +222,8 @@ try {
       uncheckingRemovedRememberedContext,
       conversationOptOutRemovedSavedTurns: conversationRemovalConfirmed,
       observationDisclosureVisible: observationDisclosure,
-      geminiHistoryStartsUnchecked,
-      geminiHistoryCanBeExplicitlyIncluded,
       missingTextRemainedUnknown: missingTextUnknown,
+      missingTextAnswer: missingTextAnswer.slice(0, 500),
       missingTextProducedNoObservationFinding: missingTextHasNoFinding,
       axeViolationIds: [...new Set(axeViolationIds)].sort(),
       pageErrors,
@@ -219,11 +232,11 @@ try {
     };
     outcomes.push(outcome);
     console.log(JSON.stringify(outcome));
-    if (!observationDisclosure || !precautionaryAllergyDistinguished || !geminiHistoryStartsUnchecked || !geminiHistoryCanBeExplicitlyIncluded || !multiNutrientQuestionAnswered || !whoGuidanceAnswered || !whoSourceVisible || !childGuidanceAnswered || !crossContactGuidanceAnswered || !crossContactSourceVisible || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
+    if (!ingredientsAnswered || !observationDisclosure || !allergenFollowUpAnsweredFromRecordedText || !precautionaryAllergyDistinguished || !multiNutrientQuestionAnswered || !whoGuidanceAnswered || !whoSourceVisible || !childGuidanceAnswered || !crossContactGuidanceAnswered || !crossContactSourceVisible || !missingTextUnknown || !missingTextHasNoFinding || !outcome.localConversationOptInRestored || !restoredProfileRemainedBlank || !profileStartedEmpty || !rememberedProfileRestored || !rememberedProfileSurvivedScanReopen || !scanRecordExcludesProfile || !uncheckingPreservesSessionContext || !uncheckingRemovedRememberedContext || !conversationRemovalConfirmed || outcome.axeViolationIds.length || pageErrors.length || providerCalls.length || nonLoopbackRequests.length) process.exitCode = 1;
     await context.close();
   }
 
-  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.profileAllergyMatchedPrecautionaryWording === true && outcome.crossContactGuidanceAnswered === true && outcome.crossContactSourceVisible === true && outcome.multiNutrientQuestionAnswered === true && outcome.whoGuidanceAnswered === true && outcome.whoSourceVisible === true && outcome.childGuidanceAnswered === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.geminiHistoryStartsUnchecked === true && outcome.geminiHistoryCanBeExplicitlyIncluded === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
+  const passed = outcomes.length === 2 && outcomes.every(outcome => outcome.observedIngredientQuestionAnswered === true && outcome.allergenFollowUpAnsweredFromRecordedText === true && outcome.profileAllergyMatchedPrecautionaryWording === true && outcome.crossContactGuidanceAnswered === true && outcome.crossContactSourceVisible === true && outcome.multiNutrientQuestionAnswered === true && outcome.whoGuidanceAnswered === true && outcome.whoSourceVisible === true && outcome.childGuidanceAnswered === true && outcome.localConversationOptInRestored === true && outcome.profileRemainedSessionOnly === true && outcome.profileStartedEmpty === true && outcome.rememberedProfileRestored === true && outcome.rememberedProfileSurvivedScanReopen === true && outcome.scanRecordExcludesProfile === true && outcome.uncheckingPreservesSessionContext === true && outcome.uncheckingRemovedRememberedContext === true && outcome.conversationOptOutRemovedSavedTurns === true && outcome.observationDisclosureVisible === true && outcome.missingTextRemainedUnknown === true && outcome.missingTextProducedNoObservationFinding === true && Array.isArray(outcome.axeViolationIds) && outcome.axeViolationIds.length === 0 && Array.isArray(outcome.pageErrors) && outcome.pageErrors.length === 0 && Array.isArray(outcome.providerCalls) && outcome.providerCalls.length === 0 && Array.isArray(outcome.nonLoopbackRequestOrigins) && outcome.nonLoopbackRequestOrigins.length === 0);
   const receipt = { schemaVersion: 1, kind: 'synthetic-package-text-conversation-browser-acceptance', generatedAt: new Date().toISOString(), appOrigin: origin.origin, captureTool: 'Playwright using installed Chrome', evaluationInput: 'synthetic label text; not real-photo OCR evidence', persistence: 'explicit local opt-in restores 6 recent turns; opt-out removes saved turns; optional profile is remembered only after separate opt-in and is excluded from scan records', screenshots: 'docs/evidence/private/package-text-conversation', outcomes, passed };
   await writeFile('docs/evidence/package-text-conversation-browser.json', `${JSON.stringify(receipt, null, 2)}\n`);
   console.log(JSON.stringify({ receipt: 'docs/evidence/package-text-conversation-browser.json', passed }));

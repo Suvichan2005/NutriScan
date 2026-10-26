@@ -1476,3 +1476,7 @@ Numeric validation may use a retrieved source's numeric content only when the an
 ### Retrieved records are not citations
 
 Persist bounded tool-retrieved evidence separately from answer-cited evidence. Only answer-cited, current, in-scope records can be carried into follow-up evidence context. The inspector may show retrieved-only records with an explicit uncited label for transparency. Never promote all retrieved records into answer citations or numerical support.
+
+# 2026-10-27 — separate package claims from requested nutrient amounts in local recovery
+
+When the cloud response is unavailable, the local package fallback may state a package claim and supported nutrient calculations together, but it must describe them as distinct package details. The claim alone does not establish the requested numeric amount. Continue to derive quantities only from the saved package and typed calculator; do not infer regulatory compliance or a health outcome.
