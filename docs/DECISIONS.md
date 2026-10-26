@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — render native references after numerical validation
+
+An actual source-grounded answer leaked a prompt calculation alias. Resolve reserved native handles through the same request's alias map and effective evidence/calculations after existing quantity validation. Source titles support existing identity linking; unknown or excluded references are explicitly unavailable. Preserve layout and unrelated label/trial identifiers. Retain raw model, validated and displayed text separately in opt-in private events. No repair generation, source entailment claim or reinterpretation of measured quantities.
+
 ## 26 October 2026 — retain temporal dimensions and attributable guidance
 
 Recognize hourly/daily/weekly/monthly/yearly frequency adverbs within a bounded quantity phrase, including after a measured item. Preserve unit, comparator and temporal distinctions; do not let a later comma-separated daily-use comment lend a rate to a package amount. Ask the existing general agent to identify guidance it uses by organization/title, supplied date and supported conclusion within the concise prompt budget. Source identity selection remains traceability, not entailment validation. Keep unperformed portion differences withheld; no new arithmetic is extracted from prose.

@@ -1,6 +1,28 @@
 import type { EvidenceSource } from './contracts';
 
 type SourceIdentity = Pick<EvidenceSource, 'id'|'title'|'publisher'|'url'|'publishedAt'>;
+
+/** Present native prompt references without exposing implementation handles.
+ * Only a source in the effective evidence set can become a named reference.
+ * This changes presentation after quantity validation, never evidence support.
+ */
+export function renderAnswerEvidenceReferences(
+  answer: string,
+  aliases: ReadonlyMap<string, string>,
+  sources: readonly SourceIdentity[],
+  calculations: readonly { id: string }[],
+): string {
+  const sourceTitles = new Map(sources.map(source => [source.id, source.title]));
+  const calculationIds = new Set(calculations.map(calculation => calculation.id));
+  const labels: Record<string, string> = { OBS: 'label observation', IMG: 'package photo', ROW: 'nutrition row', CAND: 'provisional reading' };
+  return answer.replace(/\b(OBS|IMG|SRC|CALC|CAND|ROW)_[A-Z0-9]+\b/g, (handle, kind: string) => {
+    const id = aliases.get(handle);
+    if (!id) return 'unavailable reference';
+    if (kind === 'SRC') return sourceTitles.get(id) ?? 'unavailable source';
+    if (kind === 'CALC') return calculationIds.has(id) ? 'saved calculation' : 'unavailable calculation';
+    return labels[kind];
+  });
+}
 const normalized = (text:string) => text.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 const includesIdentity = (text:string,identity:string) => !!identity && ` ${text} `.includes(` ${identity} `);
 

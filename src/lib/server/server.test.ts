@@ -742,6 +742,17 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.agentEvidence).toMatchObject([{ id: source!.id, publisher: 'International Diabetes Federation', jurisdiction: 'Global' }]);
     expect(result.uiComponents).toContainEqual({ type: 'source-reference-cards', observationIds: [], sourceIds: [source!.id], calculationIds: [] });
   });
+  it('renders an explicit native source reference and returns its source card without a repair generation',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const source=getNutritionGuidance({query:'diabetes nutrition',jurisdiction:'India',maxResults:3})[0];
+    const answer='The supplied reference is SRC_1.\n\nIt is contextual guidance, not a personal target.';
+    const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
+    const data=assistInput.parse({consent:true,question:'Explain the supplied reference.',evidence:[source],package:{id:'native-source-reference-ui',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
+    const result=await assist(data);
+    expect(result.answer).toBe(`The supplied reference is ${source.title}.\nIt is contextual guidance, not a personal target.`);
+    expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[source.id],calculationIds:[]});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it('keeps unused evidence inspectable without presenting it as a conversational citation',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const source=getNutritionGuidance({query:'diabetes nutrition',jurisdiction:'India',maxResults:3})[0];

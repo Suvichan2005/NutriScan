@@ -16,7 +16,7 @@ import { ApiError } from './http';
 import { recordGeminiDiagnostic } from './gemini-diagnostics';
 import { finishGeminiEvaluation, recordGeminiEvaluationEvent, startGeminiEvaluation } from './gemini-evaluation-recorder';
 import { calculationsFromReconstruction, defaultPortion, hasExplicitPortionRequest, resolveQuestionPortion } from '../portion';
-import { selectCitedEvidence } from '../answer-evidence';
+import { renderAnswerEvidenceReferences, selectCitedEvidence } from '../answer-evidence';
 import { reconstructionRowIsSuperseded } from '../correction';
 import { workspacePortionSchema } from '../contracts';
 
@@ -2218,7 +2218,9 @@ export async function assist(data: z.infer<typeof assistInput>) {
     const answerStatus=answerCheck.answer
       ?answerCheck.withheldUnsupportedQuantitySentenceCount?'answer-with-quantity-withheld':'answer-ready'
       :'answer-quantities-withheld';
-    const answer=answerCheck.answer||'I could not verify the precise quantities in that response, so I have not used them. The reconstructed package remains available to inspect.';
+    const answer=answerCheck.answer
+      ?renderAnswerEvidenceReferences(answerCheck.answer,referenceAliases.fromModel,effectiveEvidence,effectiveCalculations)
+      :'I could not verify the precise quantities in that response, so I have not used them. The reconstructed package remains available to inspect.';
     const parsedComponents=assistantUiComponentSchema.array().max(6).safeParse(generated.uiComponents);
     let uiComponents=parsedComponents.success?parsedComponents.data:[];
     const citedEvidence=selectCitedEvidence(answer,effectiveEvidence);
@@ -2250,6 +2252,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       event:'answer_validation',
       modelAnswer:generated.answer,
       acceptedAnswer:answerCheck.answer,
+      displayedAnswer:answer,
       applicationNotice:answerCheck.answer?null:answer,
       decisions:{
         acceptedSentences:answerCheck.acceptedSentenceCount,

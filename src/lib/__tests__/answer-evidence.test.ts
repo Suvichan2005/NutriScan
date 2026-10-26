@@ -1,7 +1,23 @@
 import {describe,expect,it} from 'vitest';
-import {selectCitedEvidence} from '../answer-evidence';
+import {renderAnswerEvidenceReferences,selectCitedEvidence} from '../answer-evidence';
 
 const source=(id:string,title:string,publisher:string,publishedAt:string|null)=>({id,title,publisher,publishedAt,url:`https://example.org/${id}`});
+
+it('renders known native references in multiline prose and lets explicit source handles resolve an ambiguous publisher',()=>{
+  const a=source('a','Synthetic daily reference','Example Organization','2025');
+  const b=source('b','Synthetic weekly reference','Example Organization','2025');
+  const aliases=new Map([['SRC_1','a'],['CALC_7','calculation-1'],['ROW_2','row-1'],['OBS_A','observation-1'],['IMG_2','image-1'],['CAND_1','candidate-1']]);
+  const text='The result uses CALC_7.\n\n* Source: [SRC_1]\n* Readings: ROW_2, OBS_A, IMG_2, CAND_1.\nINS 955 and NCT01234567 are label identifiers.';
+  const rendered=renderAnswerEvidenceReferences(text,aliases,[a,b],[{id:'calculation-1'}]);
+  expect(rendered).toBe('The result uses saved calculation.\n\n* Source: [Synthetic daily reference]\n* Readings: nutrition row, label observation, package photo, provisional reading.\nINS 955 and NCT01234567 are label identifiers.');
+  expect(selectCitedEvidence(rendered,[a,b])).toEqual([a]);
+});
+
+it('does not invent source or calculation provenance for unknown or excluded references',()=>{
+  const aliases=new Map([['SRC_1','excluded-source'],['CALC_1','excluded-calculation']]);
+  expect(renderAnswerEvidenceReferences('SRC_1; CALC_1; SRC_9; OBS_9.',aliases,[],[])).toBe('unavailable source; unavailable calculation; unavailable reference; unavailable reference.');
+  expect(selectCitedEvidence(renderAnswerEvidenceReferences('SRC_1',aliases,[],[]),[source('excluded-source','Synthetic reference','Example','2025')])).toEqual([]);
+});
 describe('conversation source identity linking',()=>{
   const lipid=source('lipid-review','Effects of oat beta-glucan intake on lipid profiles','Clinical Nutrition ESPEN; bibliographic record via PubMed','2022-05-13');
   const cardiac=source('cardiac-review','Effect of oat consumption on lipid profile','Current problems in cardiology','2022-02-19');
