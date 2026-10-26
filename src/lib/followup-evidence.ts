@@ -191,10 +191,15 @@ export function buildLocalAuditConversationReply(audit: Audit, question: string,
   const lead = audit.answer.trim().split(/\n\s*\n/, 1)[0]?.trim() ?? '';
   const sentence = lead.match(/^(.{1,700}?[.!?])(?:\s|$)/s)?.[1];
   const directRegulatoryAbstention = /^Current legal or regulatory status is unresolved\./i.test(lead);
+  const explicitMissingTextCaveat = /^No readable\b[\s\S]*?(?:does not establish that the package has none|absence from the extraction is not evidence that it is absent from the product)/i.test(audit.answer.trim());
   const asksDirectGuidance = (evidence.length > 0 || directRegulatoryAbstention)
     && /\b(?:recommend(?:ation|ations|ed|s)?|guidelines?|guidance|according\s+to|what\s+does\s+(?:WHO|FSSAI)\s+say|mean(?:ing)?|explain|interpret|criteria|thresholds?|definitions?|requirements?|compliance|compliant|qualif\w*|meets?|regulat\w*|law|rules?)\b/i.test(question)
     && !/\b(?:compare|comparison|compared|versus|\bvs\b|portion|serving)\b/i.test(question);
-  let answer = (asksDirectGuidance ? lead.slice(0, 1200) : sentence ?? lead.slice(0, 700)).trim();
+  let answer = (asksDirectGuidance
+    ? lead.slice(0, 1200)
+    : explicitMissingTextCaveat
+      ? audit.answer.trim().slice(0, 1200)
+      : sentence ?? lead.slice(0, 700)).trim();
 
   // A package-only response should say when the requested nutrient was not
   // captured, while preserving the distinction between missing evidence and

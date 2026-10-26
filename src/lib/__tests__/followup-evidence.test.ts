@@ -304,6 +304,14 @@ describe('local evidence follow-ups', () => {
     expect(combined.evidence).toBeUndefined();
   });
 
+  it('preserves the missing-ingredient caveat and next step in a natural follow-up',()=>{
+    const pkg=parseLabel('Nutrition information per 100 g\nSugars 10 g',{origin:'user'});
+    const question='What ingredients are listed?';
+    const reply=buildLocalAuditConversationReply(buildAudit(pkg,30,'g',defaultProfile,question),question,pkg);
+    expect(reply.answer).toMatch(/No readable ingredient text is recorded.*does not establish that the package has none/i);
+    expect(reply.answer).toMatch(/add or check a clear photo of the relevant panel/i);
+  });
+
   it('does not paste US-only diabetes education into the local fallback for an Indian-market snack question', () => {
     const pkg = parseLabel('Bisk Farm Sugar Free Cream Cracker\nIngredients: Refined wheat flour (maida) (89.98%)', { origin: 'user' });
     const question = 'Is this good to have for diabetic patients daily for snacking?';
