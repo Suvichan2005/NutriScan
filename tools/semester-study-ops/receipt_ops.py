@@ -32,7 +32,11 @@ def audit(prepared, receipts):
             if not cfg.get(key) or binding.get(key)!=cfg[key]:reasons.append('unbound:'+key)
         expected={f['path']:f['sha256'] for f in j.get('inputFiles',[])}
         if not expected or binding.get('inputHashes')!=expected:reasons.append('input-hashes-unbound')
-        for c in v.get('providerCallMetadata',[]):
+        calls=v.get('providerCallMetadata',[])
+        if not isinstance(calls,list):raise ValueError('Provider call metadata must be a list')
+        if not any(c.get('event')=='provider_response' for c in calls):reasons.append('no-provider-response-metadata')
+        for c in calls:
+            if c.get('model')!=cfg.get('model'):reasons.append('provider-call-model-drift-or-missing')
             u=c.get('usage') or {};cost=c.get('cost') or {}
             usage.append({'stage':'initial-reconstruction','taskId':ident,'status':'failed' if c.get('event')=='provider_error' else 'completed','promptTokens':u.get('promptTokenCount'),'outputTokens':u.get('candidatesTokenCount'),'thoughtTokens':u.get('thoughtsTokenCount'),'cachedPromptTokens':u.get('cachedContentTokenCount'),'totalTokens':u.get('totalTokenCount'),'providerMs':c.get('elapsedMs'),'estimatedUsd':cost.get('estimatedTotalUsd'),'billedUsd':None})
         if not reasons:accepted[j['arm']].add(j['productGroupId'])

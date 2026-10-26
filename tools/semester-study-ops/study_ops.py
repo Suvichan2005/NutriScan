@@ -115,6 +115,7 @@ def blind_responses(records, seed, batch_id='synthetic-batch'):
     expected = {(c['id'], t['turn']): t['sourceTextSha256'] for c in conversations['conversations'] for t in c['turns']}
     seen = set(); rows = []
     for r in records:
+        if type(r.get('turn')) is not int:raise ValueError('Turn must be an integer, not a boolean or coerced value')
         key = (r['conversationId'], r['turn'])
         if key not in expected or r.get('questionSha256') != expected[key]: raise ValueError('Question identity mismatch')
         if r['responseId'] in seen: raise ValueError('Duplicate response identity')
@@ -149,6 +150,7 @@ def validate_ratings(ratings, key, responses=None):
         if not isinstance(text,str) or hashlib.sha256(text.encode()).hexdigest()!=response.get('responseSha256'):raise ValueError('Frozen response text/hash mismatch')
         catalog[ident]=response
     for r in ratings:
+        if type(r.get('turn')) is not int:raise ValueError('Rating turn must be an integer')
         if r.get('blindResponseId') not in joins: raise ValueError('Unknown blind response ID')
         j=joins[r['blindResponseId']]
         for k in ('conversationId','turn','contextSha256','responseSha256'):
@@ -164,7 +166,7 @@ def validate_ratings(ratings, key, responses=None):
         for dim,value in r['scores'].items():
             if value is None:
                 if not r.get('notApplicableReasons',{}).get(dim): raise ValueError('N/A reason required; unfilled scores remain pending')
-            elif type(value)!=int or not 0<=value<=4: raise ValueError('Score must be integer 0–4')
+            elif type(value)!=int or not 0<=value<=4: raise ValueError('Score must be integer 0â€“4')
             scores[(r['blindResponseId'],dim)].append(value)
         if not isinstance(r.get('evidencePointers'),list) or not r['evidencePointers']: raise ValueError('Rating evidence pointers required')
         for e in r.get('criticalErrors',[]):
@@ -182,7 +184,7 @@ def pair_audit(records):
     required = {r['conversationId'] for r in experiment['knowledgeAblation']['requests']}
     grouped = defaultdict(dict); issues = []
     for r in records:
-        if r.get('turn') != 1 or r.get('conversationId') not in required:
+        if type(r.get('turn')) is not int or r.get('turn') != 1 or r.get('conversationId') not in required:
             issues.append('not-an-authoritative-first-turn-pair'); continue
         group = grouped[r['conversationId']]; arm=r.get('treatment')
         if arm not in {'knowledge-on','knowledge-off'} or arm in group:

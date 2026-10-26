@@ -49,6 +49,12 @@ class StudyOperations(unittest.TestCase):
     def rating(self):
         b=ops.blind_responses([self.response()],42);r=b['reviewerPackets'][0]['rating'];r.update(raterCode='SYNTHETIC-A',provenance='independent-human',assessedAt='2026-10-26T00:00:00Z',scores={d:3 for d in b['rubric']},evidencePointers=['synthetic fixture only'])
         return r,b['privateJoinKey']
+    def test_boolean_turn_cannot_alias_first_turn(self):
+        response=self.response();response['turn']=True
+        with self.assertRaises(ValueError):ops.blind_responses([response],42)
+        rating,key=self.rating();rating['turn']=True
+        with self.assertRaises(ValueError):ops.validate_ratings([rating],key)
+        self.assertIn('not-an-authoritative-first-turn-pair',ops.pair_audit([response])['issues'])
     def test_rating_wrong_join(self):
         r,k=self.rating();r['contextSha256']='0'*64
         with self.assertRaises(ValueError):ops.validate_ratings([r],k)

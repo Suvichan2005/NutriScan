@@ -16,7 +16,7 @@ The following entries preserve this workstream's checkpoint chronology.
 
 ---
 
-# ThinkBook workstream status — 26 October 2026
+# ThinkBook workstream status â€” 26 October 2026
 
 Owner assignment: independent study/review/benchmark/report operations. Main queue and production files remain owned by IdeaPad; Subham supplies his own human judgments.
 
@@ -62,7 +62,7 @@ Receipt finding:0/26 completed answers contain returned source records. Existing
 
 ## Operational report evidence checkpoint
 
-Validated and aggregated the actual historical27-turn portfolio into per-turn CSV/JSON and hash-linked existing-generator report artifacts.26 complete/1 failed;33 completed generations;10 tool calls;0/26 returned-source answers; completed direct-assist median5757.5ms/range2611–28099ms;8 withheld quantity sentences. Preserved failed row and unknown usage fields. No independent accuracy/usefulness judgments. Existing report generator verified12 operational metric pointers and generated CSV/PNG/SVG; median figure visually inspected. No original academic document changed.
+Validated and aggregated the actual historical27-turn portfolio into per-turn CSV/JSON and hash-linked existing-generator report artifacts.26 complete/1 failed;33 completed generations;10 tool calls;0/26 returned-source answers; completed direct-assist median5757.5ms/range2611â€“28099ms;8 withheld quantity sentences. Preserved failed row and unknown usage fields. No independent accuracy/usefulness judgments. Existing report generator verified12 operational metric pointers and generated CSV/PNG/SVG; median figure visually inspected. No original academic document changed.
 
 36 structural tests pass, including summary/source drift, missing logical turn, inconsistent provider call count and unknown token handling. Initial synthetic test omitted a required toolCalls field and was corrected before this checkpoint; actual-format data ran successfully. Private output: `.data/study-ops/development-operations-verified-20261026/`. No provider request or production edit.
 
@@ -89,3 +89,9 @@ Generated12 actual candidate metadata sheets and blank review-decision index, re
 Negative replay demonstrated that the prior rating validator accepted a nonempty responseSpan that did not occur in the rated response. Fixed at the shared study-review boundary: critical-error rows now require frozen response records, recomputed text hashes, exact response/context/turn joins and literal quote presence. Adjudication reuses the same check. HTML export rejects absent quotes locally; older packets remain usable through authoritative CLI validation without rewriting any existing rating. Scientific truth/applicability remains human judgment.
 
 44 structural tests pass including nonexistent quote, modified answer and wrong-context negatives. Updated synthetic-DOM integration rejects nonexistent critical quotes; actual browser acceptance remains blocked by Work settings. No real ratings generated, provider calls or production modifications.
+
+## Integration review — 27 October 2026
+
+Reviewed against integration52faf25724e4204d75dc5aca87a1434953b9790a in the existing study worktree; the original dirty checkout and private inputs remain intact. Fixed per-call model comparability, boolean turn IDs aliasing integer1, and unsafe automatic configuration restoration.48 synthetic study-operation tests,12 existing runner tests and117 focused application source/assist tests pass. These prove contracts/regressions, not human ratings or live source-selection quality. No provider call, production routing change, deployment, fresh build or unfrozen experiment.
+
+See HISTORICAL_PILOT_DIAGNOSTIC.md for the read-only audit: the pilot explicitly pinned Flash-Lite; source tools were declared but all10 actual calls were calculations. Current M2 supplied-source filtering/continuity is exercised offline, but autonomous retrieval across varied real questions is not demonstrated by that historical run or the new mocked tests. Full study binding and real human review remain pending.

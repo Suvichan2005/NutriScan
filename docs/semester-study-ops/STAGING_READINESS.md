@@ -1,4 +1,4 @@
-# Protected staging readiness — inspected 26 October 2026
+# Protected staging readiness â€” inspected 26 October 2026
 
 Assessment baseline: integration `0bfe794cff39a88e168e64a8390b0c88db7dd50c`. Status: BLOCKED for invited remote reviewers. No public deployment, tunnel, provider request, npm install or production build was run by this workstream. This is a source/runtime-dependency assessment, not a security certification or deployment acceptance.
 
@@ -13,13 +13,13 @@ Next officially supports Node server and Docker self-hosting: https://nextjs.org
 | Evidence | Finding / implication |
 |---|---|
 | src/lib/server/http.ts localGate | Requires loopback request hostname and Host plus same Origin. A real remote preview currently fails403. It also uses process-local rate/concurrency counters; replicas would not share them. |
-| src/app/api/assist/route.ts | Node runtime, maxDuration120, bounded4,300,000-byte JSON, Server-Timing header. Platform/proxy timeout must allow the application’s bounded work. |
+| src/app/api/assist/route.ts | Node runtime, maxDuration120, bounded4,300,000-byte JSON, Server-Timing header. Platform/proxy timeout must allow the applicationâ€™s bounded work. |
 | src/lib/server/gemini.ts | Natural agent deadline110s and per-call timeout; reconstruction has separate generation work. Measure whole request latency rather than assume110s covers every initial stage. |
 | src/lib/server/gemini-provider.ts | Free/paid modes and caps; reservations/ledgers require reliable storage and serialized budget accounting. Restarting replicas or losing local disk must not reset cost policy. |
 | src/modules/knowledge/server.ts, foodon-records.ts; food-composition*.ts; guideline-documents.ts | Filesystem/SQLite/model readers. Git clone alone does not include ignored stores. Edge runtime unsuitable unchanged. Source images/evaluation answers are not required runtime data. |
 | next.config.ts | Native/server-only packages include ONNX runtime, canvas, pdfjs, Tesseract and transformers. Check native binaries and cold-start memory on the exact target OS/architecture. No standalone bundle guarantee. |
 | package.json; scripts/prepare-ocr.mjs; public/ocr | postinstall prepares OCR assets; browser Tesseract/Paddle workers/models must be actually served with correct paths/MIME/cache policy. No browser path means no local OCR acceptance. |
-| src/lib/server/gemini-evaluation-recorder.ts; .env.example | Readable local evaluation capture is opt-in. Disable capture and synthetic-profile logging on staging; sanitized operational telemetry alone. Never mount the owner’s full transcript directory. |
+| src/lib/server/gemini-evaluation-recorder.ts; .env.example | Readable local evaluation capture is opt-in. Disable capture and synthetic-profile logging on staging; sanitized operational telemetry alone. Never mount the ownerâ€™s full transcript directory. |
 
 ## Required integration-owner proposal (no shared modules changed here)
 
@@ -80,3 +80,7 @@ The probe loads the study worktree's actual readers but resolves their local ass
 Actual25 checks passed: FoodOn exact terminology/source properties and unknown ID; WHO three-document catalog/selected page and unknown document; USDA exact nutrient source record/unknown food/missing store; six pinned MiniLM file hashes; all seven selected database/catalog/source hashes unchanged after queries; zero fetch attempts. Seven inventoried store/catalog/record files total304025780 bytes; model files are checked separately against the tracked manifest. These are local source-access results, not final answer/clinical applicability or hosted-mode acceptance. Sanitized receipt: evidence/offline-runtime-assets-20261026.json.
 
 For a future staging instance, mount only the selected approved stores in their expected `.data` paths (or supported reader overrides), alongside the tracked compact indexes/manifests. Keep them read-only and keep writable budget/operational state separate. This test does not authorize source redistribution or mounting the whole ThinkBook corpus. OpenFoodTox and private evaluation/reference data were not accessed. WHO non-commercial/share-alike and other source-specific conditions remain as documented in the knowledge handoff.
+
+## Preservation correction — 27 October 2026
+
+The historical smoke above restored its own generated configuration and verified original-file hashes. The reusable helper now deliberately **does not restore configuration files automatically**: that behavior could overwrite a concurrent edit. It saves exact pre-build bytes in an exclusive `.data/study-staging/config-snapshots/<id>/` directory, reports `configReviewRequired` plus before/after hashes, and leaves changes for review. A structural preservation regression verifies that later edits survive and repeated snapshots do not replace earlier bytes. This correction has not been claimed as a fresh production build or browser acceptance.

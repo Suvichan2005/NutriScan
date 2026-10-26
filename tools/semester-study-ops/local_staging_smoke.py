@@ -9,6 +9,7 @@ import shutil
 import socket
 import subprocess
 import time
+import uuid
 import study_ops as ops
 
 
@@ -21,6 +22,14 @@ def request(port,path='/',method='GET',body=None,headers=None):
     finally:conn.close()
 
 
+def snapshot_configs(root,out):
+    saved={rel:(root/rel).read_bytes() for rel in ('next-env.d.ts','tsconfig.json')}
+    backup=out/'config-snapshots'/uuid.uuid4().hex
+    backup.mkdir(parents=True)
+    for rel,value in saved.items():(backup/rel).write_bytes(value)
+    return saved,backup
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--port',type=int,default=3422);a=p.parse_args()
     root=ops.ROOT;out=root/'.data/study-staging';out.mkdir(exist_ok=True);dist='.data/study-staging-build'
@@ -30,7 +39,7 @@ def main():
     env=os.environ.copy()
     for k in ('GEMINI_API_KEY','FREE_GEMINI_API_KEY','GOOGLE_API_KEY'):env.pop(k,None)
     env.update(ENABLE_GEMINI='false',ENABLE_PAID_GEMINI='false',ENABLE_PAID_GEMINI_FALLBACK='false',GEMINI_PROVIDER='free',NUTRISCAN_GEMINI_EVAL_CAPTURE='0',NUTRISCAN_GEMINI_TRACE='0',NUTRISCAN_NEXT_DIST_DIR=dist,NEXT_TELEMETRY_DISABLED='1',NODE_ENV='production')
-    saved={rel:(root/rel).read_bytes() for rel in ('next-env.d.ts','tsconfig.json')}
+    saved,backup=snapshot_configs(root,out)
     before={rel:hashlib.sha256(value).hexdigest() for rel,value in saved.items()}
     node=shutil.which('node');results=[];server=None
     if not node:raise ValueError('Node runtime required')
@@ -71,11 +80,9 @@ def main():
             try:server.wait(timeout=15)
             except subprocess.TimeoutExpired:server.kill();server.wait(timeout=5)
             log.close()
-        # Next.js modifies only these generated/type-config files during build.
-        # This isolated worktree has no owner edits; restore the exact pre-build bytes.
-        for rel,value in saved.items():
-            if (root/rel).read_bytes()!=value:(root/rel).write_bytes(value)
-        receipt={'scope':'local-loopback-production-smoke-not-remote-auth-browser-or-provider-acceptance','implementationCommit':revision,'nodeVersion':version,'distDir':dist,'port':a.port,'checks':results,'trackedConfigHashesBefore':before,'trackedConfigHashesAfter':{rel:ops.sha(root/rel) for rel in saved},'ownedServerStopped':server is None or server.poll() is not None,'providerCallsMade':0,'knowledgeStoresMounted':False}
+        # Keep any build/concurrent edits intact. Recovery bytes are preserved;
+        # a caller must inspect the diff rather than automatically overwrite it.
+        receipt={'scope':'local-loopback-production-smoke-not-remote-auth-browser-or-provider-acceptance','implementationCommit':revision,'nodeVersion':version,'distDir':dist,'port':a.port,'checks':results,'trackedConfigSnapshot':str(backup.relative_to(root)),'configReviewRequired':any(not (root/rel).exists() or (root/rel).read_bytes()!=value for rel,value in saved.items()),'trackedConfigHashesBefore':before,'trackedConfigHashesAfter':{rel:ops.sha(root/rel) for rel in saved},'ownedServerStopped':server is None or server.poll() is not None,'providerCallsMade':0,'knowledgeStoresMounted':False}
         (out/'smoke-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
     print(json.dumps(receipt,indent=2))
 if __name__=='__main__':main()
