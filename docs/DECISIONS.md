@@ -1,4 +1,12 @@
 # Chronological decisions
+## 27 October 2026 — require provenance before showing extracted package identity
+
+Do not use parser best-effort `name` or `brand` as consumer-facing identity by default. Prefer explicit user-provided/corrected values, active package reconstruction, and confidence-qualified OCR values linked to a photographed side. Keep model-suggested identity visibly provisional. Use a generic package title when support is absent; do not add phrase-specific OCR exclusions.
+
+## 27 October 2026 — keep local allergy findings concise but qualified
+
+Quote retained package wording once. Explain that “May contain” is precautionary wording and does not confirm presence; direct label mentions remain unverified readings. Preserve uncertainty about amount/exposure and individual safety without repeating redundant disclaimers.
+
 ## 27 October 2026 — preserve scoped source context in local replies
 
 When the local audit already selects a source-backed context finding, the concise fallback may carry that finding into the answer only after its source survives topic and jurisdiction filtering. Preserve the source's population scope and non-personal-target limitation, and expose its source card. Avoid copying full source summaries or presenting population guidance as individualized advice.

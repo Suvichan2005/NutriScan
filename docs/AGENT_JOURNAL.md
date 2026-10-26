@@ -1240,4 +1240,12 @@ Checkpoint checks:756 passed/one skipped with four workers, TypeScript and final
 - No replacement report/template was created and no external archive was retried. R1 report editing waits for restoration of the original owner artifact; product engineering remains active under M2/M3.
 # 27 October — Natural source attribution review
 
-Reviewed the exact-source-summary quote requirement introduced at `e7114e4`. The cited text in this codebase is a NutriScan-authored summary, so requiring a double-quoted copy in the final response could misrepresent it as publisher wording and make prose brittle. Removed that output-format gate while retaining resolved citation identity and subject/jurisdiction checks; labeled the evidence-card text as a NutriScan summary. A relevant topic match still cannot prove a scientific claim is entailed, and this limitation is now explicit. Focused four-suite verification passed172/172, TypeScript and diff check passed. No live Gemini request was made.
+# 27 October — Natural source attribution review
+
+Reviewed the exact-source-summary quote requirement introduced at `e7114e4`. The cited text in this codebase is a NutriScan-authored summary, so requiring a double-quoted copy could misrepresent it as publisher wording and make prose brittle. Removed that output-format gate while retaining resolved citation identity and subject/jurisdiction checks; labeled the evidence-card text as a NutriScan summary. A relevant topic match still cannot prove a scientific claim is entailed, and this limitation is now explicit. Focused four-suite verification passed172/172, TypeScript and diff check passed. No live Gemini request was made.
+
+# 2026-10-27 — provenance-safe package header and concise allergy finding
+
+- Browser review on synthetic pasted-label input exposed a general provenance issue: an arbitrary parser `name` could be a precautionary-allergen line and was promoted into the package header. The shared identity selector now requires user correction/detail, active reconstruction, confidence-qualified photo-linked OCR, or a clearly marked Gemini suggestion; otherwise the title remains generic.
+- The same review found repetitive allergy copy. Findings now quote the matched label line once and distinguish precautionary wording from direct mentions while preserving uncertainty. Updated tests and the existing browser acceptance contract.
+- Verification: 845 tests passed, 2 skipped; TypeScript clean; local-only Playwright journey passed at 390×844 and 1440×900. No Gemini/provider calls, scientific validation or human accuracy review.
