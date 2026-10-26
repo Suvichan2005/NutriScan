@@ -6,8 +6,8 @@ from pathlib import Path
 import study_ops as ops
 
 
-def disagreement_packet(ratings, key):
-    ops.validate_ratings(ratings,key)
+def disagreement_packet(ratings, key, responses=None):
+    ops.validate_ratings(ratings,key,responses)
     grouped=defaultdict(list)
     for r in ratings:grouped[r['blindResponseId']].append(r)
     dimensions=ops.definitions()[1]['humanReview']['dimensions'];out=[]
@@ -19,8 +19,8 @@ def disagreement_packet(ratings, key):
     return {'scope':'custodian-only; not reviewer-blind material','responses':out,'humanDecisions':[]}
 
 
-def adjudicate(ratings,key,decisions):
-    packet=disagreement_packet(ratings,key);joins={r['blindResponseId']:r for r in packet['responses']};seen=set();resolved=[]
+def adjudicate(ratings,key,decisions,responses=None):
+    packet=disagreement_packet(ratings,key,responses);joins={r['blindResponseId']:r for r in packet['responses']};seen=set();resolved=[]
     dimensions=ops.definitions()[1]['humanReview']['dimensions']
     for d in decisions:
         ident=d.get('blindResponseId')
@@ -59,9 +59,10 @@ def adjudicate(ratings,key,decisions):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--ratings',type=Path,required=True);p.add_argument('--key',type=Path,required=True);p.add_argument('--decisions',type=Path)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--ratings',type=Path,required=True);p.add_argument('--key',type=Path,required=True);p.add_argument('--decisions',type=Path);p.add_argument('--responses',type=Path,help='Frozen text required for critical-error quote verification')
     a=p.parse_args();ratings=ops.load(a.ratings);key=ops.load(a.key)
-    result=adjudicate(ratings,key,ops.load(a.decisions)) if a.decisions else disagreement_packet(ratings,key)
+    responses=ops.load(a.responses) if a.responses else None
+    result=adjudicate(ratings,key,ops.load(a.decisions),responses) if a.decisions else disagreement_packet(ratings,key,responses)
     import json
     print(json.dumps(result,indent=2))
 if __name__=='__main__':main()

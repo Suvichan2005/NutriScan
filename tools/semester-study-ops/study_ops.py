@@ -136,11 +136,18 @@ def blind_responses(records, seed, batch_id='synthetic-batch'):
     return {'privateJoinKey':key,'reviewerPackets':packets,'rubric':experiment['humanReview']['dimensions'],'limitations':'Blinding removes explicit treatment/build labels; source content may reveal treatment. Human reviewers must receive separately authorized package/profile/history context.'}
 
 
-def validate_ratings(ratings, key):
+def validate_ratings(ratings, key, responses=None):
     _, experiment = definitions(); dimensions = experiment['humanReview']['dimensions']
     joins = {r['blindResponseId']:r for r in key}
     if len(joins)!=len(key): raise ValueError('Duplicate blind response ID in join key')
     seen=set(); scores=defaultdict(list); reviewers=defaultdict(set)
+    catalog={}
+    for response in responses or []:
+        ident=response.get('responseId')
+        if not ident or ident in catalog:raise ValueError('Duplicate/missing frozen response identity')
+        text=response.get('displayedResponse')
+        if not isinstance(text,str) or hashlib.sha256(text.encode()).hexdigest()!=response.get('responseSha256'):raise ValueError('Frozen response text/hash mismatch')
+        catalog[ident]=response
     for r in ratings:
         if r.get('blindResponseId') not in joins: raise ValueError('Unknown blind response ID')
         j=joins[r['blindResponseId']]
@@ -161,7 +168,11 @@ def validate_ratings(ratings, key):
             scores[(r['blindResponseId'],dim)].append(value)
         if not isinstance(r.get('evidencePointers'),list) or not r['evidencePointers']: raise ValueError('Rating evidence pointers required')
         for e in r.get('criticalErrors',[]):
-            if not all(e.get(k) for k in ('responseSpan','evidencePointer','reason')): raise ValueError('Critical error evidence incomplete')
+            if not all(isinstance(e.get(k),str) and e[k].strip() for k in ('responseSpan','evidencePointer','reason')): raise ValueError('Critical error evidence incomplete')
+            response=catalog.get(j.get('responseId'))
+            if response is None:raise ValueError('Critical-error review requires frozen response records')
+            if any(response.get(k)!=j.get(k) for k in ('contextSha256','responseSha256','conversationId','turn')):raise ValueError('Critical error bound to wrong frozen response/context')
+            if e['responseSpan'] not in response['displayedResponse']:raise ValueError('Critical-error quote is absent from frozen response')
     return {'status':'PENDING' if not joins or any(len(reviewers[k])<2 for k in joins) else 'REQUIRES_HUMAN_ADJUDICATION','responses':len(joins),'humanRatingRows':len(ratings),'twoReviewerResponses':sum(len(reviewers[k])>=2 for k in joins),'criticalErrors':sum(len(r.get('criticalErrors',[])) for r in ratings),'perResponseDimensions':[{'blindResponseId':k,'dimension':d,'n':len([x for x in v if x is not None]),'notApplicable':v.count(None),'mean':sum(x for x in v if x is not None)/len([x for x in v if x is not None]) if any(x is not None for x in v) else None,'disagreement':len(set(v))>1} for (k,d),v in scores.items()],'claimScope':'human-record-bookkeeping; provenance declaration cannot authenticate a human or establish scientific truth'}
 
 
@@ -223,7 +234,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__);s=p.add_subparsers(dest='command',required=True)
     r=s.add_parser('readiness');r.add_argument('--collection',type=Path,required=True);r.add_argument('--evidence-root',type=Path,required=True);r.add_argument('--reviews',type=Path);r.add_argument('--review-root',type=Path,help='Separate read-only root for human review artifacts; defaults to evidence-root')
     b=s.add_parser('blind');b.add_argument('--responses',type=Path,required=True);b.add_argument('--seed',type=int,required=True)
-    a=s.add_parser('ratings');a.add_argument('--ratings',type=Path,required=True);a.add_argument('--key',type=Path,required=True)
+    a=s.add_parser('ratings');a.add_argument('--ratings',type=Path,required=True);a.add_argument('--key',type=Path,required=True);a.add_argument('--responses',type=Path,help='Frozen response records required when critical errors are reported')
     e=s.add_parser('export-review');e.add_argument('--responses',type=Path,required=True);e.add_argument('--seed',type=int,required=True);e.add_argument('--output',type=Path,required=True);e.add_argument('--evidence-root',type=Path,required=True)
     pairs=s.add_parser('pairs');pairs.add_argument('--responses',type=Path,required=True)
     args=p.parse_args()
@@ -231,6 +242,6 @@ def main():
     elif args.command=='blind':out=blind_responses(load(args.responses),args.seed)
     elif args.command=='export-review':out=export_review(load(args.responses),args.seed,args.output,args.evidence_root)
     elif args.command=='pairs':out=pair_audit(load(args.responses))
-    else:out=validate_ratings(load(args.ratings),load(args.key))
+    else:out=validate_ratings(load(args.ratings),load(args.key),load(args.responses) if args.responses else None)
     print(json.dumps(out,indent=2))
 if __name__=='__main__':main()

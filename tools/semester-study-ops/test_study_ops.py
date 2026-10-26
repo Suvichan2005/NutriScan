@@ -79,6 +79,20 @@ class StudyOperations(unittest.TestCase):
         text=(output/'reviewer/packets.json').read_text()
         self.assertNotIn('knowledge-on',text);self.assertNotIn('buildCommit',text)
         with self.assertRaises(FileExistsError):ops.export_review([r],3,output,self.root)
+    def test_critical_quote_requires_actual_matching_response(self):
+        r,k=self.rating();r['criticalErrors']=[{'responseSpan':'not in response','evidencePointer':'fixture','reason':'negative'}]
+        with self.assertRaises(ValueError):ops.validate_ratings([r],k)
+        with self.assertRaises(ValueError):ops.validate_ratings([r],k,[self.response()])
+        r['criticalErrors'][0]['responseSpan']='SYNTHETIC STRUCTURAL RESPONSE.'
+        self.assertEqual(ops.validate_ratings([r],k,[self.response()])['criticalErrors'],1)
+    def test_changed_response_cannot_support_a_quote(self):
+        r,k=self.rating();r['criticalErrors']=[{'responseSpan':'SYNTHETIC','evidencePointer':'fixture','reason':'negative'}]
+        response=self.response();response['displayedResponse']='SYNTHETIC changed'
+        with self.assertRaises(ValueError):ops.validate_ratings([r],k,[response])
+    def test_wrong_context_cannot_support_a_quote(self):
+        r,k=self.rating();r['criticalErrors']=[{'responseSpan':'SYNTHETIC','evidencePointer':'fixture','reason':'negative'}]
+        response=self.response();response['contextSha256']='0'*64
+        with self.assertRaises(ValueError):ops.validate_ratings([r],k,[response])
     def test_separate_review_root_does_not_require_writing_original(self):
         review_root=self.root/'reviews';review_root.mkdir()
         for p in self.root.glob('*.bin'): (review_root/p.name).write_bytes(p.read_bytes())

@@ -22,6 +22,7 @@ async function run(){
  for(const d of payload.dimensions)el('score-'+d).value='3';
  const dim=payload.dimensions[0];el('score-'+dim).value='NA';el('export').onclick();assert.equal(downloads.length,0,'N/A requires reason');
  el('reason-'+dim).value='Synthetic structural N/A example';el('critical').value='not json';el('export').onclick();assert.equal(downloads.length,0,'Invalid critical-error JSON rejected');
+ el('critical').value=JSON.stringify([{responseSpan:'THIS IS NOT IN THE RESPONSE',evidencePointer:'fixture',reason:'negative'}]);el('export').onclick();assert.equal(downloads.length,0,'Nonexistent critical quote rejected');
  el('critical').value='[]';el('persist').checked=true;doc.input({target:el('evidence')});assert.equal(writes,1);
  el('next').onclick();assert.equal(el('answer').textContent,payload.packets[1].displayedResponse);el('previous').onclick();assert.equal(el('reason-'+dim).value,'Synthetic structural N/A example');
  el('export').onclick();assert.equal(downloads.length,1);

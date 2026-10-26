@@ -26,10 +26,11 @@ class AdjudicationOperations(unittest.TestCase):
         with self.assertRaises(ValueError):adj.adjudicate(rows,k,[d])
     def test_critical_error_cannot_disappear(self):
         rows,k,d=self.fixture();rows[0]['criticalErrors']=[{'responseSpan':'SYNTHETIC','evidencePointer':'fixture','reason':'structural example'}]
-        d['ratingSetSha256']=adj.disagreement_packet(rows,k)['responses'][0]['ratingSetSha256']
-        with self.assertRaises(ValueError):adj.adjudicate(rows,k,[d])
+        responses=[fixtures.StudyOperations().response()]
+        d['ratingSetSha256']=adj.disagreement_packet(rows,k,responses)['responses'][0]['ratingSetSha256']
+        with self.assertRaises(ValueError):adj.adjudicate(rows,k,[d],responses)
         d['criticalErrorDecisions']=[{'reviewerCode':'SYNTHETIC-A','index':0,'decision':'unresolved','reason':'Synthetic pending evidence','evidencePointer':'fixture'}]
-        self.assertEqual(adj.adjudicate(rows,k,[d])['status'],'PENDING')
+        self.assertEqual(adj.adjudicate(rows,k,[d],responses)['status'],'PENDING')
     def test_na_summary_and_early_decision(self):
         rows,k,d=self.fixture();report=ops.validate_ratings(rows,k)
         dim=next(x for x in report['perResponseDimensions'] if x['dimension']=='uncertainty')

@@ -27,7 +27,7 @@ This creates a fresh `reviewer/` directory with plain Markdown packets and blank
 For actual ratings:
 
 ```powershell
-python tools/semester-study-ops/study_ops.py ratings --ratings .data/study/returned-ratings.json --key .data/study/review-batch-01/custodian/join-key.json
+python tools/semester-study-ops/study_ops.py ratings --ratings .data/study/returned-ratings.json --key .data/study/review-batch-01/custodian/join-key.json --responses .data/study/review-batch-01/custodian/response-records.json
 ```
 
 Nine dimensions come directly from semester-experiments.json. Human rows require pseudonymous raterCode, provenance independent-human, timezone-aware assessedAt, all nine integer 0–4 scores or genuine N/A with reasons, evidence pointers, and a critical-error list. Blank scores stay pending. A second reviewer never automatically becomes adjudication. Raw scores/disagreements remain separate from final conclusions; this tool reports per-response summaries, not a study-wide scientific score.

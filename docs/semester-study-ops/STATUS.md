@@ -83,3 +83,9 @@ Verified accessible primary metadata/documentation for8/9 existing entries, reco
 ## Custodian handoff checkpoint
 
 Generated12 actual candidate metadata sheets and blank review-decision index, reusing existing23-original/46-nutrition/46-supplement assignment metadata. No new batch/labels/rights approval or image copies. Identified stale historical HUMAN_HANDOFF10-group count versus matching later manifest/index12-group counts; originals preserved. Added separate evidence/review roots so human receipts need not be written back into original corpus. Actual blank index revalidated BLOCKED with all human gates pending.41 structural tests pass including cross-root review-integrity validation.
+
+## Critical-error evidence integrity checkpoint
+
+Negative replay demonstrated that the prior rating validator accepted a nonempty responseSpan that did not occur in the rated response. Fixed at the shared study-review boundary: critical-error rows now require frozen response records, recomputed text hashes, exact response/context/turn joins and literal quote presence. Adjudication reuses the same check. HTML export rejects absent quotes locally; older packets remain usable through authoritative CLI validation without rewriting any existing rating. Scientific truth/applicability remains human judgment.
+
+44 structural tests pass including nonexistent quote, modified answer and wrong-context negatives. Updated synthetic-DOM integration rejects nonexistent critical quotes; actual browser acceptance remains blocked by Work settings. No real ratings generated, provider calls or production modifications.
