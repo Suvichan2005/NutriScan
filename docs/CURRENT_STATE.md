@@ -2,6 +2,7 @@
 ## M2 explicit guidance request transfer (26 October 2026)
 
 Saved real traces262a28bd-e5c8-40e1-bdad-e710cd1a3770 and408005b7-c455-48ee-92c6-5157ab3fd6a3 both requested appropriate nutrition guidance, while ordinary mode exposed `get_nutrition_guidance`; neither made a guidance call or returned citations. One generated a WHO 25 g/day fibre statement without retrieved evidence, which the validator withheld. Updated the tool description to cover explicit guidance requests and require disclosure when no applicable source returns. Focused agent/tool suites122 passed/1 skipped; optimized production build and TypeScript pass. This strengthens tool-selection guidance, not measured adherence. Do not retry the free provider until availability changes.
+Provider-free replay of the local tool with the saved408 request/profile/package returns `who-healthy-diet-guidance` and `who-sodium`; no network request is made. See `.data/m2-answer-usefulness-20261026/guidance-tool-local-transfer.json`. Retrieval is available; model selection is the observed gap.
 
 ## M2 tool-selection clarification — 26 October 2026
 

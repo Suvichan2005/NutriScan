@@ -2,6 +2,7 @@
 ## M2 guidance retrieval request (26 October 2026)
 
 Two actual saved follow-ups asked for appropriate guidance but did not use the enabled local guidance tool; unsupported WHO numeric guidance was withheld. Tool instructions now make explicit guidance requests a direct trigger and require a gap disclosure when no applicable record returns.122 focused agent/tool tests passed/1 skipped; production build and TypeScript passed. Fresh-model adherence and source usefulness remain unverified.
+Local provider-free execution with the saved408 package/profile returns two relevant WHO summaries and no external request, confirming tool data is available. Private receipt: `.data/m2-answer-usefulness-20261026/guidance-tool-local-transfer.json`.
 
 ## M2 calculation relevance contract (26 October 2026)
 
