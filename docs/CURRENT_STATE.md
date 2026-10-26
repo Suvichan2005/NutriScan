@@ -6,7 +6,7 @@ Updated26 October2026. Scope authority: owner Authoritative Final-Phase Overhaul
 
 Finish a substantial India-first semester product, two defensible experiments and the actual KIIT report. Natural Gemini prose/native typed tools/canonical revisioned package remain the architecture. No semantic keyword classifiers, mandatory prose JSON, atomic-claim display gates or repair-loop revival. Do not restart architecture, expand every database or tune to one familiar packet.
 
-M3 five-method application integration is published at26f82520e9eba1767868ae03bcbd4ca397d271f6. Comparative accuracy and frozen runner/config bindings remain incomplete. Current M2/M6 checkpoint extends physical-mass protection to canonical interpretation/calculations/corrections. Next: complete selected clinical/source-answer usefulness and frozen method execution binding; retain independent reference blockers.
+M3 five-method application integration is published at26f82520e9eba1767868ae03bcbd4ca397d271f6. Comparative accuracy and five-arm runner preparation is bound; reconstruction-only provider adapter/config freeze remain incomplete. Current M2/M6 checkpoint extends physical-mass protection to canonical interpretation/calculations/corrections. Next: complete selected clinical/source-answer usefulness and frozen method execution binding; retain independent reference blockers.
 
 ## Working implementation and evidence
 

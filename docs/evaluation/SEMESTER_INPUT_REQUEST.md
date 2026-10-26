@@ -59,3 +59,12 @@ Retain both original ratings. Critical unsupported medical/scientific claims, fa
 ## Freeze return checklist
 
 Return private image/reference manifests and hashes, exposure/family/split review, rights signoff, both readers and adjudication receipts, three verified package snapshots, selected model/version/config/schema/prompt/tool/source/implementation hashes, explicit input-access rules, budget and product subset, scoring/latency/cost definitions, blinded rating assignments and owner-approved freeze ID. Freeze before final execution; changes require a new version and comparability review. This preparation artifact does not execute providers or authorize unfrozen final experiments; existing bounded development permissions remain unchanged. Run the local validator to check structure and attachment fidelity; passing is preparation evidence only.
+
+
+## Five-arm runner binding (preparation)
+
+The existing `run_experiments.py` now accepts family `semester-reconstruction` from `data/evaluation/experiment-plan.json`. Arms A–E derive their method IDs and evidence selections from `data/evaluation/semester-experiments.json`; legacy exploratory families remain unchanged.
+
+Final configuration must set `stage: initial-reconstruction`, `recoveryPolicy: disabled`, `answerSynthesis: false`, freeze the arm-definition file with role `arm-definitions`, and bind/hash each adapter. Each adapter's `inputSelection` must exactly contain the declared `analysisMethod` and `evidence` list. Common frozen model/configuration and existing rights, split, reference and source gates still apply. Final receipts additionally require `actualStage: initial-reconstruction`, integer `recoveryCalls: 0` and `answerGenerationCalls: 0`; changing modality/model/configuration or including recovery/synthesis makes a receipt noncomparable.
+
+Contract verification: `python scripts/evaluation/test_run_experiments.py`. This exercises synthetic restrictions and receipt handling, never Gemini or reference accuracy. The production five-method dispatch is separately verified. A reconstruction-only provider adapter, frozen configuration and independently reviewed references remain required before final study execution. Do not run the full consumer answer route and label it initial extraction.

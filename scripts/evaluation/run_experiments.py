@@ -56,7 +56,7 @@ def gates(manifest,config,final=False):
   for case in manifest.get('cases',[]):
    prefix=case['caseId']+': '
    if case['split']=='prospective-held-out':failures.append(prefix+'prospective allocation cannot be final')
-   if config.get('family') in ['modality','secondary-ocr','answer','quantitative-continuity'] and case.get('rightsReviewed') is not True:failures.append(prefix+'rights review incomplete')
+   if config.get('family') in ['modality','secondary-ocr','semester-reconstruction','answer','quantitative-continuity'] and case.get('rightsReviewed') is not True:failures.append(prefix+'rights review incomplete')
    if config.get('family')!='performance':
     reference=case.get('referenceFile')
     if not reference or not (ROOT/reference).is_file() or sha(ROOT/reference)!=case.get('referenceSha256'):failures.append(prefix+'reference file absent or changed')
@@ -75,6 +75,13 @@ def prepare(plan,manifest,config,final=False):
  failures=gates(manifest,config,final);family=next((x for x in plan['families'] if x['id']==config.get('family')),None)
  if not family:raise ValueError('Unknown experiment family')
  jobs=[]
+ semester_arms={}
+ if family['id']=='semester-reconstruction':
+  definition=ROOT/family['armDefinitions'];semester=load(definition)
+  semester_arms={item['id']:item for item in semester['reconstruction']['arms']}
+  if family['arms']!=list('ABCDE') or list(semester_arms)!=list('ABCDE'):failures.append('semester comparison requires the five declared A-E arms')
+  if final and not any(item.get('role')=='arm-definitions' and item.get('path')==family['armDefinitions'] and item.get('sha256')==sha(definition) for item in config.get('frozenFiles',[])):failures.append('semester arm definitions not frozen')
+  if final and (config.get('stage')!='initial-reconstruction' or config.get('recoveryPolicy')!='disabled' or config.get('answerSynthesis') is not False):failures.append('semester initial extraction must exclude recovery and answer synthesis')
  for case in manifest.get('cases',[]):
   for arm in family['arms']:
    arm_spec=config.get('armAdapters',{}).get(arm)
@@ -82,6 +89,10 @@ def prepare(plan,manifest,config,final=False):
    if final and not any(item.get('role')=='adapter:'+arm for item in config.get('frozenFiles',[])):failures.append('adapter implementation not hashed: '+arm)
    expected_modalities={'ocr-only':['ocr'],'image-only':['image'],'ocr+image':['ocr','image'],'tesseract+image':['ocr','image'],'tesseract+paddle+image':['ocr','image']}.get(arm)
    if final and expected_modalities and (arm_spec or {}).get('inputSelection',{}).get('modalities')!=expected_modalities:failures.append('incorrect modality restriction: '+arm)
+   if arm in semester_arms:
+    declared=semester_arms[arm]
+    expected_selection={'analysisMethod':declared['analysisMethod'],'evidence':declared['allowedInputs']}
+    if final and (arm_spec or {}).get('inputSelection')!=expected_selection:failures.append('incorrect semester method/evidence restriction: '+arm)
    jobs.append({'jobId':case['caseId']+'::'+arm,'caseId':case['caseId'],'productGroupId':case['productGroupId'],'split':case['split'],'arm':arm,'family':family['id'],'config':config,'adapter':arm_spec,'inputFiles':case.get('inputFiles',[]),'referenceFile':case.get('referenceFile')})
  return {'schemaVersion':1,'createdAt':datetime.now(timezone.utc).isoformat(),'claimScope':'final-independent' if final else 'development-preparation-only','state':'BLOCKED' if failures else 'READY','blockers':failures,'manifest':manifest,'jobs':jobs,'finalResult':False}
 
@@ -168,6 +179,7 @@ def execute(prepared,adapter,output,allow_provider=False):
     required={'actualModel':str,'actualGenerationConfig':dict,'fallbackOccurred':bool,'actualInputSelection':dict}
     if any(key not in value or not isinstance(value[key],kind) for key,kind in required.items()):result.update(status='noncomparable',errorClass='invalid-receipt')
     elif value['actualModel']!=job['config']['model'] or value['actualGenerationConfig']!=job['config']['generationConfig'] or value['fallbackOccurred'] or value['actualInputSelection']!=job['adapter']['inputSelection']:result.update(status='noncomparable',errorClass='model-config-modality-or-route-changed')
+    elif job.get('family')=='semester-reconstruction' and (value.get('actualStage')!='initial-reconstruction' or type(value.get('recoveryCalls')) is not int or value.get('recoveryCalls')!=0 or type(value.get('answerGenerationCalls')) is not int or value.get('answerGenerationCalls')!=0):result.update(status='noncomparable',errorClass='recovery-or-answer-contaminated-initial-extraction')
   except (subprocess.TimeoutExpired,json.JSONDecodeError,OSError) as error:result={'jobId':job['jobId'],'status':'failed','errorClass':type(error).__name__}
   # Adapter raw stderr/prompts/environment are not copied into shareable receipts.
   write_new(output/(str(index).zfill(4)+'.json'),result);receipts.append(result)

@@ -19,6 +19,35 @@ class EvaluationTests(unittest.TestCase):
   self.assertEqual(blocked['state'],'BLOCKED');self.assertIn('a: two independent readers/adjudication missing',blocked['blockers'])
   blocked=runner.prepare(plan,{'cases':[{'caseId':'a','productGroupId':'g','split':'held-out'}]},{'family':'retrieval'},True)
   self.assertIn('BLOCKED ON A: required capabilities not frozen/verified',blocked['blockers'])
+ def test_semester_methods_bind_five_arms_and_block_leakage_or_unfrozen_recovery(self):
+  from unittest.mock import patch
+  plan=runner.load(runner.ROOT/'data/evaluation/experiment-plan.json')
+  definitions=runner.load(runner.ROOT/'data/evaluation/semester-experiments.json')
+  config={'family':'semester-reconstruction','stage':'initial-reconstruction','recoveryPolicy':'disabled','answerSynthesis':False,'frozenFiles':[{'role':'arm-definitions','path':'data/evaluation/semester-experiments.json','sha256':runner.sha(runner.ROOT/'data/evaluation/semester-experiments.json')}],'armAdapters':{a['id']:{'argv':['fixture-only'],'inputSelection':{'analysisMethod':a['analysisMethod'],'evidence':a['allowedInputs']}} for a in definitions['reconstruction']['arms']}}
+  config['frozenFiles'] += [{'role':'adapter:'+a,'path':'fixture-not-executed','sha256':'fixture'} for a in 'ABCDE']
+  manifest={'cases':[{'caseId':'not-a-photo','productGroupId':'fixture','split':'development'}]}
+  with patch.object(runner,'gates',return_value=[]):
+   prepared=runner.prepare(plan,manifest,config,True)
+   self.assertEqual(prepared['state'],'READY');self.assertEqual([j['arm'] for j in prepared['jobs']],list('ABCDE'))
+   config['armAdapters']['A']['inputSelection']['evidence'] += ['original-images']
+   self.assertIn('incorrect semester method/evidence restriction: A',runner.prepare(plan,manifest,config,True)['blockers'])
+   config['recoveryPolicy']='enabled'
+   self.assertIn('semester initial extraction must exclude recovery and answer synthesis',runner.prepare(plan,manifest,config,True)['blockers'])
+   config['frozenFiles']=[]
+   self.assertIn('semester arm definitions not frozen',runner.prepare(plan,manifest,config,True)['blockers'])
+ def test_semester_receipts_do_not_accept_hidden_recovery_or_answer_calls(self):
+  import sys
+  from unittest.mock import patch
+  base={'actualModel':'fixture','actualGenerationConfig':{},'actualInputSelection':{'analysisMethod':'vision','evidence':['original-images']},'fallbackOccurred':False,'actualStage':'initial-reconstruction','recoveryCalls':0,'answerGenerationCalls':0}
+  with tempfile.TemporaryDirectory() as directory:
+   for index,change in enumerate([{}, {'recoveryCalls':1}, {'answerGenerationCalls':1}, {'actualStage':'full-conversation'}, {'recoveryCalls':None}, {'recoveryCalls':False}]):
+    value={**base,**change};argv=[sys.executable,'-c','import sys;sys.stdout.write('+repr(json.dumps(value))+')']
+    adapter={'argv':argv,'inputSelection':base['actualInputSelection']};config={'model':'fixture','generationConfig':{},'armAdapters':{'C':adapter}}
+    plan={'state':'READY','claimScope':'final-independent','manifest':{},'jobs':[{'jobId':'fixture','family':'semester-reconstruction','config':config,'arm':'C','adapter':adapter}]}
+    output=Path(directory)/str(index)
+    with patch.object(runner,'gates',return_value=[]):runner.execute(plan,argv,output,True)
+    result=json.loads((output/'0000.json').read_text())
+    self.assertEqual(result['status'],'completed' if index==0 else 'noncomparable')
  def test_retrieval_positive_negative_unknown_and_duplicates(self):
   rows=[{'queryId':'positive','judgments':{'a':3,'b':1,'c':0},'rankedIds':['c','a'],'judgmentStatus':'independent-human','poolComplete':True}, {'queryId':'negative','judgments':{'c':0},'rankedIds':['c'],'judgmentStatus':'independent-human','poolComplete':True}, {'queryId':'unknown','judgments':{'a':3},'rankedIds':['unjudged'],'judgmentStatus':'independent-human','poolComplete':True}]
   result=runner.retrieval(rows);self.assertEqual(result['perQuery'][0]['recall'],0.5);self.assertEqual(result['perQuery'][0]['reciprocalRank'],0.5);self.assertEqual(result['metrics']['negativeQueries'],{'denominator':1,'falseMatches':1});self.assertFalse(result['perQuery'][2]['eligible']);self.assertIsNone(result['perQuery'][2]['ndcg'])

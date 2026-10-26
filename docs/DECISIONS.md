@@ -1218,3 +1218,6 @@ Make reader choice an execution boundary rather than a heuristic-reader cascade.
 ### 26 October — extend objective invariants to the canonical path
 
 Physical-mass protection must not remain confined to the historical local audit. Known mass constituents exceeding their complete gram reference mass are conflicts, even when a model calls them clear/provisional. Preserve the original number/unit/basis/source and withhold calculation; never infer a missing decimal. Apply the same check to native/cached calculations and human confirmation. Respect inequality direction, unit conversion, unknown density/identity and equivalents. This objective bound is neither semantic medical reasoning nor proof that other readings are correct; independent reconstruction evaluation remains necessary.
+
+
+26 October: bind the final five-arm reconstruction study in the existing evaluation runner, preserving historical exploratory families. Exact method/evidence selection, common model/configuration and no-recovery/no-answer receipts are separate gates. Do not count full consumer analysis as controlled initial extraction. No new benchmarking framework or final accuracy claim.
