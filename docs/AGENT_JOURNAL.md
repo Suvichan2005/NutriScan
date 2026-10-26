@@ -1,4 +1,11 @@
 # Sanitized engineering journal
+## 2026-10-27 — direct answers from saved context on follow-up
+
+- Added a general follow-up instruction to answer the new question first from relevant saved package facts and bounded prior cited-source context, avoiding repetitive overviews unless useful. Added agent-prompt regression assertions.
+- A free-only synthetic sodium run used 3.6 Flash after 3.8 timeout and 3.7 503. It made four successful generations, called package reconstruction, nutrition guidance and knowledge search, returned two WHO records, and withheld two unsupported numeric sentences. Usage was 19,956 tokens (18,312 prompt, 613 candidate, 1,031 thinking). Local source metadata confirms `who-sodium` is the WHO Sodium reduction fact sheet published 2026-05-11; this does not independently establish source applicability or answer correctness.
+- A matched 50 g follow-up using saved package context and no photos changed from a repeated overview at 4,545 tokens to a direct answer at 4,465 tokens after the instruction. Both used one generation and no tools; one example is not a general result. No actual billing read or browser-rendered acceptance was performed.
+- Verification: 849 tests passed, 2 skipped; TypeScript and optimized production build passed. Three readable transcripts remain ignored local artifacts. No paid request or real user profile/photo was used.
+
 ## 2026-10-27 — ambiguous package identity and concise label evidence
 
 - Merged integration commit `9936b8b`, which prevents a parsed line typed as another package field from becoming a catalog-search query. Preserved the feature branch's stronger provenance rule for displaying OCR identity, plus explicit user correction, user detail, reconstructed suggestions, and barcode paths.

@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — concise saved-context follow-ups
+
+Follow-up turns should answer the new question directly from relevant saved package facts and bounded prior evidence, avoiding a repeated overview unless the question needs it. This is a language instruction only; it does not force tools, alter package facts, or weaken numerical/source validation. One matched synthetic live pair showed a small token reduction; general quality and efficiency remain unverified.
+
 ## 27 October 2026 — require provenance before showing extracted package identity
 
 Do not use parser best-effort `name` or `brand` as consumer-facing identity by default. Prefer explicit user-provided/corrected values, active package reconstruction, and confidence-qualified OCR values linked to a photographed side. Keep model-suggested identity visibly provisional. Use a generic package title when support is absent; do not add phrase-specific OCR exclusions.

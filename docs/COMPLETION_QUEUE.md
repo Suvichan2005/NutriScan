@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M2 concise saved-context follow-ups (27 October 2026)
+
+**State: VERIFIED (narrow behavior).** A generic Gemini instruction now asks follow-up turns to answer the new question directly from relevant saved package facts and bounded cited-source context, avoiding an unnecessary repeated overview. Regression assertions pass. One matched synthetic live pair fell from 4,545 to 4,465 total tokens (candidate tokens 219 to 90), with no additional tool/generation calls; this is a single-case directional result, not a broad efficiency claim. The synthetic first-answer trace also demonstrates selective tool calls and returned WHO records, but withheld two unsupported quantities. Full suite: 849 passed, 2 skipped; TypeScript and optimized production build pass. Next: continue M2 across distinct non-held-out scenarios and verify actual displayed source attribution; do not treat synthetic package facts as product accuracy.
+
 ## M2 reconstructed-quantity certainty in conversational answers (27 October 2026)
 
 Saved development receipts show that an accepted numeric sentence can rely on a current Gemini package reconstruction without being independently confirmed. Keep these readings usable, but append a concise Package details confirmation notice. User-corrected values are not mislabeled as model readings. Unsupported quantities and bases remain withheld. Focused inference/agent/diagnostics tests passed (98); the full suite passed 849 tests with 2 skipped; TypeScript and optimized production build pass. No new provider call. This closes only the certainty-presentation gap; selective source-tool use, scientific applicability and answer usefulness remain active M2 acceptance gates.

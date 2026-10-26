@@ -2,7 +2,7 @@
 
 **As of:** 27 October 2026
 **Active checkout:** `C:\Users\KIIT0001\Documents\Seventh Semester Project NutriScan\NutriScan-study-ops`
-**Branch / HEAD:** `codex/m2-subject-scope-20261027` / `86bb79a403de3cc89d253d44f5ae6073368fc9e3` (implementation checkpoint; includes integration through `c7eb429`).
+**Branch / HEAD:** `codex/m2-subject-scope-20261027` / `39938caf276b050af495219f6b4e7d96f8eea9cc` (prompt/test checkpoint; includes integration through `c7eb429`).
 **Other checkout:** the original `NutriScan` worktree remains separate and untouched by this work. Two registered worktrees are present.
 **Working tree:** tracked files clean; a pre-existing untracked `scripts/evaluation/__pycache__/` remains. No dev server is running.
 
@@ -25,10 +25,16 @@ These checks establish local behavior and integration/build health only. They do
 
 **M2 source-grounded conversational intelligence remains ACTIVE.** Verify across distinct development scenarios that Gemini appropriately selects eligible source tools, uses their returned records, presents relevant citations in the actual UI and maintains relevant context on follow-up. Separate model tool-selection failures from missing data, retrieval applicability, execution failures, and UI/citation losses. Do not force retrieval solely from health keywords or tune to one food/example.
 
-This checkout currently has no `.env.local` and no Gemini environment credential variables, so no live provider acceptance was performed. The current change improves uncertainty presentation only; it does not resolve selective source-tool use or establish model adherence. Continue provider-free contract and local integration work until a valid authorized development configuration is available; do not claim model adherence from fixtures.
+This checkout has no `.env.local`; the bounded live development receipts below were produced in an isolated child process with free-only routing and synthetic inputs. The current prompt change improves concise follow-up behavior but does not resolve selective source-tool use or establish broad model adherence. Do not claim model adherence from fixtures or this single scenario.
 
 M3 image/package reconstruction accuracy, knowledge completeness, unfamiliar-package transfer, human-reviewed evaluation, and final academic results remain incomplete. Historical pilot and source status are recorded in the queue, dataset coverage file and engineering journal.
 
 ## Next executable milestone
 
 Run one bounded, non-held-out live development case after eligible credentials are configured: verify the whole path from package/context through selective source-tool call, returned evidence, final answer/source UI and a relevant follow-up. Record model/tier, attempts, tokens, latency and estimated cost; preserve failures. Then validate an unrelated scenario without changing the frozen study configuration.
+
+## Bounded synthetic provider evidence (27 October 2026)
+
+The free-only sodium scenario timed out on Flash 3.8, received provider-unavailable 503 on 3.7, and succeeded on 3.6. Four successful response generations made three tool calls (package reconstruction, nutrition guidance, knowledge search); two WHO records were returned, and two unsupported quantitative spans were withheld. Successful calls reported 19,956 tokens (18,312 prompt, 613 candidate, 1,031 thinking). The local `who-sodium` source is the WHO “Sodium reduction” fact sheet dated 2026-05-11. This was synthetic package input with no photos/profile, and no consumer browser rendering or Google billing read.
+
+A canonical 50 g follow-up with saved context changed from an overlong repeated overview (4,545 tokens) to a direct portion answer (4,465 tokens) after a generic agent instruction. Both used one generation, no photos, and no tools. This one matched pair does not establish general answer quality or efficiency. The instruction and regression assertion are committed at `39938caf276b050af495219f6b4e7d96f8eea9cc`; suite/typecheck/build pass.
