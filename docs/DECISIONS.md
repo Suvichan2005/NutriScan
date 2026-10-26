@@ -1221,3 +1221,6 @@ Physical-mass protection must not remain confined to the historical local audit.
 
 
 26 October: bind the final five-arm reconstruction study in the existing evaluation runner, preserving historical exploratory families. Exact method/evidence selection, common model/configuration and no-recovery/no-answer receipts are separate gates. Do not count full consumer analysis as controlled initial extraction. No new benchmarking framework or final accuracy claim.
+
+
+26 October: controlled extraction reuses the exact production initial-stage function and image preparation, without consumer answer synthesis. A local-only CLI accepts hashed raw inputs and emits stage/route/config/usage provenance; no new public API or alternative reconstruction prompt. Profiles, external evidence, prior interpretation and recovery crops are excluded from controlled initial extraction. Final fallback/config drift remains noncomparable.

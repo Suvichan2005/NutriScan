@@ -2,7 +2,7 @@ import {afterEach,expect,it,vi} from 'vitest';
 import sharp from 'sharp';
 import {analysisMethods,packageForSelectedMethod} from '../analysis-method';
 import {packageSchema,type AnalysisMethod} from '../contracts';
-import {assist,assistInput,sanitizePackageReconstruction} from './gemini';
+import {assist,assistInput,sanitizePackageReconstruction,reconstructPackageForEvaluation} from './gemini';
 import {resetGeminiUsageLedgerForTests} from './gemini-provider';
 
 const evidence={observationIds:[] as string[],imageRegions:[] as {imageId:string;region:{x:number;y:number;width:number;height:number}}[]};
@@ -65,4 +65,28 @@ it.each([...analysisMethods.map(m=>({method:m.value,sparse:false})),{method:'tes
  expect(bodies).toHaveLength(3);
  expect(bodies[2].contents[0].parts.some((part:any)=>part.inlineData)).toBe(false);
  expect(JSON.stringify(bodies[2].contents[0].parts)).toContain('Example package');
+});
+
+
+it.each(analysisMethods)('controlled $value extraction uses the same stage once without answer or recovery',async policy=>{
+ resetGeminiUsageLedgerForTests();vi.stubEnv('NODE_ENV','development');vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-placeholder');vi.stubEnv('ENABLE_PAID_GEMINI_FALLBACK','false');vi.stubEnv('NUTRISCAN_GEMINI_EVAL_CAPTURE','0');
+ const bodies:any[]=[];
+ vi.stubGlobal('fetch',vi.fn(async(_input,init)=>{
+  const body=JSON.parse(String(init?.body));bodies.push(body);
+  const refs=policy.reader?{...evidence,observationIds:[`obs-${policy.reader}`]}:{...evidence,imageRegions:[{imageId:'photo-1',region:{x:0,y:0,width:1,height:1}}]};
+  const content={identity:{name:'Test source',brand:null,variant:null,status:'provisional',evidence:refs},serving:null,nutritionRows:[],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Synthetic contract, no accuracy claim'};
+  return new Response(JSON.stringify({candidates:[{content:{role:'model',parts:[{functionCall:{id:'one-stage',name:'submit_package_reconstruction',args:content}}]},finishReason:'STOP'}],modelVersion:'gemini-3.8-flash-test',usageMetadata:{promptTokenCount:10,candidatesTokenCount:5,totalTokenCount:15}}),{headers:{'content-type':'application/json'}});
+ }));
+ const base64=(await sharp({create:{width:8,height:8,channels:3,background:'#ccc'}}).jpeg().toBuffer()).toString('base64');
+ const result=await reconstructPackageForEvaluation({analysisMethod:policy.value,consent:true,question:'Reconstruct the package',package:packet(),images:policy.images?[{handle:'photo-1',side:'back',width:8,height:8}]:[],...(policy.images?{visualImages:[{imageId:'photo-1',mimeType:'image/jpeg',base64,side:'back',sourceImage:{width:8,height:8},preprocessing:{rotation:0,contrast:false,invert:false,crop:null},regionRole:'full-image'}]}:{})});
+ expect(bodies).toHaveLength(1);expect(bodies[0].tools[0].functionDeclarations.map((t:any)=>t.name)).toEqual(['submit_package_reconstruction']);
+ expect(JSON.stringify(bodies[0].contents).includes('OLD_PARSED')).toBe(false);
+ expect(result).toMatchObject({actualStage:'initial-reconstruction',analysisMethod:policy.value,recoveryCalls:0,answerGenerationCalls:0,actualTier:'free',fallbackOccurred:false,usage:{promptTokenCount:10,candidatesTokenCount:5},actualInputSelection:{analysisMethod:policy.value,evidence:[...(policy.reader?[policy.reader+'-observations']:[]),...(policy.images?['original-images']:[])]}});
+ expect(result.actualGenerationConfig.maxOutputTokens).toBe(bodies[0].generationConfig.maxOutputTokens);
+});
+it('controlled reconstruction is development-only and rejects profile/context before providers',async()=>{
+ const input={analysisMethod:'tesseract-text',consent:true,question:'Read',package:packet()};
+ vi.stubEnv('NODE_ENV','production');await expect(reconstructPackageForEvaluation(input)).rejects.toMatchObject({code:'evaluation_local_only'});
+ vi.stubEnv('NODE_ENV','development');await expect(reconstructPackageForEvaluation({...input,profile:{dietaryPattern:'',allergies:'',intolerances:'',healthConsiderations:'',goals:'',ageGroup:'',sexOrReferenceGroup:'',country:'',locality:''}})).rejects.toMatchObject({code:'evaluation_input'});
+ await expect(reconstructPackageForEvaluation({...input,conversationContext:[{question:'prior',answer:'context'}]})).rejects.toMatchObject({code:'evaluation_input'});
 });

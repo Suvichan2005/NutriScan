@@ -1689,10 +1689,11 @@ async function reconstructPackage(
   imageParts:Part[],
   analysisId:string,
   referenceAliases:ReferenceAliases,
-):Promise<{content:PackageReconstructionContent;elapsedMs:number;model:string}>{
+){
   const hasTextEvidence=Boolean(data.package.observations.length||data.package.rawText.trim()||data.package.userDescription?.trim()||data.package.barcode||data.package.brand||data.package.name!=='Unidentified package');
   if(!imageParts.length&&!hasTextEvidence)throw new ApiError(400,'package_evidence_required','Add a package photo or label text before reconstructing package details.');
   const context=applicationGeminiContext();
+  const requestedModel=context.model,requestedTier=context.tier;
   const profileIncluded=Object.values(data.profile??{}).some(value=>value.trim());
   const started=Date.now();
   const contents:Content[]=[{
@@ -1754,7 +1755,7 @@ async function reconstructPackage(
     resultCount:content.nutritionRows.length+content.ingredients.length+content.additives.length+content.statements.length,
     packageReconstruction:content,
   });
-  return{content,elapsedMs:Date.now()-started,model:response.modelVersion??context.model};
+  return{content,elapsedMs:Date.now()-started,model:response.modelVersion??context.model,tier:context.tier,fallbackOccurred:context.model!==requestedModel||context.tier!==requestedTier,usage:response.usageMetadata??null,generationConfig:{maxOutputTokens:9000,thinkingConfig:{thinkingLevel:ThinkingLevel.LOW},functionCallingMode:FunctionCallingConfigMode.ANY,allowedFunctionNames:['submit_package_reconstruction']}};
 }
 
 async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:string,referenceAliases:ReferenceAliases):Promise<GeneratedAgentOutput>{
@@ -2084,19 +2085,67 @@ export function assistPromptPayload(data:z.infer<typeof assistInput>, referenceA
   return replaceReferenceIds(payload, referenceAliases);
 }
 
-export async function assist(data: z.infer<typeof assistInput>) {
-  const previousPackage=data.package;
+function selectedAnalysisInput(data:z.infer<typeof assistInput>){
   const selectedMethod=data.analysisMethod??data.package.reconstruction?.analysisMethod;
   const selectedPolicy=selectedMethod?analysisMethodPolicy(selectedMethod):null;
   // Enforce modality on the server too, including follow-up tool access.
   if(selectedPolicy&&!selectedPolicy.images&&(data.visualImages?.length??0)>0)throw new ApiError(400,'analysis_method_images_forbidden','This analysis method sends OCR observations only. Choose an image method to inspect photos.');
   if(data.analysisMethod&&!data.package.reconstruction?.current){
-    const selectedPackage=packageForSelectedMethod(data.package,data.analysisMethod,data.images?.map(image=>image.handle));
+    const selectedPackage=packageForSelectedMethod(data.package,data.analysisMethod,data.images?.length?data.images.map(image=>image.handle):undefined);
     if(data.analysisMethod==='vision'&&data.visualImages?.some(image=>image.regionRole!=='full-image'))throw new ApiError(400,'analysis_method_originals_required','Gemini Vision starts from the selected full photos, without OCR-derived close-ups.');
     if(selectedPolicy?.images&&!(data.visualImages?.length))throw new ApiError(400,'analysis_method_images_required','This analysis method needs the selected package photos.');
     if(selectedPolicy&&!selectedPolicy.images&&!selectedPackage.observations.length)throw new ApiError(400,'analysis_method_reader_required','The selected OCR reader returned no usable observations. Your photos are preserved; select Gemini Vision or try another reader.');
     data=assistInput.parse({...data,package:selectedPackage,interpretedCandidates:[],calculations:[],images:selectedPolicy?.images?data.images?.map(({handle,side,width,height})=>({handle,side,width,height})):[]});
   }
+  return {data,selectedMethod};
+}
+
+async function reconstructionImageParts(data:z.infer<typeof assistInput>,referenceAliases:ReferenceAliases){
+    const imageParts:Part[]=[];
+    let preparedImageBytes=0;
+    for(const image of data.visualImages??[]){
+      const clean=await validateImage(image);
+      preparedImageBytes+=Buffer.from(clean,'base64').byteLength;
+      if(preparedImageBytes>2_700_000)throw new ApiError(413,'image_limit','Attached package photos exceed the combined image-processing limit.');
+      const handle=data.images?.find(candidate=>candidate.handle===image.imageId);
+      const modelImageHandle=referenceAliases.toModel.get(image.imageId)??image.imageId;
+      const sameHandleViews=(data.visualImages??[]).filter(view=>view.imageId===image.imageId);
+      const hasFocusedRegions=sameHandleViews.length>1;
+      const crop=image.preprocessing.crop;
+      const viewDescription=hasFocusedRegions
+        ?crop?'focused '+(image.regionRole??'label-detail')+' region crop; coordinates x='+crop.x+', y='+crop.y+', width='+crop.width+', height='+crop.height+' normalized to the full original image; same pixels as the full view, not independent evidence':'full original image for layout and identity context'
+        :crop?'attached image with saved crop provenance x='+crop.x+', y='+crop.y+', width='+crop.width+', height='+crop.height+' normalized to the original source':'full original image';
+      imageParts.push(
+        {text:'Package image handle '+modelImageHandle+'; side='+image.side+'; view='+viewDescription+'; regionRole='+(image.regionRole??(crop?'other':'full-image'))+'; original dimensions='+image.sourceImage.width+'x'+image.sourceImage.height+'; package-side role='+(handle?.role??'unknown')+'; description='+(handle?.description??'none')+'. All visualEvidence regions must be normalized against the full original photo represented by this handle.'},
+        {inlineData:{mimeType:'image/jpeg',data:clean}},
+      );
+    }
+
+    return imageParts;
+}
+
+/** Local research entry point: identical initial stage, no answer/recovery/tool loop. */
+export async function reconstructPackageForEvaluation(input:unknown){
+  if(process.env.NODE_ENV!=='development'||process.env.CI||process.env.VERCEL)throw new ApiError(403,'evaluation_local_only','Controlled reconstruction is available only in local development.');
+  const parsed=assistInput.parse(input);
+  if(!parsed.analysisMethod||parsed.package.reconstruction||parsed.profile||parsed.evidence?.length||parsed.conversationContext?.length)throw new ApiError(400,'evaluation_input','Initial extraction requires a selected method and raw evidence, without prior interpretation, profile, sources or conversation.');
+  if(parsed.visualImages?.some(image=>image.preprocessing.crop||image.regionRole!=='full-image'))throw new ApiError(400,'evaluation_originals_required','Controlled initial extraction uses full selected photos without focused recovery crops.');
+  const {data}=selectedAnalysisInput(parsed);
+  const status=providerStatus();if(!status.enabled)throw new ApiError(503,'provider_disabled',status.message);
+  const analysisId=randomUUID();
+  await startGeminiEvaluation(analysisId,{model:status.model??'unresolved-model-route',taskKind:'package-reconstruction',question:data.question,profileIncluded:false,request:data});
+  try{
+    const aliases=createReferenceAliases(data),parts=await reconstructionImageParts(data,aliases);
+    const result=await reconstructPackage(data,parts,analysisId,aliases);
+    const receipt={diagnosticId:analysisId,actualStage:'initial-reconstruction',analysisMethod:data.analysisMethod,packageReconstruction:result.content,actualModel:result.model,actualGenerationConfig:result.generationConfig,fallbackOccurred:result.fallbackOccurred,actualTier:result.tier,usage:result.usage,elapsedMs:result.elapsedMs,recoveryCalls:0,answerGenerationCalls:0,actualInputSelection:{analysisMethod:data.analysisMethod,evidence:[...(analysisMethodPolicy(data.analysisMethod!).reader?[analysisMethodPolicy(data.analysisMethod!).reader+'-observations']:[]),...(parts.length?['original-images']:[])]}};
+    await recordGeminiEvaluationEvent(analysisId,{event:'controlled_reconstruction_receipt',receipt});await finishGeminiEvaluation(analysisId,'completed');return receipt;
+  }catch(error){await recordGeminiEvaluationEvent(analysisId,{event:'analysis_failed',failure:{code:error instanceof ApiError?error.code:'provider-failure'}});await finishGeminiEvaluation(analysisId,'failed');throw error;}
+}
+
+export async function assist(data: z.infer<typeof assistInput>) {
+  const previousPackage=data.package;
+  const selection=selectedAnalysisInput(data);data=selection.data;
+  const selectedMethod=selection.selectedMethod;
   if(data.toolAccess?.mode==='research'&&(process.env.NODE_ENV!=='development'||process.env.CI||process.env.VERCEL))throw new ApiError(403,'research_tools_local_only','Controlled research tool selection is available only in local development.');
   try{selectAgentTools(geminiToolDeclarations,(data.visualImages?.length??0)>0,data.toolAccess);}catch{throw new ApiError(400,'invalid_tool_selection','The selected investigation tools are unavailable.');}
   const status=providerStatus();
@@ -2140,25 +2189,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
     });
 
     const referenceAliases=createReferenceAliases(data);
-    const imageParts:Part[]=[];
-    let preparedImageBytes=0;
-    for(const image of data.visualImages??[]){
-      const clean=await validateImage(image);
-      preparedImageBytes+=Buffer.from(clean,'base64').byteLength;
-      if(preparedImageBytes>2_700_000)throw new ApiError(413,'image_limit','Attached package photos exceed the combined image-processing limit.');
-      const handle=data.images?.find(candidate=>candidate.handle===image.imageId);
-      const modelImageHandle=referenceAliases.toModel.get(image.imageId)??image.imageId;
-      const sameHandleViews=(data.visualImages??[]).filter(view=>view.imageId===image.imageId);
-      const hasFocusedRegions=sameHandleViews.length>1;
-      const crop=image.preprocessing.crop;
-      const viewDescription=hasFocusedRegions
-        ?crop?'focused '+(image.regionRole??'label-detail')+' region crop; coordinates x='+crop.x+', y='+crop.y+', width='+crop.width+', height='+crop.height+' normalized to the full original image; same pixels as the full view, not independent evidence':'full original image for layout and identity context'
-        :crop?'attached image with saved crop provenance x='+crop.x+', y='+crop.y+', width='+crop.width+', height='+crop.height+' normalized to the original source':'full original image';
-      imageParts.push(
-        {text:'Package image handle '+modelImageHandle+'; side='+image.side+'; view='+viewDescription+'; regionRole='+(image.regionRole??(crop?'other':'full-image'))+'; original dimensions='+image.sourceImage.width+'x'+image.sourceImage.height+'; package-side role='+(handle?.role??'unknown')+'; description='+(handle?.description??'none')+'. All visualEvidence regions must be normalized against the full original photo represented by this handle.'},
-        {inlineData:{mimeType:'image/jpeg',data:clean}},
-      );
-    }
+    const imageParts=await reconstructionImageParts(data,referenceAliases);
 
     let activePackage=data.package;
     let packageReconstruction:PackageReconstructionContent|undefined;
