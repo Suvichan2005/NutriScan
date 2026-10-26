@@ -479,7 +479,7 @@ describe('natural NutriScan agent contract', () => {
     expect(instruction).toContain('cite its exact provided SRC_... handle and name/date');
     expect(instruction).toContain('retrieve study and applicable official evidence separately; never substitute one for the other');
     expect(instruction).toContain('Disclose a missing source class');
-    expect(instruction).toContain('If no relevant source is returned or that tool is not enabled, say the lookup was not completed; do not fill source-specific details from memory');
+    expect(instruction).toContain('If a requested source class is unavailable or returns no relevant record, name the missing lookup and suggest specialized mode when needed; never fill its details from memory');
     expect(instruction).toContain('give the judgment first');
     expect(instruction).toContain('Before making a health-specific suitability recommendation, retrieve the narrowest applicable guidance or research evidence');
     expect(instruction).toContain('a condition mentioned in an unrelated request alone does not justify clinical lookup');

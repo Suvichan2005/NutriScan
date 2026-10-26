@@ -1,4 +1,9 @@
 # Sanitized engineering journal
+## 2026-10-26 — make unavailable evidence lookups actionable
+
+- Tool-profile inventory confirms ordinary mode does not include `search_research`; selected specialized mode is the existing user-controlled path to external research and official regulatory lookup.
+- Updated the general agent instruction to name missing source classes and suggest specialized mode when the selected profile lacks the needed tool. No automatic profile switching or query classifier was added.
+- Agent tests50/50, TypeScript, optimized production build and loopback3400 health pass. No new provider call or claim of model adherence; owner files restored/matched.
 ## M2 bounded free-provider transfer attempt — 26 October 2026
 
 One free-tier synthetic development request used the explicit specialized profile with no photo/profile, paid fallback off, search off and readable answer capture off. Sanitized operational trace `caa02170-173b-477f-9d2e-741917a0a7d1` shows the request entered `package-reconstruction` because the fixture omitted a saved reconstruction, then tried four configured free models: three returned `service-unavailable` and the last timed out. No model completed, no answer-stage call or source lookup occurred, and no usage receipt was recorded. This does not test the source-class prompt. The route cooldowns were set; do not retry until provider availability changes, and use a canonical reconstructed package to target answer generation next time.

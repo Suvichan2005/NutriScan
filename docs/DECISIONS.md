@@ -1,4 +1,7 @@
 # Chronological decisions
+## 26 October 2026 — keep research access explicit and name the next step
+
+Ordinary mode intentionally omits `search_research`; the specialized profile is selected by the user and exposes it. Do not add automatic question-based profile switching or expose every tool in ordinary mode. When an explicitly requested source class is missing or its tool is unavailable, state which class is missing, suggest specialized mode when needed, and do not substitute memory or another jurisdiction.
 
 ## 26 October 2026 — retrieve effects and claim rules as separate evidence classes
 
