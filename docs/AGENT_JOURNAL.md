@@ -1,5 +1,11 @@
 # Sanitized engineering journal
 
+## 2026-10-26 — ground explicit lookups in returned records
+
+- A saved actual answer trace for an explicit study request had `search_knowledge` available in ordinary mode but made no tool call, then included a trial count and study findings without a retrieved source. The relevant PubMed review exists in the local evidence index.
+- Tightened the general system instruction to require the relevant enabled source lookup and to use returned records for study details/rules; unavailable or empty source lookup must be disclosed instead of filled from memory. Clarified local `search_knowledge` is for explicit source requests. This retains explicit tool-profile selection and adds no query classifier.
+- Focused agent tests50/50, TypeScript and `git diff --check` pass; prompt length1999 characters. Optimized production build passed; loopback3400 is healthy in free/local mode with paid fallback, search and readable capture off. No fresh Gemini call or human review.
+
 ## 2026-10-26 — provide individualized CKD potassium context without targets
 
 - Official KDIGO 2024 Practice Point3.3.2 supports tailored potassium/phosphorus/sodium/protein adaptation through renal dietitians/accredited providers based on individual needs, CKD severity and comorbidities. A prior retrieval probe had correctly rejected KDIGO's then sodium-only paraphrase; after source-summary scope expanded for protein, the same CKD-only potassium abstention became unnecessarily empty.

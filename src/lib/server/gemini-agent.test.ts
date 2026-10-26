@@ -478,6 +478,7 @@ describe('natural NutriScan agent contract', () => {
     expect(instruction).toContain('Answer directly in plain text');
     expect(instruction).toContain('cite its exact provided SRC_... handle and name/date');
     expect(instruction).toContain('retrieve both when asked and available');
+    expect(instruction).toContain('If no relevant source is returned or that tool is not enabled, say the lookup was not completed; do not fill source-specific details from memory');
     expect(instruction).toContain('give the judgment first');
     expect(instruction).toContain('Before making a health-specific suitability recommendation, retrieve the narrowest applicable guidance or research evidence');
     expect(instruction).toContain('a condition mentioned in an unrelated request alone does not justify clinical lookup');
@@ -486,6 +487,7 @@ describe('natural NutriScan agent contract', () => {
     expect(instruction.length).toBeLessThan(2_000);
     expect(tools.map(tool => tool.name)).toContain('calculate_nutrition');
     expect(tools.find(tool => tool.name === 'calculate_nutrition')?.description).toContain('do not repeat those calculations');
+    expect(tools.find(tool => tool.name === 'search_knowledge')?.description).toContain('Use for explicit research/source requests');
     expect(JSON.stringify(tools.find(tool => tool.name === 'get_nutrition_guidance'))).toContain('Omit unrelated package details');
     expect(tools.map(tool => tool.name)).not.toContain('show_nutrition_table');
   });

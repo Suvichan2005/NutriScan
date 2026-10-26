@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — do not substitute memory for an explicit source lookup
+
+A saved real model trace answered a user-requested literature lookup without calling any source tool, even though local `search_knowledge` was available and the relevant PubMed record existed. The model supplied source-specific study details without retrieved evidence. For explicit study/source lookups, call the relevant enabled source tool and ground study details/rules only in returned records; if the tool is unavailable or no relevant record is returned, disclose that lookup was not completed and omit source-specific assertions from memory. Keep capability selection explicit; this does not add query-based tool routing.
+
 ## 26 October 2026 — allow scoped, non-numeric CKD potassium context
 
 Supersede the earlier sodium-only potassium abstention after rechecking the official KDIGO 2024 guideline: Practice Point3.3.2 directs use of renal dietitians/accredited nutrition providers for adaptations regarding potassium, phosphorus, sodium and protein, tailored to individual needs, CKD severity and comorbidities. Include that limited context in the existing KDIGO summary and permit direct CKD potassium-topic retrieval. Do not provide a potassium number or a personalized package verdict: the local source summary has no numerical potassium target, and no potassium value patterns are added to answer-boundary coverage. Keep disease/topic separation; this does not admit diabetes- or hypertension-only potassium queries. Source: [KDIGO 2024 CKD guideline, Chapter 3](https://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf).
