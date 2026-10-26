@@ -311,7 +311,7 @@ describe('nutrition numerical invariants',()=>{
     const intolerance=audit.findings.find(f=>f.title==='Food intolerance: not established');
     expect(allergy?.status).toBe('uncertain');
     expect(allergy?.observationIds.length).toBeGreaterThan(0);
-    expect(allergy?.detail).toMatch(/does not establish exposure or an individual reaction/i);
+    expect(allergy?.detail).toMatch(/not confirmation of actual exposure or an individual reaction/i);
     expect(intolerance?.detail).toMatch(/No direct or supported label-term match/);
     expect(intolerance?.detail).toMatch(/not a safety clearance/);
   });
@@ -353,7 +353,7 @@ describe('nutrition numerical invariants',()=>{
     expect(wheat?.status).toBe('uncertain');
     expect(wheat?.observationIds).toEqual(['merged-column-ocr']);
     expect(wheat?.detail).toMatch(/saved package interpretation proposes a possible match.*still provisional/i);
-    expect(wheat?.detail).toMatch(/provisional reconstructed ingredient-list wording.*still unverified/i);
+    expect(wheat?.detail).toMatch(/Package text: "Refined wheat flour \(maida\)" \(provisional reading linked to original package text\)/i);
     expect(wheat?.detail).toMatch(/cannot establish amount or personal safety/i);
     expect(gluten?.sourceIds).toContain('fssai-atta-maida-nomenclature-2019');
     expect(gluten?.observationIds).toEqual(['merged-column-ocr']);
@@ -366,8 +366,8 @@ describe('nutrition numerical invariants',()=>{
     const allergy=audit.findings.find(finding=>finding.title==='Food allergy: literal mention');
     const warning=pkg.observations.find(observation=>observation.field==='allergens'&&/may contain/i.test(observation.text));
     expect(allergy?.observationIds).toContain(warning?.id);
-    expect(allergy?.detail).toContain('May-contain precautionary wording');
-    expect(allergy?.detail).toContain('"May contain traces of peanuts"');
+    expect(allergy?.detail).toContain('Package text: "May contain traces of peanuts"');
+    expect(allergy?.detail).not.toContain('Recorded line:');
     expect(allergy?.detail).toMatch(/does not confirm allergen presence/i);
     expect(allergy?.detail).toMatch(/cannot establish amount or personal safety/i);
     expect(allergy?.detail?.length).toBeLessThan(600);

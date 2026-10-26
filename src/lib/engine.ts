@@ -153,7 +153,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
       'precautionary-cross-contact':'May-contain precautionary wording',
       'other-allergen-statement':'other allergen-statement wording',
     } as const;
-    const matchingEvidence=mention.evidence.map(item=>`${item.interpretation?`provisional reconstructed ${evidenceLabels[item.type]}`:evidenceLabels[item.type]}: ${JSON.stringify(item.text)}${item.interpretation?' (linked to its original package reading; still unverified)':''}${item.matchBasis==='source-backed-alias'?` (label term “${item.matchedLabelTerm}” matches by a source-backed vocabulary relation)`:''}`);
+    const matchingEvidence=mention.evidence.map(item=>`${JSON.stringify(item.text)}${item.interpretation?' (provisional reading linked to original package text)':''}${item.matchBasis==='source-backed-alias'?` (related through a source-backed vocabulary crosswalk)`:''}`);
     const categories=unique(mention.evidence.map(item=>evidenceLabels[item.type]));
     const hasPrecautionaryWording=mention.evidence.some(item=>item.type==='precautionary-cross-contact');
     const reconstructedOnly=mention.evidence.length>0&&mention.evidence.every(item=>item.interpretation);
@@ -165,7 +165,7 @@ export function buildAudit(pkgInput:PackageData,portion:number,portionUnit:'g'|'
         ?`A recorded label term is related to “${mention.term}” through a source-backed food-label vocabulary crosswalk.`
         :'';
     const detail=mention.matched
-      ?`${matchDescription} Recorded line${matchingEvidence.length===1?'':'s'}: ${matchingEvidence.join('; ')}. ${hasPrecautionaryWording?'“May contain” is precautionary cross-contact wording; it does not confirm allergen presence.':'This label mention is unverified and does not establish exposure or an individual reaction.'} The reading cannot establish amount or personal safety.`
+      ?`${matchDescription} Package text: ${matchingEvidence.join('; ')}. ${hasPrecautionaryWording?'“May contain” is precautionary cross-contact wording; it does not confirm allergen presence.':'This is an unverified label mention, not confirmation of actual exposure or an individual reaction.'} It cannot establish amount or personal safety.`
       :labelTextPresent
         ?`No direct or supported label-term match for “${mention.term}” was found in the extracted ingredient/allergen wording. OCR omissions, unlisted derivatives and cross-contact remain possible; this is not a safety clearance.`
         :'No readable ingredient/allergen wording is available to compare with “'+mention.term+'”. Its absence from the extraction is not evidence that it is absent from the product.';

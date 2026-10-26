@@ -63,7 +63,7 @@ try {
     const allergyFinding = page.locator('.finding').filter({ hasText: /Food allergy: literal mention/ }).first();
     await allergyFinding.waitFor({ state: 'visible' });
     const allergyFindingText = await allergyFinding.innerText();
-    const precautionaryAllergyDistinguished = /May-contain precautionary wording: "May contain traces of peanuts"/.test(allergyFindingText) && /does not confirm allergen presence/i.test(allergyFindingText) && /cannot establish amount or personal safety/i.test(allergyFindingText);
+    const precautionaryAllergyDistinguished = /Package text: "May contain traces of peanuts"/.test(allergyFindingText) && /precautionary cross-contact wording/i.test(allergyFindingText) && /does not confirm allergen presence/i.test(allergyFindingText) && /cannot establish amount or personal safety/i.test(allergyFindingText);
     await page.locator('.provider-details > summary').click();
     const geminiHistoryOptIn = page.getByRole('checkbox', { name: /Include up to four recent local question-and-answer turns/ });
     const geminiHistoryStartsUnchecked = !(await geminiHistoryOptIn.isChecked());

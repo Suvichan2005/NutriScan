@@ -11,11 +11,18 @@ export type ProductLookupOptions = {
 
 export type ProductQuerySource = 'barcode' | 'barcode-candidate' | 'label-text' | 'user-detail';
 
+function hasConflictingNameEvidence(name: string, observations: NonNullable<PackageData['observations']>) {
+  return observations.some(observation => observation.text.trim() === name
+    && observation.field !== 'name' && observation.field !== 'productName');
+}
+
 /** Describe the provenance of the exact term used by the explicit catalog action. */
 export function productQuerySource(data: Pick<PackageData, 'barcode' | 'identityConflict' | 'name' | 'userDescription' | 'observations'>): ProductQuerySource {
   if (data.barcode) return 'barcode';
-  if (data.observations.some(observation => observation.field === 'name' && observation.origin === 'user' && observation.text.trim() === data.name)) return 'user-detail';
+  if (data.userDescription?.trim() && (data.name === 'Unidentified package' || hasConflictingNameEvidence(data.name, data.observations))) return 'user-detail';
   if (data.name === 'Unidentified package' && data.userDescription?.trim()) return 'user-detail';
+  if (hasConflictingNameEvidence(data.name, data.observations)) return 'label-text';
+  if (data.observations.some(observation => observation.field === 'name' && observation.origin === 'user' && observation.text.trim() === data.name)) return 'user-detail';
   if (!data.identityConflict && findOcrGtinCandidate(data.observations)) return 'barcode-candidate';
   return 'label-text';
 }
@@ -24,6 +31,8 @@ export function productQuerySource(data: Pick<PackageData, 'barcode' | 'identity
 export function defaultProductLookup(data: Pick<PackageData, 'barcode' | 'identityConflict' | 'name' | 'userDescription'> & { observations?: PackageData['observations'] }): string {
   if (data.identityConflict) return '';
   if (data.barcode) return data.barcode;
+  const conflictingNameEvidence = hasConflictingNameEvidence(data.name, data.observations ?? []);
+  if (conflictingNameEvidence) return data.userDescription?.trim() || findOcrGtinCandidate(data.observations ?? [])?.code || '';
   if (data.name === 'Unidentified package' && data.userDescription?.trim()) return data.userDescription;
   return findOcrGtinCandidate(data.observations ?? [])?.code ?? data.name;
 }

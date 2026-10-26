@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — prevent cross-field label text from becoming a product title
+
+- The broader local-only text scenario reproduced an identity mismatch: one synthetic allergen precaution was typed as both `name` and `allergens`, surfaced as the package title, and enabled a catalog lookup despite no stated identity.
+- Added provenance-based ambiguity handling in presentation and lookup code, plus regressions for the generic title, absent text lookup, preserved explicit barcode, and distinct user product-name correction behavior. No OCR parser change or phrase classifier.
+- The existing provider-free mobile/desktop journey now asserts the identity and lookup states. Focused suites passed 47/47; installed Chrome acceptance passed at 390×844 and 1440×900 with zero provider/external requests, page/Axe errors or overflow. Receipt: `docs/evidence/m2-context-source-browser-20261027.json`. No fresh Gemini selection or scientific entailment is claimed.
+
 ## 2026-10-27 — clarify the local text-only scan and check evidence-card reachability
 
 - The synthetic local label-text journey exposed “0 sides” and an empty photo group despite producing a valid package reading without images. The package header now says “No package photos,” the action says “Add photos,” and the empty group is omitted.

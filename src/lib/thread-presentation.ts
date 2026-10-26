@@ -198,6 +198,10 @@ export function packageDisplayIdentity(
   const correctedName = pkg.observations?.some(observation => observation.origin === 'user'
     && ((observation.field === 'productName' && observation.text === pkg.name)
       || observation.text.endsWith('; product name supplied by user: ' + pkg.name)));
+  const nameAlsoClassifiedAsAnotherField = !correctedName && pkg.observations?.some(observation =>
+    observation.text.trim() === pkg.name && observation.field !== 'name' && observation.field !== 'productName');
+  const brandAlsoClassifiedAsAnotherField = Boolean(pkg.brand) && pkg.observations?.some(observation =>
+    observation.text.trim() === pkg.brand && observation.field !== 'brand');
   if (correctedName && cleanIdentity(pkg.name)) return { title: cleanIdentity(pkg.name)!, source: 'package' };
 
   const interpretation = pkg.reconstruction?.identity;
@@ -216,7 +220,8 @@ export function packageDisplayIdentity(
   const explicitDescription = cleanIdentity(pkg.userDescription);
   if (explicitDescription) return { title: explicitDescription, source: 'package' };
   const photoIdentity = pkg.observations?.find(observation =>
-    observation.origin === 'ocr'
+    !nameAlsoClassifiedAsAnotherField
+    && observation.origin === 'ocr'
     && observation.field === 'name'
     && observation.text.trim() === pkg.name
     && Boolean(observation.imageId)
@@ -224,7 +229,8 @@ export function packageDisplayIdentity(
     && observation.confidence >= minIdentityOcrConfidence,
   );
   const photoBrand = pkg.observations?.find(observation =>
-    observation.origin === 'ocr'
+    !brandAlsoClassifiedAsAnotherField
+    && observation.origin === 'ocr'
     && observation.field === 'brand'
     && observation.text.trim() === pkg.brand
     && Boolean(observation.imageId)

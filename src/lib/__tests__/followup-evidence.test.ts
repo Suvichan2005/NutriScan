@@ -285,7 +285,7 @@ describe('local evidence follow-ups', () => {
       buildAudit(pkg, 30, 'g', profile, combinedQuestion), combinedQuestion, pkg,
     );
     expect(combined.answer).toContain('18 g carbohydrate');
-    expect(combined.answer).toContain('May-contain precautionary wording');
+    expect(combined.answer).toContain('Package text: "May contain traces of peanuts"');
     expect(combined.answer).toMatch(/does not confirm allergen presence/i);
     expect(combined.answer).toMatch(/cannot establish amount or personal safety/i);
     expect(combined.answer).toMatch(/cannot establish individual suitability/i);
