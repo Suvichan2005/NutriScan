@@ -1,4 +1,8 @@
 # Chronological decisions
+## 26 October 2026 — keep source applicability distinct from source presence
+
+A saved 30 g answer's WHO fibre target passed quantity validation when a WHO carbohydrate evidence record was present, despite the source having come from the earlier carbohydrate context and no guidance lookup in the follow-up. Source presence alone is not adequate evidence that a source supports a particular claim. Keep the exact provider wording and current decision observable; resolve this through general source-to-claim evidence binding, not phrase-specific post-processing. Separately, prior/current portion calculations do not support unperformed deltas unless the application represents those derived values as typed operations.
+
 ## 26 October 2026 — use local guidance for explicit guidance requests
 
 When a user asks for nutrition guidance beyond package arithmetic, make the source-linked local guidance tool the explicit model-visible path. If retrieval returns no applicable record, disclose the gap instead of supplying an unsupported benchmark. Keep population guidance distinct from personal targets and package facts. This addresses a repeated saved-trace tool-selection miss; verify adherence only in a later bounded free run when availability changes.

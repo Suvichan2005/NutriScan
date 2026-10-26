@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## M2 saved 30 g answer boundary replay (26 October 2026)
+
+Saved actual trace `408005b7-c455-48ee-92c6-5157ab3fd6a3` was replayed locally through the current validator with the exact saved package and prior/current typed operations (8 each). The generated 40 g→30 g comparison still withholds: the 37.6 kcal, ~7 g carbohydrate and 228.3 mg sodium deltas are not represented by typed calculations. The WHO 25 g/day fibre sentence is withheld with no evidence, but passes when the trace's `who-carbohydrate-2023` record is supplied; this exposes broad evidence-text acceptance without enough source-topic applicability. Receipt: `.data/m2-answer-usefulness-20261026/30g-prior-calculation-validation-replay.json`. This was provider-free; it does not validate the WHO target or show fresh model adherence. Next: improve source-to-claim grounding and consider general typed arithmetic for comparisons. M2 remains active; wait for changed provider availability before another generation.
+
 ## M2 explicit guidance request transfer (26 October 2026)
 
 Saved real traces262a28bd-e5c8-40e1-bdad-e710cd1a3770 and408005b7-c455-48ee-92c6-5157ab3fd6a3 both requested appropriate nutrition guidance, while ordinary mode exposed `get_nutrition_guidance`; neither made a guidance call or returned citations. One generated a WHO 25 g/day fibre statement without retrieved evidence, which the validator withheld. Updated the tool description to cover explicit guidance requests and require disclosure when no applicable source returns. Focused agent/tool suites122 passed/1 skipped; optimized production build and TypeScript pass. This strengthens tool-selection guidance, not measured adherence. Do not retry the free provider until availability changes.

@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 saved 30 g comparison and source-scope gaps (26 October 2026)
+
+Current validation of saved trace `408005b7-c455-48ee-92c6-5157ab3fd6a3`, with 8 prior and 8 current typed nutrient operations, continues to withhold the 40 g→30 g delta sentence because no typed delta operations exist. It withholds the unsupported WHO 25 g/day fibre sentence with no evidence, but accepts it when the trace's WHO carbohydrate record is supplied. This is a concrete source-to-claim applicability gap. Provider-free receipt: `.data/m2-answer-usefulness-20261026/30g-prior-calculation-validation-replay.json`. No new provider call or human review. M2 remains active.
+
 ## M2 guidance retrieval request (26 October 2026)
 
 Two actual saved follow-ups asked for appropriate guidance but did not use the enabled local guidance tool; unsupported WHO numeric guidance was withheld. Tool instructions now make explicit guidance requests a direct trigger and require a gap disclosure when no applicable record returns.122 focused agent/tool tests passed/1 skipped; production build and TypeScript passed. Fresh-model adherence and source usefulness remain unverified.
