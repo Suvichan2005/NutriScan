@@ -84,4 +84,3 @@ export function calculationHasPackageEvidence(calculation:Calculation,data:{pack
       &&provenanceMatches(nutrient.observationIds,sourceImages);
   });
 }
-

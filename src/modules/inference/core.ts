@@ -651,8 +651,14 @@ function numericOccurrences(text:string){
     const previous=matches[index-1];
     const prefixStart=Math.max(0,previous?(previous.index??0)+previous[0].length:0,(match.index??0)-100);
     const prefix=text.slice(prefixStart,match.index??0).split(/[.!?;\n]/).at(-1)??'';
+    // Frequency adverbs describe the same temporal unit even when the measured
+    // item appears between the quantity and the rate ("25 g of fibre daily").
+    // Scope remains bounded by the next number and sentence/clause boundary.
+    const adverb=suffix.split(/[,:]/, 1)[0].match(/\b(hourly|daily|weekly|monthly|yearly|annually)\b/i)?.[1]
+      ??prefix.match(/\b(hourly|daily|weekly|monthly|yearly|annually)\b[^.!?;\d]{0,60}$/i)?.[1];
+    const adverbUnits: Record<string, string> = { hourly:'hour', daily:'day', weekly:'week', monthly:'month', yearly:'year', annually:'year' };
     const rate=suffix.match(/(?:\bper\s+|\/)\s*(?:a\s+|each\s+)?(hours?|days?|weeks?|months?|years?)\b/i)?.[1]
-      ??(/^\s*(?:\*\*)?\s*daily\b/i.test(suffix)||/\bdaily\b[^.!?;\d]{0,60}$/i.test(prefix)?'day':null);
+      ??(adverb?adverbUnits[adverb.toLowerCase()]:null);
     const timeBasis=rate?.toLowerCase().replace(/s$/,'')??null;
     const operator=numericComparisonOperator(text,match.index??0)
       ??(/^\s*(?:\*\*)?\s*or more\b/i.test(suffix)?'>=': /^\s*(?:\*\*)?\s*or less\b/i.test(suffix)?'<=':null);

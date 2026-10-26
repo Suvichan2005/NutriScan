@@ -1,5 +1,11 @@
 # NutriScan current runtime handoff
 
+## M2 source attribution and temporal units — 26 October 2026
+
+Third continuation checkpoint: the general agent instruction asks for the organization/title, supplied date and supported conclusion of guidance actually used, within the existing 2,000-character bound. Actual free browser run408005b7-c455-48ee-92c6-5157ab3fd6a3 names WHO, but validation removed its sentence because “25 g of dietary fibre daily” did not match “25 g per day.” Frequency adverbs now retain the time dimension after the measured item, bounded before another quantity/sentence/comma clause. Synthetic tests keep daily/weekly, g/mg and comparison operators distinct; existing per100g/later-daily-clause regression passes.
+
+Unchanged actual text replay reduces two rejected sentences to one and selects the supplied who-carbohydrate-2023 reference. The unperformed portion-difference sentence stays rejected. Desktop/mobile production UI response replays open the WHO reference without page errors; these are intercepted responses, not fresh provider or clinical validation. Final concise prompt wording was checked offline after the live attribution probe; it has not yet received a fresh generation. Full suite792 passed/two skipped, TypeScript and final production build pass. Eight completed free development generations total52,455 input/3,279 output tokens, local estimate$0; billing unverified. Five owner files match archived bytes. Primary3400 production has free consented access enabled, paid/fallback/search/readable capture/operational trace disabled. Continue a distinct M2 transfer request; M2 and human-reference/final-study gates remain open.
+
 ## M2 typed conversation arithmetic — 26 October 2026
 
 Follow-up requests now carry at most20 source-validated typed operations from the four latest non-outdated turns. Reuse the same package-provenance validator as assist input; reject tampered results, missing source IDs, changed readings, incompatible bases and superseded corrections. Historical prose remains non-authoritative. Request-local historical operation IDs prevent legacy same-ID/different-portion collisions. Fresh tool calculations take precedence within the20-operation validation/UI budget; a reproduced full-history starvation case is fixed. No unsolicited default portions are computed.

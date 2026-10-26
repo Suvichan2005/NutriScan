@@ -1,5 +1,9 @@
 # Chronological decisions
 
+## 26 October 2026 — retain temporal dimensions and attributable guidance
+
+Recognize hourly/daily/weekly/monthly/yearly frequency adverbs within a bounded quantity phrase, including after a measured item. Preserve unit, comparator and temporal distinctions; do not let a later comma-separated daily-use comment lend a rate to a package amount. Ask the existing general agent to identify guidance it uses by organization/title, supplied date and supported conclusion within the concise prompt budget. Source identity selection remains traceability, not entailment validation. Keep unperformed portion differences withheld; no new arithmetic is extracted from prose.
+
 ## 26 October 2026 — carry current-package typed operations across turns
 
 Reuse at most20 validated calculations from the same four-turn window as conversation context, newest first and only for saved reconstruction follow-ups. Apply the exact existing assist package-provenance rules in a shared pure module plus strict calculation arithmetic/schema checks; reject outdated/corrected/rechecked/tampered operations. Rebase request-local operation IDs to avoid legacy collisions, leaving source identifiers intact. Do not mine prior assistant prose for amounts or introduce a second calculator. Prefer new tool operations within bounded response validation/UI so historical context cannot starve current results. Source attribution remains the next separate M2 issue.
