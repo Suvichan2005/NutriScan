@@ -143,6 +143,8 @@ describe('local evidence follow-ups', () => {
     const audit = buildAudit(pkg, 75, 'g', defaultProfile, contextualQuestion);
     const reply = buildLocalAuditConversationReply(audit, contextualQuestion, pkg);
     expect(reply.answer).toContain('1050 mg sodium');
+    expect(reply.answer).toContain('52.5% of the WHO general adult reference');
+    expect(reply.answer).toMatch(/not a personal sodium allowance/i);
     expect(reply.evidence?.map(item => item.id)).toContain('who-sodium');
   });
 
@@ -215,7 +217,8 @@ describe('local evidence follow-ups', () => {
     const reply = buildLocalAuditConversationReply(audit, comparisonQuestion);
 
     expect(reply.answer).toContain('456.6 mg sodium');
-    expect(reply.answer).not.toContain('WHO general adult reference');
+    expect(reply.answer).toContain('WHO general adult reference');
+    expect(reply.answer).toContain('not a personal sodium allowance');
     expect(reply.evidence?.map((item) => item.id)).toContain('who-sodium');
 
     const quantityOnly = buildLocalAuditConversationReply(audit, 'How much sodium is in a 20 g portion?');

@@ -81,6 +81,12 @@ try {
     const claimAnswer = await ask('Does sugar free mean carbohydrate-free?', 2);
     const missingNutrientAnswer = await ask('Is calcium listed?', 3);
     const combinedContextAnswer = await ask('Is this suitable with my peanut allergy and diabetes?', 4);
+    const contextualSodiumAnswer = await ask('For my 30 g portion, what does the sodium mean with hypertension and diabetes?', 5);
+    const contextualSodiumTurn = page.locator('.thread-turn').filter({ hasText: 'For my 30 g portion, what does the sodium mean with hypertension and diabetes?' }).last();
+    const contextualSodiumSources = contextualSodiumTurn.locator('.conversation-evidence');
+    await contextualSodiumSources.waitFor({ state: 'visible' });
+    await contextualSodiumSources.locator('summary').click();
+    const contextualSodiumSourceText = await contextualSodiumSources.innerText();
     const axe = await new AxeBuilder({ page }).analyze();
     const dimensions = await page.evaluate(() => ({
       viewport: { width: innerWidth, height: innerHeight },
@@ -93,6 +99,8 @@ try {
       claimAnswer,
       missingNutrientAnswer,
       combinedContextAnswer,
+      contextualSodiumAnswer,
+      contextualSodiumSourceText,
       providerCalls,
       externalRequests: [...new Set(externalRequests)],
       pageErrors,
@@ -109,6 +117,12 @@ try {
     assert.match(combinedContextAnswer, /18 g carbohydrate/);
     assert.match(combinedContextAnswer, /May-contain precautionary wording/);
     assert.match(combinedContextAnswer, /cannot establish individual suitability/);
+    assert.match(contextualSodiumAnswer, /228 mg sodium/);
+    assert.match(contextualSodiumAnswer, /11\.4% of the WHO general adult reference/);
+    assert.match(contextualSodiumAnswer, /not a personal sodium allowance/);
+    assert.match(contextualSodiumSourceText, /Sodium reduction/);
+    assert.match(contextualSodiumSourceText, /World Health Organization/);
+    assert.match(contextualSodiumSourceText, /Population guidance, not an individualized prescription/);
     assert.deepEqual(providerCalls, []);
     assert.deepEqual(result.externalRequests, []);
     assert.deepEqual(pageErrors, []);

@@ -177,9 +177,9 @@ export function buildLocalAuditConversationReply(audit: Audit, question: string,
   const evidence = safeConversationEvidence(audit.sources.filter((source) => referencedSourceIds.has(source.id)
     && isLocalEvidenceTopicallyRelevant(source, question)
     && isGuidanceEvidenceInScope(source, question)));
-  // A local fallback is a concise status, not a second research essay. Keep
-  // source summaries in the evidence inspector, where their jurisdiction and
-  // limitations remain visible on demand.
+  // Start with a concise package response. The source-linked finding below
+  // supplies only the local audit's already-scoped interpretation, not a full
+  // source summary.
   const lead = audit.answer.trim().split(/\n\s*\n/, 1)[0]?.trim() ?? '';
   const sentence = lead.match(/^(.{1,700}?[.!?])(?:\s|$)/s)?.[1];
   const asksDirectGuidance = evidence.length > 0
@@ -211,6 +211,13 @@ export function buildLocalAuditConversationReply(audit: Audit, question: string,
     const finding = audit.findings.find(item => /^(?:food allergy|food intolerance|avoided ingredient):/i.test(item.title) && item.detail.trim());
     if (finding && !answer.includes(finding.detail)) answer = `${answer} ${finding.detail}`.trim();
   }
+  const selectedSourceIds = new Set(evidence.map(source => source.id));
+  const selectedContext = relevantFindings
+    .filter(finding => finding.status === 'context' && finding.detail.trim() && finding.sourceIds.some(id => selectedSourceIds.has(id)))
+    .map(finding => finding.detail.trim())
+    .filter(detail => !answer.includes(detail))
+    .slice(0, 2);
+  if (selectedContext.length) answer = [answer, ...selectedContext].filter(Boolean).join('\n\n');
   answer = answer.slice(0, 1500);
 
   return { answer, ...(evidence.length ? { evidence } : {}) };

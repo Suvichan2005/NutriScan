@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## Current integration checkpoint — M2/M6 local source context is visible (27 October 2026)
+
+When a combined health-context question had a local WHO sodium finding, the local fallback kept only the arithmetic and the conversation UI hid the selected source card. `buildLocalAuditConversationReply` now carries through the source-linked, topic/scope-filtered context finding with its whole-day population reference and personal-target limit. The existing UI then renders the matching source card. Focused follow-up suite passed 16/16; local-only Chrome acceptance passed at 390×844 and 1440×900. Receipt: `docs/evidence/m2-context-source-browser-20261027.json`. This does not verify Gemini selection, entailment or clinical suitability. The five protected owner files remain preserved; the development server is stopped.
+
 ## Current integration checkpoint — M2 FSSAI claim source attribution (27 October 2026)
 
 Local nutrient-claim answers now name the exact Version IV compendium and amendments-index source titles from the catalog, allowing both inspected records to appear in the answer’s source disclosure. The desktop/mobile synthetic claim journey now checks both cards for criteria and current-status answers, claim text remains an unverified user observation, and current compliance remains unresolved. Provider-free Chrome acceptance passed at390×844 and1440×900. Receipt: `docs/evidence/nutrient-claim-browser.json`. Focused engine/source-filter suites passed93/93 before the browser run; no live Gemini, current-law or independent scientific/legal conclusion is claimed. The claim-entry browser runner now follows the current onboarding and thread-composer UI.
