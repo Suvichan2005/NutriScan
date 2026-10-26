@@ -5,6 +5,12 @@
 - Browser review showed that the allergy evidence line still repeated its field label. The local finding now quotes the package text once and keeps the precautionary cross-contact caveat.
 - Verification on the combined source: full suite 847 passed/2 skipped, TypeScript and optimized production build clean, local-only Chrome acceptance at 390×844 and 1440×900 with no provider/external requests, page errors, Axe violations or horizontal overflow. The acceptance waits for asynchronous local evidence lookup to settle before screenshots; it resolved within 15 seconds at both viewport sizes. No Gemini generation, real-photo accuracy or scientific validation claimed.
 
+## 2026-10-27 — preserve trans-fat meaning and current-law responses in local follow-ups
+
+- A distinct provider-free browser scenario showed the local follow-up layer replacing “What does the trans fat line mean?” and “What is the current FSSAI law for trans fat?” with the same generic missing-amount message. The latter also lost its actionable next evidence, and selected WHO/FSSAI cards were absent.
+- The shared answer builder now limits missing-value wording to quantity or recorded-value requests. Selected source IDs retain topic provenance when their titles directly name the question topic, preventing unrelated exclusions in a long summary from suppressing that source. Jurisdiction checks and the combined allergy/diabetes no-misapplied-sodium-source regression remain intact.
+- Focused follow-up/trans-fat suites passed22/22. Updated trans-fat Chrome acceptance passes on mobile and desktop with zero external/provider calls, page/Axe errors or overflow. Receipt: `docs/evidence/trans-fat-browser.json`. No live Gemini, current-law or independent scientific result is claimed.
+
 ## 2026-10-27 — prevent cross-field label text from becoming a product title
 
 - The broader local-only text scenario reproduced an identity mismatch: one synthetic allergen precaution was typed as both `name` and `allergens`, surfaced as the package title, and enabled a catalog lookup despite no stated identity.

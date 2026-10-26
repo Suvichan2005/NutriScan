@@ -35,34 +35,45 @@ try {
 
     await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
-    await page.getByRole('button', { name: 'Paste label text' }).click();
+    await page.waitForFunction(() => [...document.querySelectorAll('button')].some(button => button.textContent?.includes('Enter label text') && !button.disabled));
+    const onboarding = page.getByRole('dialog', { name: 'Make NutriScan yours' });
+    if (await onboarding.isVisible().catch(() => false)) {
+      await onboarding.getByLabel('Understand nutrition and portions').check();
+      await onboarding.getByRole('button', { name: 'Continue' }).click();
+      await onboarding.waitFor({ state: 'hidden' });
+    }
+    await page.locator('.empty-thread-advanced > summary').click();
+    await page.locator('.local-only-settings > summary').click();
+    const localOnly = page.getByRole('checkbox', { name: /Use local-only analysis in this tab/ });
+    if (!(await localOnly.isChecked())) await localOnly.check();
+    await page.getByRole('button', { name: 'Enter label text' }).click();
     await page.getByRole('textbox', { name: 'Label text' }).fill(syntheticLabel);
     await page.getByRole('button', { name: 'Read label text' }).click();
-    await page.locator('.results-section').waitFor({ state: 'visible' });
+    await page.locator('.thread-workspace').waitFor({ state: 'visible' });
 
-    const nutritionCard = page.locator('.nutrition-card');
-    await nutritionCard.waitFor({ state: 'visible' });
-    const packageNutrientText = await nutritionCard.innerText();
-    const transFatNotStructured = !/\btrans fat\b/i.test(packageNutrientText);
     await page.getByRole('textbox', { name: 'Ask about this package' }).fill('What does the trans fat line mean?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
-    const response = page.locator('.assistant-message').last();
-    await response.getByText(/WHO describes trans-fatty acids/i).waitFor({ state: 'visible' });
-    const responseText = await response.innerText();
+    const response = page.locator('.thread-turn').last();
+    await response.locator('.thread-assistant-message').waitFor({ state: 'visible' });
+    const responseText = await response.locator('.thread-assistant-message').innerText();
+    const transFatNotStructured = await response.locator('[data-testid="thread-ui-component-portion-calculator"]').count() === 0;
     const observationIsRetainedAsUnverified = /“Trans fat 0 g” \(user-entered observation\)/.test(responseText)
       && /not verified facts/i.test(responseText)
       && /does not establish a numeric amount, zero, or a portion calculation/i.test(responseText);
     const populationGuidanceIsQualified = /below 1% of total energy is population guidance, not a personal target/i.test(responseText);
     const datedLawIsQualified = /dated rule summary does not determine current law or this product’s compliance/i.test(responseText);
-    const sourceTitles = await page.locator('.sources-section').innerText();
+    const sourceCard = response.locator('.conversation-evidence');
+    if (await sourceCard.count()) await sourceCard.locator('summary').click();
+    const sourceTitles = await response.innerText();
     const whoSourceVisible = /Trans fat/.test(sourceTitles);
     const fssaiSourceVisible = /Food Safety and Standards \(Prohibition and Restrictions on Sales\) Second Amendment Regulations, 2021: trans-fat limit/.test(sourceTitles);
 
     await page.getByRole('textbox', { name: 'Ask about this package' }).fill('What is the current FSSAI law for trans fat?');
     await page.getByRole('button', { name: 'Send follow-up' }).click();
-    const currentLawResponse = page.locator('.assistant-message').last();
-    await currentLawResponse.getByText(/Current legal or regulatory status is unresolved/i).waitFor({ state: 'visible' });
-    const currentLawAbstained = /exact product and jurisdiction/i.test(await currentLawResponse.innerText());
+    const currentLawResponse = page.locator('.thread-turn').last();
+    await currentLawResponse.locator('.thread-assistant-message').waitFor({ state: 'visible' });
+    const currentLawText = await currentLawResponse.locator('.thread-assistant-message').innerText();
+    const currentLawAbstained = /Current legal or regulatory status is unresolved/i.test(currentLawText) && /exact product and jurisdiction/i.test(currentLawText);
 
     const axe = await new AxeBuilder({ page }).analyze();
     const name = viewport.width === 390 ? 'mobile' : 'desktop';

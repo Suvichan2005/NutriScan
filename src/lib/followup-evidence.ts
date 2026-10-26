@@ -42,12 +42,13 @@ export function isLocalEvidenceTopicallyRelevant(
   if (isAdditiveIdentity && asksForNutrientValue && !explicitlyAsksAboutAdditives) return false;
 
   const queryTokens = [...new Set(evidenceTokens(query).filter(token => token.length >= 3 && token.length <= 48 && !genericEvidenceTerms.has(token)))];
+  const sourceTitleTokens = new Set(evidenceTokens(source.title));
   const sourceTokenList = evidenceTokens(`${source.title} ${source.publisher} ${source.summary}`);
   const exclusionMarkers = new Set(['exclude','excludes','excluding','excluded','except']);
   for (let index = 0; index < sourceTokenList.length; index++) {
     if (!queryTokens.includes(sourceTokenList[index])) continue;
     const preceding = sourceTokenList.slice(Math.max(0, index - 6), index);
-    if (preceding.some(token => exclusionMarkers.has(token))) return false;
+    if (preceding.some(token => exclusionMarkers.has(token)) && !sourceTitleTokens.has(sourceTokenList[index])) return false;
   }
   if (exactIdentity) return true;
   if (!queryTokens.length) return false;
@@ -174,16 +175,24 @@ export function buildLocalAuditConversationReply(audit: Audit, question: string,
     (asksForEvidenceContext && ['context', 'uncertain'].includes(finding.status)) || finding.status === 'calculated'
   ));
   const referencedSourceIds = new Set(relevantFindings.flatMap((finding) => finding.sourceIds));
-  const evidence = safeConversationEvidence(audit.sources.filter((source) => referencedSourceIds.has(source.id)
-    && isLocalEvidenceTopicallyRelevant(source, question)
-    && isGuidanceEvidenceInScope(source, question)));
+  const queryTopicTokens = new Set(evidenceTokens(question).filter(token => token.length >= 3 && !genericEvidenceTerms.has(token)));
+  const evidence = safeConversationEvidence(audit.sources.filter((source) => {
+    if (!referencedSourceIds.has(source.id)) return false;
+    // An explicit audit finding may link a source whose title directly names
+    // the asked topic. In that case, unrelated exclusions elsewhere in its
+    // summary must not veto the established finding-to-source relationship.
+    const titleDirectlyNamesTopic = evidenceTokens(source.title).some(token => queryTopicTokens.has(token));
+    return isLocalEvidenceTopicallyRelevant(source, question, titleDirectlyNamesTopic)
+      && isGuidanceEvidenceInScope(source, question);
+  }));
   // Start with a concise package response. The source-linked finding below
   // supplies only the local audit's already-scoped interpretation, not a full
   // source summary.
   const lead = audit.answer.trim().split(/\n\s*\n/, 1)[0]?.trim() ?? '';
   const sentence = lead.match(/^(.{1,700}?[.!?])(?:\s|$)/s)?.[1];
-  const asksDirectGuidance = evidence.length > 0
-    && /\b(?:recommend(?:ation|ations|ed|s)?|guidelines?|guidance|according\s+to|what\s+does\s+(?:WHO|FSSAI)\s+say|mean(?:ing)?|explain|interpret|criteria|thresholds?|definitions?|requirements?|compliance|compliant|qualif\w*|meets?)\b/i.test(question)
+  const directRegulatoryAbstention = /^Current legal or regulatory status is unresolved\./i.test(lead);
+  const asksDirectGuidance = (evidence.length > 0 || directRegulatoryAbstention)
+    && /\b(?:recommend(?:ation|ations|ed|s)?|guidelines?|guidance|according\s+to|what\s+does\s+(?:WHO|FSSAI)\s+say|mean(?:ing)?|explain|interpret|criteria|thresholds?|definitions?|requirements?|compliance|compliant|qualif\w*|meets?|regulat\w*|law|rules?)\b/i.test(question)
     && !/\b(?:compare|comparison|compared|versus|\bvs\b|portion|serving)\b/i.test(question);
   let answer = (asksDirectGuidance ? lead.slice(0, 1200) : sentence ?? lead.slice(0, 700)).trim();
 
@@ -194,7 +203,9 @@ export function buildLocalAuditConversationReply(audit: Audit, question: string,
   const nutrientAliases: Record<string, string> = { carbs: 'carbohydrate', carbohydrate: 'carbohydrate', carbohydrates: 'carbohydrate', sugar: 'sugars', calories: 'energy', calorie: 'energy', fibre: 'fiber', 'saturated fat': 'saturatedFat' };
   const requestedKey = requestedNutrient ? nutrientAliases[requestedNutrient] ?? requestedNutrient : undefined;
   const hasRequestedCalculation = !!requestedKey && audit.calculations.some(calculation => calculation.nutrient === requestedKey);
-  if (pkg && requestedNutrient && !hasRequestedCalculation) {
+  const asksForNutrientValue = /\b(?:how\s+much|amount|quantity|numeric(?:al)?\s+value|calculate|calculation|per\s*(?:100|serving|portion)|in\s+(?:a|this|my)\s+(?:serving|portion))\b/i.test(question)
+    || /\b(?:is|are|does|do)\b.{0,80}\b(?:listed|recorded|shown|printed|stated)\b/i.test(question);
+  if (pkg && requestedNutrient && !hasRequestedCalculation && asksForNutrientValue) {
     const labelText = [pkg.rawText, ...pkg.observations.map(observation => observation.text)].join('\n');
     const missing = labelText.toLocaleLowerCase('en-IN').includes(requestedNutrient)
       ? `The entered label text mentions ${requestedNutrient}, but no usable ${requestedNutrient} amount is recorded for calculation. Check that line in the package inspector or add a clearer label reading.`
