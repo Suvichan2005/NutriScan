@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 guidance retrieval request (26 October 2026)
+
+Two actual saved follow-ups asked for appropriate guidance but did not use the enabled local guidance tool; unsupported WHO numeric guidance was withheld. Tool instructions now make explicit guidance requests a direct trigger and require a gap disclosure when no applicable record returns.122 focused agent/tool tests passed/1 skipped; production build and TypeScript passed. Fresh-model adherence and source usefulness remain unverified.
+
 ## M2 calculation relevance contract (26 October 2026)
 
 Reinforced the calculator tool declaration after a saved real transfer explicitly calculated an unrequested nutrient. Focused tool-instruction suite50/50 and optimized production build/TypeScript pass. This does not enforce result filtering or establish fresh-model adherence; M2 answer usefulness remains active.

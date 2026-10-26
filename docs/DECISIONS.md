@@ -1,4 +1,8 @@
 # Chronological decisions
+## 26 October 2026 — use local guidance for explicit guidance requests
+
+When a user asks for nutrition guidance beyond package arithmetic, make the source-linked local guidance tool the explicit model-visible path. If retrieval returns no applicable record, disclose the gap instead of supplying an unsupported benchmark. Keep population guidance distinct from personal targets and package facts. This addresses a repeated saved-trace tool-selection miss; verify adherence only in a later bounded free run when availability changes.
+
 ## 26 October 2026 — keep native calculations scoped to the question
 
 An actual neutral-user answer asked the native calculator for an extra nutrient outside the question. Repeat the general requested-or-necessary constraint in the calculator tool declaration so the model sees it at selection time. Keep deterministic result validation intact and do not hide calculations with a keyword filter. A prompt contract is not proof of adherence; defer provider verification until free-model availability changes.

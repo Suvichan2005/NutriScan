@@ -1,4 +1,9 @@
 # Sanitized engineering journal
+## 2026-10-26 — make explicit guidance requests call the local guidance tool
+
+- Audited real saved follow-ups262a28bd-e5c8-40e1-bdad-e710cd1a3770 and408005b7-c455-48ee-92c6-5157ab3fd6a3. Both asked to use appropriate nutrition guidance and had `get_nutrition_guidance` available, but neither called it or cited a source. The latter introduced WHO's25 g/day fibre quantity from memory; answer validation withheld it.
+- Expanded the tool description to make explicit guidance requests (and contextual guidance beyond arithmetic) a direct use case and to require disclosure when no applicable local record is returned. No output filtering or condition keyword rules added.
+- Agent/tool suites122 passed/1 skipped; optimized production build/TypeScript pass; five owner hashes preserved. This does not establish model adherence; avoid a provider retry until availability changes.
 ## 2026-10-26 — constrain native calculator calls to the request
 
 - Review of actual trace `3d7e5cc6-1519-475e-ab04-9b0efbc8a70f` showed the model requested energy, fibre, fat and sodium calculations, although the neutral-user question asked only for energy, fibre and sodium.

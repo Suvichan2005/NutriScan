@@ -491,6 +491,8 @@ describe('natural NutriScan agent contract', () => {
     expect(tools.find(tool => tool.name === 'calculate_nutrition')?.description).toContain('Calculate only nutrients the user asks about or that are necessary to answer the request; do not calculate other package rows just to populate UI');
     expect(tools.find(tool => tool.name === 'search_knowledge')?.description).toContain('Use for explicit research/source requests');
     expect(JSON.stringify(tools.find(tool => tool.name === 'get_nutrition_guidance'))).toContain('Omit unrelated package details');
+    expect(tools.find(tool => tool.name === 'get_nutrition_guidance')?.description).toContain('Use when the user explicitly asks for nutrition guidance/recommendations or your answer needs contextual dietary guidance beyond package arithmetic');
+    expect(tools.find(tool => tool.name === 'get_nutrition_guidance')?.description).toContain('if no applicable record is returned, disclose that rather than inventing guidance');
     expect(tools.map(tool => tool.name)).not.toContain('show_nutrition_table');
   });
 });

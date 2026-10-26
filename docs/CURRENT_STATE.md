@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## M2 explicit guidance request transfer (26 October 2026)
+
+Saved real traces262a28bd-e5c8-40e1-bdad-e710cd1a3770 and408005b7-c455-48ee-92c6-5157ab3fd6a3 both requested appropriate nutrition guidance, while ordinary mode exposed `get_nutrition_guidance`; neither made a guidance call or returned citations. One generated a WHO 25 g/day fibre statement without retrieved evidence, which the validator withheld. Updated the tool description to cover explicit guidance requests and require disclosure when no applicable source returns. Focused agent/tool suites122 passed/1 skipped; optimized production build and TypeScript pass. This strengthens tool-selection guidance, not measured adherence. Do not retry the free provider until availability changes.
+
 ## M2 tool-selection clarification — 26 October 2026
 
 Saved real trace `3d7e5cc6-1519-475e-ab04-9b0efbc8a70f` recorded four calculator calls, including fat beyond the requested energy/fibre/sodium. The general assistant contract already says calculate only requested/necessary values; the tool declaration now repeats this relevance constraint and explicitly says not to calculate other rows just to populate UI. Focused `gemini-agent.test.ts`50/50 and optimized production build/TypeScript pass. Five protected owner-file hashes are unchanged. This is a model-visible contract adjustment; it has not yet shown adherence in a fresh answer. Do not retry after the recorded free-route failures until availability changes.
