@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M3 disclose the local OCR language boundary before photo selection (27 October 2026)
+
+Added the existing English-only local OCR limitation to the empty scanner state, ahead of photo selection. Mobile390×844 and desktop1440×900 local Chrome checks show it visibly without overflow or page errors; typecheck passes. The OCR method remains unchanged pending the independent comparison. No provider request. Continue broader M2/M3 acceptance; fresh source-selection remains unavailable while Gemini is disabled.
+
 ## M2/M6 preserve claim, added-food and quantity context in local recovery (27 October 2026)
 
 A fictional sugar-free cracker and spinach follow-up showed two gaps in local fallback: claim wording was not distinguished from the carbohydrate amount, and explicit “Would that change the meal total?” context was dropped before local audit. The fallback now states claims do not establish nutrient amounts, preserves the preceding user question for explicit referential follow-ups, and says package calculations exclude additional foods without their own amounts and nutrition data. Focused conversation-context/follow-up/server suites:132 passed. Browser acceptance with two intercepted 503s passes at390×844 and1440×900: prior user question is present in turn-two context;21.6 g carbohydrate and0.15 g sugars remain scoped to30 g of crackers; no spinach composition is invented. Retry remains available; no provider/external requests, page/Axe errors or horizontal overflow. Receipt `docs/evidence/claim-nutrition-recovery-browser.json`; screenshots remain ignored. Synthetic recovery acceptance only, not Gemini answer quality, current regulatory interpretation or scientific evaluation. M2/M6 remain active.

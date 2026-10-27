@@ -1,4 +1,8 @@
 # Current engineering status
+## M3 disclose the local OCR language boundary before photo selection (27 October 2026)
+
+The empty package-scan state now says that on-device OCR reads English only, may miss or misread other languages, and readings should be checked against the photo. This moves the existing limitation from the post-scan inspector to the upload decision; OCR method and default behavior are unchanged. Live local Chrome acceptance verified the disclosure at390×844 and1440×900, with no page errors or horizontal overflow; `tsc --noEmit` passes. No photo analysis or provider request was made. Multilingual OCR remains subject to the independent comparison.
+
 ## M2/M6 let users supply a missing label nutrient (27 October 2026)
 
 When the active reconstruction has no row for a nutrient, users can now add a reading they have checked on the package. The value and basis are required, blank by default, unit options follow the selected nutrient, and the saved item is explicitly a user correction that is not independently verified. Native portion calculation consumes it while original OCR observations and other nutrient values remain unchanged. Focused UI/provenance/calculation suites:22 passed. A local browser attempt did not reach the form because its existing app setup never exposed the reconstruction inspector; no desktop/mobile acceptance is claimed yet. Fresh Gemini selection remains unverified.
