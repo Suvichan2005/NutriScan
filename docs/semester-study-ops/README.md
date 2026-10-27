@@ -1,5 +1,7 @@
 # ThinkBook study operations
 
+**Frozen application handoff:** [RELEASE_HANDOFF.md](../RELEASE_HANDOFF.md), release `nutriscan-rc-20261027`. It supersedes earlier app-integration dependencies here. ThinkBook now owns experiment execution, measurements and final report; production source is frozen.
+
 This companion operates alongside the existing queue, experiment manifests, annotation contracts and nutrient scorer. It does not replace them or modify production inference. Python 3.11+ standard library only; no npm installation, provider call, downloads or image decoding required.
 
 ## Candidate readiness

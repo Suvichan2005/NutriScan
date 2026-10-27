@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "releaseTag": "nutriscan-rc-20261027",
+  "validatedApplicationCommit": "342bff38c5d3494c678c5060fe32de6e6130c941",
+  "applicationManifestSha256": "52d4bb295b5dd7adf77b70b7e3966a4362cf9ee6d8b3fd09c8524a9ad0fef6f7",
+  "applicationBlobCount": 321,
+  "node": "v24.22.1",
+  "next": "16.4.2",
+  "typescript": "7.0.2",
+  "vitest": "5.0.5",
+  "installedDirectVersionMismatches": [],
+  "cleanSourceValidation": true,
+  "dependencyInstall": "Reused installed dependencies, direct pinned versions checked; fresh npm ci not rerun.",
+  "productionBuild": {
+    "passed": true,
+    "buildId": "y_iB5CApgdfLX9qes0oQu",
+    "log": {
+      "path": ".data/release-candidate/20261027-c15f77d/merged-build.log",
+      "sha256": "7a1cc0041241a90fc99539308a8a4a772552af15c65fddbef8b6bbe854520be7"
+    }
+  },
+  "softwareTests": {
+    "passed": 885,
+    "failed": 0,
+    "skipped": 2,
+    "receipt": {
+      "path": ".data/release-candidate/20261027-c15f77d/merged-unit-tests.json",
+      "sha256": "96dab9185d7df53daab43cc72992d40e1a963847900fc49a131aab04cb5a4550"
+    }
+  },
+  "studyAdapter": {
+    "focusedPassed": 20,
+    "runnerChecksPassed": 12,
+    "methodDefinitions": 5,
+    "providerCalls": 0,
+    "privateRawResponseBeforeValidation": true,
+    "failedAdapterJsonRetained": true,
+    "independentReview": "fbc045a, P0/P1 scoped-clean; no code execution by reviewer"
+  },
+  "browserViewports": [
+    "390x844",
+    "1440x900"
+  ],
+  "browserReceipts": [
+    {
+      "path": ".data/release-candidate/20261027-c15f77d/browser/local-breadth/receipt.json",
+      "sha256": "e08801a0e807ff0f7f99d2cfe96e6a3eed921564f50eb0d2b38882f476581103"
+    },
+    {
+      "path": ".data/release-candidate/20261027-c15f77d/browser/real-photo/ocr-photo-receipt.json",
+      "sha256": "6938c2c981c691b0133cb05f5f941113b6c894df7c1e19933bf2bb15efb070bd"
+    },
+    {
+      "path": ".data/release-candidate/20261027-c15f77d/browser/failure-recovery/receipt.json",
+      "sha256": "59a29aa87ae89fcdd9c1c5f11dfac77656a3323def1d5fba76401dc1f399ee0b"
+    },
+    {
+      "path": ".data/ideapad-restoration-20261026/restored-journey.json",
+      "sha256": "96582b6f0cdb330ab9aa50d8e4d312a4a6d68a12244f1f60dc5b26c155c6742b"
+    },
+    {
+      "path": ".data/release-candidate/20261027-c15f77d/prior-browser/real-photo/receipt.json",
+      "sha256": "264c1e58d9eb285c8306b76aa9fe1f9188c93cfedbc792cd4e30eb5adf7649f3"
+    }
+  ],
+  "browserProviderCalls": 0,
+  "browserExternalRequests": 0,
+  "browserPageErrors": 0,
+  "browserAxeViolations": 0,
+  "browserHorizontalOverflow": false,
+  "runtimeAssetPresence": {
+    "public/ocr/worker.min.js": true,
+    "public/ocr/eng.traineddata.gz": true,
+    "public/ocr/ort/ort-wasm-simd-threaded.jsep.wasm": true,
+    "data/semantic-index.json": true,
+    "data/foodon-index.json": true,
+    ".data/models/Xenova/all-MiniLM-L6-v2": true,
+    ".data/knowledge/foodon-records.sqlite": false,
+    ".data/knowledge/openfoodtox-3.0.sqlite": false,
+    ".data/food-composition/fdc-source-records.sqlite": false
+  },
+  "liveProviderAcceptance": "UNVERIFIED; disabled during release acceptance; no feasibility request repeated",
+  "humanScienceValidation": "NOT PROVIDED; not a technical release gate",
+  "pr3": {
+    "merged": true,
+    "head": "126f5a97c1517b81eae308e7852a98963620a689",
+    "merge": "bfbb377391ebf59a705eb8676db2f87cc9e42329"
+  },
+  "mainModified": false,
+  "protectedOwnerFilesPreserved": true,
+  "semanticModelFilesVerified": true
+}

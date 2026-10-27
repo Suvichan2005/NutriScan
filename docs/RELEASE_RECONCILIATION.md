@@ -6,11 +6,11 @@ Reviewed integration baseline: `6e35703dc6189b1fbf9fc617b7c304b976fc1ccd`, plus 
 
 | History / distinct improvement | Disposition |
 | --- | --- |
-| PR #3, `codex/m2-source-replay-contract-20261027`, fetched head `126f5a97c1517b81eae308e7852a98963620a689` (newer than supplied `33a5a57`) | Selective integration, no divergent merge. |
+| PR #3, `codex/m2-source-replay-contract-20261027`, fetched head `126f5a97c1517b81eae308e7852a98963620a689` (newer than supplied `33a5a57`) | Reviewed selectively, then merged through GitHub with explicit owner authorization as `bfbb377`; reconciled with both blocker fixes at `342bff3`. PR reports merged. |
 | `90ec969`: tool-selected evidence reaches the final Gemini request | Already integrated by `ab0aff1`; retain current regression. |
 | `1f68778`, `5483db9`: metadata-only recorder, actual model/tier/latency/usage | Retained. Routine capture cannot retain package/profile/question/answer payloads. Formal reconstruction adapter separately returns controlled reconstruction, package-context/response hashes and flat metadata to its explicitly authorized runner. |
 | `6003ece`: active tier in composer disclosure | Retained with current UI. |
-| `126f5a9`: unavailable/index/navigation records cannot support final claims | Retained explicit `supportRole` through research, tools, contracts and answer-source selection. Navigation stays inspectable as retrieved evidence. Owner-modified regulation test left untouched. |
+| `126f5a9`: unavailable/index/navigation records cannot support final claims | Retained explicit `supportRole` through research, tools, contracts and answer-source selection. Navigation stays inspectable as retrieved evidence. PR's two regulation-test assertions are in the frozen source; the original owner overlay is restored byte-for-byte in the primary checkout. |
 | Older `codex/m2-subject-scope-20261027`, fetched head `da728ef2ff0e6a2e752046866f571f4fa6df00b7` | Archived as historical input; not merged wholesale. |
 | `ab9304f`: evidence-based identity and compact allergy wording | Identity already integrated by `6e35703`; wording-only differences deferred. |
 | `9cfd3f7`, `b941f43`: scoped global guidance and source-linked ingredient/profile crosswalk | Already integrated in current production tools and guidance. |

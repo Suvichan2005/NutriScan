@@ -1,5 +1,7 @@
 # Acceptance record
 
+The authoritative27 October closeout matrix is in `RELEASE_HANDOFF.md`, with sanitized current evidence in `evidence/release-acceptance-20261027.json`. Earlier acceptance below is retained history; use the frozen release tag and its stated limitations.
+
 Updated 2026-10-22 from the current checkout. “Implemented” describes code presence only. The ambient in-app localhost tab was not exposed by the CUA inventory, but creating a fresh visible in-app tab succeeded. Fresh mobile and desktop acceptance evidence was captured with Chrome/Playwright and is documented in `UX_AUDIT.md`.
 
 | Requirement | State | Evidence or remaining check |

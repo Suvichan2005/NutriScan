@@ -1,4 +1,8 @@
 # Current engineering status
+## Accepted technical release candidate — 27 October 2026
+
+`nutriscan-rc-20261027` freezes the consolidated integration and handoff. PR #3 is merged; the adapter preserves private inspectable initial responses/failures separately from routine metadata, and new package questions no longer inherit an unrelated nutrient topic. Clean-source885 tests pass/2 skipped, full TypeScript/optimized build passes, and final desktop/mobile real-photo abstention, source/context and recovery journeys pass. Reused correction receipts establish two-portion save/reopen. All six MiniLM cache files match the pinned hashes and all five owner files are byte-preserved. See `RELEASE_HANDOFF.md` and `evidence/release-acceptance-20261027.json`; prior notes below are historical. No further production work is queued. Live provider/model feasibility and research outcomes remain explicitly unverified, not technical-freeze prerequisites.
+
 ## Final production consolidation (27 October 2026)
 
 Finite closeout supersedes autonomous expansion. Selectively retained PR #3 metadata privacy/tier/navigation boundaries and the older branch's nullable-field normalization; retained newer IdeaPad state/provenance. Corrected study metadata serialization and a reproduced new-topic local-conversation failure. Focused consolidation checks:141 passed,1 skipped. Full release acceptance and exact frozen handoff follow; see `RELEASE_RECONCILIATION.md` for every production improvement's disposition.

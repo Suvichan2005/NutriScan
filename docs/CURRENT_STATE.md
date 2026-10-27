@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## Frozen release authority — 27 October 2026
+
+Use `nutriscan-rc-20261027` and `RELEASE_HANDOFF.md`. PR #3 is confirmed merged asbfbb377;342bff3 reconciles it with final blocker fixes and is the exact application source used for the final suite/build/browser acceptance. The tag adds handoff documentation with identical application source digest. Production development is complete; ThinkBook owns experiments/report/presentation. Do not resume historical “next” tasks below or await Subham's unavailable judgments. Primary owner overlays are not release inputs and remain byte-preserved.
+
 ## Final closeout authority — 27 October 2026
 
 IdeaPad's `codex/generalized-package-intelligence-wip` is the only production integration. ThinkBook owns experiments and the final KIIT report. Finite release acceptance and the forthcoming frozen handoff supersede older open-ended “next” instructions below. Reviewed branch dispositions are in `RELEASE_RECONCILIATION.md`.

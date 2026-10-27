@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## Production closeout complete — 27 October 2026
+
+The finite release mission supersedes all continuation instructions below. The authoritative candidate, acceptance matrix, limitations and ThinkBook experiment interface are in `RELEASE_HANDOFF.md`, tagged `nutriscan-rc-20261027`. PR #3 is merged; production engineering stops. Experimental measurements, unavailable human judgments and report work belong to ThinkBook/owner and do not reopen this queue. The remaining text is preserved historical chronology.
+
 ## M2 keep OCR label fragments out of the package title (27 October 2026)
 
 Integrated the useful ThinkBook identity guard after the private Amul Lassi development photo showed a mixed “Contains milk … ROSE FLAVOUR” fragment in the product header. Explicit user descriptions/corrections and current reconstructed identities retain precedence; local OCR identity now needs an exact image-linked name/brand observation and confidence≥80. Tests:39 passed; typecheck passed. Browser acceptance on mobile/desktop confirms generic identity with10 OCR observations and missing sodium intact, no provider/external requests or accessibility/overflow issues. This is presentation evidence, not package identity adjudication.

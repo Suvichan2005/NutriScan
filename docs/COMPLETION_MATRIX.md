@@ -1,5 +1,7 @@
 # Integrated completion evidence
 
+**Final technical release matrix:** see `RELEASE_HANDOFF.md` and `evidence/release-acceptance-20261027.json` for `nutriscan-rc-20261027`. The25 October record below is historical, including its former release blockers. Independent scientific conclusions remain research limitations; they do not block the accepted technical candidate.
+
 Updated 25 October 2026. This is the requested release/evidence matrix, not a replacement queue. `COMPLETION_QUEUE.md` retains all admitted work. Exact implementation identity comes from Git plus retained per-run source hashes; a green test suite does not establish scientific or unfamiliar-package accuracy.
 
 | Capability | State and actual evidence | Remaining acceptance |
