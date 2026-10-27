@@ -433,6 +433,24 @@ describe('provider package-reconstruction normalization',()=>{
     expect(result.answer).not.toContain('999');
   });
 
+  it('does not validate a numeric claim using its generated Google grounding segment',()=>{
+    const source={id:'grounded-dose-link',title:'EFSA exposure assessment',publisher:'Google Search grounding via Gemini',url:'https://www.efsa.europa.eu/example',category:'web-search' as const,jurisdiction:'Public web result',publishedAt:null,effectiveAt:null,retrievedAt:'2026-10-27',summary:'The assessment found exposure above 1.2 mg/kg body weight per day.',limitations:'Generated answer text linked by Google grounding; not fetched from or independently checked against this page.'};
+    const answer=source.summary;
+    const parsed=parseAgentProviderOutput(JSON.stringify({
+      answer,
+      answerParts:[{text:answer,claimIndexes:[0]}],
+      claims:[{mode:'synthesis',text:answer,observationIds:[],sourceIds:[source.id],supportingSpans:[{kind:'source',id:source.id,quote:source.summary}]}],
+      packageReconstruction:{current:true,packageFacts:[],nutritionRows:[]},
+      limitations:[],inspectImage:null,
+    }),true);
+    const result=validateInferenceOutput(parsed.output,{
+      package:packageSchema.parse({id:'grounded-source-test',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:'2026-10-27T00:00:00.000Z'}),
+      evidence:[source],images:[],question:'What did the linked assessment find?',
+    });
+    expect(result.claims).toEqual([]);
+    expect(result.answer).not.toContain('1.2 mg/kg');
+  });
+
   it('does not manufacture evidence links or confidence for a numeric row with no provenance',()=>{
     const output=normalizeProviderAssistOutput({
       answer:'The nutrition amount is unresolved.',answerParts:[{text:'The nutrition amount is unresolved.',claimIndexes:[0]}],

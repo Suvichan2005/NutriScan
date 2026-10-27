@@ -290,7 +290,7 @@ function explicitlyNamesSource(query: string, record: EvidenceSource): boolean {
 function jurisdictionCompatible(record: EvidenceSource, jurisdiction: string | undefined, explicitSource: boolean): boolean {
   if (explicitSource) return true;
   const source = normalize(record.jurisdiction);
-  if (!jurisdiction) return source === 'global' || source === 'international';
+  if (!jurisdiction) return /^(?:global|international)(?:\s|$)/.test(source);
   const requested = normalize(jurisdiction);
   if (/^(?:global|international)(?:\s|$)/.test(source)) return true;
   if (requested === 'india') return /^(?:india|indian)(?:\s|$)/.test(source);

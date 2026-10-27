@@ -6,6 +6,18 @@
 - Focused recorder tests pass (3); `npm run typecheck` passes. No provider call was made. Existing local traces and the owner’s running server were left untouched; that old process still advertises readable capture until restarted on this revision.
 - A fresh isolated temporary-directory write/read probe then persisted four synthetic events. Assertions confirmed model/token/tool metadata remained and synthetic prompt, answer and photo markers were absent; the temporary fixture was retained outside the repository. This exercises local recorder persistence only, not live provider telemetry.
 
+## 2026-10-27 — prevent generated grounding segments from self-validating quantities
+
+- Traced the production numeric path: Google grounding records store the generated answer segment and state that the linked page was not fetched or independently reviewed. Both `validateInferenceOutput` and final natural-answer validation previously admitted that segment as source numeric evidence.
+- Excluded `web-search` summaries only from numeric corroboration. Citation metadata remains available for attribution and the source inspector. Curated source and deterministic calculation evidence paths are unchanged.
+- Focused inference/agent/server suites:192 passed; `tsc --noEmit` passes. No provider request or page-content verification.
+
+## 2026-10-27 — integrate ThinkBook guidance and provisional-reading improvements
+
+- Compared published ThinkBook `9e1b32d` with the active IdeaPad tree by behavior and paths, not as a branch merge. Retained the IdeaPad retrieved-versus-cited presentation and user correction/acceptance work. The published ThinkBook tree does not include the later local edits; those remain a separate handoff.
+- Ported its general-population jurisdiction prefix match so global guidance can be selected without an inferred country. Accepted numeric statements that rely on current model reconstruction remain useful and receive a concise Package details caveat; an application-recorded correction suppresses that caveat.
+- Focused inference, retrieval and server validation:221 passed,1 skipped. `tsc --noEmit` passes. No external provider calls.
+
 ## 2026-10-27 — preserve Open Food Facts precautionary allergen traces
 
 - Production product search requested allergen declaration tags but omitted the separate `traces_tags` field; the visible community-record detail therefore could not show precautionary trace tags even though exact original-record inspection supported them.

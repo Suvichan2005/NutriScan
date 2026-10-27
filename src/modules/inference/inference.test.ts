@@ -182,6 +182,14 @@ describe('provider-independent inference output validation', () => {
     expect(validateNaturalAnswerText('Example sodium guidance advises adults to stay below 2500 mg sodium per day.',{...context,sourceIdsForSentence:()=>[source.id]}).withheldUnsupportedQuantitySentenceCount).toBe(1);
   });
 
+  it('does not use a generated Google grounding segment as numeric source evidence',()=>{
+    const source={id:'grounded-page',title:'EFSA exposure assessment',publisher:'Google Search grounding via Gemini',url:'https://www.efsa.europa.eu/example',category:'web-search' as const,jurisdiction:'Public web result',publishedAt:null,effectiveAt:null,retrievedAt:'2026-10-27',summary:'The assessment found exposure above 1.2 mg/kg body weight per day.',limitations:'Generated answer text linked by Google grounding; not fetched from or independently checked against this page.'};
+    const answer='The assessment found exposure above 1.2 mg/kg body weight per day.';
+    const checked=validateNaturalAnswerText(answer,{package:fixturePackage,evidence:[source],sourceIdsForSentence:()=>[source.id]});
+    expect(checked.answer).not.toContain('1.2 mg/kg');
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
+  });
+
   it('keeps numbered Markdown headings while checking quantities inside their content',()=>{
     const checked=validateNaturalAnswerText([
       '### 1. Ingredient origins',
@@ -208,6 +216,29 @@ describe('provider-independent inference output validation', () => {
 
     expect(checked.answer).toContain('described per serving');
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(0);
+  });
+
+  it('keeps a reconstructed label quantity useful while identifying it as provisional',()=>{
+    const pkg=packageSchema.parse({...fixturePackage,reconstruction:{
+      ...reconstructionFixture(),revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture-model',current:true,
+    }});
+    const checked=validateNaturalAnswerText('The photographed label appears to list 69.29 g of carbohydrate per 100 g.',{package:pkg});
+    expect(checked.answer).toContain('69.29 g of carbohydrate');
+    expect(checked.answer).toContain('Some numbers are provisional package readings');
+    expect(checked.provisionalReconstructionQuantitySentenceCount).toBe(1);
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(0);
+  });
+
+  it('does not label a user-corrected value as a provisional reconstruction',()=>{
+    const pkg=packageSchema.parse({...fixturePackage,
+      nutrients:[{key:'carbohydrate',value:69.29,unit:'g',basis:{amount:100,unit:'g',description:'per 100 g'},observationIds:['user-correction'],status:'corrected'}],
+      observations:[...fixturePackage.observations,{id:'user-correction',field:'carbohydrate',text:'Carbohydrate corrected to 69.29 g per 100 g',side:'text',confidence:null,origin:'user'}],
+      reconstruction:{...reconstructionFixture(),revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture-model',current:true},
+    });
+    const checked=validateNaturalAnswerText('The corrected package value is 69.29 g carbohydrate per 100 g.',{package:pkg});
+    expect(checked.answer).toContain('69.29 g carbohydrate');
+    expect(checked.provisionalReconstructionQuantitySentenceCount).toBe(0);
+    expect(checked.answer).not.toContain('provisional package readings');
   });
 
   it('keeps useful natural prose and gives a concise notice when unsupported quantity detail is withheld', () => {
