@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 avoid elevating OCR fragments into product identity (27 October 2026)
+
+On the Amul Lassi development photo, the package header previously exposed a fragment combining allergen wording and “ROSE FLAVOUR” as the identity. It now remains unidentified unless the name is an explicit user description/correction, a current clear/provisional reconstruction, or an exact image-linked OCR identity with confidence≥80. Targeted presentation suite:39 passed; typecheck passed. Local-only browser acceptance at390×844 and1440×900 confirms generic title,10 preserved OCR observations and sodium still missing; zero provider/external calls, page/Axe errors or overflow. This does not verify OCR truth or independently establish package identity.
+
 ## M2 verify selected source replay in production route (27 October 2026)
 
 The controlled `assist()` route test now inspects the second mocked Gemini request and requires the selected WHO guidance tool response, its `citationEvidence`, and a source handle to be present. Focused test:1 passed. This demonstrates source transfer into the follow-up request; it does not establish model adherence or source-page validity. ThinkBook's useful crosswalk, global guidance and failure-class telemetry changes are already present in this integration. Its published branch diverges by dropping newer IdeaPad provenance UI and acceptance files, so it was reviewed selectively and not merged.

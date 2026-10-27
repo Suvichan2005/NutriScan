@@ -1,4 +1,7 @@
 # NutriScan final semester completion queue
+## M2 keep OCR label fragments out of the package title (27 October 2026)
+
+Integrated the useful ThinkBook identity guard after the private Amul Lassi development photo showed a mixed “Contains milk … ROSE FLAVOUR” fragment in the product header. Explicit user descriptions/corrections and current reconstructed identities retain precedence; local OCR identity now needs an exact image-linked name/brand observation and confidence≥80. Tests:39 passed; typecheck passed. Browser acceptance on mobile/desktop confirms generic identity with10 OCR observations and missing sodium intact, no provider/external requests or accessibility/overflow issues. This is presentation evidence, not package identity adjudication.
 ## M2 verify selected evidence enters the final provider turn (27 October 2026)
 
 Strengthened the controlled production-route regression for selected nutrition guidance: the follow-up Gemini request must contain the selected tool response, `citationEvidence`, and a source handle. Focused provider-stubbed test passes. This verifies request wiring only, not semantic adherence. Selective ThinkBook branch review confirmed useful crosswalk, global guidance and provider-failure telemetry work is already integrated; divergent branch was not merged because it drops newer IdeaPad provenance and acceptance work. Continue M2 testing with broader distinct scenarios.

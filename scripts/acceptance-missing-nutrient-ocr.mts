@@ -7,7 +7,7 @@ import { chromium, type Page } from '@playwright/test';
 const baseUrl = process.env.NUTRISCAN_BASE_URL ?? 'http://127.0.0.1:3400';
 assert(['127.0.0.1', 'localhost', '[::1]'].includes(new URL(baseUrl).hostname), 'Acceptance requires a loopback app.');
 assert((await fetch(new URL('/api/status', baseUrl), { signal: AbortSignal.timeout(15_000) })).ok, 'NutriScan status is unavailable.');
-const photoPath = 'docs/evidence/private/coca-cola-label-off-5449000000996.jpg';
+const photoPath = process.env.NUTRISCAN_OCR_PHOTO_PATH ?? 'docs/evidence/private/coca-cola-label-off-5449000000996.jpg';
 const viewports = process.env.NUTRISCAN_OCR_VIEWPORT === 'mobile'
   ? [{ width: 390, height: 844 }]
   : process.env.NUTRISCAN_OCR_VIEWPORT === 'desktop'
@@ -100,6 +100,7 @@ try {
     const outcome = {
       viewport: `${viewport.width}x${viewport.height}`,
       input: 'private local development photograph; no provider calls',
+      packageTitle: await page.locator('.thread-package-identity strong').innerText().catch(() => ''),
       editorVisible, missingSodium, correctionValueInitiallyBlank: emptyValue === '',
       existingNutritionRows: originalRows, originalOcrObservationCount, reopenedOcrObservationCount,
       reopenedSodium, localAnswer, answerScreenshotPath, providerCalls: providerCalls.length,
