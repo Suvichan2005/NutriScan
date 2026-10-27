@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — prevent generated grounding segments from self-validating quantities
+
+- Traced the production numeric path: Google grounding records store the generated answer segment and state that the linked page was not fetched or independently reviewed. Both `validateInferenceOutput` and final natural-answer validation previously admitted that segment as source numeric evidence.
+- Excluded `web-search` summaries only from numeric corroboration. Citation metadata remains available for attribution and the source inspector. Curated source and deterministic calculation evidence paths are unchanged.
+- Focused inference/agent/server suites:192 passed; `tsc --noEmit` passes. No provider request or page-content verification.
+
 ## 2026-10-27 — integrate ThinkBook guidance and provisional-reading improvements
 
 - Compared published ThinkBook `9e1b32d` with the active IdeaPad tree by behavior and paths, not as a branch merge. Retained the IdeaPad retrieved-versus-cited presentation and user correction/acceptance work. The published ThinkBook tree does not include the later local edits; those remain a separate handoff.

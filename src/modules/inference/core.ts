@@ -198,6 +198,7 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
   }
 
   const observations = new Map(data.package.observations.map(observation => [observation.id, observation.text]));
+  const webGroundingSourceIds = new Set((data.evidence ?? []).filter(source => source.category === 'web-search').map(source => source.id));
   // Source limitations are attributable evidence too. A model must be able to
   // cite the record's own scope caveat rather than making it an unsupported
   // disclaimer that the exact-span validator silently drops.
@@ -309,9 +310,11 @@ export function validateInferenceOutput(output: unknown, data: AssistValidationC
       ...(claim.interpretationRowIds??[]).map(id=>interpretationRows.get(id)),
       ...(claim.packageFactIds??[]).map(id=>packageFacts.get(id)),
     ].filter((text):text is string=>typeof text==='string');
+    const quantitySpans=validSpans.filter(span=>span.kind!=='source'||!webGroundingSourceIds.has(span.id));
+    const quantityRefs=refs.filter(ref=>ref.kind!=='source'||!webGroundingSourceIds.has(ref.id));
     const evidenceTexts=validSpans.length
-      ?[...validSpans.map(span=>span.quote),...citedPackageFacts]
-      :refs.map(ref=>ref.text);
+      ?[...quantitySpans.map(span=>span.quote),...citedPackageFacts]
+      :quantityRefs.map(ref=>ref.text);
     // Structured label interpretations are usable, traceable candidates, not
     // independently verified package facts. Numeric wording must match the
     // exact interpreted row, including its printed unit and basis.
@@ -903,7 +906,10 @@ export function validateNaturalAnswerText(
   ));
   const hasUnconfirmedReconstructionQuantity=(text:string)=>numericMentions(text).some(mention=>
     mentionMatchesEvidence(mention,provisionalReconstructionEvidenceTexts) && !mentionMatchesEvidence(mention,userConfirmedQuantityTexts));
-  const sourceEvidenceById=new Map((context.evidence??[]).map(source=>[source.id,[
+  // Google grounding summaries are generated response segments linked to a
+  // page, not text fetched from that page. Keep the citation visible, but do
+  // not let a generated number corroborate itself at the quantity boundary.
+  const sourceEvidenceById=new Map((context.evidence??[]).filter(source=>source.category!=='web-search').map(source=>[source.id,[
     source.title,source.publisher,source.url,source.summary,source.limitations,
     ...(source.publishedAt?.match(/^\d{4}(?:-|$)/)?[source.publishedAt.slice(0,4)]:[]),
   ].filter(Boolean).join(' ')]));

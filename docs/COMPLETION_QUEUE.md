@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M2 keep Google grounding metadata from validating its own quantities (27 October 2026)
+
+The Google Search grounding adapter stores the model's response segment as generated metadata, not a fetched source excerpt. Both typed-claim and natural-answer numeric validation now exclude `web-search` summaries as quantity evidence while retaining them for source attribution and inspection. Provider-free tests reproduce the self-corroboration path; inference/agent/server suites:192 passed. TypeScript passes. No live provider, source-page verification or broader scientific-entailment claim. M2 remains active.
+
 ## M3 disclose the local OCR language boundary before photo selection (27 October 2026)
 
 Added the existing English-only local OCR limitation to the empty scanner state, ahead of photo selection. Mobile390×844 and desktop1440×900 local Chrome checks show it visibly without overflow or page errors; typecheck passes. The OCR method remains unchanged pending the independent comparison. No provider request. Continue broader M2/M3 acceptance; fresh source-selection remains unavailable while Gemini is disabled.

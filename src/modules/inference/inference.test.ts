@@ -182,6 +182,14 @@ describe('provider-independent inference output validation', () => {
     expect(validateNaturalAnswerText('Example sodium guidance advises adults to stay below 2500 mg sodium per day.',{...context,sourceIdsForSentence:()=>[source.id]}).withheldUnsupportedQuantitySentenceCount).toBe(1);
   });
 
+  it('does not use a generated Google grounding segment as numeric source evidence',()=>{
+    const source={id:'grounded-page',title:'EFSA exposure assessment',publisher:'Google Search grounding via Gemini',url:'https://www.efsa.europa.eu/example',category:'web-search' as const,jurisdiction:'Public web result',publishedAt:null,effectiveAt:null,retrievedAt:'2026-10-27',summary:'The assessment found exposure above 1.2 mg/kg body weight per day.',limitations:'Generated answer text linked by Google grounding; not fetched from or independently checked against this page.'};
+    const answer='The assessment found exposure above 1.2 mg/kg body weight per day.';
+    const checked=validateNaturalAnswerText(answer,{package:fixturePackage,evidence:[source],sourceIdsForSentence:()=>[source.id]});
+    expect(checked.answer).not.toContain('1.2 mg/kg');
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
+  });
+
   it('keeps numbered Markdown headings while checking quantities inside their content',()=>{
     const checked=validateNaturalAnswerText([
       '### 1. Ingredient origins',

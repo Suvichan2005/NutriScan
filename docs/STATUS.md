@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 do not use generated grounding text to verify quantities (27 October 2026)
+
+Google grounding metadata links a generated answer segment to a public URL; it does not include page text fetched and checked by NutriScan. Natural-answer and typed-claim validators now exclude `web-search` summaries from numeric corroboration. The source remains available for attribution and user inspection. Focused inference/agent/server tests:192 passed; `tsc --noEmit` passes. No Gemini request or page-content verification.
+
 ## M2/M3 keep globally scoped guidance reachable and label reconstructed quantities (27 October 2026)
 
 Reviewed ThinkBook `codex/m2-subject-scope-20261027` at published `9e1b32d` selectively against IdeaPad `fcc07aaa` and current integration. Existing source-linked profile context and provider-failure classification are already present; retained IdeaPad's separate cited/retrieved evidence UI and newer correction work. Integrated the missing global-scope match for general guidance when no country is supplied, and qualified accepted numeric prose tied to current model-read package evidence while leaving user-corrected values unqualified. Focused inference/retrieval/server suites:221 passed,1 skipped; `tsc --noEmit` passes. No Gemini request. ThinkBook post-push local edits remain a separate, unavailable handoff.
@@ -9,7 +13,7 @@ The empty package-scan state now says that on-device OCR reads English only, may
 
 ## M2/M6 let users supply a missing label nutrient (27 October 2026)
 
-When the active reconstruction has no row for a nutrient, users can now add a reading they have checked on the package. The value and basis are required, blank by default, unit options follow the selected nutrient, and the saved item is explicitly a user correction that is not independently verified. Native portion calculation consumes it while original OCR observations and other nutrient values remain unchanged. Focused UI/provenance/calculation suites:22 passed. A local browser attempt did not reach the form because its existing app setup never exposed the reconstruction inspector; no desktop/mobile acceptance is claimed yet. Fresh Gemini selection remains unverified.
+When the active reconstruction has no row for a nutrient, users can add a reading they checked on the package. The value and basis are required, blank by default, units follow the selected nutrient, and the saved item is explicitly a user correction that is not independently verified. Native calculations consume it while original OCR observations and other nutrient values remain unchanged. Focused UI/provenance/calculation suites:22 passed. Follow-up browser acceptance completed at390×844 and1440×900 for the local OCR and locally reconstructed editor routes, including save/reopen, correction provenance, native 30 g calculation and the absent sodium case. Axe, page errors and overflow checks pass; reconstructed responses were intercepted and fresh Gemini selection remains unverified. Receipts remain private under `.data/m2-missing-nutrient-ui/`.
 
 ## M2/M6 preserve community allergen and precautionary-trace fields (27 October 2026)
 

@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — grounding association is not fetched numeric evidence
+
+Keep Google-grounded URLs available for attribution and user inspection, but do not treat the associated generated answer segment as text fetched from that page. Numeric validators must not use this generated segment to corroborate a response quantity; independent package, calculation, or source-record evidence remains required.
+
 ## 27 October 2026 — qualify quantities from unconfirmed package reconstruction
 
 Current model-read package values may support a useful numeric answer when the value and basis pass native validation, but the answer must identify those readings as provisional and direct the user to Package details. User-corrected values are separately attributable and must not receive that provisional label. This preserves useful prose without presenting reconstruction as verified package truth.
