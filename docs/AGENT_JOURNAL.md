@@ -4,6 +4,7 @@
 - Review against the current `AGENTS.md` found the explicit local recorder persisted readable prompt, package/tool and answer content, conflicting with the no-model-conversation logging rule.
 - Replaced content-oriented recursive sanitization with an allowlist for operational metadata. Updated `/api/status` to state that local capture is metadata-only and readable capture is false. Added regression coverage for prompts, answers, image payloads, profile/package values and token metadata.
 - Focused recorder tests pass (3); `npm run typecheck` passes. No provider call was made. Existing local traces and the owner’s running server were left untouched; that old process still advertises readable capture until restarted on this revision.
+- A fresh isolated temporary-directory write/read probe then persisted four synthetic events. Assertions confirmed model/token/tool metadata remained and synthetic prompt, answer and photo markers were absent; the temporary fixture was retained outside the repository. This exercises local recorder persistence only, not live provider telemetry.
 
 ## 2026-10-27 — preserve Open Food Facts precautionary allergen traces
 

@@ -1,7 +1,7 @@
 # NutriScan current runtime handoff
 ## Local Gemini evaluation privacy — 27 October 2026
 
-The opt-in local evaluation recorder now retains only allowlisted metadata: model/stage/tool names, statuses, usage counts, latency and bounded cost metadata; prompts, package/OCR/profile text, images and digests, tool arguments/results, answer text and provider conversation payloads are omitted. Focused recorder tests and TypeScript pass. The already-running local server predates this source change and still reports the old `readableEvaluationCapture:true` status; it was not restarted or used for a provider request. Restart only through the owner-controlled runtime after reviewing the config. Existing `.data` traces were not read, changed or deleted.
+The opt-in local evaluation recorder now retains only allowlisted metadata: model/stage/tool names, statuses, usage counts, latency and bounded cost metadata; prompts, package/OCR/profile text, images and digests, tool arguments/results, answer text and provider conversation payloads are omitted. Focused recorder tests and TypeScript pass. A provider-free write/read lifecycle probe in a fresh temporary directory preserved metadata and excluded synthetic prompt, answer and image markers (4 events); no user or provider data was used. The already-running local server predates this source change and still reports the old `readableEvaluationCapture:true` status; it was not restarted or used for a provider request. Restart only through the owner-controlled runtime after reviewing the config. Existing `.data` traces were not read, changed or deleted.
 
 ## M2 provider-context serialization check — 27 October 2026
 
