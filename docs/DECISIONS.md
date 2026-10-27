@@ -1477,3 +1477,6 @@ An active package reconstruction may omit a nutrient entirely, leaving no row to
 # 2026-10-27 — keep retrieval provenance distinct in saved answers
 
 Persist bounded sources surfaced during a response separately from sources selected as citations, and show retrieved-only sources as such. A source being retrieved does not establish that the answer used or supported it. Preserve the existing answer-linked citation selection and pass only those citations into later conversation evidence. Keep profile-to-package ingredient crosswalks tied to exact observed wording and source IDs, without turning them into safety decisions.
+# 27 October 2026 — bound Windows production type-checker concurrency
+
+TypeScript 7's native Go checker exhausted virtual memory on the Windows development host when it used the machine-wide worker count; the same full production build passed with `GOMAXPROCS=2`. Apply that cap from the build launcher only on Windows and only when the owner has not set `GOMAXPROCS`. Preserve the native checker and full-project diagnostics rather than skipping checks. This is a resource workaround, not a fix for any distinct source-level Vitest matcher diagnostic.

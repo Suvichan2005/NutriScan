@@ -1,4 +1,8 @@
 # Current engineering status
+## M3 production-build memory reliability (27 October 2026)
+
+An uncapped Windows production build compiled, then the TypeScript 7 native Go checker exhausted virtual memory while spawning thousands of goroutines. The same checker and full production build pass with `GOMAXPROCS=2`. The build command now applies that cap by default on Windows, preserving an explicit override. This isolates the prior environment-dependent matcher concern from a compiler resource failure; it does not establish that every Vitest matcher diagnostic was resolved.
+
 ## M2 avoid elevating OCR fragments into product identity (27 October 2026)
 
 On the Amul Lassi development photo, the package header previously exposed a fragment combining allergen wording and “ROSE FLAVOUR” as the identity. It now remains unidentified unless the name is an explicit user description/correction, a current clear/provisional reconstruction, or an exact image-linked OCR identity with confidence≥80. Targeted presentation suite:39 passed; typecheck passed. Local-only browser acceptance at390×844 and1440×900 confirms generic title,10 preserved OCR observations and sodium still missing; zero provider/external calls, page/Axe errors or overflow. This does not verify OCR truth or independently establish package identity.

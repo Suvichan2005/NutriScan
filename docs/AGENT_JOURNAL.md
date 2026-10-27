@@ -1,4 +1,9 @@
 # Sanitized engineering journal
+## 2026-10-27 — bound Windows production type-checker concurrency
+
+- The uncapped production bundle compiled, but TypeScript 7's native Go checker exhausted Windows virtual memory during full-project type checking. `GOMAXPROCS=2` made the direct checker and complete production build pass. Added a Windows-only default in the build launcher, preserving an explicit override; verified the launcher with the override unset. The earlier `Assertion.not` report remains distinct and unconfirmed because this run produced no matcher diagnostic.
+- This build-only validation sent no provider requests and did not touch the five protected owner-modified files.
+
 ## 2026-10-27 — suppress ambiguous OCR-derived package title
 
 - A saved local Amul Lassi photo journey had presented `: Contains milk. F. OSE FLAVOUR` as the package title. Integrated the useful ThinkBook identity provenance rule: only explicit user descriptions/corrections, current clear/provisional reconstruction identity, or an exact image-linked OCR name/brand with confidence≥80 are displayed as supported identity.
