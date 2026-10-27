@@ -98,6 +98,59 @@ function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
   </article>;
 }
 
+const nutrientLabels: Array<[NutrientKey, string]> = [
+  ['energy', 'Energy'], ['carbohydrate', 'Carbohydrate'], ['sugars', 'Sugars'],
+  ['addedSugars', 'Added sugars'], ['protein', 'Protein'], ['fat', 'Total fat'],
+  ['saturatedFat', 'Saturated fat'], ['fiber', 'Fibre'], ['sodium', 'Sodium'], ['salt', 'Salt'],
+];
+
+function AddMissingNutrient({ savedNutrients, onCorrect }: Pick<Props, 'savedNutrients' | 'onCorrect'>) {
+  const [editing, setEditing] = useState(false);
+  const [key, setKey] = useState<NutrientKey>('carbohydrate');
+  const [value, setValue] = useState('');
+  const [basisAmount, setBasisAmount] = useState('');
+  const [basisUnit, setBasisUnit] = useState<'g' | 'ml'>('g');
+  const [unit, setUnit] = useState<NutrientCorrection['unit']>('g');
+  const available = nutrientLabels.filter(([candidate]) => !savedNutrients.some(item => item.key === candidate));
+  const selectedKey = available.some(([candidate]) => candidate === key) ? key : available[0]?.[0];
+  const selectedUnit: NutrientCorrection['unit'] = selectedKey === 'energy' ? (unit === 'kJ' ? 'kJ' : 'kcal')
+    : selectedKey === 'sodium' || selectedKey === 'salt' ? (unit === 'mg' ? 'mg' : 'g') : 'g';
+  const massConflict = selectedKey ? nutrientMassConflict({
+    nutrientKey: selectedKey, value: Number(value), unit: selectedUnit, basisAmount: Number(basisAmount), basisUnit,
+  }) : null;
+  const canSave = Boolean(selectedKey && !massConflict && value.trim() && Number.isFinite(Number(value))
+    && Number(value) >= 0 && basisAmount.trim() && Number.isFinite(Number(basisAmount)) && Number(basisAmount) > 0);
+  const selectKey = (next: NutrientKey) => {
+    setKey(next);
+    setUnit(next === 'energy' ? 'kcal' : 'g');
+  };
+
+  if (!available.length) return null;
+  if (!editing) return <button className="text-button reconstruction-edit" type="button" onClick={() => setEditing(true)}>Add a missing nutrient value</button>;
+
+  return <form className="reconstruction-edit-form" aria-label="Add a missing nutrient value" onSubmit={event => {
+    event.preventDefault();
+    if (!canSave || !selectedKey) return;
+    const ok = onCorrect({ key: selectedKey, value: Number(value), unit: selectedUnit, basisAmount: Number(basisAmount), basisUnit });
+    if (ok) setEditing(false);
+  }}>
+    <p>Enter a value you have read from the package. This saves your reading as a user correction; it is not independently verified.</p>
+    <label>Nutrient<select aria-label="Missing nutrient" value={selectedKey ?? ''} onChange={event => selectKey(event.target.value as NutrientKey)}>
+      {available.map(([candidate, label]) => <option key={candidate} value={candidate}>{label}</option>)}
+    </select></label>
+    <label>Value you read<input aria-label="Missing nutrient value" inputMode="decimal" value={value} onChange={event => setValue(event.target.value)}/></label>
+    <label>Unit<select aria-label="Missing nutrient unit" value={selectedUnit} onChange={event => setUnit(event.target.value as NutrientCorrection['unit'])}>
+      {selectedKey === 'energy' ? <><option value="kcal">kcal</option><option value="kJ">kJ</option></>
+        : selectedKey === 'sodium' || selectedKey === 'salt' ? <><option value="g">g</option><option value="mg">mg</option></>
+          : <option value="g">g</option>}
+    </select></label>
+    <label>Label basis<input aria-label="Missing nutrient basis amount" inputMode="decimal" value={basisAmount} onChange={event => setBasisAmount(event.target.value)}/></label>
+    <label>Basis unit<select aria-label="Missing nutrient basis unit" value={basisUnit} onChange={event => setBasisUnit(event.target.value as 'g' | 'ml')}><option value="g">g</option><option value="ml">ml</option></select></label>
+    <div><button className="primary-button" disabled={!canSave} type="submit">Save my reading</button><button className="text-button" type="button" onClick={() => setEditing(false)}>Cancel</button></div>
+    {massConflict && <p className="reconstruction-caveat" role="alert">{massConflict}</p>}
+  </form>;
+}
+
 function ExtraNutrientRow({row,correction,onSave,onInspect}:{row:PackageReconstruction['nutritionRows'][number];correction?:ReconstructionCorrection;onSave?:Props['onCorrectRow'];onInspect:Props['onInspectEvidence']}){
  const [editing,setEditing]=useState(false);
  const source=correction?.original??row,current=correction?.reading??row;
@@ -131,6 +184,9 @@ export function PackageReconstructionView({ reconstruction, history = [], savedN
   const serving = normalizeReconstructedServing(displayed.serving);
   const quantityDeclarations = displayed.quantityDeclarations ?? [];
   const savedByKey = new Map(savedNutrients.map(item => [item.key, item]));
+  const addedReadings = isActive ? savedNutrients.filter(item => item.status === 'corrected'
+    && !displayed.nutritionRows.some(row => (row.nutrientKey === undefined ? nutrientKey(row.nutrient || row.printedLabel) : row.nutrientKey) === item.key))
+    : [];
   return <section className="package-reconstruction" aria-label="Gemini package reconstruction">
     <header><div><span className="eyebrow">PACKAGE UNDERSTANDING</span><h2>{identity || 'Package details'}</h2></div><span className="reconstruction-version">Revision {displayed.revision} · {isActive ? 'active' : 'alternative'}{displayed.analysisMethod?` · ${analysisMethodPolicy(displayed.analysisMethod).label}`:''}</span></header>
     {!isActive && <p className="reconstruction-caveat">This saved package reading is kept for review and is not currently active.</p>}
@@ -146,7 +202,7 @@ export function PackageReconstructionView({ reconstruction, history = [], savedN
       <small>{statusLabel(item.status)} · unverified</small>
       {item.evidence.observationIds.length > 0 && <button type="button" className="text-button" onClick={() => onInspectEvidence(item.evidence.observationIds)}>Inspect evidence</button>}
     </li>)}</ul></section>}
-    {displayed.nutritionRows.length > 0 && <section><h3>Nutrition as printed</h3><div className="reconstruction-rows">{displayed.nutritionRows.map(row => {const key=row.nutrientKey===undefined?nutrientKey(row.nutrient || row.printedLabel):row.nutrientKey;if(!key)return <ExtraNutrientRow key={row.rowId} row={row} correction={corrections.find(item=>item.rowId===row.rowId)} onSave={isActive?onCorrectRow:undefined} onInspect={onInspectEvidence}/>;return <InterpretedRow key={row.rowId} row={row} saved={key? savedByKey.get(key):undefined} onCorrect={onCorrect} onInspectEvidence={onInspectEvidence}/>;})}</div></section>}
+    {(displayed.nutritionRows.length > 0 || isActive) && <section><h3>Nutrition as printed</h3>{displayed.nutritionRows.length > 0 && <div className="reconstruction-rows">{displayed.nutritionRows.map(row => {const key=row.nutrientKey===undefined?nutrientKey(row.nutrient || row.printedLabel):row.nutrientKey;if(!key)return <ExtraNutrientRow key={row.rowId} row={row} correction={corrections.find(item=>item.rowId===row.rowId)} onSave={isActive?onCorrectRow:undefined} onInspect={onInspectEvidence}/>;return <InterpretedRow key={row.rowId} row={row} saved={key? savedByKey.get(key):undefined} onCorrect={onCorrect} onInspectEvidence={onInspectEvidence}/>;})}</div>}{addedReadings.length > 0 && <div className="reconstruction-rows" aria-label="User-supplied readings">{addedReadings.map(item => <article className="reconstruction-row" key={item.key}><div className="reconstruction-row-main"><div><strong>{nutrientLabels.find(([key])=>key===item.key)?.[1] ?? item.key}</strong><small>Your supplied reading</small></div><div className="reconstruction-value"><strong>{item.value} {item.unit}</strong><small>{item.basis ? `per ${item.basis.amount} ${item.basis.unit}` : 'Basis unresolved'}</small></div></div><small>Unverified user correction</small></article>)}</div>}{isActive && <AddMissingNutrient savedNutrients={savedNutrients} onCorrect={onCorrect}/>}</section>}
     {displayed.ingredients.length > 0 && <section><h3>Ingredients</h3><ol className="reconstruction-ingredients">{displayed.ingredients.slice(0, 40).map((item, index) => <li key={`${item.position}-${index}`}><span>{item.normalizedName || item.name}</span>{item.printedPercentage !== null && <strong>{item.printedPercentage}%</strong>}<small>{statusLabel(item.status)} · unverified</small></li>)}</ol></section>}
     {displayed.additives.length > 0 && <section><h3>Additives identified on the label</h3><ul className="reconstruction-statements">{displayed.additives.slice(0, 20).map((item, index) => <li key={`${item.printedName}-${index}`}>{item.normalizedName || item.printedName}{item.code ? ` · ${item.code}` : ''}<small>{statusLabel(item.status)} · unverified</small></li>)}</ul></section>}
     {displayed.statements.length > 0 && <section><h3>Claims and other details</h3><ul className="reconstruction-statements">{displayed.statements.slice(0, 24).map((item, index) => <li key={`${item.kind}-${index}`}><span>{item.text}</span><small>{item.kind} · {statusLabel(item.status)} · unverified</small></li>)}</ul></section>}

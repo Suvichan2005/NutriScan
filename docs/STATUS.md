@@ -3,6 +3,10 @@
 
 Integrated the existing exact declared-food crosswalk into the `resolve_ingredient` native tool result. An exact package ingredient phrase may now surface linked source records when they match an explicitly shared profile declaration, while preserving package observation IDs and source scope. Positive milk-allergy/whey-powder and negative lactose-intolerance cases pass; this is a source-linked terminology signal, not an individual safety verdict. The local tool probe confirms the identity/science record for whey powder can be retrieved separately, but no live model response was tested. An India sugar-free claim query still over-retrieves general sugar guidance and misses the dated FSSAI nutrient-claim record; current claim criteria remain unresolved.
 
+## M2/M6 let users supply a missing label nutrient (27 October 2026)
+
+When the active reconstruction has no row for a nutrient, users can now add a reading they have checked on the package. The value and basis are required, blank by default, unit options follow the selected nutrient, and the saved item is explicitly a user correction that is not independently verified. Native portion calculation consumes it while original OCR observations and other nutrient values remain unchanged. Focused UI/provenance/calculation suites:22 passed. A local browser attempt did not reach the form because its existing app setup never exposed the reconstruction inspector; no desktop/mobile acceptance is claimed yet. Fresh Gemini selection remains unverified.
+
 ## M2/M6 preserve community allergen and precautionary-trace fields (27 October 2026)
 
 The product lookup/card path now retains Open Food Facts `traces_tags` separately from `allergens_tags` and displays them under distinct headings. Empty trace tags are not described as evidence of no cross-contact. Route and rendered-component acceptance:100 passed; local knowledge suite:42 passed. No browser/build or live external lookup is claimed. The selected Drive handoff folder has its manifest and checksum sidecar but not the ZIP; detailed FoodOn/USDA/WHO stores remain absent locally.
