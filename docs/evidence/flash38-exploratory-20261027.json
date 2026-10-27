@@ -1,0 +1,257 @@
+{
+  "date": "2026-10-27",
+  "scope": "Owner-authorized bounded paid exploratory development, not independent clinical validation",
+  "frozenBaseline": "3ac0d513eadff2014db52c001fae9874a64a8cda",
+  "measuredBaselineCode": "491c62630639cb5d43d0c9baa8fe9be9b1e71498",
+  "measuredCorrectionCode": "85ec95f366b787064a93a3fd571b9c5850aa3b53",
+  "modelReported": "gemini-3.8-flash",
+  "thinking": "LOW",
+  "referenceGrade": 3,
+  "independentHumanReferences": 0,
+  "humanRatings": 0,
+  "guideApprovedReducedMethodology": false,
+  "reconstruction": {
+    "products": 3,
+    "originals": 4,
+    "runs": 15,
+    "scorableCandidateCells": 53,
+    "ambiguousCells": 1,
+    "armSummaries": [
+      {
+        "arm": "A",
+        "products": 3,
+        "denominator": 53,
+        "strictExact": 0,
+        "strictWrong": 0,
+        "strictOmitted": 19,
+        "strictWithheld": 34,
+        "provisionalInclusiveExact": 25,
+        "provisionalInclusiveWrong": 4,
+        "provisionalInclusiveOmitted": 20,
+        "provisionalInclusiveWithheld": 4,
+        "inputTokens": 29539,
+        "outputTokens": 7466,
+        "medianProviderStageSeconds": 14.579,
+        "estimatedUsd": 0.05015175
+      },
+      {
+        "arm": "B",
+        "products": 3,
+        "denominator": 53,
+        "strictExact": 21,
+        "strictWrong": 0,
+        "strictOmitted": 1,
+        "strictWithheld": 31,
+        "provisionalInclusiveExact": 51,
+        "provisionalInclusiveWrong": 1,
+        "provisionalInclusiveOmitted": 1,
+        "provisionalInclusiveWithheld": 0,
+        "inputTokens": 32371,
+        "outputTokens": 10022,
+        "medianProviderStageSeconds": 25.127,
+        "estimatedUsd": 0.061860750000000006
+      },
+      {
+        "arm": "C",
+        "products": 3,
+        "denominator": 53,
+        "strictExact": 53,
+        "strictWrong": 0,
+        "strictOmitted": 0,
+        "strictWithheld": 0,
+        "provisionalInclusiveExact": 53,
+        "provisionalInclusiveWrong": 0,
+        "provisionalInclusiveOmitted": 0,
+        "provisionalInclusiveWithheld": 0,
+        "inputTokens": 21909,
+        "outputTokens": 10977,
+        "medianProviderStageSeconds": 27.887,
+        "estimatedUsd": 0.0575955
+      },
+      {
+        "arm": "D",
+        "products": 3,
+        "denominator": 53,
+        "strictExact": 53,
+        "strictWrong": 0,
+        "strictOmitted": 0,
+        "strictWithheld": 0,
+        "provisionalInclusiveExact": 53,
+        "provisionalInclusiveWrong": 0,
+        "provisionalInclusiveOmitted": 0,
+        "provisionalInclusiveWithheld": 0,
+        "inputTokens": 34456,
+        "outputTokens": 11024,
+        "medianProviderStageSeconds": 26.452,
+        "estimatedUsd": 0.067182
+      },
+      {
+        "arm": "E",
+        "products": 3,
+        "denominator": 53,
+        "strictExact": 53,
+        "strictWrong": 0,
+        "strictOmitted": 0,
+        "strictWithheld": 0,
+        "provisionalInclusiveExact": 53,
+        "provisionalInclusiveWrong": 0,
+        "provisionalInclusiveOmitted": 0,
+        "provisionalInclusiveWithheld": 0,
+        "inputTokens": 37288,
+        "outputTokens": 11446,
+        "medianProviderStageSeconds": 26.95,
+        "estimatedUsd": 0.0708885
+      }
+    ],
+    "interpretation": "Candidate value/unit/normalized-basis agreement; not independently annotated accuracy or geometric column correctness"
+  },
+  "conversations": {
+    "baseline": {
+      "logicalTurns": 36,
+      "portfolioTurns": 27,
+      "ablationOffTurns": 9,
+      "completed": 36,
+      "unbalancedMarkers": 4,
+      "withheldAnswerTurns": 22,
+      "quantitySentencesWithheld": 34,
+      "sourceSentencesWithheld": 4,
+      "toolNames": {
+        "calculate_nutrition": 9,
+        "get_nutrition_guidance": 6
+      },
+      "medianTurnSeconds": 6.8865,
+      "usage": {
+        "generations": 45,
+        "completed": 45,
+        "failed": 0,
+        "models": [
+          "gemini-3.8-flash"
+        ],
+        "promptTokens": {
+          "knownSum": 338451,
+          "missing": 0
+        },
+        "outputTokens": {
+          "knownSum": 14094,
+          "missing": 0
+        },
+        "thoughtTokens": {
+          "knownSum": 0,
+          "missing": 45
+        },
+        "cachedPromptTokens": {
+          "knownSum": 2951,
+          "missing": 44
+        },
+        "totalTokens": {
+          "knownSum": 352545,
+          "missing": 0
+        },
+        "estimatedCompletedUsd": 0.304698825,
+        "failedReservedUsd": 0,
+        "actualBilling": null
+      }
+    },
+    "postCorrection": {
+      "logicalTurns": 36,
+      "portfolioTurns": 27,
+      "ablationOffTurns": 9,
+      "completed": 36,
+      "unbalancedMarkers": 0,
+      "withheldAnswerTurns": 25,
+      "quantitySentencesWithheld": 50,
+      "sourceSentencesWithheld": 2,
+      "toolNames": {
+        "calculate_nutrition": 9,
+        "get_nutrition_guidance": 5
+      },
+      "medianTurnSeconds": 7.535,
+      "usage": {
+        "generations": 45,
+        "completed": 45,
+        "failed": 0,
+        "models": [
+          "gemini-3.8-flash"
+        ],
+        "promptTokens": {
+          "knownSum": 341905,
+          "missing": 0
+        },
+        "outputTokens": {
+          "knownSum": 15312,
+          "missing": 0
+        },
+        "thoughtTokens": {
+          "knownSum": 0,
+          "missing": 45
+        },
+        "cachedPromptTokens": {
+          "knownSum": 0,
+          "missing": 45
+        },
+        "totalTokens": {
+          "knownSum": 357217,
+          "missing": 0
+        },
+        "estimatedCompletedUsd": 0.31384875,
+        "failedReservedUsd": 0,
+        "actualBilling": null
+      }
+    }
+  },
+  "matchedKnowledgePairsPerPhase": 9,
+  "pairedModelSystemConfigContextChecksPassed": true,
+  "citationIdentityChecks": {
+    "outcomes": 72,
+    "orphanCitations": 0,
+    "notEntailmentValidation": true
+  },
+  "arithmetic": {
+    "returnedRecordsChecked": 167,
+    "scalarCalculationMismatches": 0,
+    "independentTasks": false,
+    "printedValuesValidated": false
+  },
+  "software": {
+    "passed": 890,
+    "skipped": 2,
+    "failed": 0,
+    "productionBuildExitCode": 0
+  },
+  "budget": {
+    "additionalAuthorizedUsd": 10,
+    "cumulativeGuardUsd": 11.1,
+    "controlledGenerationCap": 650,
+    "attempts": 119,
+    "completed": 118,
+    "failed": 1,
+    "completedEstimatedUsd": 1.131807825,
+    "failedReservedUsd": 0.0389085,
+    "remainingCumulativeGuardUsd": 2.527058574999999,
+    "actualGoogleBilling": null,
+    "ordinaryEnvironmentModified": false
+  },
+  "browser": {
+    "actualProviderRequests": 1,
+    "generations": 1,
+    "assistantTurns": 1,
+    "citedRecords": 2,
+    "uncitedRecords": 1,
+    "viewports": [
+      "1440x900",
+      "390x844"
+    ],
+    "isolatedContext": true,
+    "includesPreservedUnpublishedOwnerCssOverlay": true,
+    "internalScrollAcceptanceEstablished": false
+  },
+  "remainingFailures": [
+    "Numerical withholding can remove useful correctly calculated prose and leave empty headings.",
+    "Unverified legacy conversation snapshots contain unresolved label discrepancies.",
+    "No independent source-entailment or clinical validity measurement.",
+    "Cached OCR timing and limited candidate set do not justify changing the production scan default."
+  ],
+  "privateEvidenceRelativePath": ".data/flash38-sprint-20261027/results/",
+  "softwareReceiptSha256": "1353064a44df3736bca2dd1915df3a0b715c85202e67c60bf4cf9353d6e64a17",
+  "buildReceiptSha256": "dc395f81992dcce5da6dd01a7fa752cbb9a645eb0a8cc367d813ac84eb01a23a"
+}

@@ -1,4 +1,10 @@
 # NutriScan current runtime handoff
+## Post-release bounded sprint handoff — 27 October 2026
+
+Owner's later experimental mission superseded the release-only stop instruction below. On `codex/flash38-experiments-20261027`, measured baseline `491c626` and corrected `85ec95f` retain separate full Gemini 3.8 Flash/LOW outcomes. Three shared fixes are implemented; 890 tests pass/two skip and full optimized build passes. See `evidence/flash38-exploratory-20261027.json` and the latest STATUS entry. The old tag is unchanged; no automatic merge to integration/main.
+
+Private evidence is in the original workspace `.data/flash38-sprint-20261027/`. Fifteen reconstructions, 27+9 logical outcomes per software phase, and six separate same-model rubric calls completed. All references are Grade 3; no human/clinical validation or guide methodology approval. The principal unresolved defect is useful calculated prose being withheld, sometimes leaving empty headings. Do not present balanced sentence formatting or correct arithmetic as its resolution. Browser acceptance used preserved unpublished owner CSS; clean-source visual acceptance is not asserted. No additional provider requests or autonomous feature expansion are queued by this closeout.
+
 ## Frozen release authority — 27 October 2026
 
 Use `nutriscan-rc-20261027` and `RELEASE_HANDOFF.md`. PR #3 is confirmed merged asbfbb377;342bff3 reconciles it with final blocker fixes and is the exact application source used for the final suite/build/browser acceptance. The tag adds handoff documentation with identical application source digest. Production development is complete; ThinkBook owns experiments/report/presentation. Do not resume historical “next” tasks below or await Subham's unavailable judgments. Primary owner overlays are not release inputs and remain byte-preserved.
