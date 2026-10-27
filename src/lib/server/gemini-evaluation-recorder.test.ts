@@ -15,7 +15,7 @@ describe('local Gemini evaluation transcript safeguards', () => {
 
   it('keeps operational metadata while omitting prompt, answer, image and hidden thought content', () => {
     const safe = sanitizeGeminiEvaluationValue({
-      event: 'provider_response', model: 'gemini-3.8-flash', question: 'Read this label', apiKey: 'never-write-this',
+      event: 'provider_response', model: 'gemini-3.8-flash', tier: 'free', purpose: 'application', elapsedMs: 175, question: 'Read this label', apiKey: 'never-write-this',
       image: { mimeType: 'image/png', base64: Buffer.from('private fixture pixels').toString('base64') },
       response: { candidates: [{ content: { parts: [{ text: 'visible response' }, { thought: true, text: 'hidden reasoning' }, { thoughtSignature: 'opaque' }] } }] },
       usageMetadata: { promptTokenCount: 42, candidatesTokenCount: 12, thoughtsTokenCount: 4 },
@@ -24,6 +24,9 @@ describe('local Gemini evaluation transcript safeguards', () => {
     });
     const encoded = JSON.stringify(safe);
     expect(encoded).toContain('gemini-3.8-flash');
+    expect(encoded).toContain('"tier":"free"');
+    expect(encoded).toContain('"purpose":"application"');
+    expect(encoded).toContain('"elapsedMs":175');
     expect(encoded).toContain('promptTokenCount');
     expect(encoded).toContain('42');
     expect(encoded).toContain('search_knowledge');
