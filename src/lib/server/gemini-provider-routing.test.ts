@@ -2,6 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Type } from '@google/genai';
 import { applicationGeminiContext, generateTracked, providerStatus, resetGeminiRoutingForTests, resetGeminiUsageLedgerForTests, safeProviderFailure } from './gemini-provider';
 
+const telemetry = vi.hoisted(() => ({ diagnostic: vi.fn(), evaluation: vi.fn() }));
+vi.mock('./gemini-diagnostics', () => ({ recordGeminiDiagnostic: telemetry.diagnostic }));
+vi.mock('./gemini-evaluation-recorder', () => ({ recordGeminiEvaluationEvent: telemetry.evaluation }));
+
 const success = (model: string) => JSON.stringify({
   candidates: [{ content: { parts: [{ text: '{"ok":true}' }], role: 'model' }, finishReason: 'STOP', index: 0 }],
   modelVersion: `${model}-test`, usageMetadata: { promptTokenCount: 8, candidatesTokenCount: 4, totalTokenCount: 12 },
@@ -69,6 +73,11 @@ describe('free-tier Gemini model routing', () => {
     const result = await generateTracked(context, { model: context.model, contents: 'bounded timeout fallback test', config: { maxOutputTokens: 40 } }, { deadlineAt: Date.now() + 10_000 });
     expect(result.modelVersion).toBe('gemini-3.7-flash-test');
     expect(fetcher).toHaveBeenCalledTimes(2);
+    const finalRoute = telemetry.diagnostic.mock.calls.map(([value]) => value as Record<string, unknown>).find(value => value.event === 'provider_route' && value.actualModel === 'gemini-3.7-flash');
+    expect(finalRoute?.attempts).toEqual([
+      expect.objectContaining({ model: 'gemini-3.8-flash', outcome: 'failed', reason: 'service-unavailable', failureClass: 'timeout' }),
+      expect.objectContaining({ model: 'gemini-3.7-flash', outcome: 'used' }),
+    ]);
   });
 
   it('recognizes an SDK-wrapped timeout and routes to the next free model', async () => {

@@ -1461,3 +1461,7 @@ When the cloud response is unavailable, carry the preceding user question into a
 # 2026-10-27 — allow an explicitly user-supplied reading for an absent nutrient
 
 An active package reconstruction may omit a nutrient entirely, leaving no row to correct. Provide a missing-nutrient entry route that accepts only a value and basis entered by the user, starts blank, and records it through the established user-correction path. Keep it visibly unverified and preserve existing package/OCR observations. This supports arithmetic from newly supplied input; it does not establish that the number was read correctly or verify a product label.
+
+# 2026-10-27 — keep retrieval provenance distinct in saved answers
+
+Persist bounded sources surfaced during a response separately from sources selected as citations, and show retrieved-only sources as such. A source being retrieved does not establish that the answer used or supported it. Preserve the existing answer-linked citation selection and pass only those citations into later conversation evidence. Keep profile-to-package ingredient crosswalks tied to exact observed wording and source IDs, without turning them into safety decisions.

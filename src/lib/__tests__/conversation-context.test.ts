@@ -75,8 +75,8 @@ describe('resolveLocalFollowUpQuestion', () => {
   });
 
   it('does not borrow a prior topic for a new amount without a continuation cue or prior amount', () => {
-    expect(resolveLocalFollowUpQuestion('How much protein is in 250 ml?', [{ question: 'How much sodium is in 150 ml?', answer: '', at: '' }])).toBe('How much protein is in 250 ml?');
-    expect(resolveLocalFollowUpQuestion('What if I have 250 ml instead?', [{ question: 'What ingredients are listed?', answer: '', at: '' }])).toBe('What if I have 250 ml instead?');
+    expect(resolveLocalFollowUpQuestion('How much protein is in 250 ml?', [{ question: 'How much sodium is in 150 ml?' }])).toBe('How much protein is in 250 ml?');
+    expect(resolveLocalFollowUpQuestion('What if I have 250 ml instead?', [{ question: 'What ingredients are listed?' }])).toBe('What if I have 250 ml instead?');
   });
 
   it('carries context for a quantity-only continuation while leaving new questions explicit', () => {
@@ -95,6 +95,9 @@ describe('conversationEvidenceForAssist', () => {
   });
   it('does not promote an uncited candidate',()=>{
     expect(conversationEvidenceForAssist([{...cited,answer:'A package-only observation.'}],true)).toEqual([]);
+  });
+  it('does not feed retrieved-only records into follow-up evidence context',()=>{
+    expect(conversationEvidenceForAssist([{...cited,evidence:[],retrievedEvidence:[source]}],true)).toEqual([]);
   });
   it('excludes outdated, unsafe and non-consented records',()=>{
     expect(conversationEvidenceForAssist([cited],false)).toEqual([]);

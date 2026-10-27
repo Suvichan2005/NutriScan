@@ -73,6 +73,45 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it('passes an exact source-backed ingredient/profile link to the agent without upgrading it to a safety verdict', async () => {
+    const toolContext = context(
+      'Is whey powder relevant to my milk allergy?',
+      'INGREDIENTS: whey powder; salt',
+      { ...defaultProfile, allergies: 'milk', country: 'India' },
+    );
+    toolContext.package.observations[0].field = 'ingredients';
+    const result = await executeGeminiTool('resolve_ingredient', { query: 'whey powder' }, toolContext);
+
+    expect(result.status).toBe('ok');
+    expect(result.output).toMatchObject({
+      status: 'declared_profile_label_relationship',
+      declaredProfileLabelRelationships: [{
+        kind: 'allergy', declaredTerm: 'milk', matchedLabelTerm: 'whey powder',
+        matchBasis: 'source-backed-alias', observationIds: ['ocr-1'],
+        sourceIds: ['fssai-label-allergens-compendium-2025', 'fssai-whey-casein-milk-products-2022'],
+      }],
+    });
+    expect(result.evidence?.map(source => source.id)).toEqual(expect.arrayContaining([
+      'fssai-label-allergens-compendium-2025', 'fssai-whey-casein-milk-products-2022',
+    ]));
+    expect(result.output.caveat).toContain('not an individual safety decision');
+    expect(result.output.message).toBeUndefined();
+  });
+
+  it('does not turn a source-backed milk-allergy alias into a lactose-intolerance relationship', async () => {
+    const toolContext = context(
+      'Is whey powder suitable for my lactose intolerance?',
+      'INGREDIENTS: whey powder; salt',
+      { ...defaultProfile, intolerances: 'lactose', country: 'India' },
+    );
+    toolContext.package.observations[0].field = 'ingredients';
+    const result = await executeGeminiTool('resolve_ingredient', { query: 'whey powder' }, toolContext);
+
+    expect(result.status).toBe('empty');
+    expect(result.evidence).toBeUndefined();
+    expect(result.output.declaredProfileLabelRelationships).toBeUndefined();
+  });
+
   it('does not add ingredient-source relationships for an unsupported tool query', async () => {
     const result = await executeGeminiTool('resolve_ingredient', { query: 'sodium caseinate' }, context('What are these ingredients?', 'INGREDIENTS: rice; salt'));
     expect(result.status).toBe('withheld');

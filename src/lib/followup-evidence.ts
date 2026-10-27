@@ -152,9 +152,10 @@ export function buildLocalEvidenceUnavailableFollowUp(baseAnswer: string): strin
   return baseAnswer + ' The local evidence library was unavailable, so this remains a package-only response.';
 }
 
-/** Keep only bounded, safe citations when restoring or preparing source context. */
-export function safeConversationEvidence(sources: readonly EvidenceSource[] | undefined): ConversationEvidenceSource[] {
+/** Keep bounded, safe source records when restoring or preparing answer/source context. */
+export function safeConversationEvidence(sources: readonly EvidenceSource[] | undefined, limit = 3): ConversationEvidenceSource[] {
   if (!sources) return [];
+  const boundedLimit=Math.min(8,Math.max(0,Math.trunc(limit)));
   const seen = new Set<string>();
   return sources.flatMap((source) => {
     if (!isSafeEvidenceUrl(source.url) || seen.has(source.id)) return [];
@@ -162,7 +163,7 @@ export function safeConversationEvidence(sources: readonly EvidenceSource[] | un
     if (!parsed.success || seen.has(parsed.data.id)) return [];
     seen.add(parsed.data.id);
     return [parsed.data];
-  }).slice(0, 3);
+  }).slice(0, boundedLimit);
 }
 
 /** Carry source-linked audit context into the local chat reply without adding unsupported findings. */
@@ -214,7 +215,7 @@ export function buildLocalAuditConversationReply(audit: Audit, question: string,
     const labelText = [pkg.rawText, ...pkg.observations.map(observation => observation.text)].join('\n');
     const missing = labelText.toLocaleLowerCase('en-IN').includes(requestedNutrient)
       ? `The entered label text mentions ${requestedNutrient}, but no usable ${requestedNutrient} amount is recorded for calculation. Check that line in the package inspector or add a clearer label reading.`
-      : `No ${requestedNutrient} amount is recorded in the label text entered so far. That does not establish that the package contains none; add a clearer nutrition-panel reading to check it.`;
+      : `No ${requestedNutrient} amount is recorded in the available label evidence so far. That does not establish that the package contains none; add a clearer nutrition-panel reading to check it.`;
     answer = missing;
   }
 
@@ -338,7 +339,7 @@ export function buildLocalPackageFallbackReply(audit: Audit, question: string, p
     const mentionsNutrient = labelTerms.some(term => labelText.includes(term));
     facts.push(mentionsNutrient
       ? `The entered label text mentions ${request.label}, but no usable ${request.label} amount is recorded for calculation. Check that line in the package inspector or add a clearer label reading.`
-      : `No ${request.label} amount is recorded in the label text entered so far. That does not establish that the package contains none; add a clearer nutrition-panel reading to check it.`);
+      : `No ${request.label} amount is recorded in the available label evidence so far. That does not establish that the package contains none; add a clearer nutrition-panel reading to check it.`);
   }
 
   if (foodChoice && !requestedNutrients.some(request => request.key === 'carbohydrate') && !calculations.some(calculation => calculation.nutrient === 'carbohydrate')) {
