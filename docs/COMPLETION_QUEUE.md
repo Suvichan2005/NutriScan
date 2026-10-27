@@ -2,6 +2,9 @@
 ## M6 make local Gemini evaluation telemetry metadata-only (27 October 2026)
 
 The prior opt-in recorder retained readable request, tool and answer content, conflicting with the active privacy contract. The recorder now uses an explicit operational-metadata allowlist and omits prompts, package/OCR/profile content, images/digests, tool arguments/results and natural/final answers; provider events now pass token/cost/model-version/tool-name metadata separately from raw response bodies. Status reports metadata capture separately and marks readable capture false. Focused recorder tests:3 passed; source-replay route test:1 passed (97 skipped); TypeScript passes. A provider-free write/read probe in a fresh system temporary directory verified four persisted events retained model/token/tool metadata and excluded synthetic prompt, answer and image markers. Existing local traces were preserved untouched. The already-running local server predates this change and still reports its old readable-capture state; do not use it for new provider calls until the owner-controlled process is restarted with this revision. Next: use the current server revision for future bounded provider acceptance only after owner-controlled restart, then continue broad M2 source-use validation.
+## M6 distinguish Google grounding links from reviewed source summaries (27 October 2026)
+
+Evidence cards and the source inspector now identify Google grounding records as links whose page content was not reviewed; generated response text is no longer shown in the card as a source summary. Other source summaries remain visible. Presentation unit tests and `tsc --noEmit` pass. Browser visual acceptance is pending: the Playwright browser surface returned `ERR_BLOCKED_BY_CLIENT`, and the Windows helper failed activation twice. M6 remains active.
 
 ## M2 keep Google grounding metadata from validating its own quantities (27 October 2026)
 

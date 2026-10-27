@@ -10,6 +10,7 @@ Google grounding records preserve source URLs and model-generated answer segment
 ## M2 provider-context serialization check — 27 October 2026
 
 On the latest integration branch (`01c39c84285416d52a544a272e5563ec1ce3ea4d`), added a regression asserting that a selected `get_nutrition_guidance` result is serialized into the next Gemini request with bounded `citationEvidence` and a remapped `SRC_` handle. The focused route test passes (1 passed, 97 skipped); `npm run typecheck` passes. This proves the mocked request replay contract only. It does not prove a live model saw or used evidence, or that an answer is scientifically supported. No Gemini request was made.
+Audited the numeric-evidence path for Google Search grounding. Its source record summary is a model-generated response segment linked to a URL, with an explicit limitation that the page was not fetched or checked. Natural-answer and typed-claim numeric validation exclude that category as numeric evidence. Evidence cards and the source inspector now present it as a grounding link without displaying the response segment as a source summary. Focused inference/agent/server/presentation suites:96 passed; `tsc --noEmit` passes. No provider request or source-page verification. Browser visual acceptance for the card change is pending after the browser automation surfaces failed to connect. Commits `8a5af70` and `7c8ccaa` are pushed; five owner edits remain preserved.
 
 ## Current integration checkpoint — M2/M6 claim and added-food follow-up (27 October 2026)
 

@@ -2,6 +2,9 @@
 ## Local Gemini evaluation telemetry privacy (27 October 2026)
 
 The opt-in evaluation writer is metadata-only by allowlist; prompt/package/profile content, images and image hashes, tool arguments/results and model/user answers are omitted. Recorder tests (3), source-replay route test (1), TypeScript and a provider-free recorder write/read probe pass. The isolated probe persisted four events with model/token/tool metadata and no synthetic prompt, answer or image markers. No provider request was made. The pre-existing app process still runs the old source and advertises readable capture; it was left untouched. Do not use it for provider calls until the owner-controlled runtime is restarted with the revised code.
+## M6 identify unreviewed Google grounding links in source cards (27 October 2026)
+
+Evidence cards and the source inspector label Google grounding records as links whose page content was not reviewed and suppress the generated response segment as a source summary. Other source records are unchanged. Presentation tests and TypeScript pass; browser visual acceptance is pending after `ERR_BLOCKED_BY_CLIENT` in the QA browser and activation failure in the Windows helper.
 
 ## M2 do not use generated grounding text to verify quantities (27 October 2026)
 

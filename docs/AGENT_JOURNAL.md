@@ -5,6 +5,10 @@
 - Replaced content-oriented recursive sanitization with an allowlist for operational metadata. Updated `/api/status` to state that local capture is metadata-only and readable capture is false. Added regression coverage for prompts, answers, image payloads, profile/package values and token metadata.
 - Focused recorder tests pass (3); `npm run typecheck` passes. No provider call was made. Existing local traces and the owner’s running server were left untouched; that old process still advertises readable capture until restarted on this revision.
 - A fresh isolated temporary-directory write/read probe then persisted four synthetic events. Assertions confirmed model/token/tool metadata remained and synthetic prompt, answer and photo markers were absent; the temporary fixture was retained outside the repository. This exercises local recorder persistence only, not live provider telemetry.
+## 2026-10-27 — distinguish grounded links from source text in evidence cards
+
+- Updated cited, retrieved-only and inspector source cards to identify Google grounding links as page content not reviewed. The generated answer segment is not shown as a source summary; ordinary source summaries are unchanged.
+- Presentation helper tests and `tsc --noEmit` pass. Browser visual acceptance could not run: the QA browser returned `ERR_BLOCKED_BY_CLIENT`; the documented Windows helper failed activation on its initial attempt and one retry. No screenshots or provider calls.
 
 ## 2026-10-27 — prevent generated grounding segments from self-validating quantities
 

@@ -5,7 +5,7 @@ Repository privacy rules prohibit logging request bodies or model conversations.
 
 ## 27 October 2026 — grounding association is not fetched numeric evidence
 
-Keep Google-grounded URLs available for attribution and user inspection, but do not treat the associated generated answer segment as text fetched from that page. Numeric validators must not use this generated segment to corroborate a response quantity; independent package, calculation, or source-record evidence remains required.
+Keep Google-grounded URLs available for attribution and user inspection, but do not treat the associated generated answer segment as text fetched from that page. Numeric validators must not use this generated segment to corroborate a response quantity; independent package, calculation, or source-record evidence remains required. In the UI, label the link as a grounding association and do not display the generated response segment as a source summary.
 
 ## 27 October 2026 — qualify quantities from unconfirmed package reconstruction
 
