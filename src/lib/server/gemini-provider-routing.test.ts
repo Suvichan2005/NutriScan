@@ -26,6 +26,33 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('free-tier Gemini model routing', () => {
+  it('allows a paid-only extraction a bounded 60-second route while respecting a shorter caller deadline', async () => {
+    vi.stubEnv('GEMINI_PROVIDER', 'paid');
+    vi.stubEnv('ENABLE_PAID_GEMINI', 'true');
+    vi.stubEnv('GEMINI_MODEL', 'gemini-3.8-flash');
+    vi.stubEnv('GEMINI_FREE_PROJECT_ID', 'free-project');
+    vi.stubEnv('GEMINI_PAID_PROJECT_ID', 'paid-project');
+    vi.stubEnv('GEMINI_PAID_BUDGET_USD', '1');
+    vi.stubEnv('GEMINI_PAID_MAX_CALLS', '3');
+    vi.stubEnv('GEMINI_PAID_MAX_INPUT_TOKENS', '1000');
+    vi.stubEnv('GEMINI_PAID_MAX_OUTPUT_TOKENS', '100');
+    vi.stubEnv('GEMINI_PAID_INPUT_USD_PER_MILLION', '1');
+    vi.stubEnv('GEMINI_PAID_OUTPUT_USD_PER_MILLION', '1');
+    vi.stubGlobal('fetch', vi.fn(async (target: RequestInfo | URL) => new Response(
+      String(target).includes('countTokens') ? JSON.stringify({ totalTokens: 10 }) : success('gemini-3.8-flash'),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    )));
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    try {
+      const context = applicationGeminiContext();
+      await generateTracked(context, { model: context.model, contents: 'paid extraction', config: { maxOutputTokens: 40 } });
+      expect(timeout.mock.calls.some(([ms]) => ms === 60_000)).toBe(true);
+      timeout.mockClear();
+      await generateTracked(context, { model: context.model, contents: 'short caller deadline', config: { maxOutputTokens: 40 } }, { deadlineAt: Date.now() + 3000 });
+      expect(timeout.mock.calls.some(([ms]) => ms > 0 && ms <= 3000)).toBe(true);
+      expect(timeout.mock.calls.some(([ms]) => ms === 60_000)).toBe(false);
+    } finally { timeout.mockRestore(); }
+  });
   it('does not describe paid access as authorized merely because a free key is configured', () => {
     expect(providerStatus()).toMatchObject({ tier: 'free', enabled: true, paidAuthorized: false, paidProjectIdentity: 'unknown', paidFallbackEnabled: false });
   });

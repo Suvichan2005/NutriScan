@@ -802,7 +802,10 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
       // Bound each route attempt separately. The caller's stage signal still
       // caps the complete operation, but a slow model must not consume the
       // entire stage timeout and prevent the next eligible route from running.
-      const timeout = remaining === null ? 20_000 : Math.max(1, Math.min(20_000, remaining));
+      // An explicitly paid request has one eligible model: reserve the short
+      // route window for free-model fallback, not a paid multimodal extraction.
+      const routeLimit = requestedTier === 'paid' ? 60_000 : 20_000;
+      const timeout = remaining === null ? routeLimit : Math.max(1, Math.min(routeLimit, remaining));
       const ownTimeoutSignal = AbortSignal.timeout(timeout);
       const attemptSignal = parentSignal ? AbortSignal.any([parentSignal, ownTimeoutSignal]) : ownTimeoutSignal;
       routeAttemptSignal = attemptSignal;
