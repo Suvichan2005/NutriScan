@@ -1509,3 +1509,6 @@ Preserve structured count/unit/basis provenance at the quantity boundary; never 
 
 ## 27 October 2026 —Current evidence and historical citation continuity
 The live model retrieved WHO sodium guidance for a blood-pressure question, but lexical topic matching rejected it. Added a bounded, validated currentEvidenceIds request field identifying current-context records separately from historical citation context. Native returned sources are current too. The model interprets current evidence; word overlap is not its semantic authority. Historical sources still need continuity, and source identity/navigation/jurisdiction/numeric checks remain. This does not establish scientific entailment. A final real-source browser answer had zero source-scope removals and retained two numerical removals.
+
+## 28 October 2026 — Worktree development environment
+Use @next/env in a launcher and spawn a fresh Next process. Passing Node --env-file directly reaches Next16.4 worker NODE_OPTIONS and fails; omitting configuration disables Gemini. Do not copy credentials or automatically restart an owner session.

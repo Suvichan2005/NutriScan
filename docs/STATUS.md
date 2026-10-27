@@ -1527,3 +1527,5 @@ A bounded real free-tier allergen research turn returned navigation-only FSSAI/G
 
 ### Product-completion candidate —27 October2026
 Validated a real image-first Gemini3.8 browser journey through source-grounded interpretation, portion calculation, current correction and saved-session recovery. Current-source provenance now survives paraphrases; historical citation continuity and numerical checks remain.897 tests passed/2 skipped, TypeScript/build passed; production saved-state smoke passed. New paid estimate$0.06542325 across10 generations. See `docs/evidence/product-completion-20261027.json` and the CURRENT_STATE top section for scope and unresolved source/numerical/perception limitations. No formal-study or clinical-accuracy claim.
+
+28 October startup fix: `scripts/dev-local.mjs --env-dir ../NutriScan --port 3420` loads the private sibling environment before spawning Next. Child configuration check passes without provider activity; owner server/scan left untouched.
