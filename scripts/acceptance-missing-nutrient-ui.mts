@@ -26,10 +26,10 @@ const reconstruction = {
 };
 const retrievedSource = {
   id: 'developer-fixture-source', title: 'Developer fixture source', publisher: 'Example Research Group',
-  url: 'https://example.org/developer-fixture', category: 'literature', jurisdiction: 'Not established',
+  url: 'https://example.org/developer-fixture', category: 'web-search', jurisdiction: 'Public web result; page content not independently reviewed',
   publishedAt: null, effectiveAt: null, retrievedAt: '2026-10-27T05:00:00.000Z',
-  summary: 'Synthetic retrieved-only source for UI provenance acceptance.',
-  limitations: 'Fictional development fixture; it supports no scientific or package claim.',
+  summary: 'Generated response segment: this fictional reading says 99 mg sodium per serving.',
+  limitations: 'Generated response text that Google grounding linked to this page; not fetched or independently checked against the page.',
 };
 const viewports = process.env.NUTRISCAN_ACCEPTANCE_VIEWPORT === 'desktop'
   ? [{ width: 1440, height: 900 }]
@@ -64,6 +64,10 @@ async function openPackageInspector(page: Page) {
   await page.getByRole('button', { name: 'Package', exact: true }).click();
 }
 
+async function expandDetails(details: ReturnType<Page['locator']>) {
+  if (await details.getAttribute('open') === null) await details.locator(':scope > summary').click();
+}
+
 async function applyCorrection(page: Page, route: 'local-table' | 'reconstruction') {
   if (route === 'local-table') {
     await page.getByText('Full label table', { exact: false }).click();
@@ -93,6 +97,11 @@ try {
       const context = await browser.newContext({ viewport });
       await context.addInitScript(() => sessionStorage.setItem('nutriscan.onboarding.complete.v1', '1'));
       const page = await context.newPage();
+      page.on('response', async response => {
+        if (new URL(response.url()).pathname !== '/api/assist') return;
+        const body = await response.json().catch(() => null);
+        console.log(JSON.stringify({ event: 'assist-response', viewport: viewport.width, scenario, status: response.status(), evidenceCount: Array.isArray(body?.agentEvidence) ? body.agentEvidence.length : null, answer: typeof body?.answer === 'string' ? body.answer.slice(0, 180) : null }));
+      });
       const providerCalls: string[] = [];
       const externalRequests: string[] = [];
       const pageErrors: string[] = [];
@@ -167,7 +176,9 @@ try {
       await page.getByText(/Correction saved as your reading|Your supplied reading/).first().waitFor({ state: 'visible' });
       const sodiumRow = page.locator('.nutrition-edit-table tbody tr').filter({ has: page.getByRole('rowheader', { name: /Sodium/ }) });
       const sodiumReading = await sodiumRow.innerText().catch(() => '');
-      const originalCarbohydrateVisible = await page.getByRole('rowheader', { name: /Carbohydrate/ }).isVisible().catch(() => false);
+      const originalCarbohydrateVisible = scenario === 'local-table'
+        ? await page.getByRole('rowheader', { name: /Carbohydrate/ }).isVisible().catch(() => false)
+        : await page.locator('.reconstruction-rows .reconstruction-row').filter({ hasText: /Carbohydrate/i }).count() > 0;
       await page.locator('#portion').fill('30').catch(() => {});
       const updatedAudit = await page.locator('.nutrition-edit-table tbody').innerText().catch(() => '');
       const userEvidence = await page.getByText(/User-corrected · source remains unverified|Unverified user correction/).count();
@@ -181,7 +192,18 @@ try {
       await followup.waitFor({ state: 'visible' });
       const followupText = await followup.innerText();
       const updatedPortionCalculation = /135\s*mg sodium for 30 g/i.test(followupText) || /135\s*mg/.test(followupText);
-      const retrievedOnlyVisible = await page.locator('.conversation-retrieved-evidence summary').count() > 0;
+      const retrievedDisclosure = page.locator('.thread-turn').last().locator('.conversation-retrieved-evidence');
+      const retrievedOnlyVisible = await retrievedDisclosure.locator('summary').count() > 0;
+      console.log(JSON.stringify({ event: 'followup-ui', viewport: viewport.width, scenario, retrievedOnlyVisible, followupText: followupText.slice(0, 180), answerCards: await page.locator('.conversation-evidence summary').allInnerTexts() }));
+      assert.equal(retrievedOnlyVisible, scenario === 'reconstruction', 'Uncited retrieved sources should be disclosed in the response card.');
+      let groundingLabelVisible = false;
+      let generatedSegmentHidden = true;
+      if (retrievedOnlyVisible) {
+        await expandDetails(retrievedDisclosure);
+        const groundingCardText = await retrievedDisclosure.innerText();
+        groundingLabelVisible = /GOOGLE SEARCH LINK.*PAGE CONTENT NOT REVIEWED/i.test(groundingCardText);
+        generatedSegmentHidden = !groundingCardText.includes(retrievedSource.summary);
+      }
       await page.getByLabel('Save chat').check();
       await page.waitForTimeout(500);
       await page.getByRole('button', { name: /Recent scans/ }).click();
@@ -193,6 +215,14 @@ try {
         : await page.locator('.reconstruction-rows .reconstruction-row').filter({ hasText: /Sodium/i }).innerText();
       const savedReopenPreservedCorrection = reopenedReading.includes('450 mg') && /Your correction|Your supplied reading|User-corrected/.test(reopenedReading);
       const retrievedOnlyRetainedOnReopen = await page.locator('.conversation-retrieved-evidence summary').count() > 0;
+      let groundingDisclosureRetainedOnReopen = false;
+      if (retrievedOnlyRetainedOnReopen) {
+        const reopenedRetrieved = page.locator('.thread-turn').last().locator('.conversation-retrieved-evidence');
+        await expandDetails(reopenedRetrieved);
+        const reopenedGroundingCardText = await reopenedRetrieved.innerText();
+        groundingDisclosureRetainedOnReopen = /GOOGLE SEARCH LINK.*PAGE CONTENT NOT REVIEWED/i.test(reopenedGroundingCardText)
+          && !reopenedGroundingCardText.includes(retrievedSource.summary);
+      }
       const axe = await new AxeBuilder({ page }).analyze();
       const dimensions = await page.evaluate(() => ({ viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth }));
       const screenshotPath = path.resolve('.data/m2-missing-nutrient-ui', `${viewport.width}x${viewport.height}-${scenario}.png`);
@@ -203,7 +233,7 @@ try {
         editorOpened: true, sodiumReading: sodiumRow.count ? sodiumReading : '',
         originalCarbohydrateVisible, updatedAudit, userCorrectionVisible: userEvidence > 0,
         originalOcrCount, followupText, updatedPortionCalculation, savedReopenPreservedCorrection,
-        retrievedOnlyVisible, retrievedOnlyRetainedOnReopen,
+        retrievedOnlyVisible, retrievedOnlyRetainedOnReopen, groundingLabelVisible, generatedSegmentHidden, groundingDisclosureRetainedOnReopen,
         reopenedReading, providerCalls: providerCalls.length, pageErrors,
         externalRequests: [...new Set(externalRequests)], axeViolationIds: axe.violations.map(v => v.id),
         horizontalOverflow: dimensions.scrollWidth > dimensions.viewport, screenshotPath,
@@ -220,10 +250,14 @@ assert.equal(outcomes.length, viewports.length * scenarios.length);
 for (const outcome of outcomes) {
   assert.equal(outcome.editorOpened, true);
   assert.equal(outcome.userCorrectionVisible, true);
+  assert.equal(outcome.originalCarbohydrateVisible, true);
   assert.equal(outcome.updatedPortionCalculation, true);
   assert.equal(outcome.savedReopenPreservedCorrection, true);
   assert.equal(outcome.retrievedOnlyVisible, outcome.scenario === 'reconstruction');
   assert.equal(outcome.retrievedOnlyRetainedOnReopen, outcome.scenario === 'reconstruction');
+  assert.equal(outcome.groundingLabelVisible, outcome.scenario === 'reconstruction');
+  assert.equal(outcome.generatedSegmentHidden, true);
+  assert.equal(outcome.groundingDisclosureRetainedOnReopen, outcome.scenario === 'reconstruction');
   assert.deepEqual(outcome.pageErrors, []);
   assert.deepEqual(outcome.externalRequests, []);
   assert.deepEqual(outcome.axeViolationIds, []);

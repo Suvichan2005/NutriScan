@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M2/M6 accept missing-nutrient correction in the browser (27 October 2026)
+
+Accepted the editor journey on mobile390×844 and desktop1440×900 through both local label-text and Gemini-reconstructed package routes. Users can add a missing 450 mg sodium reading per100 g, retain the original carbohydrate evidence as a separate reading, calculate135 mg for30 g, and save/reopen the correction and conversation. Grounding results stay uncited and visibly unreviewed through reopen. Zero Axe violations, browser page errors, external requests or horizontal overflow across four journeys. Fixed a heading-level accessibility issue. This uses fictional label text and provider-intercepted responses; genuine photo OCR and fresh Gemini selection remain unverified. Receipt/screenshots are ignored in `.data/m2-missing-nutrient-ui/`. Continue broader M2 scenarios and M6 journey acceptance.
+
 ## M6 distinguish Google grounding links from reviewed source summaries (27 October 2026)
 
 Evidence cards and the source inspector now identify Google grounding records as links whose page content was not reviewed; generated response text is no longer shown in the card as a source summary. Other source summaries remain visible. Presentation unit tests and `tsc --noEmit` pass. Browser visual acceptance is pending: the Playwright browser surface returned `ERR_BLOCKED_BY_CLIENT`, and the Windows helper failed activation twice. M6 remains active.

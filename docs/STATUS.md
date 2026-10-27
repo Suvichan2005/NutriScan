@@ -1,4 +1,8 @@
 # Current engineering status
+## M2/M6 missing-nutrient correction browser acceptance (27 October 2026)
+
+The missing-nutrient editor now passes installed-Chrome UI acceptance at 390×844 and 1440×900 for local label-text and reconstructed package routes. Starting with no sodium value, users add a 450 mg per 100 g reading, see it distinguished from the original carbohydrate evidence, calculate 135 mg for 30 g, then save and reopen the conversation and correction. Retrieved Google grounding links remain identified as uncited and unreviewed after reopen. The acceptance exposed and fixed a heading-order accessibility defect. All four journeys report zero Axe violations, page errors, external requests, and horizontal overflow. Synthetic/intercepted development evidence only; real photo OCR and fresh Gemini selection remain unverified. Local ignored receipt/screenshots: `.data/m2-missing-nutrient-ui/`.
+
 ## M6 identify unreviewed Google grounding links in source cards (27 October 2026)
 
 Evidence cards and the source inspector label Google grounding records as links whose page content was not reviewed and suppress the generated response segment as a source summary. Other source records are unchanged. Presentation tests and TypeScript pass; browser visual acceptance is pending after `ERR_BLOCKED_BY_CLIENT` in the QA browser and activation failure in the Windows helper.
