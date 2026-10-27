@@ -1512,3 +1512,6 @@ The live model retrieved WHO sodium guidance for a blood-pressure question, but 
 
 ## 28 October 2026 — Worktree development environment
 Use @next/env in a launcher and spawn a fresh Next process. Passing Node --env-file directly reaches Next16.4 worker NODE_OPTIONS and fails; omitting configuration disables Gemini. Do not copy credentials or automatically restart an owner session.
+
+## 28 October 2026 — Explicit model choices and compact scan controls
+An explicit model choice is pinned across reconstruction/answer/vision generation. It may use paid fallback only for the same server-configured model with existing consent/authorization; Auto retains server routing. Server allowlists remain authoritative. The picker lists configured choices, not certified endpoint availability. Restore the visible analysis selector, retain all five methods and move full privacy/cost text behind Details.

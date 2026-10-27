@@ -1,4 +1,7 @@
 import { z } from 'zod';
+
+export const geminiModelChoiceSchema=z.enum(['gemini-3.8-flash','gemini-3.7-flash','gemini-3.6-flash','gemini-3.5-flash-lite']);
+export type GeminiModelChoice=z.infer<typeof geminiModelChoiceSchema>;
 export const analysisMethodSchema=z.enum(['tesseract-text','paddle-text','vision','tesseract-vision','paddle-vision']);
 export type AnalysisMethod=z.infer<typeof analysisMethodSchema>;
 export const nutrientKeys = ['energy','carbohydrate','sugars','addedSugars','protein','fat','saturatedFat','fiber','sodium','salt'] as const;

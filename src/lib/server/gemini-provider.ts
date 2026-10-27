@@ -6,6 +6,7 @@ import { GoogleGenAI, type Content, type CountTokensParameters, type GenerateCon
 import { ApiError, readBounded } from './http';
 import { recordGeminiDiagnostic } from './gemini-diagnostics';
 import { recordGeminiEvaluationEvent } from './gemini-evaluation-recorder';
+import { geminiModelChoiceSchema, type GeminiModelChoice } from '../contracts';
 
 export type GeminiTier = 'free' | 'paid';
 export type GeminiPurpose = 'application' | 'synthetic-smoke';
@@ -16,14 +17,10 @@ export type GeminiContext = {
   purpose: GeminiPurpose;
   client: GoogleGenAI;
   allowPaidFallback?:boolean;
+  modelPinned?:boolean;
 };
 
-export const FREE_GEMINI_MODEL_PREFERENCE = [
-  'gemini-3.8-flash',
-  'gemini-3.7-flash',
-  'gemini-3.6-flash',
-  'gemini-3.5-flash-lite',
-] as const;
+export const FREE_GEMINI_MODEL_PREFERENCE = geminiModelChoiceSchema.options;
 
 type ModelCooldown = { until: number; kind: 'short-quota' | 'daily-quota' | 'model-unavailable' | 'unsupported-feature' | 'service-unavailable'; retryAfterMs: number | null };
 type ModelRouteAttempt = { model: string; outcome: 'used' | 'failed' | 'skipped'; reason?: string; failureClass?: string; retryAfterMs?: number | null; cooldownUntil?: number | null };
@@ -87,10 +84,13 @@ export function parseGeminiRetryAfter(value: string | null, now = Date.now()): n
   return Number.isFinite(ms) && ms >= 0 ? Math.min(24 * 60 * 60 * 1000, ms) : null;
 }
 
-function configuredFreeModels() {
+function selectableFreeModels() {
   const configured = process.env.GEMINI_FREE_MODEL_ORDER?.split(',').map(value => value.trim()).filter(Boolean);
   const allow = configured?.length?new Set(configured):null;
-  const models=FREE_GEMINI_MODEL_PREFERENCE.filter(model=>!allow||allow.has(model));
+  return FREE_GEMINI_MODEL_PREFERENCE.filter(model=>!allow||allow.has(model));
+}
+function configuredFreeModels() {
+  const models=selectableFreeModels();
   // Other model families are an explicit economy/compatibility choice, not a
   // silent quality downgrade before the separately authorized paid fallback.
   return process.env.GEMINI_FREE_ALLOW_ALTERNATIVES==='true'?models:models.slice(0,1);
@@ -325,6 +325,7 @@ export function providerStatus() {
   return {
     provider: 'Gemini', tier, requestedTier: tier, configured, enabled, paidAuthorized, model,
     preferredFreeModels: configuredFreeModels(),
+    modelChoices: tier==='free'?selectableFreeModels():(model&&geminiModelChoiceSchema.safeParse(model).success?[model]:[]),
     projectIdentity: tier === 'paid' ? (paidProjectId ? 'declared' : 'unknown') : (freeProjectId ? 'declared' : 'unknown'),
     paidProjectIdentity: paidProjectId ? 'declared' : 'unknown',
     paidFallbackEnabled: paidFallbackReady(),
@@ -360,7 +361,7 @@ function buildClient(apiKey: string, tier: GeminiTier, purpose: GeminiPurpose, m
   } });
 }
 
-export function applicationGeminiContext(allowPaidFallback=false): GeminiContext {
+export function applicationGeminiContext(allowPaidFallback=false,requestedModel?:GeminiModelChoice): GeminiContext {
   const status = providerStatus();
   if (!status.enabled || !status.tier || !status.model) {
     const code = status.tier === 'paid' && !status.paidAuthorized ? 'paid_provider_unauthorized' : 'provider_disabled';
@@ -368,7 +369,9 @@ export function applicationGeminiContext(allowPaidFallback=false): GeminiContext
   }
   const apiKey = selectedKey(status.tier);
   if (!apiKey) throw new ApiError(503, 'provider_not_configured', 'The explicitly selected Gemini project has no server-side key.');
-  return { tier: status.tier, model: status.model, purpose: 'application',allowPaidFallback, client: buildClient(apiKey, status.tier, 'application', status.model) };
+  if(requestedModel&&!status.modelChoices.includes(requestedModel))throw new ApiError(400,'model_not_enabled','This model is not enabled by the server configuration.');
+  const model=requestedModel??status.model;
+  return { tier: status.tier, model, purpose: 'application',allowPaidFallback,modelPinned:Boolean(requestedModel), client: buildClient(apiKey, status.tier, 'application', model) };
 }
 
 /** The only smoke-test context is explicitly bound to the free project. */
@@ -782,7 +785,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
   const attempts: ModelRouteAttempt[] = [];
   const requestedModel = context.model;
   const models = requestedTier === 'free' && context.purpose === 'application'
-    ? configuredFreeModels()
+    ? context.modelPinned?[context.model]:configuredFreeModels()
     : [context.model];
   let lastRetryableError: unknown = null;
   const parentSignal = params.config?.abortSignal;
@@ -876,7 +879,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
   if (requestedTier === 'free' && context.purpose === 'application' && context.allowPaidFallback===true && !parentSignal?.aborted && paidFallbackReady()) {
     const paidModel = validModel(process.env.GEMINI_PAID_MODEL) ?? validModel(process.env.GEMINI_MODEL);
     const paidKey = selectedKey('paid');
-    if (paidModel && paidKey) {
+    if (paidModel && paidKey && (!context.modelPinned||context.model===paidModel)) {
       const paidContext: GeminiContext = { tier: 'paid', model: paidModel, purpose: 'application', client: buildClient(paidKey, 'paid', 'application', paidModel) };
       const remaining = diagnosticContext.deadlineAt === undefined ? null : diagnosticContext.deadlineAt - Date.now();
       if (remaining !== null && remaining <= 0) {

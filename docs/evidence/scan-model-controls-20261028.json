@@ -1,0 +1,32 @@
+{
+  "scope": "Visible scan/model controls and request routing",
+  "date": "2026-10-28",
+  "models": [
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite"
+  ],
+  "explicitModelPinned": true,
+  "serverAllowlistRequired": true,
+  "paidConsentUnchanged": true,
+  "tests": {
+    "focusedPassed": 209,
+    "typecheck": "passed",
+    "browser": "desktop/mobile, no overflow or page errors; visible method/model controls; selected3.7 in intercepted outbound request; privacy Details opens",
+    "providerCalls": 0,
+    "providerResponsesFabricated": false,
+    "productionBuild": "not repeated against active owner dev directory"
+  },
+  "observedOwnerFailure": {
+    "stage": "package-reconstruction",
+    "tier": "free",
+    "model": "gemini-3.8-flash",
+    "httpStatus": 503,
+    "providerStatus": "UNAVAILABLE",
+    "elapsedMs": 15692,
+    "nextAttempt": "skipped during service-unavailable cooldown",
+    "schemaFailure": false
+  },
+  "privateAcceptance": ".data/product-completion-20261027/model-picker/acceptance.json"
+}

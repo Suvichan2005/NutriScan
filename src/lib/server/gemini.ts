@@ -10,7 +10,7 @@ import { assistantUiComponentSchema, calculationEvidenceText, calculationSchema,
 import { applicationGeminiContext, generateTracked, providerStatus, safeProviderFailure, modelPrice, estimateGeminiTokenCostUsd } from './gemini-provider';
 import { calculateSavedServing, executeGeminiTool, geminiToolDeclarations, type GeminiToolImage, type GeminiToolResult } from './gemini-tools';
 import {analysisMethodPolicy,packageForSelectedMethod} from '../analysis-method';
-import {analysisMethodSchema} from '../contracts';
+import {analysisMethodSchema,geminiModelChoiceSchema} from '../contracts';
 import {selectAgentTools,toolAccessInput} from './gemini-tool-access';
 import { ApiError } from './http';
 import { recordGeminiDiagnostic } from './gemini-diagnostics';
@@ -96,7 +96,7 @@ function equivalentCalculationOperations(left:Calculation,right:Calculation):boo
   return !leftRows.length||!rightRows.length||leftRows.join('|')===rightRows.join('|');
 }
 
-export const assistInput = z.object({ analysisMethod:analysisMethodSchema.optional(), toolAccess:toolAccessInput.optional(), allowPaidFallback:z.boolean().default(false), consent: z.literal(true), question: z.string().trim().min(1).max(2000), workspacePortion:workspacePortionSchema.optional(), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), currentEvidenceIds:z.array(sourceSchema.shape.id).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
+export const assistInput = z.object({ requestedModel:geminiModelChoiceSchema.optional(), analysisMethod:analysisMethodSchema.optional(), toolAccess:toolAccessInput.optional(), allowPaidFallback:z.boolean().default(false), consent: z.literal(true), question: z.string().trim().min(1).max(2000), workspacePortion:workspacePortionSchema.optional(), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), currentEvidenceIds:z.array(sourceSchema.shape.id).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
   for(const id of data.currentEvidenceIds??[]){
     if(!data.evidence?.some(source=>source.id===id))context.addIssue({code:'custom',path:['currentEvidenceIds'],message:'Current evidence must identify a supplied source record.'});
   }
@@ -1380,14 +1380,14 @@ export function geminiResponseJsonSchema(schema: z.ZodType) {
   return simplify(source);
 }
 
-async function generate(prompt: string, schema: z.ZodType, parts: Part[] = [], systemInstruction = visionSystemInstruction, allowPaidFallback=false) {
-  const context = applicationGeminiContext(allowPaidFallback);
+async function generate(prompt: string, schema: z.ZodType, parts: Part[] = [], systemInstruction = visionSystemInstruction, allowPaidFallback=false,requestedModel?:z.infer<typeof geminiModelChoiceSchema>) {
+  const context = applicationGeminiContext(allowPaidFallback,requestedModel);
   // Gemini Developer API's models.generateContent path does not support the
   // newer responseFormat field yet; its current SDK serializer drops it.
   const response = await generateTracked(context, { model: context.model, contents: [{ role: 'user', parts: [{ text: prompt }, ...parts] }], config: { systemInstruction, responseMimeType: 'application/json', responseJsonSchema: geminiResponseJsonSchema(schema), maxOutputTokens: 4000, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, automaticContinuation: false, abortSignal: AbortSignal.timeout(60_000) } });
   const text = response.text;
   if (!text || text.length > 50_000 || response.candidates?.[0]?.finishReason !== 'STOP') throw new ApiError(502, 'provider_incomplete', 'The model did not return a complete bounded response. No partial result was accepted.');
-  try { return JSON.parse(text) as unknown; } catch { throw new ApiError(502, 'provider_invalid', 'The model returned invalid structured output. No result was accepted.'); }
+  try { return {content:JSON.parse(text) as unknown,model:response.modelVersion??context.model}; } catch { throw new ApiError(502, 'provider_invalid', 'The model returned invalid structured output. No result was accepted.'); }
 }
 
 function canUseGoogleSearch(data: z.infer<typeof assistInput>, enabled: boolean) {
@@ -1635,7 +1635,7 @@ async function reconstructPackage(
 ){
   const hasTextEvidence=Boolean(data.package.observations.length||data.package.rawText.trim()||data.package.userDescription?.trim()||data.package.barcode||data.package.brand||data.package.name!=='Unidentified package');
   if(!imageParts.length&&!hasTextEvidence)throw new ApiError(400,'package_evidence_required','Add a package photo or label text before reconstructing package details.');
-  const context=applicationGeminiContext(data.allowPaidFallback);
+  const context=applicationGeminiContext(data.allowPaidFallback,data.requestedModel);
   const requestedModel=context.model,requestedTier=context.tier;
   const profileIncluded=Object.values(data.profile??{}).some(value=>value.trim());
   const started=Date.now();
@@ -1712,7 +1712,7 @@ async function reconstructPackage(
 }
 
 async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:string,referenceAliases:ReferenceAliases):Promise<GeneratedAgentOutput>{
-  const context=applicationGeminiContext(data.allowPaidFallback);
+  const context=applicationGeminiContext(data.allowPaidFallback,data.requestedModel);
   const access=selectAgentTools(geminiToolDeclarations,(data.visualImages?.length??0)>0,data.toolAccess);
   const allowedToolNames=new Set(access.names);
   await recordGeminiDiagnostic({event:'agent_tool_access',analysisId,mode:access.mode,toolNames:access.names,schemaBytes:access.schemaBytes});
@@ -2420,7 +2420,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
     throw error;
   }
 }
-export const visionInput = z.object({ allowPaidFallback:z.boolean().default(false), consent: z.literal(true), image: imagePayloadSchema, instruction: z.string().max(500).optional() }).strict();
+export const visionInput = z.object({ requestedModel:geminiModelChoiceSchema.optional(), allowPaidFallback:z.boolean().default(false), consent: z.literal(true), image: imagePayloadSchema, instruction: z.string().max(500).optional() }).strict();
 const visionLine = z.object({ field: z.string().max(120), text: z.string().min(1).max(2500), confidence: z.number().min(0).max(100).nullable() }).strict();
 const visionOutput = z.object({ observations: z.array(visionLine).max(60), limitations: z.array(z.string().max(500)).max(12) }).strict();
 export function linkVisionResponseToCapture(response:z.infer<typeof visionOutput>,image:z.infer<typeof visionInput>['image'],model:string,runId=`vision-${crypto.randomUUID()}`):{visionCapture:VisionCapture;observations:Observation[]} {
@@ -2454,9 +2454,9 @@ export async function validateImage(image: z.infer<typeof visionInput>['image'])
 export async function vision(data: z.infer<typeof visionInput>) {
   if (!providerStatus().enabled) throw new ApiError(503, 'provider_disabled', providerStatus().message);
   const clean = await validateImage(data.image);
-  const raw = await generate(`Transcribe only visible package text from the selected ${data.image.side} image or crop. Do not infer missing values or interpret health effects. Preserve table basis and units, conflicts, ingredient order and illegible text explicitly. Model confidence is uncalibrated, use null if uncertain. Requested focus: ${data.instruction || 'nutrition table, ingredients, claims, serving and identity'}`, visionOutput, [{ inlineData: { mimeType: 'image/jpeg', data: clean } }],visionSystemInstruction,data.allowPaidFallback);
-  const result = visionOutput.safeParse(raw);
+  const raw = await generate(`Transcribe only visible package text from the selected ${data.image.side} image or crop. Do not infer missing values or interpret health effects. Preserve table basis and units, conflicts, ingredient order and illegible text explicitly. Model confidence is uncalibrated, use null if uncertain. Requested focus: ${data.instruction || 'nutrition table, ingredients, claims, serving and identity'}`, visionOutput, [{ inlineData: { mimeType: 'image/jpeg', data: clean } }],visionSystemInstruction,data.allowPaidFallback,data.requestedModel);
+  const result = visionOutput.safeParse(raw.content);
   if (!result.success) throw new ApiError(502, 'provider_invalid', 'Vision output did not match the observation schema.');
-  const linked=linkVisionResponseToCapture(result.data,data.image,providerStatus().model!);
+  const linked=linkVisionResponseToCapture(result.data,data.image,raw.model);
   return { status: 'ok', ...linked, limitations: [...result.data.limitations, 'Vision output is an unverified observation. Inspect the original package before accepting it; confidence is model-reported and uncalibrated.'] };
 }

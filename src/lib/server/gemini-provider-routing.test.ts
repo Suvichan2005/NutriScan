@@ -27,6 +27,37 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('free-tier Gemini model routing', () => {
+  it('honors an explicit model choice even when automatic alternatives are disabled',async()=>{
+    vi.stubEnv('GEMINI_FREE_ALLOW_ALTERNATIVES','false');
+    const fetcher=vi.fn().mockResolvedValue(new Response(success('gemini-3.7-flash'),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    expect(providerStatus().modelChoices).toEqual(['gemini-3.8-flash','gemini-3.7-flash']);
+    const context=applicationGeminiContext(false,'gemini-3.7-flash');
+    await generateTracked(context,{model:context.model,contents:'synthetic model choice check',config:{maxOutputTokens:40}});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(String(fetcher.mock.calls[0]?.[0])).toContain('gemini-3.7-flash');
+    expect(context.model).toBe('gemini-3.7-flash');
+  });
+  it('rejects a model excluded by the server and never substitutes another for a pinned failure',async()=>{
+    expect(()=>applicationGeminiContext(false,'gemini-3.6-flash')).toThrow('not enabled');
+    const fetcher=vi.fn().mockResolvedValue(new Response(JSON.stringify({error:{code:503,status:'UNAVAILABLE'}}),{status:503,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const context=applicationGeminiContext(false,'gemini-3.7-flash');
+    await expect(generateTracked(context,{model:context.model,contents:'synthetic pinned failure',config:{maxOutputTokens:40}})).rejects.toMatchObject({code:'free_models_exhausted'});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(String(fetcher.mock.calls[0]?.[0])).toContain('gemini-3.7-flash');
+    expect(context.model).toBe('gemini-3.7-flash');
+  });
+  it('does not change a pinned model even when paid fallback to a different model is authorized',async()=>{
+    for(const[key,value]of Object.entries({ENABLE_PAID_GEMINI:'true',ENABLE_PAID_GEMINI_FALLBACK:'true',GEMINI_MODEL:'gemini-3.8-flash',GEMINI_PAID_MODEL:'gemini-3.8-flash',GEMINI_FREE_PROJECT_ID:'free-test-project',GEMINI_PAID_PROJECT_ID:'paid-test-project',GEMINI_PAID_BUDGET_USD:'1',GEMINI_PAID_MAX_CALLS:'3',GEMINI_PAID_MAX_INPUT_TOKENS:'1000',GEMINI_PAID_MAX_OUTPUT_TOKENS:'100',GEMINI_PAID_INPUT_USD_PER_MILLION:'0.75',GEMINI_PAID_OUTPUT_USD_PER_MILLION:'3.75'}))vi.stubEnv(key,value);
+    const fetcher=vi.fn().mockResolvedValue(new Response(JSON.stringify({error:{code:503,status:'UNAVAILABLE'}}),{status:503,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const context=applicationGeminiContext(true,'gemini-3.7-flash');
+    await expect(generateTracked(context,{model:context.model,contents:'synthetic pinned tier check',config:{maxOutputTokens:40}})).rejects.toMatchObject({code:'free_models_exhausted'});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(new Headers(fetcher.mock.calls[0]?.[1]?.headers).get('x-goog-api-key')).toBe('free-test-key');
+    expect(context.tier).toBe('free');
+  });
   it('keeps a consumer free request free even when server-side paid fallback is configured',async()=>{
     vi.stubEnv('ENABLE_PAID_GEMINI','true');vi.stubEnv('ENABLE_PAID_GEMINI_FALLBACK','true');
     vi.stubEnv('GEMINI_FREE_PROJECT_ID','free-project');vi.stubEnv('GEMINI_PAID_PROJECT_ID','paid-project');
