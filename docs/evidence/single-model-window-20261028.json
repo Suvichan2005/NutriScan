@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-28",
+  "sourceParent": "5a687f760df45ee88c5f9dd2c296cc1a75ac3733",
+  "change": "Single free-only route60s; eligible alternatives retain20s free window; caller deadlines still bound both",
+  "tests": {
+    "focusedPassed": 210,
+    "typecheck": "passed",
+    "browserControls": "desktop/mobile, explicit paid consent and pinned-model compatibility; requests aborted before server",
+    "productionBuild": "not repeated while owner dev server active"
+  },
+  "liveReconstruction": {
+    "tier": "free",
+    "model": "gemini-3.8-flash",
+    "generations": 1,
+    "elapsedMs": 53944,
+    "returnedNutritionRows": 11,
+    "independentAccuracyVerified": false
+  },
+  "freeAnswer": {
+    "httpStatus": 503,
+    "upstream": "UNAVAILABLE",
+    "photos": 0
+  },
+  "initialBackupFailure": {
+    "httpStatus": 502,
+    "cause": "Parent65s signal left paid5s after free60s",
+    "unknownUsageReservationUsd": 0.02089275
+  },
+  "correctedBackup": {
+    "httpStatus": 200,
+    "elapsedMs": 6887,
+    "model": "gemini-3.8-flash",
+    "tier": "paid",
+    "generations": 1,
+    "photos": 0,
+    "withheldQuantities": 0,
+    "withheldSourceScope": 0,
+    "sourceLookupCount": 0,
+    "estimatedUsd": 0.00518475
+  },
+  "conservativeAddedPaidCommitmentUsd": 0.026077500000000003,
+  "conservativeCumulativePaidUsd": 8.664442175,
+  "billingVerified": false,
+  "privateEvidence": ".data/product-completion-20261027/free-window-20261028/",
+  "referenceCaveat": "Free answer fixture had incorrect front-image dimensions; no image bytes were sent. It is not geometry acceptance. Corrected in paid fixture; not a formal paired study."
+}

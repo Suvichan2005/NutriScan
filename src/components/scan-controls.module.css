@@ -4,4 +4,6 @@
 .disclosure{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px;margin:5px auto;font-size:10px;line-height:1.4;color:var(--muted)}
 .disclosure button{font:inherit;text-decoration:underline;text-underline-offset:2px}
 .packageActions{flex:0 1 auto;min-width:0}
+.paidBackup{display:flex;flex:1 1 100%;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.paidBackup input{width:14px;height:14px;margin:0;accent-color:var(--green)}
 @media(max-width:700px){.packageHeader{flex-wrap:wrap}.packageActions{flex:1 1 100%;width:100%}.controls{flex-basis:200px;max-width:100%;gap:6px}.control{flex-basis:100px;max-width:none}.control select{font-size:11px}.disclosure{font-size:10px}}

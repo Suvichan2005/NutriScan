@@ -27,6 +27,21 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('free-tier Gemini model routing', () => {
+  it('gives a single free route 60 seconds while preserving shorter caller deadlines',async()=>{
+    vi.stubEnv('GEMINI_FREE_ALLOW_ALTERNATIVES','false');
+    vi.stubGlobal('fetch',vi.fn().mockImplementation(async()=>new Response(success('gemini-3.8-flash'),{status:200,headers:{'content-type':'application/json'}})));
+    const timeout=vi.spyOn(AbortSignal,'timeout');
+    try{
+      const context=applicationGeminiContext();
+      await generateTracked(context,{model:context.model,contents:'synthetic single route',config:{maxOutputTokens:40}});
+      expect(timeout.mock.calls.some(([ms])=>ms===60_000)).toBe(true);
+      expect(timeout.mock.calls.some(([ms])=>ms===20_000)).toBe(false);
+      timeout.mockClear();
+      await generateTracked(context,{model:context.model,contents:'synthetic bounded caller',config:{maxOutputTokens:40}},{deadlineAt:Date.now()+3000});
+      expect(timeout.mock.calls.some(([ms])=>ms>0&&ms<=3000)).toBe(true);
+      expect(timeout.mock.calls.some(([ms])=>ms===60_000)).toBe(false);
+    }finally{timeout.mockRestore();}
+  });
   it('honors an explicit model choice even when automatic alternatives are disabled',async()=>{
     vi.stubEnv('GEMINI_FREE_ALLOW_ALTERNATIVES','false');
     const fetcher=vi.fn().mockResolvedValue(new Response(success('gemini-3.7-flash'),{status:200,headers:{'content-type':'application/json'}}));
@@ -345,8 +360,14 @@ describe('free-tier Gemini model routing', () => {
       return new Response(success('gemini-3.8-flash'), { status: 200, headers: { 'content-type': 'application/json' } });
     });
     vi.stubGlobal('fetch', fetcher);
+    vi.stubEnv('GEMINI_FREE_ALLOW_ALTERNATIVES','false');
     const context = applicationGeminiContext(true);
-    await generateTracked(context, { model: context.model, contents: 'explicit paid fallback test', config: { maxOutputTokens: 40 } });
+    const timeout=vi.spyOn(AbortSignal,'timeout');
+    try{
+      await generateTracked(context, { model: context.model, contents: 'explicit paid fallback test', config: { maxOutputTokens: 40,abortSignal:AbortSignal.timeout(65_000) } });
+      expect(timeout.mock.calls.some(([ms])=>ms===20_000)).toBe(true);
+      expect(timeout.mock.calls.some(([ms])=>ms===45_000)).toBe(true);
+    }finally{timeout.mockRestore();}
     expect(paidWasCalled.value).toBe(true);
     expect(context.tier).toBe('paid');
   });

@@ -1515,3 +1515,6 @@ Use @next/env in a launcher and spawn a fresh Next process. Passing Node --env-f
 
 ## 28 October 2026 — Explicit model choices and compact scan controls
 An explicit model choice is pinned across reconstruction/answer/vision generation. It may use paid fallback only for the same server-configured model with existing consent/authorization; Auto retains server routing. Server allowlists remain authoritative. The picker lists configured choices, not certified endpoint availability. Restore the visible analysis selector, retain all five methods and move full privacy/cost text behind Details.
+
+## 28 October 2026 — Allocate route time by actual fallback eligibility
+A free-only model must not inherit a short20s window intended for model fallback. Give it60s within the caller deadline. If multiple free routes or an explicitly authorized same-model paid backup exist, retain the20s free window so the parent65s generation budget leaves backup time. Parent/agent bounds and financial guards remain unchanged. Display paid consent beside model controls, default false; never infer it from model selection.

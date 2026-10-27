@@ -329,6 +329,7 @@ export function providerStatus() {
     projectIdentity: tier === 'paid' ? (paidProjectId ? 'declared' : 'unknown') : (freeProjectId ? 'declared' : 'unknown'),
     paidProjectIdentity: paidProjectId ? 'declared' : 'unknown',
     paidFallbackEnabled: paidFallbackReady(),
+    paidFallbackModel: validModel(process.env.GEMINI_PAID_MODEL)??validModel(process.env.GEMINI_MODEL),
     paidFallbackReason: paidFallbackReady() ? null : 'Paid fallback requires ENABLE_PAID_GEMINI_FALLBACK=true, distinct declared project IDs and the complete paid cap configuration.',
     searchEnabled, searchRequested: searchEnabled, message,
   };
@@ -787,6 +788,9 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
   const models = requestedTier === 'free' && context.purpose === 'application'
     ? context.modelPinned?[context.model]:configuredFreeModels()
     : [context.model];
+  const paidBackupModel=validModel(process.env.GEMINI_PAID_MODEL)??validModel(process.env.GEMINI_MODEL);
+  const paidBackupEligible=requestedTier==='free'&&context.purpose==='application'&&context.allowPaidFallback===true&&paidFallbackReady()
+    &&Boolean(paidBackupModel&&(!context.modelPinned||context.model===paidBackupModel));
   let lastRetryableError: unknown = null;
   const parentSignal = params.config?.abortSignal;
 
@@ -808,9 +812,9 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
       // Bound each route attempt separately. The caller's stage signal still
       // caps the complete operation, but a slow model must not consume the
       // entire stage timeout and prevent the next eligible route from running.
-      // An explicitly paid request has one eligible model: reserve the short
-      // route window for free-model fallback, not a paid multimodal extraction.
-      const routeLimit = requestedTier === 'paid' ? 60_000 : 20_000;
+      // A single free-only route needs the full generation window. Reserve
+      // time when another free route or an authorized paid backup is eligible.
+      const routeLimit = requestedTier === 'paid' || (models.length === 1&&!paidBackupEligible) ? 60_000 : 20_000;
       const timeout = remaining === null ? routeLimit : Math.max(1, Math.min(routeLimit, remaining));
       const ownTimeoutSignal = AbortSignal.timeout(timeout);
       const attemptSignal = parentSignal ? AbortSignal.any([parentSignal, ownTimeoutSignal]) : ownTimeoutSignal;
@@ -876,8 +880,8 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
     }
   }
 
-  if (requestedTier === 'free' && context.purpose === 'application' && context.allowPaidFallback===true && !parentSignal?.aborted && paidFallbackReady()) {
-    const paidModel = validModel(process.env.GEMINI_PAID_MODEL) ?? validModel(process.env.GEMINI_MODEL);
+  if (paidBackupEligible && !parentSignal?.aborted) {
+    const paidModel = paidBackupModel;
     const paidKey = selectedKey('paid');
     if (paidModel && paidKey && (!context.modelPinned||context.model===paidModel)) {
       const paidContext: GeminiContext = { tier: 'paid', model: paidModel, purpose: 'application', client: buildClient(paidKey, 'paid', 'application', paidModel) };
