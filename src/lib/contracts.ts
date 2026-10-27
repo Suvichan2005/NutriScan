@@ -137,7 +137,7 @@ export const packageSchema=packageBaseSchema.superRefine((pkg,context)=>{
   }
 });
 export type PackageData = z.infer<typeof packageSchema>;
-export const sourceSchema = z.object({id:z.string(),title:z.string(),publisher:z.string(),url:z.string().url(),category:z.enum(['guideline','assessment','regulation','product','literature','registry','method','food-composition','web-search']),jurisdiction:z.string(),publishedAt:z.string().nullable(),effectiveAt:z.string().nullable(),retrievedAt:z.string(),summary:z.string(),limitations:z.string(),license:z.string().optional()});
+export const sourceSchema = z.object({id:z.string(),title:z.string(),publisher:z.string(),url:z.string().url(),category:z.enum(['guideline','assessment','regulation','product','literature','registry','method','food-composition','web-search']),jurisdiction:z.string(),publishedAt:z.string().nullable(),effectiveAt:z.string().nullable(),retrievedAt:z.string(),summary:z.string(),limitations:z.string(),license:z.string().optional(),supportRole:z.enum(['content','navigation']).optional()});
 export type EvidenceSource = z.infer<typeof sourceSchema>;
 export const conversationEvidenceSourceSchema=sourceSchema.extend({
   id:z.string().min(1).max(160),title:z.string().min(1).max(300),publisher:z.string().min(1).max(240),
@@ -213,7 +213,7 @@ export type SavedConversationTurn=z.infer<typeof savedConversationTurnSchema>;
 export const savedScanSchema=z.object({id:z.string().min(1).max(160),name:z.string().max(200),createdAt:z.string().min(1).max(80),package:packageSchema,portion:z.number().finite().positive().max(10000),unit:z.enum(['g','ml']),conversation:z.array(savedConversationTurnSchema).max(30).optional()}).strict();
 export type SavedScanRecord=z.infer<typeof savedScanSchema>;
 export type ProductRecord = {id:string;name:string;brand:string;barcode:string;quantity:string;countries:string[];url:string;retrievedAt:string;lastModified:string|null;nutrients:{key:NutrientKey;value:number;unit:string;basis:{amount:100;unit:'g'|'ml'}|null}[];ingredients:string;allergens:string[];allergenTraces?:string[];match:'barcode'|'candidate';availability:'local stock unverified';imageUrl?:string;confidence?:string;warnings?:string[]};
-export type ResearchItem = {id:string;title:string;url:string;publisher:string;publishedAt:string|null;effectiveAt?:string|null;retrievedAt:string;category:string;summary:string;limitations:string;doi?:string};
+export type ResearchItem = {id:string;title:string;url:string;publisher:string;publishedAt:string|null;effectiveAt?:string|null;retrievedAt:string;category:string;summary:string;limitations:string;doi?:string;supportRole?:'content'|'navigation'};
 export type ImageAsset = {id:string;side:'front'|'back'|'extra';role?:'unknown'|'front'|'nutrition'|'ingredients'|'other';description?:string;rotation?:number;blob:Blob;url:string;width:number;height:number;name:string};
 export const evidenceQuerySchema=z.object({query:z.string().trim().min(2).max(1200),limit:z.number().int().min(1).max(5).optional()}).strict();
 

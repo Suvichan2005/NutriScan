@@ -673,7 +673,8 @@ async function generateTrackedOnce(context: GeminiContext, params: GenerateConte
   });
   await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? id, {
     event: 'provider_request', callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null,
-    model: context.model, request: { model: params.model, contents: params.contents, config: params.config },
+    model: context.model, tier: context.tier, purpose: context.purpose,
+    request: { model: params.model, contents: params.contents, config: params.config },
   });
   try {
     const response = await context.client.models.generateContent(params);
@@ -708,20 +709,19 @@ async function generateTrackedOnce(context: GeminiContext, params: GenerateConte
     });
     await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? id, {
       event: 'provider_response', callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null,
-      model: context.model, response: {
-        responseId: response.responseId, createTime: response.createTime, modelVersion: response.modelVersion,
-        modelStatus: response.modelStatus, promptFeedback: response.promptFeedback,
-        candidates: (response.candidates ?? []).map(candidate => ({
-          finishReason: candidate.finishReason, index: candidate.index,
-          content: candidate.content ? { role: candidate.content.role, parts: candidate.content.parts } : null,
-        })),
-        usageMetadata: response.usageMetadata,
-        costEstimate: {
-          estimatedTokenUsd, groundingQueryCount, estimatedGroundingUpperUsd, estimatedTotalUsd,
-          fxRateInrPerUsd, estimatedTotalInr: estimatedTotalUsd !== null && fxRateInrPerUsd !== null ? estimatedTotalUsd * fxRateInrPerUsd : null,
-          pricesUsdPerMillion: responsePrices,
-          basis: 'Configured token list rates and conservative search estimate; not a Google billing receipt.',
-        },
+      model: context.model, tier: context.tier, purpose: context.purpose, elapsedMs: Date.now() - started,
+      modelVersion: response.modelVersion ?? null, modelStatus: response.modelStatus ?? null,
+      finishReasons: (response.candidates ?? []).map(candidate => candidate.finishReason ?? 'unspecified'),
+      functionCallNames: (response.functionCalls ?? []).flatMap(call => typeof call.name === 'string' ? [call.name] : []),
+      usageMetadata: response.usageMetadata,
+      costEstimate: {
+        estimatedTokenUsd, groundingQueryCount, estimatedGroundingUpperUsd, estimatedTotalUsd,
+        fxRateInrPerUsd, estimatedTotalInr: estimatedTotalUsd !== null && fxRateInrPerUsd !== null ? estimatedTotalUsd * fxRateInrPerUsd : null,
+      },
+      http: {
+        status: response.sdkHttpResponse?.responseInternal?.status ?? null,
+        requestId: safeHeader('x-goog-request-id') ?? safeHeader('x-request-id'),
+        date: safeHeader('date'),
       },
     });
     return response;
@@ -731,7 +731,7 @@ async function generateTrackedOnce(context: GeminiContext, params: GenerateConte
     await settleCall(id, 'failed', undefined, Date.now() - started, context, error, attemptSignal);
     const failure = safeProviderFailure(error, attemptSignal);
     await recordGeminiDiagnostic({ event: 'provider_error', analysisId: diagnosticContext.analysisId ?? id, callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null, tier: context.tier, purpose: context.purpose, model: context.model, profileIncluded: diagnosticContext.profileIncluded ?? false, elapsedMs: Date.now() - started, failure });
-    await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? id, { event: 'provider_error', callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null, model: context.model, failure });
+    await recordGeminiEvaluationEvent(diagnosticContext.analysisId ?? id, { event: 'provider_error', callId: id, stage: diagnosticContext.stage ?? 'generation', round: diagnosticContext.round ?? null, model: context.model, tier: context.tier, purpose: context.purpose, elapsedMs: Date.now() - started, failure });
     throw error;
   }
 }

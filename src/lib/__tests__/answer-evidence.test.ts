@@ -46,6 +46,21 @@ describe('conversation source identity linking',()=>{
     expect(selectCitedEvidence('WHO guidance is relevant.\n\nAnother publisher released a study in 2023.',[a,b])).toEqual([]);
     expect(selectCitedEvidence('Guideline on carbohydrate intake explains the population recommendation.',[a,b])).toEqual([b]);
   });
+  it('keeps navigation links openable but prevents them from becoming answer citations or supporting claims',()=>{
+    const navigation={...source('fssai-link','FSSAI allergen labelling rules','Food Safety and Standards Authority of India','2025'),
+      category:'regulation' as const,jurisdiction:'India',summary:'No source text was retrieved.',limitations:'Navigation only, not legal evidence.',supportRole:'navigation' as const};
+    const claim='FSSAI explains how allergen labelling distinguishes ingredient declarations from cross-contamination wording.';
+    expect(selectCitedEvidence(claim,[navigation])).toEqual([]);
+    expect(filterAnswerBySourceScope(claim,[navigation],new Map(),'What does this allergen label mean?')).toEqual({answer:'',withheldSentenceCount:1});
+    expect(filterAnswerBySourceScope('The label identifies a possible allergen. [SRC_A]',[navigation],new Map([['SRC_A',navigation.id]]),'What does this allergen label mean?')).toEqual({answer:'',withheldSentenceCount:1});
+  });
+  it('retains citation eligibility for a content-bearing source with the same subject',()=>{
+    const content={...source('fssai-content','FAQ on food allergen labelling','Food Safety and Standards Authority of India','2023'),
+      category:'regulation' as const,jurisdiction:'India',summary:'FSSAI distinguishes allergenic ingredients declared as Contains from potential cross-contamination declared as May Contains.',limitations:'Dated FAQ; check current rules.',supportRole:'content' as const};
+    const claim='The FSSAI FAQ explains allergen labelling wording.';
+    expect(selectCitedEvidence(claim,[content])).toEqual([content]);
+    expect(filterAnswerBySourceScope(claim,[content],new Map(),'What does this allergen label mean?').withheldSentenceCount).toBe(0);
+  });
 });
 
 describe('production answer source scope',()=>{

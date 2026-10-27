@@ -1057,6 +1057,27 @@ describe('Gemini tool retrieval boundaries', () => {
     }));
   });
 
+  it('preserves navigation-only research status through tool evidence and model context', async () => {
+    mocks.research.mockResolvedValueOnce({
+      status: 'unavailable',
+      message: 'Official pages could not be retrieved.',
+      items: [{
+        id: 'fssai-link', title: 'FSSAI label rule', url: 'https://fssai.gov.in/rule.pdf',
+        publisher: 'Food Safety and Standards Authority of India', publishedAt: null,
+        retrievedAt: new Date().toISOString(), category: 'regulation; direct source link',
+        summary: 'No source text was retrieved. Open the official link.',
+        limitations: 'Navigation only, not legal evidence.', supportRole: 'navigation',
+      }],
+    });
+    const result = await executeGeminiTool('search_research', {
+      query: 'FSSAI allergen label wording India', topic: 'regulation',
+    }, context('What does FSSAI allergen label wording mean in India?'));
+
+    expect(result.evidence).toEqual([expect.objectContaining({ id: 'fssai-link', supportRole: 'navigation' })]);
+    expect(toolResultForModel(result.output, result.evidence).citationEvidence)
+      .toEqual([expect.objectContaining({ sourceId: 'fssai-link', supportRole: 'navigation' })]);
+  });
+
   const liveResearchIt = process.env.NUTRISCAN_LIVE_RESEARCH_TEST === 'true' ? it : it.skip;
   it('canonicalizes a context-linked additive code when identity and research tools run in parallel', async () => {
     const toolContext = context(

@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — opt-in Gemini evaluation telemetry stores metadata only
+
+Repository privacy rules prohibit logging request bodies or model conversations. Keep local opt-in evaluation capture only for allowlisted operational metadata (routing, stage/tool names, status, usage counts, timing and cost estimates); do not persist prompts, package/profile data, tool payloads, answer text, images or image digests. This replaces the earlier readable-transcript behavior in source. Existing logs and the already-running server are not altered by this change.
+
 ## 27 October 2026 — grounding association is not fetched numeric evidence
 
 Keep Google-grounded URLs available for attribution and user inspection, but do not treat the associated generated answer segment as text fetched from that page. Numeric validators must not use this generated segment to corroborate a response quantity; independent package, calculation, or source-record evidence remains required. In the UI, label the link as a grounding association and do not display the generated response segment as a source summary.
@@ -10,6 +14,10 @@ Current model-read package values may support a useful numeric answer when the v
 ## 27 October 2026 — allow global guidance when no jurisdiction is known
 
 When user jurisdiction is absent, permit sources whose declared scope begins with Global or International, including scoped descriptions such as “Global; general adult population.” Continue excluding country-specific advice unless the user supplies or explicitly requests that jurisdiction/source.
+
+## 27 October 2026 — assert source payload replay without auto-citation
+
+Keep retrieved records separate from answer citations. Verify at the route boundary that a selected source result, bounded evidence, and its model-facing alias are actually replayed to Gemini; do not attach a source to an answer solely because it was retrieved. This contract test does not establish model adherence or entailment.
 
 ## 27 October 2026 — preserve community allergen declarations and trace tags separately
 
@@ -1477,3 +1485,7 @@ An active package reconstruction may omit a nutrient entirely, leaving no row to
 # 2026-10-27 — keep retrieval provenance distinct in saved answers
 
 Persist bounded sources surfaced during a response separately from sources selected as citations, and show retrieved-only sources as such. A source being retrieved does not establish that the answer used or supported it. Preserve the existing answer-linked citation selection and pass only those citations into later conversation evidence. Keep profile-to-package ingredient crosswalks tied to exact observed wording and source IDs, without turning them into safety decisions.
+
+# 2026-10-27 — distinguish source navigation from answer-supporting content
+
+Official links returned after source-text retrieval fails, and flattened regulatory indexes whose structure is not preserved, are useful navigation but cannot validate factual answer claims. Carry an explicit optional `supportRole` on source records, mark these research results as `navigation`, exclude them from answer citations, and withhold sentences that explicitly rely on them. Keep the links available in research/evidence results. Content-bearing retrieved records retain normal topical, source-scope and citation checks. This metadata does not establish entailment or legal applicability.
