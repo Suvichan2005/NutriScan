@@ -1,4 +1,5 @@
 import type { EvidenceSource } from './contracts';
+import { splitProseSentences } from './prose-sentences';
 import { isGuidanceEvidenceInScope, isLocalEvidenceTopicallyRelevant } from './followup-evidence';
 
 type SourceIdentity = Pick<EvidenceSource, 'id'|'title'|'publisher'|'url'|'publishedAt'> & Partial<Pick<EvidenceSource, 'supportRole'>>;
@@ -138,9 +139,7 @@ export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<Eviden
     const headingPrefix = trimmed.match(/^#{1,6}\s+/)?.[0] ?? '';
     const content = trimmed.slice(headingPrefix.length);
     const listPrefix = content.match(/^(?:\d+[.)]|[-*+])\s+/)?.[0] ?? '';
-    const sentences = content.slice(listPrefix.length)
-      .split(/(?<=[.!?])\s+(?=[\p{L}\p{N}"“])/u)
-      .filter(Boolean);
+    const sentences = splitProseSentences(content.slice(listPrefix.length));
     const acceptedSentences = sentences.filter(sentence => {
       const handles = sentence.match(/\bSRC_[A-Z0-9]+\b/gi) ?? [];
       const handleSources: T[] = [];

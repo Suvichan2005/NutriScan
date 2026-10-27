@@ -65,6 +65,14 @@ function reconstructionFixture() {
 }
 
 describe('provider-independent inference output validation', () => {
+  it('withholds the whole unsupported parenthetical claim rather than leaving an accepted opening fragment', () => {
+    const pkg = packageSchema.parse({ ...fixturePackage, observations: [{ id: 'protein-label', field: 'label-note', text: 'Protein 3 g per 100 g', origin: 'ocr', side: 'text', confidence: 100 }], rawText: 'Protein 3 g per 100 g' });
+    const checked = validateNaturalAnswerText('Protein is 3 g per 100 g (approx. 99 g per serving). Wheat flour is listed.', { package: pkg });
+    expect(checked.answer.startsWith('Wheat flour is listed.')).toBe(true);
+    expect(checked.answer).not.toContain('approx.');
+    expect(checked.answer).not.toContain('99');
+    expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
+  });
   it('returns only typed calculations that support accepted natural-answer quantities',()=>{
     const makeCalculation=(id:string,nutrient:'energy'|'fiber'|'fat'|'sodium',result:number,unit:string):Calculation=>({
       id,label:`${nutrient} in 45 g`,nutrient,input:result,inputUnit:unit,basisAmount:100,portion:45,portionUnit:'g',result,unit,

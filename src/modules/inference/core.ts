@@ -7,6 +7,7 @@ import {
   type Profile,
 } from '../../lib/contracts';
 import { InferenceModuleError } from './errors';
+import { splitProseSentences } from '../../lib/prose-sentences';
 import { assistOutput } from './schema';
 import { calculationRespectsCorrections, reconstructionRowIsSuperseded } from '../../lib/correction';
 
@@ -930,7 +931,7 @@ export function validateNaturalAnswerText(
     const headingPrefix=trimmed.match(/^#{1,6}\s+/)?.[0]??'';
     const content=trimmed.slice(headingPrefix.length);
     const listPrefix=content.match(/^(?:\d+[.)]|[-*+])\s+/)?.[0]??'';
-    const sentences = content.slice(listPrefix.length).split(/(?<=[.!?])\s+(?=[\p{L}\p{N}"“])/u).filter(Boolean);
+    const sentences = splitProseSentences(content.slice(listPrefix.length));
     for (const sentence of sentences) {
       // Markdown list numbering is presentation syntax, not a factual amount.
       // Strong-emphasis delimiters are presentation, not part of an amount,
