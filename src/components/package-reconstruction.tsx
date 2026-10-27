@@ -8,6 +8,8 @@ import { ScanLine } from 'lucide-react';
 import type { PackageReconstruction, NutrientKey, ReconstructionCorrection } from '@/lib/contracts';
 import type { NutrientCorrection } from '@/lib/correction';
 import { normalizeReconstructedServing } from '@/lib/portion';
+import { reconstructedIdentity } from '@/lib/reconstruction-presentation';
+import styles from './conversation-clarity.module.css';
 
 type Props = {
   reconstruction: PackageReconstruction;
@@ -66,16 +68,16 @@ function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
   const massConflict=nutrientMassConflict({nutrientKey:key,value:Number(value),unit,basisAmount:Number(basisAmount),basisUnit});
   const canSave = Boolean(!massConflict && key && value.trim() && Number.isFinite(Number(value)) && Number(value) >= 0
     && basisAmount.trim() && Number.isFinite(Number(basisAmount)) && Number(basisAmount) > 0);
-  return <article className="reconstruction-row" data-reconstruction-row={row.rowId}>
+  return <article className="reconstruction-row" data-reconstruction-row={row.rowId} data-reading-status={row.status} title={statusLabel(row.status)}>
     <div className="reconstruction-row-main">
       <div><strong>{row.nutrient || row.printedLabel}</strong>{row.columnLabel && <small>{row.columnLabel}</small>}</div>
       <div className="reconstruction-value">
-        <strong>{row.value === null ? row.printedValue ?? 'Value unresolved' : `${row.value} ${row.unit ?? ''}`.trim()}</strong>
-        <small>{row.basisAmount !== null && row.basisUnit ? `per ${row.basisAmount} ${row.basisUnit}` : row.basisText ?? 'Basis unresolved'}</small>
+        <strong>{row.value === null ? row.printedValue ?? 'Not read' : `${row.value} ${row.unit ?? ''}`.trim()}</strong>
+        <small>{row.basisAmount !== null && row.basisUnit ? `per ${row.basisAmount} ${row.basisUnit}` : row.basisText ?? (row.value===null?'':'Basis not established')}</small>
       </div>
     </div>
     {row.qualifier && <p className="reconstruction-qualifier">{row.qualifier}</p>}
-    <div className="reconstruction-row-meta"><span>{statusLabel(row.status)} · Gemini reading, not independently verified</span>
+    <div className="reconstruction-row-meta">{['ambiguous','conflict'].includes(row.status)&&<span className={styles.needsReview}>{statusLabel(row.status)} · review this reading</span>}
       {row.evidence.observationIds.length > 0 && <button type="button" className="text-button" onClick={() => onInspectEvidence(row.evidence.observationIds)}><ScanLine size={13}/>Inspect evidence</button>}
     </div>
     {saved?.status === 'corrected' && saved.basis && <p className="reconstruction-correction"><strong>Your confirmed correction:</strong> {saved.value} {saved.unit} per {saved.basis.amount} {saved.basis.unit}. The original interpretation remains above.</p>}
@@ -157,9 +159,9 @@ function ExtraNutrientRow({row,correction,onSave,onInspect}:{row:PackageReconstr
  const [draft,setDraft]=useState({label:current.nutrient,value:String(current.value??''),unit:correctionUnits.includes(current.unit as typeof correctionUnits[number])?current.unit!:'',basis:String(current.basisAmount??''),basisUnit:current.basisUnit??'',qualifier:current.qualifier??''});
  const start=()=>{setDraft({label:current.nutrient,value:String(current.value??''),unit:correctionUnits.includes(current.unit as typeof correctionUnits[number])?current.unit!:'',basis:String(current.basisAmount??''),basisUnit:current.basisUnit??'',qualifier:current.qualifier??''});setEditing(true);};
  const valid=!!draft.label.trim()&&draft.value.trim()!==''&&Number.isFinite(Number(draft.value))&&Number(draft.value)>=0&&Number(draft.value)<=100000&&Number(draft.basis)>0&&Number(draft.basis)<=10000&&correctionUnits.includes(draft.unit as typeof correctionUnits[number])&&['g','ml'].includes(draft.basisUnit)&&['','<','<=','>','>='].includes(draft.qualifier);
- return <article className="reconstruction-row" data-reconstruction-row={row.rowId}>
-  <div className="reconstruction-row-main"><div><strong>{source.nutrient}</strong>{source.columnLabel&&<small>{source.columnLabel}</small>}</div><div className="reconstruction-value"><strong>{source.value===null?source.printedValue??'Value unresolved':`${source.value} ${source.unit??''}`}</strong><small>{source.basisAmount!==null&&source.basisUnit?`per ${source.basisAmount} ${source.basisUnit}`:source.basisText??'Basis unresolved'}</small></div></div>
-  <div className="reconstruction-row-meta"><span>{statusLabel(source.status)} · original Gemini reading, not independently verified</span>{source.evidence.observationIds.length>0&&<button type="button" className="text-button" onClick={()=>onInspect(source.evidence.observationIds)}><ScanLine size={13}/>Inspect evidence</button>}</div>
+ return <article className="reconstruction-row" data-reconstruction-row={row.rowId} data-reading-status={row.status} title={statusLabel(row.status)}>
+  <div className="reconstruction-row-main"><div><strong>{source.nutrient}</strong>{source.columnLabel&&<small>{source.columnLabel}</small>}</div><div className="reconstruction-value"><strong>{source.value===null?source.printedValue??'Not read':`${source.value} ${source.unit??''}`}</strong><small>{source.basisAmount!==null&&source.basisUnit?`per ${source.basisAmount} ${source.basisUnit}`:source.basisText??(source.value===null?'':'Basis not established')}</small></div></div>
+  <div className="reconstruction-row-meta">{['ambiguous','conflict'].includes(source.status)&&<span className={styles.needsReview}>{statusLabel(source.status)} · review this reading</span>}{source.evidence.observationIds.length>0&&<button type="button" className="text-button" onClick={()=>onInspect(source.evidence.observationIds)}><ScanLine size={13}/>Inspect evidence</button>}</div>
   {correction&&<p className="reconstruction-correction"><strong>Your correction · revision {correction.revision}:</strong> {current.nutrient} {current.qualifier}{current.value} {current.unit} per {current.basisAmount} {current.basisUnit}. Original reading retained.</p>}
   {!editing&&onSave&&<button type="button" className="text-button reconstruction-edit" onClick={start}>{correction?'Edit your correction':'Confirm or edit this value'}</button>}
   {editing&&<form className="reconstruction-edit-form" onSubmit={event=>{event.preventDefault();if(valid&&onSave?.({rowId:row.rowId,label:draft.label,value:Number(draft.value),unit:draft.unit as ReconstructionRowEdit['unit'],basisAmount:Number(draft.basis),basisUnit:draft.basisUnit as 'g'|'ml',qualifier:draft.qualifier||null}))setEditing(false);}}>
@@ -180,7 +182,7 @@ export function PackageReconstructionView({ reconstruction, history = [], savedN
   const displayed = selectedRevision === null ? reconstruction : history.find(item => item.revision === selectedRevision) ?? reconstruction;
   const isActive = selectedRevision === null;
   const isEvidenceMerge = isActive && reconstruction.model.startsWith('local evidence merge');
-  const identity = [displayed.identity.brand, displayed.identity.name, displayed.identity.variant].filter(Boolean).join(' ');
+  const identity = reconstructedIdentity(displayed.identity);
   const serving = normalizeReconstructedServing(displayed.serving);
   const quantityDeclarations = displayed.quantityDeclarations ?? [];
   const savedByKey = new Map(savedNutrients.map(item => [item.key, item]));
@@ -188,24 +190,26 @@ export function PackageReconstructionView({ reconstruction, history = [], savedN
     && !displayed.nutritionRows.some(row => (row.nutrientKey === undefined ? nutrientKey(row.nutrient || row.printedLabel) : row.nutrientKey) === item.key))
     : [];
   return <section className="package-reconstruction" aria-label="Gemini package reconstruction">
-    <header><div><span className="eyebrow">PACKAGE UNDERSTANDING</span><h2>{identity || 'Package details'}</h2></div><span className="reconstruction-version">Revision {displayed.revision} · {isActive ? 'active' : 'alternative'}{displayed.analysisMethod?` · ${analysisMethodPolicy(displayed.analysisMethod).label}`:''}</span></header>
-    {!isActive && <p className="reconstruction-caveat">This saved package reading is kept for review and is not currently active.</p>}
-    {isActive && <p className="reconstruction-caveat">{isEvidenceMerge ? 'Compatible details from saved readings are combined. Conflicting fields remain unresolved and are withheld from calculations.' : 'Gemini’s interpretation is linked to the scan evidence. Confirmed user corrections are stored separately.'}</p>}
+    <header><div><span className="eyebrow">PACKAGE UNDERSTANDING</span><h2>{identity || 'Package details'}</h2></div></header>
+    {!isActive && <p className="reconstruction-caveat">You are reviewing an earlier reading.</p>}
+    <div className={styles.packageNote}><p>AI label readings · not independently verified. Review uncertain or missing values before relying on them.</p>
+      <details><summary>About these readings</summary><p>Readings are linked to the original evidence. A readable value is still an interpretation; your confirmed corrections are saved separately. Missing values are not zero.</p><p className={styles.packageMeta}>Revision {displayed.revision} · {isActive ? 'active' : 'alternative'}{displayed.analysisMethod?` · ${analysisMethodPolicy(displayed.analysisMethod).label}`:''} · {displayed.model}</p>{isEvidenceMerge&&<p>Compatible saved readings are combined. Conflicting values remain excluded from calculations.</p>}</details>
+    </div>
     {history.length > 0 && <details className="reconstruction-history"><summary>{history.length} earlier or alternative interpretation{history.length === 1 ? '' : 's'}</summary><ol>{[...history].sort((a,b)=>b.revision-a.revision).map(item=>{
-      const title=[item.identity.brand,item.identity.name,item.identity.variant].filter(Boolean).join(' ')||'Unidentified package';
+      const title=reconstructedIdentity(item.identity)||'Unidentified package';
       return <li key={item.revision}><div><strong>Revision {item.revision}</strong><span>{title}</span><small>{item.nutritionRows.length} nutrition rows · {item.ingredients.length} ingredients · {item.model}</small></div><button type="button" className="text-button" onClick={()=>setSelectedRevision(item.revision)}>{selectedRevision===item.revision?'Viewing':'Review'}</button></li>;
     })}</ol></details>}
     {!isActive && <div className="reconstruction-alternative-actions"><button type="button" className="text-button" onClick={()=>setSelectedRevision(null)}>Return to active reading</button>{onActivateRevision&&<button type="button" className="text-button" onClick={()=>{if(onActivateRevision(displayed.revision))setSelectedRevision(null);}}>Use this reading</button>}</div>}
-    {serving && <section className="reconstruction-serving"><strong>Serving</strong><span>{serving.pieceCount ? `${serving.pieceCount} ${serving.pieceDescription ?? 'pieces'}` : serving.printedText ?? 'Amount unresolved'}{serving.quantity !== null && serving.unit ? ` · about ${serving.quantity} ${serving.unit}` : ''}</span><small>{statusLabel(serving.status)} · unverified</small>{serving.evidence.observationIds.length > 0 && <button type="button" className="text-button" onClick={() => onInspectEvidence(serving.evidence.observationIds)}>Inspect evidence</button>}</section>}
+    {serving && <section className="reconstruction-serving"><strong>Serving</strong><span>{serving.pieceCount ? `${serving.pieceCount} ${serving.pieceDescription ?? 'pieces'}` : serving.printedText ?? 'Amount unresolved'}{serving.quantity !== null && serving.unit ? ` · about ${serving.quantity} ${serving.unit}` : ''}</span>{['ambiguous','conflict','unreadable'].includes(serving.status)&&<small className={styles.needsReview}>{statusLabel(serving.status)}</small>}{serving.evidence.observationIds.length > 0 && <button type="button" className="text-button" onClick={() => onInspectEvidence(serving.evidence.observationIds)}>Inspect evidence</button>}</section>}
     {quantityDeclarations.length > 0 && <section><h3>Printed package quantities</h3><ul className="reconstruction-quantity-list">{quantityDeclarations.map((item, index) => <li key={`${item.kind}-${item.quantity}-${item.unit}-${index}`}>
       <div><strong>{quantityKindLabel(item.kind)}</strong><span>{item.quantity !== null && item.unit ? `${item.quantity} ${item.unit}` : item.printedText ?? 'Quantity unresolved'}</span>{item.printedText && item.quantity !== null && <small>Printed wording: {item.printedText}</small>}</div>
-      <small>{statusLabel(item.status)} · unverified</small>
+      {['ambiguous','conflict','unreadable'].includes(item.status)&&<small className={styles.needsReview}>{statusLabel(item.status)}</small>}
       {item.evidence.observationIds.length > 0 && <button type="button" className="text-button" onClick={() => onInspectEvidence(item.evidence.observationIds)}>Inspect evidence</button>}
     </li>)}</ul></section>}
     {(displayed.nutritionRows.length > 0 || isActive) && <section><h3>Nutrition as printed</h3>{displayed.nutritionRows.length > 0 && <div className="reconstruction-rows">{displayed.nutritionRows.map(row => {const key=row.nutrientKey===undefined?nutrientKey(row.nutrient || row.printedLabel):row.nutrientKey;if(!key)return <ExtraNutrientRow key={row.rowId} row={row} correction={corrections.find(item=>item.rowId===row.rowId)} onSave={isActive?onCorrectRow:undefined} onInspect={onInspectEvidence}/>;return <InterpretedRow key={row.rowId} row={row} saved={key? savedByKey.get(key):undefined} onCorrect={onCorrect} onInspectEvidence={onInspectEvidence}/>;})}</div>}{addedReadings.length > 0 && <div className="reconstruction-rows" aria-label="User-supplied readings">{addedReadings.map(item => <article className="reconstruction-row" key={item.key}><div className="reconstruction-row-main"><div><strong>{nutrientLabels.find(([key])=>key===item.key)?.[1] ?? item.key}</strong><small>Your supplied reading</small></div><div className="reconstruction-value"><strong>{item.value} {item.unit}</strong><small>{item.basis ? `per ${item.basis.amount} ${item.basis.unit}` : 'Basis unresolved'}</small></div></div><small>Unverified user correction</small></article>)}</div>}{isActive && <AddMissingNutrient savedNutrients={savedNutrients} onCorrect={onCorrect}/>}</section>}
-    {displayed.ingredients.length > 0 && <section><h3>Ingredients</h3><ol className="reconstruction-ingredients">{displayed.ingredients.slice(0, 40).map((item, index) => <li key={`${item.position}-${index}`}><span>{item.normalizedName || item.name}</span>{item.printedPercentage !== null && <strong>{item.printedPercentage}%</strong>}<small>{statusLabel(item.status)} · unverified</small></li>)}</ol></section>}
-    {displayed.additives.length > 0 && <section><h3>Additives identified on the label</h3><ul className="reconstruction-statements">{displayed.additives.slice(0, 20).map((item, index) => <li key={`${item.printedName}-${index}`}>{item.normalizedName || item.printedName}{item.code ? ` · ${item.code}` : ''}<small>{statusLabel(item.status)} · unverified</small></li>)}</ul></section>}
-    {displayed.statements.length > 0 && <section><h3>Claims and other details</h3><ul className="reconstruction-statements">{displayed.statements.slice(0, 24).map((item, index) => <li key={`${item.kind}-${index}`}><span>{item.text}</span><small>{item.kind} · {statusLabel(item.status)} · unverified</small></li>)}</ul></section>}
+    {displayed.ingredients.length > 0 && <section><h3>Ingredients</h3><ol className="reconstruction-ingredients">{displayed.ingredients.slice(0, 40).map((item, index) => <li key={`${item.position}-${index}`}><span>{item.normalizedName || item.name}</span>{item.printedPercentage !== null && <strong>{item.printedPercentage}%</strong>}{['ambiguous','conflict','unreadable'].includes(item.status)&&<small className={styles.needsReview}>{statusLabel(item.status)}</small>}</li>)}</ol></section>}
+    {displayed.additives.length > 0 && <section><h3>Additives identified on the label</h3><ul className="reconstruction-statements">{displayed.additives.slice(0, 20).map((item, index) => <li key={`${item.printedName}-${index}`}>{item.normalizedName || item.printedName}{item.code ? ` · ${item.code}` : ''}{['ambiguous','conflict','unreadable'].includes(item.status)&&<small className={styles.needsReview}>{statusLabel(item.status)}</small>}</li>)}</ul></section>}
+    {displayed.statements.length > 0 && <section><h3>Claims and other details</h3><ul className="reconstruction-statements">{displayed.statements.slice(0, 24).map((item, index) => <li key={`${item.kind}-${index}`}><span>{item.text}</span><small>{item.kind}{['ambiguous','conflict','unreadable'].includes(item.status)?` · ${statusLabel(item.status)}`:''}</small></li>)}</ul></section>}
     {displayed.unresolved.length > 0 && <details className="reconstruction-unresolved"><summary>{displayed.unresolved.length} details still need clearer evidence</summary><ul>{displayed.unresolved.slice(0, 20).map((item, index) => <li key={`${item.field}-${index}`}><strong>{item.field}</strong> · {item.reason}</li>)}</ul></details>}
   </section>;
 }

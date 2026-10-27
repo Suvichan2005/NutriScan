@@ -75,7 +75,8 @@ it('replays the saved study sentence beside unsupported package and claim-rule a
 
  const result=validateNaturalAnswerText(answer,{...context,evidence:[review],sourceIdsForSentence:()=>[review.id]});
  expect(result.answer).toContain(study);
- expect(result.answer).toContain('I omitted one or more numerical statements');
+ expect(result.answer).not.toContain('I omitted one or more numerical statements');
+ expect(result.withheldUnsupportedQuantitySentenceCount).toBeGreaterThan(0);
  expect(result.answer).not.toContain('4.7 g per 38 g');
  expect(result.answer).not.toContain('at least 1 g');
  expect(result.acceptedSentenceCount).toBe(1);

@@ -1518,3 +1518,12 @@ An explicit model choice is pinned across reconstruction/answer/vision generatio
 
 ## 28 October 2026 — Allocate route time by actual fallback eligibility
 A free-only model must not inherit a short20s window intended for model fallback. Give it60s within the caller deadline. If multiple free routes or an explicitly authorized same-model paid backup exist, retain the20s free window so the parent65s generation budget leaves backup time. Parent/agent bounds and financial guards remain unchanged. Display paid consent beside model controls, default false; never infer it from model selection.
+
+
+## 28 October 2026 — Conversation and portion presentation checkpoint
+
+Application-owned numerical warning paragraphs now remain structured validation metadata instead of being appended in Gemini’s voice. Older exact application footers are separated for display without changing saved prose. Full explanations, source cards and calculation details remain inspectable; recorded tool steps appear inline. The inspector uses one shared AI-reading notice and retains missing/conflicting values and corrections. Identity display deduplicates overlapping components without editing stored fields.
+
+Portion cards initialize from the operation’s count/serving/package provenance, not the global grams workspace. Unit changes preserve the physical amount and require matching current evidence; mass/volume guessing and stale serving conversions are excluded. Real existing browser state showed six label-defined units with its recorded 27.84 g estimate, without regeneration. This is presentation evidence, not verification of the printed nutrients.
+
+171 focused tests and TypeScript pass. A full default-parallel run exposed two cold embedding-test failures (timeout then busy), plus two assertions corrected for the changed presentation contract. Full integration and responsive acceptance continue with the owner’s additive context-onboarding request. No new provider call for this checkpoint; owner CSS and next-env overlays remain untouched.

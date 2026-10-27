@@ -1023,14 +1023,9 @@ export function validateNaturalAnswerText(
     if (acceptedSentences.length) acceptedLines.push(headingPrefix+listPrefix+acceptedSentences.join(' '));
   }
   const acceptedAnswer = removeEmptyProseSections(acceptedLines.join('\n'),normalized);
-  if (acceptedAnswer && (withheldUnsupportedQuantitySentenceCount || provisionalReconstructionQuantitySentenceCount)) {
-    const notices:string[]=[];
-    if (withheldUnsupportedQuantitySentenceCount) notices.push('I omitted one or more numerical statements that the available evidence could not verify.');
-    if (provisionalReconstructionQuantitySentenceCount) notices.push('Some numbers are provisional package readings; confirm them in Package details.');
-    acceptedLines.push('', notices.join(' '));
-  }
   return {
-    answer: removeEmptyProseSections(acceptedLines.join('\n'),normalized),
+    // Validation decisions belong to application presentation, not the model's voice.
+    answer: acceptedAnswer,
     acceptedSentenceCount,
     withheldUnsupportedQuantitySentenceCount,
     provisionalReconstructionQuantitySentenceCount,

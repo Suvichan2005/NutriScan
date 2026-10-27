@@ -85,7 +85,7 @@ it('renders a reconciled missing nutrient in the selected-record comparison with
   expect(markup).toContain('Inspect photo region');
 });
 
-it('renders returned deterministic calculations in the contextual portion calculator', () => {
+it('opens at the returned operation rather than silently rescaling to the workspace portion', () => {
   const observation: Observation = { id: 'carbohydrate-row', field: 'ocr-line', text: 'Carbohydrate 60 g per 100 g', side: 'back', confidence: 90, origin: 'ocr', imageId };
   const pkg = packageSchema.parse({ ...parseLabel('Package label', { origin: 'user' }), name: 'Unidentified package', observations: [observation], rawText: observation.text });
   const calculation: Calculation = {
@@ -101,10 +101,11 @@ it('renders returned deterministic calculations in the contextual portion calcul
     candidates={[]} interpretedReadings={[]} sources={[]} selectedProduct={null}
   />);
 
-  expect(markup).toContain('Nutrition for this amount');
-  expect(markup).toContain('For 30 g');
-  expect(markup).toContain('18 g');
-  expect(markup).toContain('unverified interpretation');
+  expect(markup).toContain('Your portion');
+  expect(markup).toContain('20 g.');
+  expect(markup).toContain('12 g');
+  expect(markup).not.toContain('18 g');
+  expect(markup).toContain('Label estimate');
 });
 
 it('opens a declared-piece follow-up calculator at the amount used by its answer', () => {
@@ -134,9 +135,9 @@ it('opens a declared-piece follow-up calculator at the amount used by its answer
   />);
 
   expect(markup).toContain('value="13.4"');
-  expect(markup).toContain('For 13.4 g');
+  expect(markup).toContain('13.4 g.');
   expect(markup).toContain('9.28 g');
-  expect(markup).toContain('Based on an unverified interpretation');
+  expect(markup).toContain('Label estimate');
 });
 
 it('shows linked reconstructed rows in a compact contextual nutrition view instead of an empty parser table', () => {

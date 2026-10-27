@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { PortionCalculator } from './portion-calculator';
 import { BookOpen, ChevronDown, CircleHelp, Eye, PackageSearch, ScanLine, Sparkles } from 'lucide-react';
 import { compareProductNutrition, type ProductComparisonRow } from '@/lib/product-comparison';
 import { productEvidenceSource } from '@/lib/product-evidence';
 import { evidenceSourcePreview } from '@/lib/evidence-presentation';
 import { isSafeEvidenceUrl, safeConversationEvidence } from '@/lib/followup-evidence';
-import { scaleCalculationToPortion } from '@/lib/thread-presentation';
 import type { AssistantUiComponent, Audit, EvidenceSource, Observation, PackageData, ProductRecord, TentativeStructuredCandidate, NutrientKey } from '@/lib/contracts';
 import type { NutrientCorrection } from '@/lib/correction';
 import type { InterpretedNutrientReading } from '@/lib/interpreted-nutrients';
@@ -47,9 +47,6 @@ type Props = {
 
 export function ThreadGenerativeUI(props: Props) {
   const { components, pkg, audit, candidates, interpretedReadings, sources, selectedProduct } = props;
-  const initialCalculator = components.find(component => component.type === 'portion-calculator');
-  const [calculatorPortion, setCalculatorPortion] = useState(initialCalculator?.calculatorAmount ?? props.portion);
-  const [calculatorUnit, setCalculatorUnit] = useState(initialCalculator?.calculatorUnit ?? props.portionUnit);
   const reconstructedRows = pkg.reconstruction?.current
     ? pkg.reconstruction.nutritionRows.filter(row => ['clear', 'provisional'].includes(row.status) && row.value !== null && Boolean(row.unit))
     : [];
@@ -98,19 +95,7 @@ export function ThreadGenerativeUI(props: Props) {
     'portion-calculator': component => {
       const rows = component.calculationIds.flatMap(id => calculations.has(id) ? [calculations.get(id)!] : []);
       if (!rows.length) return null;
-      return <section className="thread-ui-card" aria-label="Portion calculator" data-testid="thread-ui-component-portion-calculator" key={component.type}>
-        <div className="thread-ui-heading"><span className="eyebrow">DETERMINISTIC CALCULATION</span><strong>Nutrition for this amount</strong></div>
-        <div className="thread-ui-portion"><label>Amount<input type="number" inputMode="decimal" min="1" max="10000" value={calculatorPortion} onChange={event => { const value = Number(event.target.value); if (Number.isFinite(value) && value > 0 && value <= 10000) { setCalculatorPortion(value); props.onPortionChange(value); } }}/></label><label>Unit<select value={calculatorUnit} onChange={event => { const value = event.target.value as 'g' | 'ml'; setCalculatorUnit(value); props.onPortionUnitChange(value); }}><option value="g">g</option><option value="ml">ml</option></select></label></div>
-        <ul className="thread-ui-calculations">{rows.map(row => {
-          const scaled = scaleCalculationToPortion(row, calculatorPortion, calculatorUnit);
-          const sourceRow=reconstructedRows.find(candidate=>row.interpretationIds?.includes(candidate.rowId));
-          const nutrient = sourceRow?readableReconstructedNutrient(sourceRow.printedLabel||sourceRow.nutrient):row.nutrient?nutrientLabels[row.nutrient]:row.nutrientLabel??'Nutrient';
-          const originalPackageAmount=row.packagePortion&&calculatorUnit===row.packagePortion.unit&&Math.abs(calculatorPortion-row.portion)<=Number.EPSILON*Math.max(1,calculatorPortion,row.portion)*8;
-          const amountDescription=originalPackageAmount?`For ${formatNumber(row.packagePortion!.packageCount)} package${row.packagePortion!.packageCount===1?'':'s'} · printed net contents ${formatNumber(row.packagePortion!.netContentPerPackage)} ${row.packagePortion!.unit} each`:scaled===null?`Recorded for ${formatNumber(row.portion)} ${row.portionUnit}; mass and volume are not converted.`:`For ${formatNumber(calculatorPortion)} ${calculatorUnit}`;
-          return <li key={row.id}><span>{nutrient}<small>{amountDescription}</small>{row.interpretationIds?.length || row.countedPortion || row.packagePortion ? <small>Based on an unverified interpretation</small> : null}</span><strong>{formatNumber(scaled ?? row.result)} {row.unit}</strong></li>;
-        })}</ul>
-        <p className="thread-ui-caveat">{rows.some(row => row.interpretationIds?.length || row.countedPortion || row.packagePortion) ? 'Some amounts use package or serving interpretations that remain unverified.' : 'Calculated from the recorded label reading and printed basis.'} This is not a portion recommendation.</p>
-      </section>;
+      return <div key={component.type}>{[...new Set(rows.map(row => row.portionUnit))].map(unit => <PortionCalculator key={`${unit}-${rows.map(row=>row.id).join('-')}`} rows={rows.filter(row=>row.portionUnit===unit)} pkg={pkg} onReview={props.onOpenInspector} initialPhysical={component.calculatorAmount&&component.calculatorUnit?{amount:component.calculatorAmount,unit:component.calculatorUnit}:undefined}/>)}</div>;
     },
     'ingredient-explorer': component => renderEvidenceExplorer(component, observations, candidates, pkg, props, 'ingredients', 'Ingredient and additive readings', 'Package interpretations are provisional; confirm them against the linked photo before relying on a disputed detail.'),
     'allergen-explanation': component => renderEvidenceExplorer(component, observations, candidates, pkg, props, 'allergens', 'Allergen and warning text', 'These are label statements, not a safety assessment. Missing text does not rule out allergens or cross-contact.'),

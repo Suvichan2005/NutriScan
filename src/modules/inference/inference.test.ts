@@ -249,7 +249,7 @@ describe('provider-independent inference output validation', () => {
     }});
     const checked=validateNaturalAnswerText('The photographed label appears to list 69.29 g of carbohydrate per 100 g.',{package:pkg});
     expect(checked.answer).toContain('69.29 g of carbohydrate');
-    expect(checked.answer).toContain('Some numbers are provisional package readings');
+    expect(checked.answer).not.toContain('Some numbers are provisional package readings');
     expect(checked.provisionalReconstructionQuantitySentenceCount).toBe(1);
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(0);
   });
@@ -272,7 +272,7 @@ describe('provider-independent inference output validation', () => {
       { package: fixturePackage, question: 'Is this a sensible snack?' },
     );
     expect(checked.answer).toContain('This is a refined-flour-heavy cracker.');
-    expect(checked.answer).toContain('I omitted one or more numerical statements that the available evidence could not verify');
+    expect(checked.answer).not.toContain('I omitted one or more numerical statements that the available evidence could not verify');
     expect(checked.answer).not.toContain('99 g');
     expect(checked.answer).not.toContain('against the saved package or retrieved evidence');
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
@@ -284,7 +284,7 @@ describe('provider-independent inference output validation', () => {
       { package: fixturePackage, question: 'What should I know about this cracker?' },
     );
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(2);
-    expect(checked.answer).toContain('I omitted one or more numerical statements that the available evidence could not verify');
+    expect(checked.answer).not.toContain('I omitted one or more numerical statements that the available evidence could not verify');
   });
 
   it('preserves supported Markdown answer lines when one approximate quantity is unsupported',()=>{
@@ -314,7 +314,7 @@ describe('provider-independent inference output validation', () => {
     expect(checked.answer).toContain('### Portion');
     expect(checked.answer).toContain('~4.7 g fibre.');
     expect(checked.answer).not.toContain('99 g');
-    expect(checked.answer).toContain('I omitted one or more numerical statements that the available evidence could not verify');
+    expect(checked.answer).not.toContain('I omitted one or more numerical statements that the available evidence could not verify');
     expect(checked.acceptedSentenceCount).toBe(3);
     expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(1);
   });
