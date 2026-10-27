@@ -1486,3 +1486,7 @@ When the cloud response is unavailable, carry the preceding user question into a
 # 2026-10-27 — allow an explicitly user-supplied reading for an absent nutrient
 
 An active package reconstruction may omit a nutrient entirely, leaving no row to correct. Provide a missing-nutrient entry route that accepts only a value and basis entered by the user, starts blank, and records it through the established user-correction path. Keep it visibly unverified and preserve existing package/OCR observations. This supports arithmetic from newly supplied input; it does not establish that the number was read correctly or verify a product label.
+
+### 27 October 2026 — normalize provider null sentinels at the typed reconstruction boundary
+
+Treat exact `null` and `undefined` text sentinels as missing only for fields whose reconstruction contract permits nullable text. Apply this before section validation, without changing quantities, units, evidence, required strings or the original provider object. Do not repair arbitrary malformed provider values or infer label facts in the normalizer.
