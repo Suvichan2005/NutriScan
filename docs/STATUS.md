@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 verify retrieved-source replay into final Gemini turn (27 October 2026)
+
+The historical live synthetic milk-allergy trace shows `resolve_ingredient` (2 records), then `search_knowledge` (1 record), followed by the final answer round. The final answer had zero cited source IDs, zero source-scope sentences withheld and two quantity sentences withheld. Its request body was intentionally redacted because fictional profile context was present, so the transcript cannot prove which source handles the model saw. A provider-mocked route regression now verifies that the next request after a `get_nutrition_guidance` call includes the function response, `citationEvidence`, and a model-facing `SRC_` handle. Focused test 1/1 and TypeScript pass. This verifies the offline replay boundary only; actual Gemini citation/use quality remains unresolved.
+
 ## Photo-to-local-OCR browser observation (27 October 2026)
 
 The current local UI accepted and saved two package sides, ran its selected Tesseract reader, and retained both photos after cloud analysis was unavailable. It recorded 16 observations but no usable nutrition values; most fragments were noise. The request did not reach Gemini because the local provider status was disabled. This is direct browser evidence of the local OCR/fallback path only, not AI acceptance. Browser storage now contains the scan; preserve it if restarting the test app.

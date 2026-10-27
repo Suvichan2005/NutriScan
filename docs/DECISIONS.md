@@ -1494,3 +1494,7 @@ Treat exact `null` and `undefined` text sentinels as missing only for fields who
 ### 27 October 2026 — keep cross-basis values ambiguous at a printed inequality bound
 
 When the same nutrient has a bounded value on one printed basis and an exact-looking value on another basis at the scaled bound within the exact row's displayed rounding interval, preserve both rows but mark the exact-looking row ambiguous and record linked evidence. Do not infer a replacement amount or inherit a qualifier as a confirmed reading. Existing calculation eligibility then withholds the ambiguous row while retaining unrelated supported values. This arithmetic check flags a review need; it does not prove either printed value.
+
+### 27 October 2026 — retrieved sources remain distinct from answer citations
+
+The agent's source-tool result must be replayed to the following model round with bounded citation metadata and a model-facing source handle. The application then renders a source as cited only if its reference survives answer validation; retrieved-only records remain inspectable but are not promoted. A synthetic route regression verifies the tool-result replay shape. A historical live turn returned source records but cited none, and its final provider body was redacted; do not infer model adherence from the offline test or automatically add citations.
