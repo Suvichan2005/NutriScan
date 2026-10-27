@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — restrict local Gemini evaluation capture to operational metadata
+
+- Review against the current `AGENTS.md` found the explicit local recorder persisted readable prompt, package/tool and answer content, conflicting with the no-model-conversation logging rule.
+- Replaced content-oriented recursive sanitization with an allowlist for operational metadata. Updated `/api/status` to state that local capture is metadata-only and readable capture is false. Added regression coverage for prompts, answers, image payloads, profile/package values and token metadata.
+- Focused recorder tests pass (3); `npm run typecheck` passes. No provider call was made. Existing local traces and the owner’s running server were left untouched; that old process still advertises readable capture until restarted on this revision.
+
 ## 2026-10-27 — preserve Open Food Facts precautionary allergen traces
 
 - Production product search requested allergen declaration tags but omitted the separate `traces_tags` field; the visible community-record detail therefore could not show precautionary trace tags even though exact original-record inspection supported them.

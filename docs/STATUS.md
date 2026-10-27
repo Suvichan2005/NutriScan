@@ -1,4 +1,8 @@
 # Current engineering status
+## Local Gemini evaluation telemetry privacy (27 October 2026)
+
+The opt-in evaluation writer is now metadata-only by allowlist; prompt/package/profile content, images and image hashes, tool arguments/results and model/user answers are omitted. Recorder tests (3) and TypeScript pass. No provider request was made. The pre-existing app process still runs the old source and advertises readable capture; it was left untouched. Do not use it for provider calls until the owner-controlled runtime is restarted with the revised code.
+
 ## M2 retrieved-source request replay test (27 October 2026)
 
 Added a provider-free route assertion on integration `01c39c8` for the tool-result boundary: the second Gemini request contains the selected guidance function response, `citationEvidence`, and a model-facing source handle. Focused route test passes (1 passed,97 skipped); TypeScript passes. This is not live Gemini or scientific-accuracy acceptance. The remaining M2 objective is demonstrating selective source retrieval and useful, correctly attributed answers across distinct development scenarios.

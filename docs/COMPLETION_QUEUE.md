@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M6 make local Gemini evaluation telemetry metadata-only (27 October 2026)
+
+The prior opt-in recorder retained readable request, tool and answer content, conflicting with the active privacy contract. The recorder now uses an explicit operational-metadata allowlist and omits prompts, package/OCR/profile content, images/digests, tool arguments/results and natural/final answers; status reports metadata capture separately and marks readable capture false. Focused recorder tests:3 passed; TypeScript passes. Existing local traces were preserved untouched. The already-running local server predates this change and still reports its old readable-capture state; do not use it for new provider calls until the owner-controlled process is restarted with this revision. This is a code/test checkpoint, not a real-run telemetry demonstration. Next: review the allowlist against event shapes, then verify a synthetic local record contains metadata only without starting or altering the user's server.
+
 ## M2 verify retrieved-source replay to Gemini (27 October 2026)
 
 The latest integration regression now inspects the second mocked provider request after Gemini selects `get_nutrition_guidance`. It requires the function response to include bounded `citationEvidence` and a model-facing `SRC_` alias. Focused test:1 passed,97 skipped; TypeScript passes. This closes only the serialization assertion. Live model citation/use, source entailment, applicable clinical judgment and user-visible answer quality remain incomplete. No provider call was made.

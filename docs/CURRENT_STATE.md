@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## Local Gemini evaluation privacy — 27 October 2026
+
+The opt-in local evaluation recorder is being changed to metadata-only capture: an allowlist retains model/stage/tool names, statuses, usage counts, latency and bounded cost metadata; prompts, package/OCR/profile text, images and digests, tool arguments/results, answer text and provider conversation payloads are omitted. Focused recorder tests and TypeScript pass. The already-running local server predates this source change and still reports the old `readableEvaluationCapture:true` status; it was not restarted or used for a provider request. Restart only through the owner-controlled runtime after reviewing the config. Existing `.data` traces were not read, changed or deleted.
+
 ## M2 provider-context serialization check — 27 October 2026
 
 On the latest integration branch (`01c39c84285416d52a544a272e5563ec1ce3ea4d`), added a regression asserting that a selected `get_nutrition_guidance` result is serialized into the next Gemini request with bounded `citationEvidence` and a remapped `SRC_` handle. The focused route test passes (1 passed, 97 skipped); `npm run typecheck` passes. This proves the mocked request replay contract only. It does not prove a live model saw or used evidence, or that an answer is scientifically supported. No Gemini request was made.

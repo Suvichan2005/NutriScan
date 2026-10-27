@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — opt-in Gemini evaluation telemetry stores metadata only
+
+Repository privacy rules prohibit logging request bodies or model conversations. Keep local opt-in evaluation capture only for allowlisted operational metadata (routing, stage/tool names, status, usage counts, timing and cost estimates); do not persist prompts, package/profile data, tool payloads, answer text, images or image digests. This replaces the earlier readable-transcript behavior in source. Existing logs and the already-running server are not altered by this change.
+
 ## 27 October 2026 — assert source payload replay without auto-citation
 
 Keep retrieved records separate from answer citations. Verify at the route boundary that a selected source result, bounded evidence, and its model-facing alias are actually replayed to Gemini; do not attach a source to an answer solely because it was retrieved. This contract test does not establish model adherence or entailment.

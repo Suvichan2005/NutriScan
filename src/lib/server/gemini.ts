@@ -2090,7 +2090,7 @@ export async function reconstructPackageForEvaluation(input:unknown){
   const {data}=selectedAnalysisInput(parsed);
   const status=providerStatus();if(!status.enabled)throw new ApiError(503,'provider_disabled',status.message);
   const analysisId=randomUUID();
-  await startGeminiEvaluation(analysisId,{model:status.model??'unresolved-model-route',taskKind:'package-reconstruction',question:data.question,profileIncluded:false,request:data});
+  await startGeminiEvaluation(analysisId,{model:status.model??'unresolved-model-route',taskKind:'package-reconstruction'});
   try{
     const aliases=createReferenceAliases(data),parts=await reconstructionImageParts(data,aliases);
     const result=await reconstructPackage(data,parts,analysisId,aliases);
@@ -2128,9 +2128,6 @@ export async function assist(data: z.infer<typeof assistInput>) {
   await startGeminiEvaluation(analysisId,{
     model:status.model??'unresolved-model-route',
     taskKind:isFollowup?'follow-up':shouldReconstruct?'package-reconstruction':'other',
-    question:data.question,
-    profileIncluded,
-    request:data,
   });
   try{
     await recordGeminiDiagnostic({
