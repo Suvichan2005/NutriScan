@@ -9,6 +9,7 @@
 - Exercised local label-text and reconstructed package paths at mobile390×844 and desktop1440×900 using fictional package text and a provider-intercepted reconstruction. Both paths start without sodium, accept a 450 mg/100 g user reading, calculate135 mg for30 g, preserve the original carbohydrate evidence, and save/reopen the package correction and conversation.
 - Verified user corrections remain labelled as unverified, while the reconstructed-route Google result remains uncited and does not display its generated response segment as source text. No page errors, external requests, Axe violations or horizontal overflow. This is not photo OCR or live Gemini acceptance.
 - The actual retrieved-source card had an h3 directly below the conversation h1, which axe flagged. Changed the card heading to h2; all four matrix journeys pass. No provider call; results remain in ignored `.data/m2-missing-nutrient-ui/`.
+- Complemented the synthetic correction matrix with the authorized private local photo acceptance at both viewports. The sodium editor starts blank, the local answer says no recorded value is not zero, and all ten original OCR observations survive save/reopen. Zero provider/external requests, page errors, Axe findings or overflow. No OCR truth claim or manual value was added.
 
 ## 2026-10-27 — distinguish grounded links from source text in evidence cards
 
