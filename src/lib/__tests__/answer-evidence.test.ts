@@ -4,6 +4,18 @@ import {isGuidanceEvidenceInScope,isLocalEvidenceTopicallyRelevant} from '../fol
 
 const source=(id:string,title:string,publisher:string,publishedAt:string|null)=>({id,title,publisher,publishedAt,url:`https://example.org/${id}`});
 
+it('preserves current context paraphrases without granting stale, foreign-scope or navigation records the same authority',()=>{
+  const record={...source('sodium','Sodium intake guidance','WHO','2024'),category:'guideline' as const,jurisdiction:'Global',summary:'Population guidance on sodium intake.',limitations:'Not an individual prescription.'};
+  const aliases=new Map([['SRC_1',record.id]]);
+  const question='What should someone watching their blood pressure consider?';
+  const answer='Consider the overall dietary pattern, rather than this drink alone [SRC_1].';
+  expect(filterAnswerBySourceScope(answer,[record],aliases,question,'',[],new Set([record.id])).answer).toBe(answer);
+  expect(filterAnswerBySourceScope(answer,[record],aliases,question).withheldSentenceCount).toBe(1);
+  expect(filterAnswerBySourceScope(answer,[{...record,supportRole:'navigation' as const}],aliases,question,'',[],new Set([record.id])).withheldSentenceCount).toBe(1);
+  expect(filterAnswerBySourceScope(answer,[{...record,jurisdiction:'United States'}],aliases,question,'India',[],new Set([record.id])).withheldSentenceCount).toBe(1);
+  expect(filterAnswerBySourceScope('This conclusion uses SRC_9.',[record],aliases,question,'',[],new Set([record.id])).withheldSentenceCount).toBe(1);
+});
+
 it('renders known native references in multiline prose and lets explicit source handles resolve an ambiguous publisher',()=>{
   const a=source('a','Synthetic daily reference','Example Organization','2025');
   const b=source('b','Synthetic weekly reference','Example Organization','2025');

@@ -109,8 +109,9 @@ export function prioritizeCitedEvidence<T extends SourceIdentity>(
 /**
  * Withhold sentences that explicitly rely on a source record that is missing,
  * off-topic for the current question, or outside the requested guidance scope.
- * This checks citation identity and topic/applicability scope. It does not
- * establish that the retrieved record entails the sentence's scientific meaning.
+ * Current retrieval/context is interpreted by the model; historical evidence
+ * needs continuity before reuse. Identity and jurisdiction checks remain here.
+ * This does not establish scientific entailment or clinical applicability.
  */
 export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<EvidenceSource, 'summary' | 'limitations' | 'category' | 'jurisdiction'> & Partial<Pick<EvidenceSource, 'supportRole'>>>(
   answer: string,
@@ -119,6 +120,7 @@ export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<Eviden
   question: string,
   explicitlySharedCountry = '',
   previousQuestions: readonly string[] = [],
+  currentEvidenceIds: ReadonlySet<string> = new Set(),
 ): { answer: string; withheldSentenceCount: number } {
   const sourcesById = new Map(sources.map(source => [source.id, source]));
   const acceptedLines: string[] = [];
@@ -154,9 +156,12 @@ export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<Eviden
       const identitySources = selectCitedEvidence(sentence, sources, true);
       const referenced = [...new Map([...handleSources, ...identitySources].map(source => [source.id, source])).values()];
       const invalidSource = referenced.some(source => source.supportRole === 'navigation' || (!inspectingSuppliedSource
-        && (!isLocalEvidenceTopicallyRelevant(source, topicalQuestion)
-          || !sourceTopicMatchesSentence(source, sentence)
-          || !isGuidanceEvidenceInScope(source, topicalQuestion, explicitlySharedCountry))));
+        && (!isGuidanceEvidenceInScope(source, topicalQuestion, explicitlySharedCountry)
+          // Current retrieval/context is explicitly supplied for this question.
+          // Lexical overlap cannot adjudicate its paraphrase or synonyms.
+          // Historical evidence still needs topical continuity before reuse.
+          || (!currentEvidenceIds.has(source.id)&&(!isLocalEvidenceTopicallyRelevant(source, topicalQuestion)
+            || !sourceTopicMatchesSentence(source, sentence))))));
       if (!unresolvedHandle && !invalidSource) return true;
       withheldSentenceCount += 1;
       return false;

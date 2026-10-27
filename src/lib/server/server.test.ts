@@ -836,6 +836,21 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[selected!.id],calculationIds:[]});
     expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-ready',withheldSourceScopeSentences:0});
   });
+  it('accepts an attributed paraphrase from explicitly current context and rejects unbound current evidence IDs',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const source=getNutritionGuidance({query:'sodium hypertension adults',jurisdiction:'India',maxResults:1})[0]!;
+    const question='Which overall dietary choices matter when monitoring blood pressure?';
+    const answer='Consider the overall dietary pattern rather than judging one drink alone SRC_1.';
+    const input={consent:true,question,evidence:[source],currentEvidenceIds:[source.id],package:{id:'current-source-context',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString()}};
+    expect(assistInput.safeParse({...input,currentEvidenceIds:['absent-source']}).success).toBe(false);
+    const fetcher=vi.fn().mockResolvedValue(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const result=await assist(assistInput.parse(input));
+    expect(result.answer).toContain('Consider the overall dietary pattern rather than judging one drink alone');
+    expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-ready',withheldSourceScopeSentences:0});
+    expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[source.id],calculationIds:[]});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it('retains a relevant source on a short follow-up by using prior user questions, not prior answer text',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const source=getNutritionGuidance({query:'diabetes carbohydrate',jurisdiction:'India',maxResults:3}).find(item=>item.id==='idf-healthy-nutrition-diabetes-2024');

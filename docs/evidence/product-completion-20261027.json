@@ -1,0 +1,135 @@
+{
+  "recordedAt": "2026-10-27T18:29:45.381170+00:00",
+  "milestone": "product-completion-20261027",
+  "sourceBranch": "codex/product-completion-20261027",
+  "historicalReleaseUnchanged": "3ac0d513eadff2014db52c001fae9874a64a8cda",
+  "sourceFileSha256": {
+    "src/components/nutriscan.tsx": "2121c17619a57129c9c01d4c16b02a10601ba38cb3881ebfebe73a46dd1c07bc",
+    "src/lib/answer-evidence.ts": "6b3a04124979160928c7ec519ff210007cea92b2851be07d919b651c6da06bf7",
+    "src/lib/server/gemini.ts": "84db26a8df1554a696f3c9df69b4d8c356a700c3922e7dc80ccaeea022ea5a4c",
+    "src/lib/server/gemini-provider.ts": "f9ac5f0993db93cd24169d139c75993633bf5602044b4e0171a63b532d4fa3fe",
+    "src/modules/inference/core.ts": "343965c65f9f15689f199fee5765b079c37a5c09da38142f0ec7a23087fb32a8",
+    "src/lib/server/http.ts": "898cbe4f0649c9264e8079c8e67bc429f96f6251d1e35bf3cf1ff78219aea6e8",
+    "src/lib/prose-sentences.ts": "002aee8c77351fe428b8ad93e45bacb499acd9e878ebc8e36cd99c1c003e0d0c"
+  },
+  "freshProviderAcceptance": {
+    "mode": "controlled local paid development",
+    "model": "gemini-3.8-flash",
+    "realPhotoProductGroups": 1,
+    "providerRequests": 10,
+    "generations": 10,
+    "initialPhotos": 2,
+    "ordinaryFollowupsResendPhotos": false,
+    "allLaterRequestImageCounts": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "finalSourceScopeWithheld": 0,
+    "finalQuantityStatementsWithheld": 2,
+    "independentGroundTruth": false,
+    "clinicalValidation": false,
+    "successfulAssistRequests": 5
+  },
+  "checks": {
+    "fullTests": {
+      "passed": 897,
+      "skipped": 2,
+      "testTimeoutMs": 30000,
+      "firstAttempt": "5 cold-load/time-limit failures while dev server active; no failed assertion"
+    },
+    "typecheck": "passed",
+    "optimizedBuild": "passed",
+    "productionSmoke": "providers disabled, saved actual journey reopened on desktop and mobile; privacy disclosure checked",
+    "correction": "retained carbohydrate reading confirmed through UI, then current provenance-backed calculation returned 11.25 g for 75 mL",
+    "networkFailure": "deliberate browser network abort; one request for duplicate submit; retry preserves current reconstruction and sends no photos",
+    "inspectorScroll": "actual internal overflow and nonzero scrollTop on desktop and mobile"
+  },
+  "usage": [
+    {
+      "stage": "initial reconstruction",
+      "generations": 1,
+      "promptTokens": 8130,
+      "outputTokens": 3248,
+      "reportedThinkingTokens": 0,
+      "cachedTokens": 0,
+      "providerElapsedMs": 36097,
+      "estimatedUsd": 0.0182775
+    },
+    {
+      "stage": "initial answer",
+      "generations": 2,
+      "promptTokens": 12936,
+      "outputTokens": 246,
+      "reportedThinkingTokens": 0,
+      "cachedTokens": 0,
+      "providerElapsedMs": 8662,
+      "estimatedUsd": 0.0106245
+    },
+    {
+      "stage": "half-pouch follow-up",
+      "generations": 2,
+      "promptTokens": 13766,
+      "outputTokens": 137,
+      "reportedThinkingTokens": 0,
+      "cachedTokens": 0,
+      "providerElapsedMs": 6859,
+      "estimatedUsd": 0.01083825
+    },
+    {
+      "stage": "first source refresh",
+      "generations": 1,
+      "promptTokens": 6819,
+      "outputTokens": 180,
+      "reportedThinkingTokens": 0,
+      "cachedTokens": 0,
+      "providerElapsedMs": 6840,
+      "estimatedUsd": 0.00578925
+    },
+    {
+      "stage": "corrected-reading follow-up",
+      "generations": 2,
+      "promptTokens": 10549,
+      "outputTokens": 66,
+      "reportedThinkingTokens": 0,
+      "cachedTokens": 0,
+      "providerElapsedMs": 9096,
+      "estimatedUsd": 0.00815925
+    },
+    {
+      "stage": "final source confirmation",
+      "generations": 2,
+      "promptTokens": 14056,
+      "outputTokens": 318,
+      "reportedThinkingTokens": 0,
+      "cachedTokens": 0,
+      "providerElapsedMs": 9346,
+      "estimatedUsd": 0.011734499999999998
+    }
+  ],
+  "newEstimatedUsd": 0.06542325,
+  "conservativeCumulativePaidCommittedUsd": 8.638364675,
+  "billingBalanceVerified": false,
+  "knownLimitations": [
+    "One current real-package development journey is not unfamiliar-product accuracy validation.",
+    "Total-sugars digits obscured by glare remain provisional; they were not independently established as ground truth.",
+    "The final natural answer retained two numerical omissions and a provisional-reading notice.",
+    "Current source identity/provenance does not prove scientific entailment.",
+    "Free 3.8 timed out in the sole bounded free confirmation.",
+    "Owner CSS and next-env overlays are preserved and excluded from commits.",
+    "Initial reconstruction still took about 36 seconds of provider time."
+  ],
+  "privateEvidenceRoot": ".data/product-completion-20261027",
+  "historicalStudyModified": false,
+  "ownerOverlaysIncludedInGit": false,
+  "freeConfirmation": {
+    "model": "gemini-3.8-flash",
+    "attempts": 1,
+    "outcome": "timeout after 20.093 seconds",
+    "paidUse": false,
+    "usageUnknown": true
+  }
+}

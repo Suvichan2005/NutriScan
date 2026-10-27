@@ -1,3 +1,17 @@
+## Product-completion candidate — 27 October 2026
+
+Current branch: `codex/product-completion-20261027`, based on the published post-release study checkpoint. Frozen release `3ac0d513eadff2014db52c001fae9874a64a8cda` and main are unchanged. Earlier workstream ownership/stop instructions are superseded by the owner's finite product-completion mission.
+
+Delivered: counted/rounded typed portion results survive natural-answer validation; stale quantities, mismatched nutrients/units and unsupported numbers remain checked. Ordinary follow-ups reuse a compact saved reconstruction without photos, OCR-capture replay or mandatory client embedding search. Duplicate submissions are coalesced; local busy/rate-limit errors have separate codes/Retry-After. Default scan is image-first, with all OCR/research methods retained under Advanced settings. Free defaults to the configured primary model; alternatives require explicit economy configuration. Consumer paid fallback requires both server authorization and per-investigation consent. Inspector diagnostics distinguish answer-only usage from initial extraction.
+
+Current evidence is now distinguished from historical citations: validated `currentEvidenceIds` bind only to supplied records; current retrieval/context can support natural paraphrases, while historical references retain continuity checks. Unknown handles, navigation-only records, jurisdiction scope and numeric checks remain independent. This is provenance protection, not scientific entailment verification.
+
+Actual local Chrome + paid Gemini 3.8 development journey: one two-photo milk-drink package, saved reconstruction, half-pouch calculation, correction, calculation after correction, save/reopen, current WHO sodium guidance/citation, desktop/mobile inspector scrolling. All later requests had zero images. Deliberate network abort verifies single-flight submission and photo-free retry, not real provider-outage behavior. Final answer retained two numerical omissions and provisional readings; source-scope omissions fell to zero. One prior free confirmation timed out. Total new paid usage:10 generations, estimated $0.06542325; cumulative conservative local paid commitment $8.638364675, not Google billing.
+
+Verification:897 passed/2 skipped with30s cold-reader timeout, TypeScript passed, optimized build passed; provider-disabled production smoke reopened the actual saved journey at1440×900 and390×844 and verified updated privacy disclosure. First concurrent full run had5 cold-load/time-limit failures; rerun passed after stopping dev. Owner `next-env.d.ts` and mobile-footer CSS overlays are unchanged/uncommitted. Browser acceptance includes that CSS overlay. Private evidence: original checkout `.data/product-completion-20261027/`; sanitized receipt `docs/evidence/product-completion-20261027.json`.
+
+Consequential limits: one current product is not general reconstruction accuracy; glare-obscured sugars remain provisional; initial perception used36s provider time; semantic source applicability and some unsupported numerical prose still need review. No new formal experiment, independent human validation, deployment or dataset expansion. PR#4 remains draft; this candidate includes its earlier source changes and should be reviewed as one successor, not merged twice.
+
 # NutriScan current runtime handoff
 ## Active product-completion mission — 27 October 2026
 

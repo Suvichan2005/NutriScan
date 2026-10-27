@@ -96,7 +96,10 @@ function equivalentCalculationOperations(left:Calculation,right:Calculation):boo
   return !leftRows.length||!rightRows.length||leftRows.join('|')===rightRows.join('|');
 }
 
-export const assistInput = z.object({ analysisMethod:analysisMethodSchema.optional(), toolAccess:toolAccessInput.optional(), allowPaidFallback:z.boolean().default(false), consent: z.literal(true), question: z.string().trim().min(1).max(2000), workspacePortion:workspacePortionSchema.optional(), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
+export const assistInput = z.object({ analysisMethod:analysisMethodSchema.optional(), toolAccess:toolAccessInput.optional(), allowPaidFallback:z.boolean().default(false), consent: z.literal(true), question: z.string().trim().min(1).max(2000), workspacePortion:workspacePortionSchema.optional(), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), currentEvidenceIds:z.array(sourceSchema.shape.id).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
+  for(const id of data.currentEvidenceIds??[]){
+    if(!data.evidence?.some(source=>source.id===id))context.addIssue({code:'custom',path:['currentEvidenceIds'],message:'Current evidence must identify a supplied source record.'});
+  }
   const observations=new Set(data.package.observations.map(observation=>observation.id));
   const visualImageIds=new Set(data.visualImages?.map(image=>image.imageId)??[]);
   // A saved calculation may cite the image that supported a persisted
@@ -2131,8 +2134,9 @@ export async function assist(data: z.infer<typeof assistInput>) {
   const analysisId=randomUUID();
   const callerCalculationCount=data.calculations?.length??0;
   const allowAutomaticGuidance=data.toolAccess?.mode!=='research'||Boolean(data.toolAccess.names?.includes('get_nutrition_guidance'));
+  const originalEvidenceIds=new Set(data.evidence?.map(source=>source.id)??[]);
   const evidence=addProfileGuidanceContextSources({question:data.question,package:data.package,profile:data.profile,evidence:data.evidence,allowAutomaticGuidance});
-  if(evidence.length!==(data.evidence?.length??0))data=assistInput.parse({...data,evidence});
+  if(evidence.length!==(data.evidence?.length??0))data=assistInput.parse({...data,evidence,currentEvidenceIds:[...new Set([...(data.currentEvidenceIds??[]),...evidence.filter(source=>!originalEvidenceIds.has(source.id)).map(source=>source.id)])]});
   const savedServingCalculations=data.workspacePortion?[]:calculateSavedServing(data.package);
   if(savedServingCalculations.length){
     const byId=new Map([...(data.calculations??[]),...savedServingCalculations].map(calculation=>[calculation.id,calculation]));
@@ -2263,6 +2267,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       [data.question,...Object.values(data.profile??{})].join(' '),
       data.profile?.country??'',
       data.conversationContext?.map(turn=>turn.question)??[],
+      new Set([...(data.currentEvidenceIds??[]),...generated.evidence.map(source=>source.id)]),
     );
     const withheldSpans: Array<{text:string;reason:'unsupported-quantity'|'unsupported-basis'}> = [];
     const answerCheck=validateNaturalAnswerText(sourceScopeCheck.answer,{
