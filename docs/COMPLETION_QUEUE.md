@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M2 verify retrieved-source replay to Gemini (27 October 2026)
+
+The latest integration regression now inspects the second mocked provider request after Gemini selects `get_nutrition_guidance`. It requires the function response to include bounded `citationEvidence` and a model-facing `SRC_` alias. Focused test:1 passed,97 skipped; TypeScript passes. This closes only the serialization assertion. Live model citation/use, source entailment, applicable clinical judgment and user-visible answer quality remain incomplete. No provider call was made.
+
 ## M3 disclose the local OCR language boundary before photo selection (27 October 2026)
 
 Added the existing English-only local OCR limitation to the empty scanner state, ahead of photo selection. Mobile390×844 and desktop1440×900 local Chrome checks show it visibly without overflow or page errors; typecheck passes. The OCR method remains unchanged pending the independent comparison. No provider request. Continue broader M2/M3 acceptance; fresh source-selection remains unavailable while Gemini is disabled.

@@ -1,4 +1,8 @@
 # Chronological decisions
+## 27 October 2026 — assert source payload replay without auto-citation
+
+Keep retrieved records separate from answer citations. Verify at the route boundary that a selected source result, bounded evidence, and its model-facing alias are actually replayed to Gemini; do not attach a source to an answer solely because it was retrieved. This contract test does not establish model adherence or entailment.
+
 ## 27 October 2026 — preserve community allergen declarations and trace tags separately
 
 Carry Open Food Facts `allergens_tags` and `traces_tags` through lookup as distinct optional fields and label them separately in the community-record UI. Neither field is package verification; an empty list does not establish allergen absence or no cross-contact. Photographed package observations remain separate evidence.

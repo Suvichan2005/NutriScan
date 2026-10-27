@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 retrieved-source request replay test (27 October 2026)
+
+Added a provider-free route assertion on integration `01c39c8` for the tool-result boundary: the second Gemini request contains the selected guidance function response, `citationEvidence`, and a model-facing source handle. Focused route test passes (1 passed,97 skipped); TypeScript passes. This is not live Gemini or scientific-accuracy acceptance. The remaining M2 objective is demonstrating selective source retrieval and useful, correctly attributed answers across distinct development scenarios.
+
 ## M3 disclose the local OCR language boundary before photo selection (27 October 2026)
 
 The empty package-scan state now says that on-device OCR reads English only, may miss or misread other languages, and readings should be checked against the photo. This moves the existing limitation from the post-scan inspector to the upload decision; OCR method and default behavior are unchanged. Live local Chrome acceptance verified the disclosure at390×844 and1440×900, with no page errors or horizontal overflow; `tsc --noEmit` passes. No photo analysis or provider request was made. Multilingual OCR remains subject to the independent comparison.

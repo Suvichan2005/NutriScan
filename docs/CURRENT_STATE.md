@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## M2 provider-context serialization check — 27 October 2026
+
+On the latest integration branch (`01c39c84285416d52a544a272e5563ec1ce3ea4d`), added a regression asserting that a selected `get_nutrition_guidance` result is serialized into the next Gemini request with bounded `citationEvidence` and a remapped `SRC_` handle. The focused route test passes (1 passed, 97 skipped); `npm run typecheck` passes. This proves the mocked request replay contract only. It does not prove a live model saw or used evidence, or that an answer is scientifically supported. No Gemini request was made.
+
 ## Current integration checkpoint — M2/M6 claim and added-food follow-up (27 October 2026)
 
 In a fictional sugar-free cracker scenario, local recovery now separates claim wording from requested nutrient values and clearly limits calculations to the saved package. The local resolver carries a prior user question into explicit referential follow-ups, without reusing assistant text as evidence. A two-turn spinach scenario preserves the user’s earlier context and returns the supported cracker calculation; it does not estimate the spinach contribution and explains that a combined total needs separate amounts and nutrition data. Focused conversation-context/follow-up/server tests:132 passed. Browser acceptance passes at390×844 and1440×900 with two mocked503s, retry available, and zero provider/external requests, page errors, Axe violations or horizontal overflow. Receipt `docs/evidence/claim-nutrition-recovery-browser.json`; screenshots remain ignored. Synthetic recovery only—not Gemini answer quality, current law or independent science evaluation.

@@ -813,6 +813,13 @@ describe('provider validation, independent of provider invocation', () => {
     const result=await assist(data);
 
     expect(providerCalls).toBe(2);
+    const followUpRequest=JSON.parse(String(fetcher.mock.calls[1]?.[1]?.body)) as {contents?:Array<{parts?:Array<Record<string,unknown>>}>};
+    const guidanceResponse=followUpRequest.contents?.flatMap(content=>content.parts??[])
+      .map(part=>part.functionResponse as {name?:string;response?:unknown}|undefined)
+      .find(response=>response?.name==='get_nutrition_guidance');
+    expect(guidanceResponse).toBeDefined();
+    expect(JSON.stringify(guidanceResponse?.response)).toContain('citationEvidence');
+    expect(JSON.stringify(guidanceResponse?.response)).toMatch(/SRC_[A-Z0-9]+/);
     expect(result.answer).toContain('WHO guidance discusses sodium intake in relation to blood pressure at a population level');
     expect(result.agentEvidence.map(item=>item.id)).toContain(selected!.id);
     expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[selected!.id],calculationIds:[]});

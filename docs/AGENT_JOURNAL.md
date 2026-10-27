@@ -1338,3 +1338,7 @@ M3 broad photo check used the existing non-held-out Spanish Nutella nutrition ph
 # 27 October 2026 — M3 disclose OCR language before scan
 
 Moved the existing English-only on-device OCR limitation into the empty scanner view so users see it before choosing photos. TypeScript and actual local Chrome UI checks passed at390×844 and1440×900; there were no page errors or overflow. No scan/provider request, OCR method change, or comparative study.
+
+# 2026-10-27 — verify retrieved-source replay in latest integration
+
+The current integration response path already remaps source identities into model-facing `SRC_` handles and serializes bounded `citationEvidence` in the tool function response. Added a route regression that inspects the next mocked Gemini request after `get_nutrition_guidance`; it passes with the focused test (1 passed, 97 skipped), and TypeScript passes. No live provider call was made. The historical live trace remains inconclusive about exact request contents because its profile-bearing request was redacted; live citation adherence and scientific answer quality remain unverified.
