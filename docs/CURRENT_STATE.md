@@ -1,7 +1,7 @@
 # NutriScan current runtime handoff
 ## Current integration checkpoint — M2 grounding quantities and source provenance (27 October 2026)
 
-Audited the numeric-evidence path for Google Search grounding. Its source record summary is a model-generated response segment linked to a URL, with an explicit limitation that the page was not fetched or checked. Natural-answer and typed-claim numeric validation now exclude that category as numeric evidence; source attribution remains available. Focused inference, agent and server suites:192 passed; `tsc --noEmit` passes. No provider request or source-page verification. The integration branch has local commit `8a5af70` plus the current uncommitted change; five owner edits remain preserved.
+Audited the numeric-evidence path for Google Search grounding. Its source record summary is a model-generated response segment linked to a URL, with an explicit limitation that the page was not fetched or checked. Natural-answer and typed-claim numeric validation exclude that category as numeric evidence. Evidence cards and the source inspector now present it as a grounding link without displaying the response segment as a source summary. Focused inference/agent/server/presentation suites:96 passed; `tsc --noEmit` passes. No provider request or source-page verification. Browser visual acceptance for the card change is pending after the browser automation surfaces failed to connect. Commits `8a5af70` and `7c8ccaa` are pushed; five owner edits remain preserved.
 
 ## Current integration checkpoint — M2/M6 claim and added-food follow-up (27 October 2026)
 

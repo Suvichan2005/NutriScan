@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M6 distinguish Google grounding links from reviewed source summaries (27 October 2026)
+
+Evidence cards and the source inspector now identify Google grounding records as links whose page content was not reviewed; generated response text is no longer shown in the card as a source summary. Other source summaries remain visible. Presentation unit tests and `tsc --noEmit` pass. Browser visual acceptance is pending: the Playwright browser surface returned `ERR_BLOCKED_BY_CLIENT`, and the Windows helper failed activation twice. M6 remains active.
+
 ## M2 keep Google grounding metadata from validating its own quantities (27 October 2026)
 
 The Google Search grounding adapter stores the model's response segment as generated metadata, not a fetched source excerpt. Both typed-claim and natural-answer numeric validation now exclude `web-search` summaries as quantity evidence while retaining them for source attribution and inspection. Provider-free tests reproduce the self-corroboration path; inference/agent/server suites:192 passed. TypeScript passes. No live provider, source-page verification or broader scientific-entailment claim. M2 remains active.

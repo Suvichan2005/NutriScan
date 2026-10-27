@@ -1,4 +1,8 @@
 # Current engineering status
+## M6 identify unreviewed Google grounding links in source cards (27 October 2026)
+
+Evidence cards and the source inspector label Google grounding records as links whose page content was not reviewed and suppress the generated response segment as a source summary. Other source records are unchanged. Presentation tests and TypeScript pass; browser visual acceptance is pending after `ERR_BLOCKED_BY_CLIENT` in the QA browser and activation failure in the Windows helper.
+
 ## M2 do not use generated grounding text to verify quantities (27 October 2026)
 
 Google grounding metadata links a generated answer segment to a public URL; it does not include page text fetched and checked by NutriScan. Natural-answer and typed-claim validators now exclude `web-search` summaries from numeric corroboration. The source remains available for attribution and user inspection. Focused inference/agent/server tests:192 passed; `tsc --noEmit` passes. No Gemini request or page-content verification.

@@ -1,4 +1,9 @@
 # Sanitized engineering journal
+## 2026-10-27 — distinguish grounded links from source text in evidence cards
+
+- Updated cited, retrieved-only and inspector source cards to identify Google grounding links as page content not reviewed. The generated answer segment is not shown as a source summary; ordinary source summaries are unchanged.
+- Presentation helper tests and `tsc --noEmit` pass. Browser visual acceptance could not run: the QA browser returned `ERR_BLOCKED_BY_CLIENT`; the documented Windows helper failed activation on its initial attempt and one retry. No screenshots or provider calls.
+
 ## 2026-10-27 — prevent generated grounding segments from self-validating quantities
 
 - Traced the production numeric path: Google grounding records store the generated answer segment and state that the linked page was not fetched or independently reviewed. Both `validateInferenceOutput` and final natural-answer validation previously admitted that segment as source numeric evidence.

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { BookOpen, ChevronDown, CircleHelp, Eye, PackageSearch, ScanLine, Sparkles } from 'lucide-react';
 import { compareProductNutrition, type ProductComparisonRow } from '@/lib/product-comparison';
 import { productEvidenceSource } from '@/lib/product-evidence';
+import { evidenceSourcePreview } from '@/lib/evidence-presentation';
 import { isSafeEvidenceUrl, safeConversationEvidence } from '@/lib/followup-evidence';
 import { scaleCalculationToPortion } from '@/lib/thread-presentation';
 import type { AssistantUiComponent, Audit, EvidenceSource, Observation, PackageData, ProductRecord, TentativeStructuredCandidate, NutrientKey } from '@/lib/contracts';
@@ -137,7 +138,7 @@ export function ThreadGenerativeUI(props: Props) {
       if (!selected.length) return null;
       return <details className="thread-ui-card thread-ui-evidence-disclosure" aria-label="Supporting sources" data-testid="thread-ui-component-source-reference-cards" key={component.type}>
         <summary><span><strong>Supporting sources</strong><small>{selected.map(source => source.title).join(' · ')}</small></span><ChevronDown size={15}/></summary>
-        <div className="thread-ui-evidence-content"><div className="thread-ui-source-list">{selected.map(source => <article key={source.id}><a href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a><small>{source.publisher} · {source.jurisdiction} · Retrieved {new Date(source.retrievedAt).toLocaleDateString('en-IN')}</small><p>{source.summary}</p><p className="thread-ui-caveat">{source.limitations}</p></article>)}</div></div>
+        <div className="thread-ui-evidence-content"><div className="thread-ui-source-list">{selected.map(source => {const preview=evidenceSourcePreview(source);return <article key={source.id}><a href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a><small>{preview.label}</small><small>{source.publisher} · {source.jurisdiction} · Retrieved {new Date(source.retrievedAt).toLocaleDateString('en-IN')}</small><p>{preview.text}</p><p className="thread-ui-caveat">{source.limitations}</p></article>;})}</div></div>
       </details>;
     },
     'personalized-finding': () => <section className="thread-ui-card thread-ui-personalized" aria-label="Personalized interpretation" data-testid="thread-ui-component-personalized-finding" key="personalized-finding"><Sparkles size={16}/><div><strong>Personal context considered</strong><p>A declared profile statement was cited in this answer. It remains user-provided context, not a verified health fact.</p></div></section>,
