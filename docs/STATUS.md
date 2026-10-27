@@ -1,4 +1,8 @@
 # Current engineering status
+## Photo-to-local-OCR browser observation (27 October 2026)
+
+The current local UI accepted and saved two package sides, ran its selected Tesseract reader, and retained both photos after cloud analysis was unavailable. It recorded 16 observations but no usable nutrition values; most fragments were noise. The request did not reach Gemini because the local provider status was disabled. This is direct browser evidence of the local OCR/fallback path only, not AI acceptance. Browser storage now contains the scan; preserve it if restarting the test app.
+
 ## M2 source-backed ingredient/profile links (27 October 2026)
 
 Integrated the existing exact declared-food crosswalk into the `resolve_ingredient` native tool result. An exact package ingredient phrase may now surface linked source records when they match an explicitly shared profile declaration, while preserving package observation IDs and source scope. Positive milk-allergy/whey-powder and negative lactose-intolerance cases pass; this is a source-linked terminology signal, not an individual safety verdict. The local tool probe confirms the identity/science record for whey powder can be retrieved separately, but no live model response was tested. An India sugar-free claim query still over-retrieves general sugar guidance and misses the dated FSSAI nutrient-claim record; current claim criteria remain unresolved.
