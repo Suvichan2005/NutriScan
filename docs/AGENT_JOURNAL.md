@@ -1380,3 +1380,6 @@ M3 broad photo check used the existing non-held-out Spanish Nutella nutrition ph
 # 27 October 2026 — M3 disclose OCR language before scan
 
 Moved the existing English-only on-device OCR limitation into the empty scanner view so users see it before choosing photos. TypeScript and actual local Chrome UI checks passed at390×844 and1440×900; there were no page errors or overflow. No scan/provider request, OCR method change, or comparative study.
+
+### 2026-10-27 — Local evaluation recorder privacy boundary
+The development evaluation recorder now persists only allowlisted request metadata and usage details; it excludes prompts, request/response bodies, images, profile context, credentials and hidden reasoning. The sanitized operational ledger remains separate. Focused tests cover the recorder boundary.
