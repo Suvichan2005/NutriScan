@@ -1,4 +1,9 @@
 # Sanitized engineering journal
+## 2026-10-27 — inspect evidence passed to Gemini's final turn
+
+- Selectively compared published ThinkBook commits with current integration. Source-linked allergy/profile crosswalks, global nutrition guidance, and failure-class provider telemetry were already present. The divergence also removes recent IdeaPad grounding provenance and browser acceptance work; no merge was made.
+- Extended the production `assist()` test to inspect Gemini's second request after WHO sodium guidance retrieval. It must contain `citationEvidence` and a source handle in the tool response; the focused stubbed test passes (1 passed). This confirms source replay only, not model adherence or source truth.
+
 ## 2026-10-27 — accept missing-nutrient correction across browser routes
 
 - Exercised local label-text and reconstructed package paths at mobile390×844 and desktop1440×900 using fictional package text and a provider-intercepted reconstruction. Both paths start without sodium, accept a 450 mg/100 g user reading, calculate135 mg for30 g, preserve the original carbohydrate evidence, and save/reopen the package correction and conversation.

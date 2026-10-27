@@ -1,4 +1,8 @@
 # Current engineering status
+## M2 verify selected source replay in production route (27 October 2026)
+
+The controlled `assist()` route test now inspects the second mocked Gemini request and requires the selected WHO guidance tool response, its `citationEvidence`, and a source handle to be present. Focused test:1 passed. This demonstrates source transfer into the follow-up request; it does not establish model adherence or source-page validity. ThinkBook's useful crosswalk, global guidance and failure-class telemetry changes are already present in this integration. Its published branch diverges by dropping newer IdeaPad provenance UI and acceptance files, so it was reviewed selectively and not merged.
+
 ## M2/M6 missing-nutrient correction browser acceptance (27 October 2026)
 
 The missing-nutrient editor now passes installed-Chrome UI acceptance at 390×844 and 1440×900 for local label-text and reconstructed package routes. Starting with no sodium value, users add a 450 mg per 100 g reading, see it distinguished from the original carbohydrate evidence, calculate 135 mg for 30 g, then save and reopen the conversation and correction. Retrieved Google grounding links remain identified as uncited and unreviewed after reopen. The acceptance exposed and fixed a heading-order accessibility defect. All four journeys report zero Axe violations, page errors, external requests, and horizontal overflow. Synthetic/intercepted development evidence only; real photo OCR and fresh Gemini selection remain unverified. Local ignored receipt/screenshots: `.data/m2-missing-nutrient-ui/`.

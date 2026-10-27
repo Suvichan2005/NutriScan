@@ -1,4 +1,8 @@
 # NutriScan final semester completion queue
+## M2 verify selected evidence enters the final provider turn (27 October 2026)
+
+Strengthened the controlled production-route regression for selected nutrition guidance: the follow-up Gemini request must contain the selected tool response, `citationEvidence`, and a source handle. Focused provider-stubbed test passes. This verifies request wiring only, not semantic adherence. Selective ThinkBook branch review confirmed useful crosswalk, global guidance and provider-failure telemetry work is already integrated; divergent branch was not merged because it drops newer IdeaPad provenance and acceptance work. Continue M2 testing with broader distinct scenarios.
+
 ## M2/M6 accept missing-nutrient correction in the browser (27 October 2026)
 
 Accepted the editor journey on mobile390×844 and desktop1440×900 through both local label-text and Gemini-reconstructed package routes. Users can add a missing 450 mg sodium reading per100 g, retain the original carbohydrate evidence as a separate reading, calculate135 mg for30 g, and save/reopen the correction and conversation. Grounding results stay uncited and visibly unreviewed through reopen. Zero Axe violations, browser page errors, external requests or horizontal overflow across four journeys. Fixed a heading-level accessibility issue. This uses fictional label text and provider-intercepted responses; genuine photo OCR and fresh Gemini selection remain unverified. Receipt/screenshots are ignored in `.data/m2-missing-nutrient-ui/`. Continue broader M2 scenarios and M6 journey acceptance.
