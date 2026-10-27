@@ -1,10 +1,16 @@
 # Sanitized engineering journal
-## 2026-10-27 — restrict local Gemini evaluation capture to operational metadata
+## 2026-10-27 — inspect evidence passed to Gemini's final turn
 
-- Review against the current `AGENTS.md` found the explicit local recorder persisted readable prompt, package/tool and answer content, conflicting with the no-model-conversation logging rule.
-- Replaced content-oriented recursive sanitization with an allowlist for operational metadata. Updated `/api/status` to state that local capture is metadata-only and readable capture is false. Added regression coverage for prompts, answers, image payloads, profile/package values and token metadata.
-- Focused recorder tests pass (3); `npm run typecheck` passes. No provider call was made. Existing local traces and the owner’s running server were left untouched; that old process still advertises readable capture until restarted on this revision.
-- A fresh isolated temporary-directory write/read probe then persisted four synthetic events. Assertions confirmed model/token/tool metadata remained and synthetic prompt, answer and photo markers were absent; the temporary fixture was retained outside the repository. This exercises local recorder persistence only, not live provider telemetry.
+- Selectively compared published ThinkBook commits with current integration. Source-linked allergy/profile crosswalks, global nutrition guidance, and failure-class provider telemetry were already present. The divergence also removes recent IdeaPad grounding provenance and browser acceptance work; no merge was made.
+- Extended the production `assist()` test to inspect Gemini's second request after WHO sodium guidance retrieval. It must contain `citationEvidence` and a source handle in the tool response; the focused stubbed test passes (1 passed). This confirms source replay only, not model adherence or source truth.
+
+## 2026-10-27 — accept missing-nutrient correction across browser routes
+
+- Exercised local label-text and reconstructed package paths at mobile390×844 and desktop1440×900 using fictional package text and a provider-intercepted reconstruction. Both paths start without sodium, accept a 450 mg/100 g user reading, calculate135 mg for30 g, preserve the original carbohydrate evidence, and save/reopen the package correction and conversation.
+- Verified user corrections remain labelled as unverified, while the reconstructed-route Google result remains uncited and does not display its generated response segment as source text. No page errors, external requests, Axe violations or horizontal overflow. This is not photo OCR or live Gemini acceptance.
+- The actual retrieved-source card had an h3 directly below the conversation h1, which axe flagged. Changed the card heading to h2; all four matrix journeys pass. No provider call; results remain in ignored `.data/m2-missing-nutrient-ui/`.
+- Complemented the synthetic correction matrix with the authorized private local photo acceptance at both viewports. The sodium editor starts blank, the local answer says no recorded value is not zero, and all ten original OCR observations survive save/reopen. Zero provider/external requests, page errors, Axe findings or overflow. No OCR truth claim or manual value was added.
+
 ## 2026-10-27 — distinguish grounded links from source text in evidence cards
 
 - Updated cited, retrieved-only and inspector source cards to identify Google grounding links as page content not reviewed. The generated answer segment is not shown as a source summary; ordinary source summaries are unchanged.
@@ -1362,6 +1368,5 @@ M3 broad photo check used the existing non-held-out Spanish Nutella nutrition ph
 
 Moved the existing English-only on-device OCR limitation into the empty scanner view so users see it before choosing photos. TypeScript and actual local Chrome UI checks passed at390×844 and1440×900; there were no page errors or overflow. No scan/provider request, OCR method change, or comparative study.
 
-# 2026-10-27 — verify retrieved-source replay in latest integration
-
-The current integration response path already remaps source identities into model-facing `SRC_` handles and serializes bounded `citationEvidence` in the tool function response. Added a route regression that inspects the next mocked Gemini request after `get_nutrition_guidance`; it passes with the focused test (1 passed, 97 skipped), and TypeScript passes. No live provider call was made. The historical live trace remains inconclusive about exact request contents because its profile-bearing request was redacted; live citation adherence and scientific answer quality remain unverified.
+### 2026-10-27 — Local evaluation recorder privacy boundary
+The development evaluation recorder now persists only allowlisted request metadata and usage details; it excludes prompts, request/response bodies, images, profile context, credentials and hidden reasoning. The sanitized operational ledger remains separate. Focused tests cover the recorder boundary.

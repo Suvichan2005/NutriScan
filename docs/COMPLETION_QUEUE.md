@@ -1,7 +1,14 @@
 # NutriScan final semester completion queue
-## M6 make local Gemini evaluation telemetry metadata-only (27 October 2026)
+## M2 verify selected evidence enters the final provider turn (27 October 2026)
 
-The prior opt-in recorder retained readable request, tool and answer content, conflicting with the active privacy contract. The recorder now uses an explicit operational-metadata allowlist and omits prompts, package/OCR/profile content, images/digests, tool arguments/results and natural/final answers; provider events now pass token/cost/model-version/tool-name metadata separately from raw response bodies. Status reports metadata capture separately and marks readable capture false. Focused recorder tests:3 passed; source-replay route test:1 passed (97 skipped); TypeScript passes. A provider-free write/read probe in a fresh system temporary directory verified four persisted events retained model/token/tool metadata and excluded synthetic prompt, answer and image markers. Existing local traces were preserved untouched. The already-running local server predates this change and still reports its old readable-capture state; do not use it for new provider calls until the owner-controlled process is restarted with this revision. Next: use the current server revision for future bounded provider acceptance only after owner-controlled restart, then continue broad M2 source-use validation.
+Strengthened the controlled production-route regression for selected nutrition guidance: the follow-up Gemini request must contain the selected tool response, `citationEvidence`, and a source handle. Focused provider-stubbed test passes. This verifies request wiring only, not semantic adherence. Selective ThinkBook branch review confirmed useful crosswalk, global guidance and provider-failure telemetry work is already integrated; divergent branch was not merged because it drops newer IdeaPad provenance and acceptance work. Continue M2 testing with broader distinct scenarios.
+
+## M2/M6 accept missing-nutrient correction in the browser (27 October 2026)
+
+Accepted the editor journey on mobile390×844 and desktop1440×900 through both local label-text and Gemini-reconstructed package routes. Users can add a missing 450 mg sodium reading per100 g, retain the original carbohydrate evidence as a separate reading, calculate135 mg for30 g, and save/reopen the correction and conversation. Grounding results stay uncited and visibly unreviewed through reopen. Zero Axe violations, browser page errors, external requests or horizontal overflow across four journeys. Fixed a heading-level accessibility issue. This uses fictional label text and provider-intercepted responses; genuine photo OCR and fresh Gemini selection remain unverified. Receipt/screenshots are ignored in `.data/m2-missing-nutrient-ui/`. Continue broader M2 scenarios and M6 journey acceptance.
+
+Also verified the local-only photo route at both viewports with an authorized private development label missing sodium: the correction editor is reachable, starts blank, original ten OCR observations survive save/reopen, and the answer distinguishes missing from zero. No provider/external calls, Axe violations, page errors or overflow. This is not OCR ground truth or real-value correction acceptance.
+
 ## M6 distinguish Google grounding links from reviewed source summaries (27 October 2026)
 
 Evidence cards and the source inspector now identify Google grounding records as links whose page content was not reviewed; generated response text is no longer shown in the card as a source summary. Other source summaries remain visible. Presentation unit tests and `tsc --noEmit` pass. Browser visual acceptance is pending: the Playwright browser surface returned `ERR_BLOCKED_BY_CLIENT`, and the Windows helper failed activation twice. M6 remains active.
@@ -9,10 +16,6 @@ Evidence cards and the source inspector now identify Google grounding records as
 ## M2 keep Google grounding metadata from validating its own quantities (27 October 2026)
 
 The Google Search grounding adapter stores the model's response segment as generated metadata, not a fetched source excerpt. Both typed-claim and natural-answer numeric validation now exclude `web-search` summaries as quantity evidence while retaining them for source attribution and inspection. Provider-free tests reproduce the self-corroboration path; inference/agent/server suites:192 passed. TypeScript passes. No live provider, source-page verification or broader scientific-entailment claim. M2 remains active.
-
-## M2 verify retrieved-source replay to Gemini (27 October 2026)
-
-The latest integration regression now inspects the second mocked provider request after Gemini selects `get_nutrition_guidance`. It requires the function response to include bounded `citationEvidence` and a model-facing `SRC_` alias. Focused test:1 passed,97 skipped; TypeScript passes. This closes only the serialization assertion. Live model citation/use, source entailment, applicable clinical judgment and user-visible answer quality remain incomplete. No provider call was made.
 
 ## M3 disclose the local OCR language boundary before photo selection (27 October 2026)
 

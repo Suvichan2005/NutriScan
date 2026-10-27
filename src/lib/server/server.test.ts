@@ -815,8 +815,8 @@ describe('provider validation, independent of provider invocation', () => {
     const result=await assist(data);
 
     expect(providerCalls).toBe(2);
-    const followUpRequest=JSON.parse(String(fetcher.mock.calls[1]?.[1]?.body)) as {contents?:Array<{parts?:Array<Record<string,unknown>>}>};
-    const guidanceResponse=followUpRequest.contents?.flatMap(content=>content.parts??[])
+    const finalRequest=JSON.parse(String(fetcher.mock.calls[1]?.[1]?.body)) as {contents?:Array<{parts?:Array<Record<string,unknown>>}>};
+    const guidanceResponse=finalRequest.contents?.flatMap(content=>content.parts??[])
       .map(part=>part.functionResponse as {name?:string;response?:unknown}|undefined)
       .find(response=>response?.name==='get_nutrition_guidance');
     expect(guidanceResponse).toBeDefined();
