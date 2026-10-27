@@ -309,3 +309,6 @@ The existing package-text conversation runner now follows the current UI and pas
 
 ## Local Gemini telemetry privacy
 The readable development transcript path has been narrowed to metadata-only recording. It does not persist prompt or response bodies, photos, profile context, credentials or hidden reasoning; ordinary sanitized operational telemetry is separate. Focused recorder tests cover this contract.
+# M2 source-evidence boundary update — 27 October 2026
+
+Research-tool source records may carry an optional `supportRole` (`content` or `navigation`). Failed retrieval links and the flattened FSSAI additive index are marked navigation-only; answer citation selection excludes them, and explicitly cited navigation-only claims are withheld. Offline tests cover navigation rejection and content-bearing citation continuity. This does not solve missing local allergen-source retrieval, establish entailment, or prove current Gemini behavior. The last real provider observation remains: WHO guidance was successfully retrieved and cited in one task; a separate allergen task received navigation links and lacked usable local allergen evidence. Focused suites passed 211/1 skipped and TypeScript passed after this change. No provider/browser acceptance after the boundary change.

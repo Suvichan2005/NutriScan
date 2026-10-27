@@ -1953,6 +1953,7 @@ export function toolResultForModel(output: Record<string, unknown>, evidence: z.
       url: source.url.slice(0, 1000),
       category: source.category,
       jurisdiction: source.jurisdiction.slice(0, 180),
+      ...(source.supportRole ? { supportRole: source.supportRole } : {}),
       publishedAt: source.publishedAt,
       summary: source.summary.slice(0, 1200),
       limitations: source.limitations.slice(0, 500),

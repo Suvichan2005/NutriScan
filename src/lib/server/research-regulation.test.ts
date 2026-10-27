@@ -140,12 +140,14 @@ describe('official regulation PDF discovery', () => {
     expect(fssaiLinks.every(item => /^https:\/\/(www\.)?fssai\.gov\.in\//.test(item.url))).toBe(true);
     expect(fssaiLinks.every(item => /could not retrieve usable source text/i.test(item.summary))).toBe(true);
     expect(fssaiLinks.every(item => /navigation only/i.test(item.limitations))).toBe(true);
+    expect(fssaiLinks.every(item => item.supportRole === 'navigation')).toBe(true);
     expect(gazetteSearch).toMatchObject({
       url: 'https://egazette.gov.in/',
       category: 'official Gazette search; navigation only',
     });
     expect(gazetteSearch?.summary).toMatch(/No document text was fetched or excerpted/i);
     expect(gazetteSearch?.limitations).toMatch(/not legal evidence/i);
+    expect(gazetteSearch?.supportRole).toBe('navigation');
     expect(fixedFetchMock.mock.calls.every(([url]) => new URL(String(url)).hostname !== 'egazette.gov.in')).toBe(true);
     expect(result.message).toMatch(/no source text or current-law verdict is available/i);
   });

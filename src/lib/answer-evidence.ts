@@ -1,7 +1,7 @@
 import type { EvidenceSource } from './contracts';
 import { isGuidanceEvidenceInScope, isLocalEvidenceTopicallyRelevant } from './followup-evidence';
 
-type SourceIdentity = Pick<EvidenceSource, 'id'|'title'|'publisher'|'url'|'publishedAt'>;
+type SourceIdentity = Pick<EvidenceSource, 'id'|'title'|'publisher'|'url'|'publishedAt'> & Partial<Pick<EvidenceSource, 'supportRole'>>;
 
 /** Present native prompt references without exposing implementation handles.
  * Only a source in the effective evidence set can become a named reference.
@@ -48,7 +48,7 @@ const isContextDependentFollowup=(question:string)=>contextualFollowupPattern.te
  * title identifies a record directly. Unused retrieval candidates stay out of
  * consumer citations while remaining available in the package inspector.
  */
-export function selectCitedEvidence<T extends SourceIdentity>(answer:string,sources:readonly T[]):T[]{
+export function selectCitedEvidence<T extends SourceIdentity>(answer:string,sources:readonly T[],includeNavigation=false):T[]{
   const prose=answer.replace(/https?:\/\/[^\s<>\[\]"]+/gi,' ');
   const text=normalized(prose);
   const urls=new Set((answer.match(/https?:\/\/[^\s<>\[\]"]+/gi)??[]).map(url=>url.replace(/[),.;:]+$/,'')));
@@ -60,6 +60,7 @@ export function selectCitedEvidence<T extends SourceIdentity>(answer:string,sour
   };
   const sourceAliases=new Map(sources.map(source=>[source.id,aliases(source)]));
   return sources.filter(source=>{
+    if(!includeNavigation&&source.supportRole==='navigation')return false;
     const title=normalized(source.title);
     if(urls.has(source.url))return true;
     if(title.length>=12&&includesIdentity(text,title)){
@@ -110,7 +111,7 @@ export function prioritizeCitedEvidence<T extends SourceIdentity>(
  * This checks citation identity and topic/applicability scope. It does not
  * establish that the retrieved record entails the sentence's scientific meaning.
  */
-export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<EvidenceSource, 'summary' | 'limitations' | 'category' | 'jurisdiction'>>(
+export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<EvidenceSource, 'summary' | 'limitations' | 'category' | 'jurisdiction'> & Partial<Pick<EvidenceSource, 'supportRole'>>>(
   answer: string,
   sources: readonly T[],
   aliases: ReadonlyMap<string, string>,
@@ -151,12 +152,12 @@ export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<Eviden
         else if (!handleSources.some(item => item.id === source.id)) handleSources.push(source);
       }
 
-      const identitySources = selectCitedEvidence(sentence, sources);
+      const identitySources = selectCitedEvidence(sentence, sources, true);
       const referenced = [...new Map([...handleSources, ...identitySources].map(source => [source.id, source])).values()];
-      const invalidSource = referenced.some(source => !inspectingSuppliedSource
+      const invalidSource = referenced.some(source => source.supportRole === 'navigation' || (!inspectingSuppliedSource
         && (!isLocalEvidenceTopicallyRelevant(source, topicalQuestion)
           || !sourceTopicMatchesSentence(source, sentence)
-          || !isGuidanceEvidenceInScope(source, topicalQuestion, explicitlySharedCountry)));
+          || !isGuidanceEvidenceInScope(source, topicalQuestion, explicitlySharedCountry))));
       if (!unresolvedHandle && !invalidSource) return true;
       withheldSentenceCount += 1;
       return false;

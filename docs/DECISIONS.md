@@ -1485,3 +1485,7 @@ An active package reconstruction may omit a nutrient entirely, leaving no row to
 # 2026-10-27 — keep retrieval provenance distinct in saved answers
 
 Persist bounded sources surfaced during a response separately from sources selected as citations, and show retrieved-only sources as such. A source being retrieved does not establish that the answer used or supported it. Preserve the existing answer-linked citation selection and pass only those citations into later conversation evidence. Keep profile-to-package ingredient crosswalks tied to exact observed wording and source IDs, without turning them into safety decisions.
+
+# 2026-10-27 — distinguish source navigation from answer-supporting content
+
+Official links returned after source-text retrieval fails, and flattened regulatory indexes whose structure is not preserved, are useful navigation but cannot validate factual answer claims. Carry an explicit optional `supportRole` on source records, mark these research results as `navigation`, exclude them from answer citations, and withhold sentences that explicitly rely on them. Keep the links available in research/evidence results. Content-bearing retrieved records retain normal topical, source-scope and citation checks. This metadata does not establish entailment or legal applicability.

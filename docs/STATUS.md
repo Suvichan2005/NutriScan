@@ -1499,3 +1499,6 @@ M3 local-language diagnostic: an already-authorized, non-held-out Spanish-langua
 
 ### Local Gemini telemetry privacy — 2026-10-27
 The dev evaluation recorder is metadata-only and excludes sensitive request/response content. Sanitized operational telemetry remains distinct. Focused tests verify the boundary; no provider calls were made for this change.
+
+### M2 source-evidence boundary — 2026-10-27
+A bounded real free-tier allergen research turn returned navigation-only FSSAI/Gazette links after local knowledge search returned no records. The answer made claims beyond those navigation records. Added explicit `supportRole` metadata and source-scope rejection for cited navigation-only results; verified offline with content-bearing and navigation-only fixtures. Focused suites: 211 passed, 1 skipped; `npm run typecheck` passed. This prevents navigation links from validating cited prose, but does not resolve missing allergen source coverage or demonstrate live-model adherence after the change. No further provider calls or browser acceptance were run.
