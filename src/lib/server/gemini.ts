@@ -2114,7 +2114,8 @@ export async function assist(data: z.infer<typeof assistInput>) {
   if(!status.enabled)throw new ApiError(503,'provider_disabled',status.message);
   const analysisId=randomUUID();
   const callerCalculationCount=data.calculations?.length??0;
-  const evidence=addProfileGuidanceContextSources({question:data.question,package:data.package,profile:data.profile,evidence:data.evidence});
+  const allowAutomaticGuidance=data.toolAccess?.mode!=='research'||Boolean(data.toolAccess.names?.includes('get_nutrition_guidance'));
+  const evidence=addProfileGuidanceContextSources({question:data.question,package:data.package,profile:data.profile,evidence:data.evidence,allowAutomaticGuidance});
   if(evidence.length!==(data.evidence?.length??0))data=assistInput.parse({...data,evidence});
   const savedServingCalculations=data.workspacePortion?[]:calculateSavedServing(data.package);
   if(savedServingCalculations.length){

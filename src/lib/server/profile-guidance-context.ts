@@ -42,8 +42,12 @@ export function addProfileGuidanceContextSources(input: {
   };
   profile?: Pick<Profile, 'healthConsiderations' | 'goals' | 'country'>;
   evidence?: readonly EvidenceSource[];
+  allowAutomaticGuidance?: boolean;
 }): EvidenceSource[] {
   const existing = [...(input.evidence ?? [])];
+  // A controlled capability subset must not receive this source through a
+  // hidden pre-generation path when the corresponding tool is unavailable.
+  if (input.allowAutomaticGuidance === false) return existing;
   const ids = new Set(existing.map(source => source.id));
   const additions = profileGuidanceContextSources(input)
     .filter(source => !ids.has(source.id))

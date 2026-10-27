@@ -2,6 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { addProfileGuidanceContextSources, profileGuidanceContextSources } from './profile-guidance-context';
 
 describe('profile-aware local guidance context', () => {
+  it('does not inject profile guidance when its capability is excluded, while preserving explicitly supplied evidence', () => {
+    const input = {
+      question: 'What should I consider for this food?',
+      package: { nutrients: [{ key: 'sodium' as const }], reconstruction: null },
+      profile: { healthConsiderations: 'Hypertension', goals: 'Reduce sodium', country: 'India' },
+    };
+    const available = addProfileGuidanceContextSources(input);
+    expect(available.some(source => source.id === 'who-sodium')).toBe(true);
+    expect(addProfileGuidanceContextSources({ ...input, allowAutomaticGuidance: false })).toEqual([]);
+    expect(addProfileGuidanceContextSources({ ...input, evidence: [available[0]], allowAutomaticGuidance: false })).toEqual([available[0]]);
+  });
   it('adds applicable diabetes and population sodium sources from explicit profile and package topics', () => {
     const sources = profileGuidanceContextSources({
       question: 'What should I consider for this portion with diabetes and hypertension?',
