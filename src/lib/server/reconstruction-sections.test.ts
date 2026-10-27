@@ -19,6 +19,12 @@ it('separates malformed nutrition/ingredient/statement entries without a semanti
  const result=validateReconstructionSections(raw);expect(result.parsed.success).toBe(true);if(!result.parsed.success)throw result.parsed.error;
  expect(result.parsed.data.nutritionRows).toEqual([row]);expect(result.parsed.data.ingredients).toEqual([ingredient]);expect(result.parsed.data.statements).toEqual([]);expect(result.rejected.map(r=>r.section)).toEqual(['nutritionRows','ingredients','statements']);
 });
+it('normalizes provider null sentinels only in nullable text fields while preserving numeric readings',()=>{
+ const raw={...content,nutritionRows:[{...row,qualifier:'null',columnLabel:' undefined ',basisText:'null'}]};
+ const result=validateReconstructionSections(raw);expect(result.rejected).toEqual([]);if(!result.parsed.success)throw result.parsed.error;
+ expect(result.parsed.data.nutritionRows[0]).toMatchObject({value:8.8,unit:'g',qualifier:null,columnLabel:null,basisText:null});
+ expect(raw.nutritionRows[0]).toMatchObject({qualifier:'null',columnLabel:' undefined ',basisText:'null'});
+});
 it('does not bypass collection bounds or invent required singleton fields',()=>{
  const result=validateReconstructionSections({...content,nutritionRows:Array.from({length:101},()=>row)});expect(result.parsed.success).toBe(true);if(!result.parsed.success)throw result.parsed.error;expect(result.parsed.data.nutritionRows).toEqual([]);expect(result.rejected[0]).toMatchObject({section:'nutritionRows',index:null});
  expect(validateReconstructionSections({...content,identity:{...content.identity,name:123}}).parsed.success).toBe(false);expect(validateReconstructionSections(null).parsed.success).toBe(false);

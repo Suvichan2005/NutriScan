@@ -67,7 +67,9 @@ export function resolveLocalFollowUpQuestion(
     return `${previousQuestion.slice(0, 1000)} Follow-up: ${current.slice(0, 1000)}`;
   }
 
-  const explicitReferenceFollowUp = /^(?:(?:and\s+)?(?:would|will|can|could|does|is)\s+(?:that|this|it|those|they|them)\b|(?:and\s+)?(?:what|how)\s+(?:would|will|can|could|does)\s+(?:that|this|it|those|they|them)\b|(?:and\s+)?(?:what|how)\s+about\s+(?:that|this|it|those|them)\b)/i.test(current);
+  // In this workspace “this” refers to the active package. Borrowing the prior
+  // question here can turn a new package question into an unrelated nutrient query.
+  const explicitReferenceFollowUp = /^(?:(?:and\s+)?(?:would|will|can|could|does|is)\s+(?:that|it|those|they|them)\b|(?:and\s+)?(?:what|how)\s+(?:would|will|can|could|does)\s+(?:that|it|those|they|them)\b|(?:and\s+)?(?:what|how)\s+about\s+(?:that|it|those|them)\b)/i.test(current);
   if (explicitReferenceFollowUp && previousQuestion) {
     return `${previousQuestion.slice(0, 1000)} Follow-up: ${current.slice(0, 1000)}`;
   }

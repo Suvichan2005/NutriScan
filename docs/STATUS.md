@@ -1,4 +1,8 @@
 # Current engineering status
+## Final production consolidation (27 October 2026)
+
+Finite closeout supersedes autonomous expansion. Selectively retained PR #3 metadata privacy/tier/navigation boundaries and the older branch's nullable-field normalization; retained newer IdeaPad state/provenance. Corrected study metadata serialization and a reproduced new-topic local-conversation failure. Focused consolidation checks:141 passed,1 skipped. Full release acceptance and exact frozen handoff follow; see `RELEASE_RECONCILIATION.md` for every production improvement's disposition.
+
 ## M3 production-build memory reliability (27 October 2026)
 
 An uncapped Windows production build compiled, then the TypeScript 7 native Go checker exhausted virtual memory while spawning thousands of goroutines. The same checker and full production build pass with `GOMAXPROCS=2`. The build command now applies that cap by default on Windows, preserving an explicit override. This isolates the prior environment-dependent matcher concern from a compiler resource failure; it does not establish that every Vitest matcher diagnostic was resolved.

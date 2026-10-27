@@ -74,6 +74,11 @@ describe('resolveLocalFollowUpQuestion', () => {
     );
   });
 
+  it('keeps new package questions independent of the preceding nutrient topic', () => {
+    expect(resolveLocalFollowUpQuestion('Is this suitable with my peanut allergy and diabetes?', [{ question: 'Is calcium listed?' }])).toBe('Is this suitable with my peanut allergy and diabetes?');
+    expect(resolveLocalFollowUpQuestion('Does this contain milk?', [{ question: 'How much sodium is in 30 g?' }])).toBe('Does this contain milk?');
+  });
+
   it('does not borrow a prior topic for a new amount without a continuation cue or prior amount', () => {
     expect(resolveLocalFollowUpQuestion('How much protein is in 250 ml?', [{ question: 'How much sodium is in 150 ml?' }])).toBe('How much protein is in 250 ml?');
     expect(resolveLocalFollowUpQuestion('What if I have 250 ml instead?', [{ question: 'What ingredients are listed?' }])).toBe('What if I have 250 ml instead?');

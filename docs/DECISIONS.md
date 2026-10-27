@@ -1480,3 +1480,6 @@ Persist bounded sources surfaced during a response separately from sources selec
 # 27 October 2026 — bound Windows production type-checker concurrency
 
 TypeScript 7's native Go checker exhausted virtual memory on the Windows development host when it used the machine-wide worker count; the same full production build passed with `GOMAXPROCS=2`. Apply that cap from the build launcher only on Windows and only when the owner has not set `GOMAXPROCS`. Preserve the native checker and full-project diagnostics rather than skipping checks. This is a resource workaround, not a fix for any distinct source-level Vitest matcher diagnostic.
+# 27 October 2026 — one production candidate and separate controlled study output
+
+Final closeout supersedes ongoing expansion. Selectively integrate reviewed production fixes into IdeaPad's authoritative branch; archive divergent work as history. Routine diagnostics contain operational metadata only. The explicit local formal runner retains its controlled reconstruction and hashes in private receipts independently, with actual model/configuration/modality/fallback gates preserved. New package questions must not inherit an unrelated prior nutrient subject merely because they say “this.”

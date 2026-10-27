@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { appendFile, chmod, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { execFile as execFileCallback } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -8,13 +7,11 @@ const execFile = promisify(execFileCallback);
 const evaluationRoot = path.resolve(process.cwd(), '.data', 'gemini-evaluations');
 const maxEventBytes = 2_000_000;
 const maxRunBytes = 24_000_000;
-const activeRuns = new Map<string, { directory: string; profileIncluded: boolean; allowProfileContent: boolean }>();
+const activeRuns = new Map<string, { directory: string }>();
 const writeQueues = new Map<string, Promise<void>>();
 
-type EvaluationPrivacy = { profileIncluded?: boolean; allowProfileContent?: boolean };
-
 export function geminiEvaluationCaptureEnabled(environment: NodeJS.ProcessEnv = process.env) {
-  // Readable traces are an explicit local development opt-in. Production,
+  // Local metadata capture is an explicit development opt-in. Production,
   // hosted preview, CI and unit-test processes never enable this recorder.
   return environment.NUTRISCAN_GEMINI_EVAL_CAPTURE === '1'
     && environment.NODE_ENV === 'development'
@@ -22,46 +19,53 @@ export function geminiEvaluationCaptureEnabled(environment: NodeJS.ProcessEnv = 
     && !environment.CI;
 }
 
-function imageDigest(value: string) {
-  const bytes = Buffer.from(value, 'base64');
-  return { byteLength: bytes.byteLength, sha256: createHash('sha256').update(bytes).digest('hex'), bytesOmitted: true };
-}
-
-const profileDerivedContentKeys = new Set([
-  'question', 'prompt', 'contents', 'text', 'answer', 'answerParts', 'claims', 'claim', 'args', 'arguments', 'query', 'result', 'output',
-  'summary', 'quote', 'supportingSpans', 'uncertainty', 'interpretation', 'goal', 'condition', 'jurisdiction', 'profile',
+const privateContentKeys = new Set([
+  'question', 'prompt', 'contents', 'text', 'answer', 'answerparts', 'response', 'request', 'claims', 'claim', 'args', 'arguments', 'query', 'result', 'output',
+  'summary', 'quote', 'supportingspans', 'uncertainty', 'interpretation', 'goal', 'condition', 'jurisdiction', 'profile', 'conversationcontext', 'history', 'context',
+  'rawtext', 'observations', 'visualimages', 'images', 'image', 'imageid', 'base64', 'data', 'ingredients', 'allergens', 'warnings', 'nutritionrows', 'evidence', 'citationevidence',
 ]);
 
-/** Remove photo bytes, credentials and non-user-facing model thought parts from a local evaluation artifact. */
-export function sanitizeGeminiEvaluationValue(value: unknown, key = '', parent: Record<string, unknown> | null = null, privacy: EvaluationPrivacy = {}): unknown {
-  const allowProfileContent = privacy.allowProfileContent === true;
-  const profileIncluded = privacy.profileIncluded === true;
+const metadataStringKeys = new Set([
+  'recordedat', 'event', 'analysisid', 'callid', 'stage', 'taskkind', 'model', 'modelversion', 'modelstatus', 'actualtier', 'requestedtier',
+  'requestedmodel', 'status', 'reason', 'failureclass', 'providerstatus', 'providerreasonclass', 'code', 'category', 'name', 'finishreason', 'requestid', 'date',
+  'capturemode', 'contentpolicy', 'outcome', 'tier', 'purpose', 'mode', 'role',
+]);
+const metadataStructuredKeys = new Set(['usagemetadata', 'costestimate', 'failure', 'attempts', 'decisions', 'http']);
+const metadataStringArrayKeys = new Set(['toolnames', 'functioncallnames', 'finishreasons']);
+const metadataNumberKeys = new Set([
+  'round', 'index', 'elapsedms', 'latencyms', 'prompttokencount', 'candidatestokencount', 'totaltokencount', 'thoughtstokencount', 'cachedcontenttokencount',
+  'groundingquerycount', 'estimatedgroundingupperusd', 'estimatedtotalusd', 'fxrateinrperusd', 'estimatedtotalinr', 'estimatedtokenusd', 'schemabytes', 'status',
+  'resultcount', 'toolcallcount', 'sourcecount', 'calculationcount', 'imagecount', 'observationcount', 'answercharacters', 'questioncharacters',
+  'retryafterms', 'cooldownuntil', 'acceptedsentences', 'withheldquantitysentences', 'withheldsourcescopesentences', 'statuscode', 'httpstatus',
+]);
+
+/** Retain an explicit operational-metadata allowlist; unknown fields are treated as content. */
+export function sanitizeGeminiEvaluationValue(value: unknown, key = '', parent: Record<string, unknown> | null = null): unknown {
   if (/^(?:apiKey|authorization|accessToken|refreshToken|clientSecret|privateKey)$/i.test(key)) return '[redacted credential]';
+  if (privateContentKeys.has(key.toLowerCase().replace(/[^a-z0-9]/g, ''))) return '[omitted private content]';
   if (key === 'thoughtSignature') return undefined;
   if (parent?.thought === true) return undefined;
-  if (profileIncluded && !allowProfileContent && profileDerivedContentKeys.has(key)) return '[omitted because profile context was present]';
-  if (key === 'profile' && !allowProfileContent && value && typeof value === 'object' && !Array.isArray(value)) {
-    return { fieldNames: Object.keys(value as Record<string, unknown>).sort(), valuesOmitted: true };
-  }
-  if ((key === 'base64' || key === 'data') && typeof value === 'string' && (key === 'base64' || parent?.mimeType)) return imageDigest(value);
   if (typeof value === 'string') {
-    // Gemini's application payload is serialized JSON in a text part. Parse it
-    // so profile values can be removed without losing the rest of the prompt.
-    if ((key === 'text' || key === 'contents' || key === 'prompt') && value.length < maxEventBytes) {
-      try {
-        const parsed: unknown = JSON.parse(value);
-        return JSON.stringify(sanitizeGeminiEvaluationValue(parsed, '', null, privacy), null, 2);
-      } catch { /* Preserve ordinary natural-language prompt text. */ }
-    }
-    return value.length > 200_000 ? `${value.slice(0, 200_000)}\n[truncated at 200000 characters]` : value;
+    return metadataStringKeys.has(key.toLowerCase().replace(/[^a-z0-9]/g, ''))
+      ? (value.length > 500 ? `${value.slice(0, 500)}[truncated]` : value)
+      : '[omitted non-metadata string]';
   }
-  if (Array.isArray(value)) return value.slice(0, 2_000).map(item => sanitizeGeminiEvaluationValue(item, '', null, privacy)).filter(item => item !== undefined);
-  if (!value || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    if (metadataStringArrayKeys.has(key.toLowerCase().replace(/[^a-z0-9]/g, ''))) return value.slice(0, 100).map(item => typeof item === 'string' ? item.slice(0, 120) : undefined).filter(item => item !== undefined);
+    if (key.toLowerCase() !== 'attempts') return '[omitted non-metadata array]';
+    return value.slice(0, 100).map(item => sanitizeGeminiEvaluationValue(item)).filter(item => item !== undefined);
+  }
+  if (!value || typeof value !== 'object') {
+    if (typeof value === 'number') return metadataNumberKeys.has(key.toLowerCase().replace(/[^a-z0-9]/g, '')) ? value : undefined;
+    if (typeof value === 'boolean') return /^(?:fallback|completedwithrequiredcapabilities|questionpresent|requestreceived|enabled)$/i.test(key) ? value : undefined;
+    return value;
+  }
+  if (!metadataStructuredKeys.has(key.toLowerCase().replace(/[^a-z0-9]/g, '')) && key !== '') return '[omitted non-metadata object]';
   const record = value as Record<string, unknown>;
   if (record.thought === true) return undefined;
   const result: Record<string, unknown> = {};
   for (const [childKey, child] of Object.entries(record).slice(0, 500)) {
-    const sanitized = sanitizeGeminiEvaluationValue(child, childKey, record, privacy);
+    const sanitized = sanitizeGeminiEvaluationValue(child, childKey, record);
     if (sanitized !== undefined) result[childKey] = sanitized;
   }
   return result;
@@ -87,28 +91,24 @@ function isUuid(value: string) {
 export async function startGeminiEvaluation(analysisId: string, input: {
   model: string;
   taskKind: 'package-reconstruction' | 'follow-up' | 'other';
-  question: string;
-  profileIncluded: boolean;
-  request: unknown;
 }) {
   if (!geminiEvaluationCaptureEnabled() || !isUuid(analysisId)) return false;
-  const allowProfileContent = input.profileIncluded && process.env.NUTRISCAN_GEMINI_EVAL_ALLOW_SYNTHETIC_PROFILE === '1';
   const directory = path.join(evaluationRoot, analysisId);
   try {
     await secureEvaluationDirectory(directory);
     const manifest = {
       format: 'nutriscan-gemini-evaluation', version: 1, analysisId,
       createdAt: new Date().toISOString(), model: input.model, taskKind: input.taskKind,
-      captureMode: 'local-opt-in', profileContent: input.profileIncluded ? (allowProfileContent ? 'explicit-synthetic-profile-opt-in' : 'omitted') : 'not-present',
-      imagePolicy: 'inline image bytes replaced with SHA-256 and byte length; hidden thought parts omitted',
+      captureMode: 'local-opt-in-metadata-only',
+      contentPolicy: 'Only allowlisted operational metadata is recorded; prompts, package/profile data, images, tool arguments/results, and answers are omitted.',
     };
     await writeFile(path.join(directory, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n', { encoding: 'utf8', mode: 0o600, flag: 'wx' });
     await writeFile(path.join(directory, 'events.jsonl'), '', { encoding: 'utf8', mode: 0o600, flag: 'wx' });
-    const run = { directory, profileIncluded: input.profileIncluded, allowProfileContent };
+    const run = { directory };
     activeRuns.set(analysisId, run);
     await recordGeminiEvaluationEvent(analysisId, {
-      event: 'application_input', question: input.question, request: input.request,
-      note: 'Validated local application request; visual payloads are represented by hashes, never stored as image bytes.',
+      event: 'application_input', requestReceived: true,
+      note: 'Validated application input received; private content is not stored.',
     });
     return true;
   } catch {
@@ -126,7 +126,7 @@ export async function recordGeminiEvaluationEvent(analysisId: string, event: Rec
   writeQueues.set(analysisId, next);
   await previous;
   try {
-    const safe = sanitizeGeminiEvaluationValue({ recordedAt: new Date().toISOString(), ...event }, '', null, run) as Record<string, unknown>;
+    const safe = sanitizeGeminiEvaluationValue({ recordedAt: new Date().toISOString(), ...event }) as Record<string, unknown>;
     const current = await stat(path.join(run.directory, 'events.jsonl')).catch(() => null);
     if (current && current.size >= maxRunBytes) return;
     let line = JSON.stringify(safe) + '\n';

@@ -7,6 +7,7 @@ import {analysisMethodSchema} from '../../src/lib/contracts';
 import {analysisMethodPolicy} from '../../src/lib/analysis-method';
 import {reconstructPackageForEvaluation} from '../../src/lib/server/gemini';
 import {geminiEvaluationCaptureEnabled} from '../../src/lib/server/gemini-evaluation-recorder';
+import {controlledReceipt} from './controlled-receipt';
 
 try {
  if(process.argv.slice(2).join(' ')!=='--allow-provider')throw new Error('explicit-provider-action-required');
@@ -14,7 +15,7 @@ try {
  const require=createRequire(import.meta.url);
  const {loadEnvConfig}=require('@next/env') as typeof import('@next/env');
  loadEnvConfig(process.cwd(),true,{info(){},error(){}});
- if(!geminiEvaluationCaptureEnabled())throw new Error('local-readable-capture-required');
+ if(!geminiEvaluationCaptureEnabled())throw new Error('local-metadata-capture-required');
  let stdin='';for await(const chunk of process.stdin){stdin+=chunk;if(Buffer.byteLength(stdin)>1_000_000)throw new Error('job-too-large');}
  const job=JSON.parse(stdin);
  if(job.family!=='semester-reconstruction')throw new Error('wrong-experiment-family');
@@ -28,10 +29,8 @@ try {
  const raw=JSON.parse(bytes.toString('utf8'));
  const result=await reconstructPackageForEvaluation({...raw,analysisMethod:method,...(!policy.images?{visualImages:undefined}:{})});
  const events=(await readFile(path.join('.data/gemini-evaluations',result.diagnosticId,'events.jsonl'),'utf8')).trim().split('\n').map(line=>JSON.parse(line));
- const routes=events.filter(event=>event.event==='provider_route');
  const ledger=JSON.parse(await readFile('.data/gemini-usage.json','utf8'));
- const metadata=events.filter(event=>['provider_response','provider_error'].includes(event.event)).map(({event,callId,model,response,failure})=>({event,callId,model,usage:response?.usageMetadata??null,cost:response?.costEstimate??null,elapsedMs:ledger.calls.find((call:{id:string})=>call.id===callId)?.elapsedMs??null,failure:failure??null}));
- process.stdout.write(JSON.stringify({...result,providerRoutes:routes,providerCallMetadata:metadata,claimScope:'unscored-controlled-extraction'})+'\n');
+ process.stdout.write(JSON.stringify(controlledReceipt(result,raw.package,source[0].sha256,events,ledger))+'\n');
 }catch(error){
  // Never copy provider bodies, credentials, input data or stacks to the runner.
  const code=error&&typeof error==='object'&&'code'in error?String(error.code):error instanceof Error?error.message:'adapter-failed';

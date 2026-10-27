@@ -1090,7 +1090,7 @@ async function lookupProduct(args: z.infer<typeof toolArgs.lookup_product>, cont
 
 function toResearchEvidence(item: Awaited<ReturnType<typeof research>>['items'][number], topic: 'science' | 'regulation' | 'claims') {
   const jurisdiction = topic === 'science' ? 'Study population and setting vary; inspect the original paper.' : 'India; verify exact provision, commencement and amendments for applicability.';
-  return asEvidenceSource({ id: item.id, title: item.title, publisher: item.publisher, url: item.url, category: topic === 'science' ? 'literature' : 'regulation', jurisdiction, publishedAt: item.publishedAt, effectiveAt: item.effectiveAt ?? null, retrievedAt: item.retrievedAt, summary: item.summary.slice(0, 1600), limitations: item.limitations.slice(0, 600) });
+  return asEvidenceSource({ id: item.id, title: item.title, publisher: item.publisher, url: item.url, category: topic === 'science' ? 'literature' : 'regulation', jurisdiction, publishedAt: item.publishedAt, effectiveAt: item.effectiveAt ?? null, retrievedAt: item.retrievedAt, summary: item.summary.slice(0, 1600), limitations: item.limitations.slice(0, 600), ...(item.supportRole ? { supportRole: item.supportRole } : {}) });
 }
 
 function additiveIdentitiesMentioned(text: string) {

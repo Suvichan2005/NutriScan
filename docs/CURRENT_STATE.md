@@ -1,4 +1,8 @@
 # NutriScan current runtime handoff
+## Final closeout authority — 27 October 2026
+
+IdeaPad's `codex/generalized-package-intelligence-wip` is the only production integration. ThinkBook owns experiments and the final KIIT report. Finite release acceptance and the forthcoming frozen handoff supersede older open-ended “next” instructions below. Reviewed branch dispositions are in `RELEASE_RECONCILIATION.md`.
+
 ## Current integration checkpoint — avoid OCR fragments as package identity (27 October 2026)
 
 Selective ThinkBook review exposed a package-title failure already seen on the authorized Amul Lassi development photo: a mixed fragment containing the milk allergen line and “ROSE FLAVOUR” was displayed as the product name. Package display identity now trusts explicit user descriptions/corrections, current clear/provisional reconstruction identities, or OCR-linked name/brand observations with confidence at least80; ambiguous parser fields fall back to “Unidentified food package.” Added tests for pasted precaution wording, low-confidence OCR and retained high-confidence identity. `thread-presentation.test.ts`:39 passed; `tsc --noEmit` passed. Installed-Chrome local-only photo acceptance on mobile390×844 and desktop1440×900 shows the generic identity, keeps all10 observations and missing sodium intact, and records zero provider/external calls, page errors, Axe violations or overflow. This checks presentation and provenance, not package-identity ground truth.

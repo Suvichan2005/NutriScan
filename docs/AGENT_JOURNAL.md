@@ -1,4 +1,8 @@
 # Sanitized engineering journal
+## 2026-10-27 — final production reconciliation
+
+Reviewed PR #3 through126f5a9 and older M2 throughda728ef. Retained metadata-only recorder, tier disclosure, explicit navigation support role and nullable sentinel normalization. Repaired the controlled adapter's flat-metadata consumption and input/response hashes, and a production-browser reproduction where a calcium question contaminated a new allergy/suitability question. Focused checks141 passed/1 skipped; no provider request. The five owner overlays remain preserved. Full disposition table: `RELEASE_RECONCILIATION.md`.
+
 ## 2026-10-27 — bound Windows production type-checker concurrency
 
 - The uncapped production bundle compiled, but TypeScript 7's native Go checker exhausted Windows virtual memory during full-project type checking. `GOMAXPROCS=2` made the direct checker and complete production build pass. Added a Windows-only default in the build launcher, preserving an explicit override; verified the launcher with the override unset. The earlier `Assertion.not` report remains distinct and unconfirmed because this run produced no matcher diagnostic.
