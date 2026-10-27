@@ -1490,3 +1490,7 @@ An active package reconstruction may omit a nutrient entirely, leaving no row to
 ### 27 October 2026 — normalize provider null sentinels at the typed reconstruction boundary
 
 Treat exact `null` and `undefined` text sentinels as missing only for fields whose reconstruction contract permits nullable text. Apply this before section validation, without changing quantities, units, evidence, required strings or the original provider object. Do not repair arbitrary malformed provider values or infer label facts in the normalizer.
+
+### 27 October 2026 — keep cross-basis values ambiguous at a printed inequality bound
+
+When the same nutrient has a bounded value on one printed basis and an exact-looking value on another basis at the scaled bound within the exact row's displayed rounding interval, preserve both rows but mark the exact-looking row ambiguous and record linked evidence. Do not infer a replacement amount or inherit a qualifier as a confirmed reading. Existing calculation eligibility then withholds the ambiguous row while retaining unrelated supported values. This arithmetic check flags a review need; it does not prove either printed value.

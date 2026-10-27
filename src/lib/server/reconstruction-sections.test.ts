@@ -2,6 +2,7 @@ import{expect,it}from'vitest';
 import{validateReconstructionSections}from'./reconstruction-sections';
 import{sanitizePackageReconstruction,assistInput}from'./gemini';
 import{packageSchema}from'../contracts';
+import{calculationsFromReconstruction}from'../portion';
 const evidence={observationIds:['ocr'],imageRegions:[]};
 const row={rowId:'r1',nutrient:'Protein',nutrientKey:'protein',printedLabel:'Protein',printedValue:'8.8',value:8.8,unit:'g',columnLabel:'Per 100 g',basisText:'Per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'clear',evidence};
 const content={identity:{name:null,brand:null,variant:null,status:'unreadable',evidence},serving:null,nutritionRows:[row],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Synthetic boundary fixture, not independent product truth.'};
@@ -24,6 +25,26 @@ it('normalizes provider null sentinels only in nullable text fields while preser
  const result=validateReconstructionSections(raw);expect(result.rejected).toEqual([]);if(!result.parsed.success)throw result.parsed.error;
  expect(result.parsed.data.nutritionRows[0]).toMatchObject({value:8.8,unit:'g',qualifier:null,columnLabel:null,basisText:null});
  expect(raw.nutritionRows[0]).toMatchObject({qualifier:'null',columnLabel:' undefined ',basisText:'null'});
+});
+it('marks an exact-looking cross-basis reading ambiguous when it sits at a printed bound',()=>{
+ const bounded={...row,rowId:'sugar-100g',nutrient:'Total sugars',nutrientKey:'sugars' as const,printedLabel:'Total sugars',printedValue:'<0.5',value:0.5,basisAmount:100,qualifier:'<'};
+ const exact={...row,rowId:'sugar-serving',nutrient:'Total sugars',nutrientKey:'sugars' as const,printedLabel:'Total sugars',printedValue:'0.067',value:0.067,basisAmount:13.4,qualifier:'null'};
+ const raw={...content,nutritionRows:[bounded,exact,row]};
+ const result=validateReconstructionSections(raw);expect(result.parsed.success).toBe(true);if(!result.parsed.success)throw result.parsed.error;
+ expect(result.parsed.data.nutritionRows.slice(0,2).map(item=>({value:item.value,printedValue:item.printedValue,qualifier:item.qualifier,status:item.status}))).toEqual([
+  {value:0.5,printedValue:'<0.5',qualifier:'<',status:'clear'},
+  {value:0.067,printedValue:'0.067',qualifier:null,status:'ambiguous'},
+ ]);
+ expect(result.parsed.data.unresolved).toHaveLength(1);expect(raw.nutritionRows[1]).toMatchObject({value:0.067,status:'clear',qualifier:'null'});
+ const pkg=packageSchema.parse({...input.package,reconstruction:{...result.parsed.data,revision:1,updatedAt:'2026-10-27T00:00:00Z',model:'synthetic-test',current:true}});
+ expect(calculationsFromReconstruction(pkg,13.4,'g').map(calculation=>calculation.nutrient)).toEqual(['protein']);
+});
+it('does not flag unrelated nutrients or exact readings outside the bounded rounding interval',()=>{
+ const bounded={...row,rowId:'carb-100g',nutrient:'Carbohydrate',nutrientKey:'carbohydrate' as const,printedLabel:'Carbohydrate',printedValue:'<50',value:50,basisAmount:100,qualifier:'<'};
+ const unrelated={...row,rowId:'protein-serving',nutrient:'Protein',nutrientKey:'protein' as const,printedLabel:'Protein',printedValue:'6.7',value:6.7,basisAmount:13.4,qualifier:null};
+ const below={...row,rowId:'carb-serving',printedValue:'0.05',value:0.05,basisAmount:13.4,qualifier:null};
+ const result=validateReconstructionSections({...content,nutritionRows:[bounded,unrelated,below]});expect(result.parsed.success).toBe(true);if(!result.parsed.success)throw result.parsed.error;
+ expect(result.parsed.data.nutritionRows.map(item=>item.status)).toEqual(['clear','clear','clear']);expect(result.parsed.data.unresolved).toEqual([]);
 });
 it('does not bypass collection bounds or invent required singleton fields',()=>{
  const result=validateReconstructionSections({...content,nutritionRows:Array.from({length:101},()=>row)});expect(result.parsed.success).toBe(true);if(!result.parsed.success)throw result.parsed.error;expect(result.parsed.data.nutritionRows).toEqual([]);expect(result.rejected[0]).toMatchObject({section:'nutritionRows',index:null});
