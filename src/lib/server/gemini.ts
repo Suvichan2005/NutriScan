@@ -7,7 +7,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { packageForAssist, packageReconstructionFactReferences, validateInferenceOutput, validateNaturalAnswerText, InferenceModuleError, assistOutput, initialPackageAssistOutput, providerAssistOutput } from '../../modules/inference';
 import { assistantUiComponentSchema, calculationEvidenceText, calculationSchema, conversationEvidenceSourceSchema, evidenceSpanSchema, normalizedCropSchema, observationSchema, packageReconstructionContentSchema, packageSchema, profileSchema, reconstructedAdditiveSchema, reconstructedIngredientSchema, reconstructedNutritionRowSchema, reconstructedServingSchema, reconstructedStatementSchema, sourceSchema, tentativeStructuredCandidateSchema, visionCaptureSchema, type AssistantUiComponent, type Calculation, type NutrientKey, type Observation, type PackageReconstructionContent, type VisionCapture } from '../contracts';
-import { applicationGeminiContext, generateTracked, providerStatus, safeProviderFailure } from './gemini-provider';
+import { applicationGeminiContext, generateTracked, providerStatus, safeProviderFailure, modelPrice, estimateGeminiTokenCostUsd } from './gemini-provider';
 import { calculateSavedServing, executeGeminiTool, geminiToolDeclarations, type GeminiToolImage, type GeminiToolResult } from './gemini-tools';
 import {analysisMethodPolicy,packageForSelectedMethod} from '../analysis-method';
 import {analysisMethodSchema} from '../contracts';
@@ -96,7 +96,7 @@ function equivalentCalculationOperations(left:Calculation,right:Calculation):boo
   return !leftRows.length||!rightRows.length||leftRows.join('|')===rightRows.join('|');
 }
 
-export const assistInput = z.object({ analysisMethod:analysisMethodSchema.optional(), toolAccess:toolAccessInput.optional(), consent: z.literal(true), question: z.string().trim().min(1).max(2000), workspacePortion:workspacePortionSchema.optional(), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
+export const assistInput = z.object({ analysisMethod:analysisMethodSchema.optional(), toolAccess:toolAccessInput.optional(), allowPaidFallback:z.boolean().default(false), consent: z.literal(true), question: z.string().trim().min(1).max(2000), workspacePortion:workspacePortionSchema.optional(), package: packageSchema, interpretedCandidates:z.array(tentativeStructuredCandidateSchema).max(20).optional(), profile: profileSchema.optional(), evidence: z.array(sourceSchema).max(30).optional(), calculations:z.array(calculationSchema).max(20).optional(),images: z.array(handleSchema).max(10).optional(),visualImages:z.array(assistImageSchema).max(4).optional(),conversationContext:z.array(conversationContextSchema).max(4).optional() }).strict().superRefine((data,context)=>{
   const observations=new Set(data.package.observations.map(observation=>observation.id));
   const visualImageIds=new Set(data.visualImages?.map(image=>image.imageId)??[]);
   // A saved calculation may cite the image that supported a persisted
@@ -1377,8 +1377,8 @@ export function geminiResponseJsonSchema(schema: z.ZodType) {
   return simplify(source);
 }
 
-async function generate(prompt: string, schema: z.ZodType, parts: Part[] = [], systemInstruction = visionSystemInstruction) {
-  const context = applicationGeminiContext();
+async function generate(prompt: string, schema: z.ZodType, parts: Part[] = [], systemInstruction = visionSystemInstruction, allowPaidFallback=false) {
+  const context = applicationGeminiContext(allowPaidFallback);
   // Gemini Developer API's models.generateContent path does not support the
   // newer responseFormat field yet; its current SDK serializer drops it.
   const response = await generateTracked(context, { model: context.model, contents: [{ role: 'user', parts: [{ text: prompt }, ...parts] }], config: { systemInstruction, responseMimeType: 'application/json', responseJsonSchema: geminiResponseJsonSchema(schema), maxOutputTokens: 4000, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, automaticContinuation: false, abortSignal: AbortSignal.timeout(60_000) } });
@@ -1569,6 +1569,7 @@ type GeneratedAgentOutput={
   uiComponents:AssistantUiComponent[];
   generationCount:number;
   toolAccess:{mode:string;names:string[];schemaBytes:number};
+  provider:{model:string;tier:string;inputTokens:number|null;outputTokens:number|null;estimatedUsd:number|null;scope:'answer-only'};
 };
 
 function selectUnconflictedCalculations(calculations:Calculation[]):Calculation[]{
@@ -1631,7 +1632,7 @@ async function reconstructPackage(
 ){
   const hasTextEvidence=Boolean(data.package.observations.length||data.package.rawText.trim()||data.package.userDescription?.trim()||data.package.barcode||data.package.brand||data.package.name!=='Unidentified package');
   if(!imageParts.length&&!hasTextEvidence)throw new ApiError(400,'package_evidence_required','Add a package photo or label text before reconstructing package details.');
-  const context=applicationGeminiContext();
+  const context=applicationGeminiContext(data.allowPaidFallback);
   const requestedModel=context.model,requestedTier=context.tier;
   const profileIncluded=Object.values(data.profile??{}).some(value=>value.trim());
   const started=Date.now();
@@ -1708,7 +1709,7 @@ async function reconstructPackage(
 }
 
 async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:string,referenceAliases:ReferenceAliases):Promise<GeneratedAgentOutput>{
-  const context=applicationGeminiContext();
+  const context=applicationGeminiContext(data.allowPaidFallback);
   const access=selectAgentTools(geminiToolDeclarations,(data.visualImages?.length??0)>0,data.toolAccess);
   const allowedToolNames=new Set(access.names);
   await recordGeminiDiagnostic({event:'agent_tool_access',analysisId,mode:access.mode,toolNames:access.names,schemaBytes:access.schemaBytes});
@@ -1737,6 +1738,7 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
   let groundedQueryCount=0;
   let serverSearchUsed=false;
   let generationCount=0;
+  const providerCalls:Array<{model:string;tier:string;input:number|null;output:number|null;estimatedUsd:number|null}>=[];
 
   for(let round=0;round<=maxAgentToolRounds;round+=1){
     const remaining=deadline-Date.now();
@@ -1764,6 +1766,7 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
       },
     },{analysisId,stage:finalOnly?'natural-answer-final':'natural-agent-turn',round,profileIncluded,deadlineAt:deadline});
     generationCount+=1;
+    providerCalls.push({model:response.modelVersion??context.model,tier:context.tier,input:response.usageMetadata?.promptTokenCount??null,output:response.usageMetadata?.candidatesTokenCount??null,estimatedUsd:estimateGeminiTokenCostUsd(response.usageMetadata,modelPrice(context.tier))});
 
     const candidate=response.candidates?.[0];
     const candidateContent=candidate?.content;
@@ -1923,6 +1926,7 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
       calledCalculationIds:[...calledCalculationIds],
       uiComponents,
       generationCount,
+      provider:{model:[...new Set(providerCalls.map(call=>call.model))].join(', '),tier:[...new Set(providerCalls.map(call=>call.tier))].join(', '),inputTokens:providerCalls.every(call=>call.input!==null)?providerCalls.reduce((sum,call)=>sum+call.input!,0):null,outputTokens:providerCalls.every(call=>call.output!==null)?providerCalls.reduce((sum,call)=>sum+call.output!,0):null,estimatedUsd:providerCalls.every(call=>call.estimatedUsd!==null)?providerCalls.reduce((sum,call)=>sum+call.estimatedUsd!,0):null,scope:'answer-only'},
       toolAccess:{mode:access.mode,names:access.names,schemaBytes:access.schemaBytes},
     };
   }
@@ -1999,7 +2003,7 @@ export function compactSavedPackageFacts(facts: { id: string; text: string }[]):
 
 /** Keep binary photo payloads out of the text prompt while retaining image lineage. */
 export function assistPromptPayload(data:z.infer<typeof assistInput>, referenceAliases:Map<string,string>=new Map()) {
-  const {visualImages,...textData}=data;
+  const {visualImages,allowPaidFallback:_billingPermission,...textData}=data;
   const pkg=packageForAssist(data.package);
   const hasOcrIdentityRisk=pkg.observations.some(observation=>observation.origin==='ocr'&&observation.field==='ocr-line');
   const modelName=pkg.reconstruction?.current?pkg.reconstruction.identity.name:hasOcrIdentityRisk?undefined:pkg.name;
@@ -2051,7 +2055,7 @@ export function assistPromptPayload(data:z.infer<typeof assistInput>, referenceA
     package:compactPackage,
     packageFacts,
     evidence:(data.evidence??[]).map(source=>({...source,summary:source.summary.slice(0,900),limitations:source.limitations.slice(0,350)})),
-    calculations:(data.calculations??[]).map(calculation=>({id:calculation.id,inputOrigin:calculation.inputOrigin,nutrient:calculation.nutrient,nutrientLabel:calculation.nutrientLabel,input:calculation.input,inputUnit:calculation.inputUnit,basisAmount:calculation.basisAmount,portion:calculation.portion,portionUnit:calculation.portionUnit,result:calculation.result,unit:calculation.unit,formula:calculation.formula,observationIds:calculation.observationIds,imageIds:calculation.imageIds??[],interpretationIds:calculation.interpretationIds??[],assumptions:calculation.assumptions})),
+    calculations:(data.calculations??[]).map(calculation=>({id:calculation.id,inputOrigin:calculation.inputOrigin,countedPortion:calculation.countedPortion,packagePortion:calculation.packagePortion,nutrient:calculation.nutrient,nutrientLabel:calculation.nutrientLabel,input:calculation.input,inputUnit:calculation.inputUnit,basisAmount:calculation.basisAmount,portion:calculation.portion,portionUnit:calculation.portionUnit,result:calculation.result,unit:calculation.unit,formula:calculation.formula,observationIds:calculation.observationIds,imageIds:calculation.imageIds??[],interpretationIds:calculation.interpretationIds??[],assumptions:calculation.assumptions})),
     images:(data.images??[]).map(image=>({handle:image.handle,side:image.side,width:image.width,height:image.height,role:image.role??'unknown',...(image.description?{description:image.description.slice(0,80)}:{})})),
     conversationContext:data.conversationContext?.slice(-6).map(turn=>({question:turn.question.slice(0,1000),answer:turn.answer.slice(0,1400)})),
     ...(visualImages?.length?{visualImages:visualImages.map(({base64:_base64,...image})=>image)}:{}),
@@ -2338,6 +2342,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       .slice(0,12);
     const diagnostics={
       contract:'native-tools-and-natural-text',
+      provider:generated.provider,
       toolAccess:generated.toolAccess,
       answerStatus,
       acceptedSentences:answerCheck.acceptedSentenceCount,
@@ -2383,7 +2388,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       answer,
       answerStatus,
       ...(packageReconstruction?{packageReconstruction}:{}),
-      ...(selectedMethod?{analysisReceipt:{method:selectedMethod,model:activePackage.reconstruction?.model??status.model,ocrRunIds:(activePackage.ocrCaptures??[]).map(c=>c.runId),ocrObservationCount:activePackage.observations.filter(observation=>observation.origin==='ocr').length,imageIds:(data.visualImages??[]).map(image=>image.imageId)}}:{}),
+      ...(selectedMethod?{analysisReceipt:{method:selectedMethod,model:generated.provider.model,ocrRunIds:(activePackage.ocrCaptures??[]).map(c=>c.runId),ocrObservationCount:activePackage.observations.filter(observation=>observation.origin==='ocr').length,imageIds:(data.visualImages??[]).map(image=>image.imageId)}}:{}),
       tentativeCandidates:[],
       uiComponents,
       calculations:responseCalculations,
@@ -2410,7 +2415,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
     throw error;
   }
 }
-export const visionInput = z.object({ consent: z.literal(true), image: imagePayloadSchema, instruction: z.string().max(500).optional() }).strict();
+export const visionInput = z.object({ allowPaidFallback:z.boolean().default(false), consent: z.literal(true), image: imagePayloadSchema, instruction: z.string().max(500).optional() }).strict();
 const visionLine = z.object({ field: z.string().max(120), text: z.string().min(1).max(2500), confidence: z.number().min(0).max(100).nullable() }).strict();
 const visionOutput = z.object({ observations: z.array(visionLine).max(60), limitations: z.array(z.string().max(500)).max(12) }).strict();
 export function linkVisionResponseToCapture(response:z.infer<typeof visionOutput>,image:z.infer<typeof visionInput>['image'],model:string,runId=`vision-${crypto.randomUUID()}`):{visionCapture:VisionCapture;observations:Observation[]} {
@@ -2444,7 +2449,7 @@ export async function validateImage(image: z.infer<typeof visionInput>['image'])
 export async function vision(data: z.infer<typeof visionInput>) {
   if (!providerStatus().enabled) throw new ApiError(503, 'provider_disabled', providerStatus().message);
   const clean = await validateImage(data.image);
-  const raw = await generate(`Transcribe only visible package text from the selected ${data.image.side} image or crop. Do not infer missing values or interpret health effects. Preserve table basis and units, conflicts, ingredient order and illegible text explicitly. Model confidence is uncalibrated, use null if uncertain. Requested focus: ${data.instruction || 'nutrition table, ingredients, claims, serving and identity'}`, visionOutput, [{ inlineData: { mimeType: 'image/jpeg', data: clean } }]);
+  const raw = await generate(`Transcribe only visible package text from the selected ${data.image.side} image or crop. Do not infer missing values or interpret health effects. Preserve table basis and units, conflicts, ingredient order and illegible text explicitly. Model confidence is uncalibrated, use null if uncertain. Requested focus: ${data.instruction || 'nutrition table, ingredients, claims, serving and identity'}`, visionOutput, [{ inlineData: { mimeType: 'image/jpeg', data: clean } }],visionSystemInstruction,data.allowPaidFallback);
   const result = visionOutput.safeParse(raw);
   if (!result.success) throw new ApiError(502, 'provider_invalid', 'Vision output did not match the observation schema.');
   const linked=linkVisionResponseToCapture(result.data,data.image,providerStatus().model!);

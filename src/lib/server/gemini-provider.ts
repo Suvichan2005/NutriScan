@@ -15,6 +15,7 @@ export type GeminiContext = {
   model: string;
   purpose: GeminiPurpose;
   client: GoogleGenAI;
+  allowPaidFallback?:boolean;
 };
 
 export const FREE_GEMINI_MODEL_PREFERENCE = [
@@ -359,7 +360,7 @@ function buildClient(apiKey: string, tier: GeminiTier, purpose: GeminiPurpose, m
   } });
 }
 
-export function applicationGeminiContext(): GeminiContext {
+export function applicationGeminiContext(allowPaidFallback=false): GeminiContext {
   const status = providerStatus();
   if (!status.enabled || !status.tier || !status.model) {
     const code = status.tier === 'paid' && !status.paidAuthorized ? 'paid_provider_unauthorized' : 'provider_disabled';
@@ -367,7 +368,7 @@ export function applicationGeminiContext(): GeminiContext {
   }
   const apiKey = selectedKey(status.tier);
   if (!apiKey) throw new ApiError(503, 'provider_not_configured', 'The explicitly selected Gemini project has no server-side key.');
-  return { tier: status.tier, model: status.model, purpose: 'application', client: buildClient(apiKey, status.tier, 'application', status.model) };
+  return { tier: status.tier, model: status.model, purpose: 'application',allowPaidFallback, client: buildClient(apiKey, status.tier, 'application', status.model) };
 }
 
 /** The only smoke-test context is explicitly bound to the free project. */
@@ -415,7 +416,7 @@ async function updateLedger<T>(update: (ledger: UsageLedger) => T | Promise<T>):
   }
 }
 
-function modelPrice(tier: GeminiTier) {
+export function modelPrice(tier: GeminiTier) {
   if (tier === 'free') return { input: 0, cachedInput: 0, output: 0 };
   const input = positiveNumber('GEMINI_PAID_INPUT_USD_PER_MILLION');
   const output = positiveNumber('GEMINI_PAID_OUTPUT_USD_PER_MILLION');
@@ -872,7 +873,7 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
     }
   }
 
-  if (requestedTier === 'free' && context.purpose === 'application' && !parentSignal?.aborted && paidFallbackReady()) {
+  if (requestedTier === 'free' && context.purpose === 'application' && context.allowPaidFallback===true && !parentSignal?.aborted && paidFallbackReady()) {
     const paidModel = validModel(process.env.GEMINI_PAID_MODEL) ?? validModel(process.env.GEMINI_MODEL);
     const paidKey = selectedKey('paid');
     if (paidModel && paidKey) {

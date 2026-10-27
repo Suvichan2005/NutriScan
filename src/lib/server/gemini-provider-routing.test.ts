@@ -27,6 +27,15 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('free-tier Gemini model routing', () => {
+  it('keeps a consumer free request free even when server-side paid fallback is configured',async()=>{
+    vi.stubEnv('ENABLE_PAID_GEMINI','true');vi.stubEnv('ENABLE_PAID_GEMINI_FALLBACK','true');
+    vi.stubEnv('GEMINI_FREE_PROJECT_ID','free-project');vi.stubEnv('GEMINI_PAID_PROJECT_ID','paid-project');
+    const fetcher=vi.fn().mockImplementation(async()=>new Response(quota(true),{status:429,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
+    const context=applicationGeminiContext();
+    await expect(generateTracked(context,{model:context.model,contents:'free consumer request',config:{maxOutputTokens:40}})).rejects.toMatchObject({code:'free_models_exhausted'});
+    expect(context.tier).toBe('free');
+    for(const [,init]of fetcher.mock.calls as unknown as [unknown,RequestInit][]){const headers=new Headers(init?.headers);expect(headers.get('x-goog-api-key')).not.toBe('paid-must-not-be-used');}
+  });
   it('does not silently select an economy model without explicit opt-in',async()=>{
     vi.stubEnv('GEMINI_FREE_ALLOW_ALTERNATIVES','false');
     const fetcher=vi.fn().mockResolvedValue(new Response(quota(true),{status:429,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
@@ -169,7 +178,7 @@ describe('free-tier Gemini model routing', () => {
     vi.stubGlobal('fetch', fetcher);
 
     const parent = new AbortController();
-    const context = applicationGeminiContext();
+    const context = applicationGeminiContext(true);
     const result = await generateTracked(context, {
       model: context.model,
       contents: 'authorized timeout fallback test',
@@ -305,7 +314,7 @@ describe('free-tier Gemini model routing', () => {
       return new Response(success('gemini-3.8-flash'), { status: 200, headers: { 'content-type': 'application/json' } });
     });
     vi.stubGlobal('fetch', fetcher);
-    const context = applicationGeminiContext();
+    const context = applicationGeminiContext(true);
     await generateTracked(context, { model: context.model, contents: 'explicit paid fallback test', config: { maxOutputTokens: 40 } });
     expect(paidWasCalled.value).toBe(true);
     expect(context.tier).toBe('paid');

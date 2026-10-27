@@ -12,6 +12,7 @@ export type ThreadMessage = SavedConversationTurn & {
 
 export type ThreadAgentTrace = { name: string; status: string; resultCount: number; elapsedMs: number };
 export type ThreadAgentDiagnostics = {
+  provider?:{model:string;tier:string;inputTokens:number|null;outputTokens:number|null;estimatedUsd:number|null;scope:'answer-only'};
   contract: string;
   answerStatus: string;
   acceptedSentences: number;
@@ -71,6 +72,10 @@ export function parseThreadAgentDiagnostics(value: unknown): ThreadAgentDiagnost
     || !(record.packageReconstructionRevision === null || (typeof record.packageReconstructionRevision === 'number' && Number.isInteger(record.packageReconstructionRevision) && record.packageReconstructionRevision >= 1 && record.packageReconstructionRevision <= 1000))) return undefined;
   return {
     contract: record.contract,
+    ...(record.provider&&typeof record.provider==='object'&&(()=>{
+      const p=record.provider as Record<string,unknown>;
+      return typeof p.model==='string'&&/^[a-zA-Z0-9., _-]{1,200}$/.test(p.model)&&typeof p.tier==='string'&&/^(?:free|paid)(?:, (?:free|paid))?$/.test(p.tier)&&p.scope==='answer-only'&&['inputTokens','outputTokens','estimatedUsd'].every(key=>p[key]===null||(typeof p[key]==='number'&&Number.isFinite(p[key])&&(p[key] as number)>=0));
+    })()?{provider:record.provider as ThreadAgentDiagnostics['provider']}:{}),
     answerStatus: record.answerStatus,
     acceptedSentences: record.acceptedSentences as number,
     withheldQuantitySentences: record.withheldQuantitySentences as number,
