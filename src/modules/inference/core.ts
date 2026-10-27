@@ -816,11 +816,33 @@ export function validateNaturalAnswerText(
     sourceIdsForSentence?: (sentence: string) => readonly string[];
     onWithheldSentence?: (decision: { text: string; reason: 'unsupported-quantity' | 'unsupported-basis' }) => void;
   },
-): { answer: string; acceptedSentenceCount: number; withheldUnsupportedQuantitySentenceCount: number; calculationIds:string[] } {
+): { answer: string; acceptedSentenceCount: number; withheldUnsupportedQuantitySentenceCount: number; provisionalReconstructionQuantitySentenceCount:number; calculationIds:string[] } {
   const normalized = answer.replace(/\r\n?/g, '\n').trim().slice(0, 7000);
   const pkg = context.package;
   const supersededObservationIds=new Set(pkg.observations.flatMap(observation=>observation.supersedesObservationIds??[]));
   const currentCalculations=(context.calculations??[]).filter(calculation=>calculationRespectsCorrections(pkg,calculation));
+  const provisionalReconstructionEvidenceTexts = pkg.reconstruction?.current ? [
+    ...pkg.reconstruction.nutritionRows.filter(row =>
+      !reconstructionRowIsSuperseded(pkg,row) && row.value !== null && row.unit
+      && ['clear','provisional'].includes(row.status)
+      && (row.evidence.observationIds.length > 0 || row.evidence.imageRegions.length > 0)
+      && !row.evidence.observationIds.some(id => pkg.observations.some(observation => observation.id === id && observation.origin === 'user')),
+    ).map(row => `${row.nutrient} ${row.printedValue ?? ''} ${row.value} ${row.unit} ${row.basisAmount ?? ''} ${row.basisUnit ?? ''}`),
+    ...pkg.reconstruction.ingredients.filter(item => ['clear','provisional'].includes(item.status)
+      && (item.evidence.observationIds.length > 0 || item.evidence.imageRegions.length > 0)
+      && item.printedPercentage !== null).map(item => `${item.name} ${item.printedPercentage}%`),
+    ...pkg.reconstruction.statements.filter(item => ['clear','provisional'].includes(item.status)
+      && (item.evidence.observationIds.length > 0 || item.evidence.imageRegions.length > 0)).map(item => item.text),
+    ...(pkg.reconstruction.quantityDeclarations ?? []).filter(item => ['clear','provisional'].includes(item.status)
+      && (item.evidence.observationIds.length > 0 || item.evidence.imageRegions.length > 0))
+      .map(item => `${item.printedText ?? ''} ${item.quantity ?? ''} ${item.unit ?? ''}`),
+    ...(pkg.reconstruction.serving && ['clear','provisional'].includes(pkg.reconstruction.serving.status)
+      && pkg.reconstruction.serving.quantity !== null
+      && (pkg.reconstruction.serving.evidence.observationIds.length > 0 || pkg.reconstruction.serving.evidence.imageRegions.length > 0)
+      && !pkg.reconstruction.serving.evidence.observationIds.some(id => pkg.observations.some(observation => observation.id === id && observation.origin === 'user'))
+      ? [`${pkg.reconstruction.serving.printedText ?? ''} ${pkg.reconstruction.serving.quantity} ${pkg.reconstruction.serving.unit ?? ''} ${pkg.reconstruction.serving.pieceCount ?? ''} ${pkg.reconstruction.serving.pieceDescription ?? ''}`]
+      : []),
+  ] : [];
   const reconstructedBasisEvidence = pkg.reconstruction?.current
     ? pkg.reconstruction.nutritionRows.flatMap(row => {
       if (reconstructionRowIsSuperseded(pkg,row) || row.value === null || !row.unit || !row.basisAmount || !row.basisUnit
@@ -869,6 +891,18 @@ export function validateNaturalAnswerText(
       .map(item=>`${item.mention.rawValue} year-old`),
     ...currentCalculations.map(calculation => calculationEvidenceText(calculation)),
   ].filter(Boolean);
+  const userConfirmedQuantityTexts=[
+    ...pkg.nutrients.filter(item => item.status === 'corrected' && item.basis)
+      .map(item => `${item.key} ${item.value} ${item.unit} per ${item.basis!.amount} ${item.basis!.unit}`),
+    ...pkg.observations.filter(item => item.origin === 'user' && !supersededObservationIds.has(item.id)).map(item => item.text),
+  ];
+  const mentionMatchesEvidence=(mention:NumericMention,evidence:readonly string[])=>evidence.some(candidate=>numericMentions(candidate).some(supported=>
+    !mention.localeAmbiguous && !supported.localeAmbiguous && mention.dimension === supported.dimension
+    && mention.literalUnit === supported.literalUnit
+    && Math.abs(mention.value-supported.value) <= Number.EPSILON*Math.max(1,Math.abs(mention.value),Math.abs(supported.value))*8,
+  ));
+  const hasUnconfirmedReconstructionQuantity=(text:string)=>numericMentions(text).some(mention=>
+    mentionMatchesEvidence(mention,provisionalReconstructionEvidenceTexts) && !mentionMatchesEvidence(mention,userConfirmedQuantityTexts));
   const sourceEvidenceById=new Map((context.evidence??[]).map(source=>[source.id,[
     source.title,source.publisher,source.url,source.summary,source.limitations,
     ...(source.publishedAt?.match(/^\d{4}(?:-|$)/)?[source.publishedAt.slice(0,4)]:[]),
@@ -883,6 +917,7 @@ export function validateNaturalAnswerText(
   const acceptedCalculationIds=new Set<string>();
   let acceptedSentenceCount = 0;
   let withheldUnsupportedQuantitySentenceCount = 0;
+  let provisionalReconstructionQuantitySentenceCount = 0;
   for (const line of normalized.split('\n')) {
     const acceptedSentences: string[] = [];
     const trimmed=line.trim();
@@ -905,6 +940,8 @@ export function validateNaturalAnswerText(
         context.onWithheldSentence?.({ text: sentence, reason: quantitySupported ? 'unsupported-basis' : 'unsupported-quantity' });
         continue;
       }
+      const usesProvisionalCalculation=[...sentenceCalculationIds].some(id=>currentCalculations.some(calculation=>calculation.id===id&&calculation.inputOrigin==='model-interpretation'));
+      if (usesProvisionalCalculation || (hasMeasuredAmount(checkingText,contextIdentifiers) && hasUnconfirmedReconstructionQuantity(checkingText))) provisionalReconstructionQuantitySentenceCount += 1;
       for(const id of sentenceCalculationIds)acceptedCalculationIds.add(id);
       acceptedSentences.push(sentence);
       acceptedSentenceCount += 1;
@@ -912,13 +949,17 @@ export function validateNaturalAnswerText(
     if (acceptedSentences.length) acceptedLines.push(headingPrefix+listPrefix+acceptedSentences.join(' '));
   }
   const acceptedAnswer = acceptedLines.join('\n').trim();
-  if (withheldUnsupportedQuantitySentenceCount && acceptedAnswer) {
-    acceptedLines.push('', 'I omitted one or more numerical statements that the available evidence could not verify.');
+  if (acceptedAnswer && (withheldUnsupportedQuantitySentenceCount || provisionalReconstructionQuantitySentenceCount)) {
+    const notices:string[]=[];
+    if (withheldUnsupportedQuantitySentenceCount) notices.push('I omitted one or more numerical statements that the available evidence could not verify.');
+    if (provisionalReconstructionQuantitySentenceCount) notices.push('Some numbers are provisional package readings; confirm them in Package details.');
+    acceptedLines.push('', notices.join(' '));
   }
   return {
     answer: acceptedLines.join('\n').trim(),
     acceptedSentenceCount,
     withheldUnsupportedQuantitySentenceCount,
+    provisionalReconstructionQuantitySentenceCount,
     calculationIds:[...acceptedCalculationIds],
   };
 }

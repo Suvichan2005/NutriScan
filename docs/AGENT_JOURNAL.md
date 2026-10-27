@@ -1,4 +1,10 @@
 # Sanitized engineering journal
+## 2026-10-27 — integrate ThinkBook guidance and provisional-reading improvements
+
+- Compared published ThinkBook `9e1b32d` with the active IdeaPad tree by behavior and paths, not as a branch merge. Retained the IdeaPad retrieved-versus-cited presentation and user correction/acceptance work. The published ThinkBook tree does not include the later local edits; those remain a separate handoff.
+- Ported its general-population jurisdiction prefix match so global guidance can be selected without an inferred country. Accepted numeric statements that rely on current model reconstruction remain useful and receive a concise Package details caveat; an application-recorded correction suppresses that caveat.
+- Focused inference, retrieval and server validation:221 passed,1 skipped. `tsc --noEmit` passes. No external provider calls.
+
 ## 2026-10-27 — preserve Open Food Facts precautionary allergen traces
 
 - Production product search requested allergen declaration tags but omitted the separate `traces_tags` field; the visible community-record detail therefore could not show precautionary trace tags even though exact original-record inspection supported them.

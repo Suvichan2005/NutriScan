@@ -16,6 +16,7 @@ export type ThreadAgentDiagnostics = {
   answerStatus: string;
   acceptedSentences: number;
   withheldQuantitySentences: number;
+  provisionalReconstructionQuantitySentences?: number;
   generationCount: number;
   toolCallCount: number;
   packageReconstructionRevision: number | null;
@@ -66,12 +67,14 @@ export function parseThreadAgentDiagnostics(value: unknown): ThreadAgentDiagnost
     || typeof record.answerStatus !== 'string' || !/^[a-z-]{1,80}$/.test(record.answerStatus)
     || !count('acceptedSentences') || !count('withheldQuantitySentences') || !count('generationCount')
     || !count('toolCallCount') || !count('retrievedSourceCount') || !count('calculationCount')
+    || (record.provisionalReconstructionQuantitySentences !== undefined && !count('provisionalReconstructionQuantitySentences'))
     || !(record.packageReconstructionRevision === null || (typeof record.packageReconstructionRevision === 'number' && Number.isInteger(record.packageReconstructionRevision) && record.packageReconstructionRevision >= 1 && record.packageReconstructionRevision <= 1000))) return undefined;
   return {
     contract: record.contract,
     answerStatus: record.answerStatus,
     acceptedSentences: record.acceptedSentences as number,
     withheldQuantitySentences: record.withheldQuantitySentences as number,
+    ...(count('provisionalReconstructionQuantitySentences') ? { provisionalReconstructionQuantitySentences: record.provisionalReconstructionQuantitySentences as number } : {}),
     generationCount: record.generationCount as number,
     toolCallCount: record.toolCallCount as number,
     packageReconstructionRevision: record.packageReconstructionRevision as number | null,

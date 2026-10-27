@@ -1,4 +1,12 @@
 # Chronological decisions
+## 27 October 2026 — qualify quantities from unconfirmed package reconstruction
+
+Current model-read package values may support a useful numeric answer when the value and basis pass native validation, but the answer must identify those readings as provisional and direct the user to Package details. User-corrected values are separately attributable and must not receive that provisional label. This preserves useful prose without presenting reconstruction as verified package truth.
+
+## 27 October 2026 — allow global guidance when no jurisdiction is known
+
+When user jurisdiction is absent, permit sources whose declared scope begins with Global or International, including scoped descriptions such as “Global; general adult population.” Continue excluding country-specific advice unless the user supplies or explicitly requests that jurisdiction/source.
+
 ## 27 October 2026 — preserve community allergen declarations and trace tags separately
 
 Carry Open Food Facts `allergens_tags` and `traces_tags` through lookup as distinct optional fields and label them separately in the community-record UI. Neither field is package verification; an empty list does not establish allergen absence or no cross-contact. Photographed package observations remain separate evidence.

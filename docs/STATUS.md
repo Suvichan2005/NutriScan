@@ -1,4 +1,8 @@
 # Current engineering status
+## M2/M3 keep globally scoped guidance reachable and label reconstructed quantities (27 October 2026)
+
+Reviewed ThinkBook `codex/m2-subject-scope-20261027` at published `9e1b32d` selectively against IdeaPad `fcc07aaa` and current integration. Existing source-linked profile context and provider-failure classification are already present; retained IdeaPad's separate cited/retrieved evidence UI and newer correction work. Integrated the missing global-scope match for general guidance when no country is supplied, and qualified accepted numeric prose tied to current model-read package evidence while leaving user-corrected values unqualified. Focused inference/retrieval/server suites:221 passed,1 skipped; `tsc --noEmit` passes. No Gemini request. ThinkBook post-push local edits remain a separate, unavailable handoff.
+
 ## M3 disclose the local OCR language boundary before photo selection (27 October 2026)
 
 The empty package-scan state now says that on-device OCR reads English only, may miss or misread other languages, and readings should be checked against the photo. This moves the existing limitation from the post-scan inspector to the upload decision; OCR method and default behavior are unchanged. Live local Chrome acceptance verified the disclosure at390×844 and1440×900, with no page errors or horizontal overflow; `tsc --noEmit` passes. No photo analysis or provider request was made. Multilingual OCR remains subject to the independent comparison.

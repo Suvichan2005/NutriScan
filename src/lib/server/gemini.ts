@@ -2327,6 +2327,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       answerStatus,
       acceptedSentences:answerCheck.acceptedSentenceCount,
       withheldQuantitySentences:answerCheck.withheldUnsupportedQuantitySentenceCount,
+      provisionalReconstructionQuantitySentences:answerCheck.provisionalReconstructionQuantitySentenceCount,
       withheldSourceScopeSentences:sourceScopeCheck.withheldSentenceCount,
       generationCount:reconstructionGenerationCount+generated.generationCount,
       toolCallCount:reconstructionGenerationCount+generated.trace.filter(item=>item.name!=='google_search_server_round').length,
@@ -2344,6 +2345,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       decisions:{
         acceptedSentences:answerCheck.acceptedSentenceCount,
         withheldQuantitySentences:answerCheck.withheldUnsupportedQuantitySentenceCount,
+        provisionalReconstructionQuantitySentences:answerCheck.provisionalReconstructionQuantitySentenceCount,
         withheldSourceScopeSentences:sourceScopeCheck.withheldSentenceCount,
         withheldSpans,
         policy:'Unsupported quantities and source-linked statements with unavailable, off-topic or out-of-scope sources are withheld. Source-scope checks do not establish semantic entailment.',
@@ -2355,6 +2357,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
       event:'natural_answer_validation',analysisId,status:answerStatus,
       acceptedSentences:answerCheck.acceptedSentenceCount,
       withheldQuantitySentences:answerCheck.withheldUnsupportedQuantitySentenceCount,
+      provisionalReconstructionQuantitySentences:answerCheck.provisionalReconstructionQuantitySentenceCount,
       withheldSourceScopeSentences:sourceScopeCheck.withheldSentenceCount,
       generationCount:diagnostics.generationCount,toolCallCount:diagnostics.toolCallCount,
       retrievedSourceCount:generated.evidence.length,reconstructionRevision,

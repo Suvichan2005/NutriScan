@@ -854,7 +854,7 @@ describe('Gemini tool retrieval boundaries', () => {
       condition: 'CKD',
     }, context('How should adults with CKD handle sodium and potassium?'));
 
-    expect(general.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium']);
+    expect(general.evidence?.map(source => source.id)).toEqual(['kdigo-ckd-2024-sodium', 'who-sodium']);
 
     const explicit = await executeGeminiTool('get_nutrition_guidance', {
       query: 'What does NIDDK say about potassium in CKD?',
