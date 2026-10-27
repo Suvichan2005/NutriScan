@@ -65,6 +65,20 @@ function reconstructionFixture() {
 }
 
 describe('provider-independent inference output validation', () => {
+  it('keeps rounded native count/portion results and rejects unrelated quantities and stale servings',()=>{
+    const base=reconstructionFixture();
+    const pkg=packageSchema.parse({...fixturePackage,nutrients:[],reconstruction:{...base,revision:1,updatedAt:'2026-10-27T00:00:00Z',model:'fixture',current:true,
+      serving:{...base.serving,printedText:'2 rice cakes (24 g)',quantity:24,unit:'g',pieceCount:2,pieceDescription:'rice cakes'},
+      nutritionRows:[{...base.nutritionRows[0],value:31,printedValue:'31 g'}],
+    }});
+    const calculation:Calculation={id:'native-count',label:'Carbohydrate portion',nutrient:'carbohydrate',input:31,inputUnit:'g',basisAmount:100,portion:36,portionUnit:'g',result:11.16,unit:'g',formula:'31 × 36 ÷ 100',observationIds:['ocr-line-1'],countedPortion:{amount:3,unit:'pieces',servingQuantity:24,servingUnit:'g',piecesPerServing:2},assumptions:[]};
+    calculation.imageIds=['synthetic-image'];
+    const context={package:pkg,calculations:[calculation]};
+    for(const answer of ['3 rice cakes (36 g) provide 11.2 g carbohydrate.','3 pieces equal 1.5 servings.'])expect(validateNaturalAnswerText(answer,context).withheldUnsupportedQuantitySentenceCount).toBe(0);
+    for(const answer of ['3 rice cakes provide 11.2 mg carbohydrate.','3 rice cakes provide 11.2 g protein.','3 rice cakes provide 36 g carbohydrate.','4 rice cakes provide 11.2 g carbohydrate.','3 trials found 11.2 g carbohydrate.'])expect(validateNaturalAnswerText(answer,context).withheldUnsupportedQuantitySentenceCount).toBe(1);
+    const stale=packageSchema.parse({...pkg,reconstruction:{...pkg.reconstruction!,serving:{...pkg.reconstruction!.serving!,pieceCount:3}}});
+    expect(validateNaturalAnswerText('3 rice cakes provide 11.2 g carbohydrate.',{package:stale,calculations:[calculation]}).withheldUnsupportedQuantitySentenceCount).toBe(1);
+  });
   it('withholds the whole unsupported parenthetical claim rather than leaving an accepted opening fragment', () => {
     const pkg = packageSchema.parse({ ...fixturePackage, observations: [{ id: 'protein-label', field: 'label-note', text: 'Protein 3 g per 100 g', origin: 'ocr', side: 'text', confidence: 100 }], rawText: 'Protein 3 g per 100 g' });
     const checked = validateNaturalAnswerText('Protein is 3 g per 100 g (approx. 99 g per serving). Wheat flour is listed.', { package: pkg });
@@ -201,9 +215,12 @@ describe('provider-independent inference output validation', () => {
   it('keeps numbered Markdown headings while checking quantities inside their content',()=>{
     const checked=validateNaturalAnswerText([
       '### 1. Ingredient origins',
+      'The ingredient origin is not established.',
       '## 2) What remains uncertain',
+      'Some package details remain unclear.',
       '### 3. Contains 99 g protein.',
       '# Source findings',
+      'No source findings are supplied.',
     ].join('\n'),{package:fixturePackage});
     expect(checked.answer).toContain('### 1. Ingredient origins');
     expect(checked.answer).toContain('## 2) What remains uncertain');

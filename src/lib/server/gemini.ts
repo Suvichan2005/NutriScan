@@ -1230,7 +1230,7 @@ function labelRegionRecoveryPrompt(
 /** A schema repair is text-only: carry the provider's draft and safe issue paths, never replay image parts. */
 const imageViewInstruction='The visualImages metadata aligns with attached image parts. Full photos provide package identity and layout context. Crops show the same source pixels at a larger scale and are not independent evidence. Coordinates always refer to the full original photo.';
 const nutriScanCoreAgentInstruction=[
-  'You are NutriScan. Track context and answer in plain text. For food choices, state judgment first, then label facts, practical context and uncertainty.',
+  'You are NutriScan. Track context and answer in plain text. Answer the actual question directly and naturally. For food choices give a qualified practical judgment using relevant package facts. Adapt detail to the question; do not impose repeated section headings.',
   'Use only supported package facts and supplied profile context; keep unknowns unknown. Never invent measurements, findings, identities, diagnoses, personal targets or safety guarantees.',
   'For factual sentences using retrieved evidence, cite the exact SRC handle and source name/date when available. Treat each record summary and limitation as a NutriScan-prepared summary, not a verbatim source quotation; paraphrase naturally without quotation marks. Preserve dose, population, jurisdiction, exposure, evidence strength and limits. Omit claims when the returned evidence does not support them, and disclose missing source classes rather than filling them from memory. Keep official claim rules separate from evidence of effects.',
   'For health-specific suitability, retrieve the narrowest relevant guidance or research; a condition mention alone does not justify lookup. Ingredient presence alone proves no effect. Use a matching printed row or supplied typed calculation for quantities; call the appropriate calculator when needed and never calculate in prose. A workspace portion is not a printed serving.',
@@ -1977,9 +1977,19 @@ export function validateClaims(output: unknown, data: z.infer<typeof assistInput
   }
 }
 
-/** Preserve the complete saved interpretation for model reasoning. */
-export function compactSavedReconstruction(reconstruction: PackageReconstructionContent): PackageReconstructionContent {
-  return reconstruction;
+/** Compact provider context only. Canonical evidence/geometry remains unchanged. */
+export function compactSavedReconstruction(reconstruction: PackageReconstructionContent) {
+  const linked=<T extends {evidence:{observationIds:string[];imageRegions:{imageId:string}[]}}>(item:T)=>{
+    const {evidence,...value}=item;
+    return {...value,evidence:{observationIds:evidence.observationIds,imageIds:[...new Set(evidence.imageRegions.map(region=>region.imageId))]}};
+  };
+  const {interpretationNote:_note,regions,...rest}=reconstruction;
+  return {...rest,identity:linked(reconstruction.identity),serving:reconstruction.serving?linked(reconstruction.serving):null,
+    nutritionRows:reconstruction.nutritionRows.map(linked),ingredients:reconstruction.ingredients.map(linked),
+    additives:reconstruction.additives.map(linked),statements:reconstruction.statements.map(linked),
+    quantityDeclarations:reconstruction.quantityDeclarations?.map(linked),unresolved:reconstruction.unresolved.map(linked),
+    regions:regions.map(({imageId,role})=>({imageId,role})),
+  };
 }
 
 /** Stable IDs are sufficient because the complete canonical reconstruction accompanies them. */
@@ -2030,8 +2040,10 @@ export function assistPromptPayload(data:z.infer<typeof assistInput>, referenceA
     // `readingOrder[0]` above is the OCR run ID. Preserve the same key on
     // each capture so Gemini can associate a line with its reader when
     // multiple engines disagree about a row or token.
-    ocrCaptures:(pkg.ocrCaptures??[]).map(capture=>({runId:capture.runId,imageId:capture.imageId,side:capture.side,preparedImage:capture.preparedImage,sourceImage:capture.sourceImage,bboxCoordinateSpace:capture.bboxCoordinateSpace,processing:capture.processing,engine:capture.engine.name,version:capture.engine.version,language:capture.engine.language,confidenceScale:capture.engine.confidenceScale,segmentationMode:capture.engine.segmentationMode})),
-    visionCaptures:(pkg.visionCaptures??[]).map(capture=>({imageId:capture.imageId,side:capture.side,sourceImage:capture.sourceImage,processing:capture.processing,model:capture.model})),
+    ...(!savedReconstruction?{
+      ocrCaptures:(pkg.ocrCaptures??[]).map(capture=>({runId:capture.runId,imageId:capture.imageId,side:capture.side,preparedImage:capture.preparedImage,sourceImage:capture.sourceImage,bboxCoordinateSpace:capture.bboxCoordinateSpace,processing:capture.processing,engine:capture.engine.name,version:capture.engine.version,language:capture.engine.language,confidenceScale:capture.engine.confidenceScale,segmentationMode:capture.engine.segmentationMode})),
+      visionCaptures:(pkg.visionCaptures??[]).map(capture=>({imageId:capture.imageId,side:capture.side,sourceImage:capture.sourceImage,processing:capture.processing,model:capture.model})),
+    }:{}),
   };
   const packageFacts=pkg.reconstruction?.current?compactSavedPackageFacts(packageReconstructionFactReferences(pkg.reconstruction,pkg,data.visualImages?.map(image=>image.imageId))):[];
   const payload = {

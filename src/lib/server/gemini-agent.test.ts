@@ -85,7 +85,13 @@ describe('saved-package follow-up context', () => {
       unresolved: [{ field: 'sodium', reason: 'The printed value is not legible.', evidence: { observationIds: ['nutrition-line'], imageRegions: [] } }],
       interpretationNote: 'Saved provisional package interpretation.',
     });
-    expect(compactSavedReconstruction(saved)).toEqual(saved);
+    const compact=compactSavedReconstruction(saved);
+    expect(compact.nutritionRows[0]).toMatchObject({rowId:'carb-serving',value:8,unit:'g',basisAmount:13,status:'provisional'});
+    expect(compact.serving).toMatchObject({pieceCount:2,quantity:13});
+    expect(compact.ingredients.map(item=>item.name)).toEqual(saved.ingredients.map(item=>item.name));
+    expect(compact.statements).toMatchObject([{kind:'may-contain',text:'May contain peanuts'}]);
+    expect(compact.identity.evidence).toEqual({observationIds:['identity-line'],imageIds:[]});
+    expect(saved.regions[0].region).toEqual({x:0.1,y:0.2,width:0.4,height:0.5});
   });
 
   it('passes stable package fact identifiers without duplicating their text in follow-up context', () => {
@@ -499,7 +505,8 @@ describe('natural NutriScan agent contract', () => {
     expect(instruction).toContain('Omit claims when the returned evidence does not support them');
     expect(instruction).toContain('Keep official claim rules separate from evidence of effects');
     expect(instruction).toContain('disclose missing source classes rather than filling them from memory');
-    expect(instruction).toContain('state judgment first');
+    expect(instruction).toContain('qualified practical judgment');
+    expect(instruction).not.toContain('then label facts, practical context and uncertainty');
     expect(instruction).toContain('For health-specific suitability, retrieve the narrowest relevant guidance or research');
     expect(instruction).toContain('a condition mention alone does not justify lookup');
     expect(instruction).toContain('Use a matching printed row or supplied typed calculation for quantities');

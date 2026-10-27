@@ -7,9 +7,11 @@ import {
   type Profile,
 } from '../../lib/contracts';
 import { InferenceModuleError } from './errors';
-import { splitProseSentences } from '../../lib/prose-sentences';
+import { splitProseSentences, removeEmptyProseSections } from '../../lib/prose-sentences';
 import { assistOutput } from './schema';
 import { calculationRespectsCorrections, reconstructionRowIsSuperseded } from '../../lib/correction';
+import { reconstructedNutrientKey } from '../../lib/portion';
+import { calculationHasPackageEvidence } from '../../lib/calculation-provenance';
 
 export type AssistValidationContext = {
   package: PackageData;
@@ -667,7 +669,7 @@ function numericOccurrences(text:string){
     const timeBasis=rate?.toLowerCase().replace(/s$/,'')??null;
     const operator=numericComparisonOperator(text,match.index??0)
       ??(/^\s*(?:\*\*)?\s*or more\b/i.test(suffix)?'>=': /^\s*(?:\*\*)?\s*or less\b/i.test(suffix)?'<=':null);
-    return mention?[{mention,operator,index:match.index??0,timeBasis}]:[];
+    return mention?[{mention,operator,index:match.index??0,end,timeBasis}]:[];
   });
 }
 
@@ -741,9 +743,10 @@ function numericIdentifier(text:string,index:number,rawValue:string){
 function numericMentionsAreSupported(
   claim: string,
   citedSpans: string[],
-  calculatedResults:{value:number;unit:string;id?:string}[]=[],
+  calculatedResults:{value:number;unit:string;id?:string;nutrient?:string|null;role?:'portion'|'result'}[]=[],
   contextIdentifiers:ReadonlySet<string>=new Set(),
   onCalculationMatch?:(id:string)=>void,
+  countMentions:ReadonlyMap<number,string>=new Map(),
 ): boolean {
   claim = numericPresentationText(claim);
   const claimed = numericOccurrences(claim);
@@ -756,9 +759,15 @@ function numericMentionsAreSupported(
   // A value such as 4.712 can look locale-ambiguous when parsed back from text,
   // which incorrectly rejects normal display rounding to 4.7. Keep the
   // unit-derived dimension and trust the structured numeric value.
-  const calculated=calculatedResults.flatMap(item=>numericMentions(`${item.value} ${item.unit}`).map(mention=>({...mention,localeAmbiguous:false,id:item.id})));
+  const calculated=calculatedResults.flatMap(item=>numericMentions(`${item.value} ${item.unit}`).map(mention=>({...mention,localeAmbiguous:false,id:item.id,nutrient:item.nutrient,role:item.role})));
   const references=hasMeasuredAmount(claim,contextIdentifiers)?[]:referenceBasisRanges(claim);
   return claimed.every(({mention:value,operator,index,timeBasis})=>{
+    // Counts are checked against a current typed conversion and its printed
+    // unit, not an isolated numeral copied from the user's question.
+    if(value.dimension==='unitless'&&!value.literalUnit&&operator===null&&timeBasis===null&&countMentions.has(index)){
+      const id=countMentions.get(index);if(id)onCalculationMatch?.(id);return true;
+    }
+    const claimedNutrient=adjacentNutrient(claim,index);
     if(operator===null&&timeBasis===null&&references.some(range=>index>=range.start&&index<range.end))return true;
     // Preserve an exact user-supplied numeral identifier (e.g. a version or
     // classification). Adjacent words stay attached; the numeral alone
@@ -769,6 +778,8 @@ function numericMentionsAreSupported(
     const matchesEvidence=cited.some(candidate=>{
       const {mention:evidence,operator:evidenceOperator,timeBasis:evidenceTimeBasis}=candidate;
       if(value.dimension!==evidence.dimension||value.literalUnit!==evidence.literalUnit||operator!==evidenceOperator||timeBasis!==evidenceTimeBasis)return false;
+      const evidenceNutrient=adjacentNutrient(candidate.citationText,candidate.index);
+      if(claimedNutrient&&evidenceNutrient&&claimedNutrient!==evidenceNutrient)return false;
       const unitlessIdentifier=value.dimension==='unitless'&&!value.literalUnit&&operator===null&&timeBasis===null
         ?numericIdentifier(claim,index,value.rawValue):null;
       if(unitlessIdentifier&&candidate.identifier&&unitlessIdentifier!==candidate.identifier)return false;
@@ -795,15 +806,66 @@ function numericMentionsAreSupported(
     });
     const matchingCalculations=calculated.filter(result=>{
       if(timeBasis!==null||operator!==null||value.dimension!==result.dimension||value.literalUnit!==result.literalUnit||value.localeAmbiguous||result.localeAmbiguous)return false;
+      if(claimedNutrient&&result.nutrient&&claimedNutrient!==result.nutrient)return false;
+      if(claimedNutrient&&result.role==='portion')return false;
       // Do not let rounding turn a small non-zero amount into an asserted zero.
       if(value.value===0||result.value===0)return value.value===result.value;
       const roundingTolerance=0.5*10**(-value.decimalPlaces)*value.factor;
       const floatingTolerance=Number.EPSILON*Math.max(1,Math.abs(value.value),Math.abs(result.value))*8;
       return Math.abs(value.value-result.value)<=roundingTolerance+floatingTolerance;
     });
-    for(const result of matchingCalculations)if(result.id)onCalculationMatch?.(result.id);
+    for(const result of matchingCalculations)if(result.id&&result.role!=='portion')onCalculationMatch?.(result.id);
     return matchesEvidence||matchingCalculations.length>0;
   });
+}
+
+/** Normalize explicit nutrient labels adjacent to a measurement, never dietary intent. */
+function adjacentNutrient(text:string,index:number):string|null{
+  const match=[...text.matchAll(numericMentionPattern)].find(item=>item.index===index);
+  if(!match)return null;
+  const words=(s:string)=>s.replace(/([a-z])([A-Z])/g,'$1 $2').toLowerCase().match(/[\p{L}]+/gu)??[];
+  const suffix=text.slice(index+match[0].length).replace(/^\s*(?:of\s+)?/i,'');
+  const prefix=text.slice(0,index).replace(/\s*(?::|=|\bis\b|\bare\b)\s*$/i,'').trim();
+  const after=words(suffix.split(/[;,.!?:()\n]/,1)[0]);
+  const before=words(prefix.split(/[;,.!?:()\n]/).at(-1)??'');
+  for(let n=3;n>=1;n--){
+    const key=after.length>=n?reconstructedNutrientKey(after.slice(0,n).join(' ')):null;
+    if(key)return key;
+  }
+  for(let n=3;n>=1;n--){
+    const key=before.length>=n?reconstructedNutrientKey(before.slice(-n).join(' ')):null;
+    if(key)return key;
+  }
+  return null;
+}
+
+/** Accept only exact counts/serving ratios supported by native conversion fields. */
+function typedCountMentions(text:string,pkg:PackageData,calculations:readonly Calculation[]):Map<number,string>{
+  const result=new Map<number,string>();
+  const serving=pkg.reconstruction?.current?pkg.reconstruction.serving:null;
+  const units=new Map<string,Array<{value:number;id:string}>>();
+  const add=(noun:string,value:number,id:string)=>{
+    const normalized=noun.normalize('NFKC').toLowerCase().trim();
+    if(!normalized||!Number.isFinite(value))return;
+    for(const form of new Set([normalized,normalized.endsWith('s')?normalized.slice(0,-1):normalized+'s']))units.set(form,[...(units.get(form)??[]),{value,id}]);
+  };
+  for(const c of calculations){const count=c.countedPortion;if(!count)continue;
+    add('serving',count.amount/(count.unit==='pieces'?count.piecesPerServing!:1),c.id);
+    if(count.unit==='pieces')for(const noun of ['piece',serving?.pieceDescription??'']){
+      add(noun,count.amount,c.id);add(noun,count.piecesPerServing!,c.id);
+    }
+  }
+  for(const [noun,values]of units){
+    const escaped=noun.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const pattern=new RegExp(`\\b(\\d+(?:\\.\\d+)?)(?:\\s*(?:to|or|[–—-])\\s*(\\d+(?:\\.\\d+)?))?\\s*(?:-\\s*)?(?:printed\\s+)?${escaped}\\b`,'gi');
+    for(const m of text.matchAll(pattern)){
+      const first=values.find(v=>v.value===Number(m[1]));const second=m[2]?values.find(v=>v.value===Number(m[2])):null;
+      if(!first||(m[2]&&!second))continue;
+      result.set(m.index!,first.id);
+      if(second)result.set(m.index!+m[0].lastIndexOf(m[2]),second.id);
+    }
+  }
+  return result;
 }
 
 /**
@@ -824,7 +886,8 @@ export function validateNaturalAnswerText(
   const normalized = answer.replace(/\r\n?/g, '\n').trim().slice(0, 7000);
   const pkg = context.package;
   const supersededObservationIds=new Set(pkg.observations.flatMap(observation=>observation.supersedesObservationIds??[]));
-  const currentCalculations=(context.calculations??[]).filter(calculation=>calculationRespectsCorrections(pkg,calculation));
+  const currentCalculations=(context.calculations??[]).filter(calculation=>calculationRespectsCorrections(pkg,calculation)
+    &&(!calculation.countedPortion||calculationHasPackageEvidence(calculation,{package:pkg})));
   const provisionalReconstructionEvidenceTexts = pkg.reconstruction?.current ? [
     ...pkg.reconstruction.nutritionRows.filter(row =>
       !reconstructionRowIsSuperseded(pkg,row) && row.value !== null && row.unit
@@ -893,7 +956,8 @@ export function validateNaturalAnswerText(
     // representation is admitted; question numbers never corroborate nutrients.
     ...numericOccurrences(context.question??'').filter(item=>item.mention.dimension==='age-year'&&item.operator===null)
       .map(item=>`${item.mention.rawValue} year-old`),
-    ...currentCalculations.map(calculation => calculationEvidenceText(calculation)),
+    // Native results/counts/portions are checked by role below. A formula or
+    // evidence string must not lend its denominator to a different nutrient.
   ].filter(Boolean);
   const userConfirmedQuantityTexts=[
     ...pkg.nutrients.filter(item => item.status === 'corrected' && item.basis)
@@ -914,7 +978,10 @@ export function validateNaturalAnswerText(
     source.title,source.publisher,source.url,source.summary,source.limitations,
     ...(source.publishedAt?.match(/^\d{4}(?:-|$)/)?[source.publishedAt.slice(0,4)]:[]),
   ].filter(Boolean).join(' ')]));
-  const calculatedResults = currentCalculations.map(item => ({ id:item.id,value: item.result, unit: item.unit }));
+  const calculatedResults = currentCalculations.flatMap(item => [
+    { id:item.id,value:item.result,unit:item.unit,nutrient:item.nutrient,role:'result' as const },
+    { id:item.id,value:item.portion,unit:item.portionUnit,nutrient:null,role:'portion' as const },
+  ]);
   const contextText=numericPresentationText(context.question??'');
   const contextIdentifiers=new Set(numericOccurrences(contextText).flatMap(item=>{
     if(item.mention.dimension!=='unitless'||item.mention.literalUnit||item.operator!==null||item.timeBasis!==null)return[];
@@ -940,7 +1007,7 @@ export function validateNaturalAnswerText(
       const sentenceCalculationIds=new Set<string>();
       const citedSourceTexts=(context.sourceIdsForSentence?.(sentence)??[]).flatMap(id=>sourceEvidenceById.has(id)?[sourceEvidenceById.get(id)!]:[]);
       const sentenceEvidenceTexts=[...evidenceTexts,...citedSourceTexts];
-      const quantitySupported = numericMentionsAreSupported(checkingText, sentenceEvidenceTexts, calculatedResults,contextIdentifiers,id=>sentenceCalculationIds.add(id));
+      const quantitySupported = numericMentionsAreSupported(checkingText, sentenceEvidenceTexts, calculatedResults,contextIdentifiers,id=>sentenceCalculationIds.add(id),typedCountMentions(checkingText,pkg,currentCalculations));
       const basisSupported = quantitySupported && basisMentionsAreSupported(checkingText, sentenceEvidenceTexts,contextIdentifiers,currentCalculations);
       if (!quantitySupported || !basisSupported) {
         withheldUnsupportedQuantitySentenceCount += 1;
@@ -955,7 +1022,7 @@ export function validateNaturalAnswerText(
     }
     if (acceptedSentences.length) acceptedLines.push(headingPrefix+listPrefix+acceptedSentences.join(' '));
   }
-  const acceptedAnswer = acceptedLines.join('\n').trim();
+  const acceptedAnswer = removeEmptyProseSections(acceptedLines.join('\n'),normalized);
   if (acceptedAnswer && (withheldUnsupportedQuantitySentenceCount || provisionalReconstructionQuantitySentenceCount)) {
     const notices:string[]=[];
     if (withheldUnsupportedQuantitySentenceCount) notices.push('I omitted one or more numerical statements that the available evidence could not verify.');
@@ -963,7 +1030,7 @@ export function validateNaturalAnswerText(
     acceptedLines.push('', notices.join(' '));
   }
   return {
-    answer: acceptedLines.join('\n').trim(),
+    answer: removeEmptyProseSections(acceptedLines.join('\n'),normalized),
     acceptedSentenceCount,
     withheldUnsupportedQuantitySentenceCount,
     provisionalReconstructionQuantitySentenceCount,

@@ -88,9 +88,11 @@ export function parseGeminiRetryAfter(value: string | null, now = Date.now()): n
 
 function configuredFreeModels() {
   const configured = process.env.GEMINI_FREE_MODEL_ORDER?.split(',').map(value => value.trim()).filter(Boolean);
-  if (!configured?.length) return [...FREE_GEMINI_MODEL_PREFERENCE];
-  const allow = new Set(configured);
-  return FREE_GEMINI_MODEL_PREFERENCE.filter(model => allow.has(model));
+  const allow = configured?.length?new Set(configured):null;
+  const models=FREE_GEMINI_MODEL_PREFERENCE.filter(model=>!allow||allow.has(model));
+  // Other model families are an explicit economy/compatibility choice, not a
+  // silent quality downgrade before the separately authorized paid fallback.
+  return process.env.GEMINI_FREE_ALLOW_ALTERNATIVES==='true'?models:models.slice(0,1);
 }
 
 function quotaDetails(body: string) {

@@ -144,6 +144,8 @@ export function geminiFailureMessage(code: string, timedOut = false): string {
     return 'Gemini took too long to respond. Your scans are still here; try again when ready.';
   }
   switch (code) {
+    case 'local_request_busy': return 'NutriScan is still finishing another request. Wait for it to finish; your package and messages are preserved.';
+    case 'local_request_limit': return 'NutriScan’s local request limit paused this turn. Wait briefly before retrying; this is not a Google quota error.';
     case 'paid_spend_cap': return 'NutriScan’s local Gemini spending guard paused this request. Your scans are still here.';
     case 'paid_request_cap': return 'NutriScan’s local Gemini request limit paused this request. Your scans are still here.';
     case 'provider_rate_limited': return 'Google Gemini rate- or quota-limited this request. That does not by itself mean the project spending limit was reached.';

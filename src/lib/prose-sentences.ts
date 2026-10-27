@@ -20,3 +20,26 @@ export function splitProseSentences(text: string): string[] {
   if (pending.trim()) result.push(pending.trim());
   return result;
 }
+
+/** Remove structural shells emptied by filtering, without writing replacement prose. */
+export function removeEmptyProseSections(text:string,originalText?:string):string{
+  // A complete bold answer is not an empty section. Only remove its shell
+  // when filtering actually removed the body that followed it.
+  if(/^\s*\*\*[^*\n]+\*\*\s*$/.test(text)&&(!originalText||text.trim()===originalText.trim()))return text.trim();
+  const lines=text.split('\n');
+  const heading=(line:string):number|null=>{
+    const markdown=line.match(/^\s*(#{1,6})\s+/);if(markdown)return markdown[1].length;
+    if(/^\s*[-*+]\s+\*\*[^*]+:?\*\*:?\s*$/.test(line))return 10;
+    return /^\s*\*\*[^*]+:?\*\*:?\s*$/.test(line)?6:null;
+  };
+  const rule=(line:string)=>/^\s*(?:---+|\*\*\*+)\s*$/.test(line);
+  return lines.filter((line,index)=>{
+    const level=heading(line);if(level===null)return true;
+    for(const next of lines.slice(index+1)){
+      if(!next.trim()||rule(next))continue;
+      const nextLevel=heading(next);if(nextLevel===null)return true;
+      if(nextLevel<=level)return false;
+    }
+    return false;
+  }).join('\n').replace(/(?:\n\s*---\s*){2,}/g,'\n---\n').replace(/^\s*---\s*\n/,'').trim();
+}

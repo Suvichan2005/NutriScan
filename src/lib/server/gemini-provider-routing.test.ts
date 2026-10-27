@@ -15,6 +15,7 @@ const quota = (daily = false) => JSON.stringify({ error: { code: 429, status: 'R
 beforeEach(() => {
   resetGeminiUsageLedgerForTests();
   resetGeminiRoutingForTests();
+  vi.stubEnv('GEMINI_FREE_ALLOW_ALTERNATIVES','true');
   vi.stubEnv('ENABLE_GEMINI', 'true');
   vi.stubEnv('GEMINI_PROVIDER', 'free');
   vi.stubEnv('GEMINI_FREE_MODEL_ORDER', 'gemini-3.8-flash,gemini-3.7-flash');
@@ -26,6 +27,14 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('free-tier Gemini model routing', () => {
+  it('does not silently select an economy model without explicit opt-in',async()=>{
+    vi.stubEnv('GEMINI_FREE_ALLOW_ALTERNATIVES','false');
+    const fetcher=vi.fn().mockResolvedValue(new Response(quota(true),{status:429,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
+    const context=applicationGeminiContext();
+    await expect(generateTracked(context,{model:context.model,contents:'one primary route',config:{maxOutputTokens:40}})).rejects.toMatchObject({code:'free_models_exhausted'});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(String(fetcher.mock.calls[0][0])).toContain('gemini-3.8-flash');
+  });
   it('allows a paid-only extraction a bounded 60-second route while respecting a shorter caller deadline', async () => {
     vi.stubEnv('GEMINI_PROVIDER', 'paid');
     vi.stubEnv('ENABLE_PAID_GEMINI', 'true');

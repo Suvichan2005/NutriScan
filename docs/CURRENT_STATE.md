@@ -1,4 +1,10 @@
 # NutriScan current runtime handoff
+## Active product-completion mission — 27 October 2026
+
+The owner superseded the research stop with a finite single-agent product mission. Work is on `codex/product-completion-20261027`, based on the published PR #4 checkpoint; preserve the old study/tag and both owner overlays. Phase A/B changes restore typed count/rounded results, reject wrong units/nutrients and stale serving conversions, remove empty section shells, separate local throttles from provider errors, prevent concurrent client submissions, reuse reconstruction on answer retries, remove unconditional client hybrid search, and compact repeated evidence geometry. Three captured-response replays have no new provider calls; all four formerly missing nutrient outputs survive in the count case. Three retained follow-up payloads shrink from16258/14413/13825 to12816/10436/11511 bytes; these are not live token/latency savings.
+
+Focused checks and TypeScript pass. Next: bounded genuine free 3.8 confirmation, ordinary real-photo browser journey, remaining advanced controls/telemetry and one final integration build. No large portfolio rerun or study modification. Current primary ledger has629 paid attempts; persistent environment still caps600, so paid requests are blocked by the local count guard despite remaining financial allowance. Do not silently raise the effective cap. Private working evidence: original workspace `.data/product-completion-20261027/`.
+
 ## Post-release bounded sprint handoff — 27 October 2026
 
 Owner's later experimental mission superseded the release-only stop instruction below. On `codex/flash38-experiments-20261027`, measured baseline `491c626` and corrected `85ec95f` retain separate full Gemini 3.8 Flash/LOW outcomes. Three shared fixes are implemented; 890 tests pass/two skip and full optimized build passes. See `evidence/flash38-exploratory-20261027.json` and the latest STATUS entry. The old tag is unchanged; no automatic merge to integration/main.

@@ -1,4 +1,8 @@
 # Current engineering status
+## Product completion active — 27 October 2026
+
+Typed native count/portion matching now preserves the four rounded results lost in the retained production answer. Known nutrient labels cannot borrow another native result; count grammar requires current printed conversion evidence. Exact offline replay on three contexts passes, with two outputs changed and no provider calls. Client submit single-flight, answer-only retry, opt-in economy routing, on-demand hybrid retrieval and geometry compaction are implemented. Local throttles have distinct error codes and Retry-After; the assist window allows12 sequential requests/minute with the existing two-active and provider/spend limits. Focused tests/TypeScript pass; actual new browser/provider acceptance remains active. Research receipts are unchanged.
+
 ## Post-release exploratory measurement — 27 October 2026
 
 The owner authorized a bounded paid Gemini 3.8 Flash sprint after the frozen release. Measured baseline code is `491c626`; corrected code is `85ec95f`. All 15 five-method reconstructions, both complete 27-turn portfolios and both nine-pair knowledge comparisons ran with reported Gemini 3.8 Flash/LOW. This is three exposed products with Grade 3 candidate references, not independent accuracy or a completed larger held-out study. Image-containing arms matched 53/53 candidate numeric/unit/basis cells; text-only arms were weaker. Source attribution identities remained valid across 72 retained outcomes, while applicability/entailment remains unverified. A real isolated-browser provider request rendered one turn with two cited and one uncited records.

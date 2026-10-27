@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, fixedFetch, input, localGate, readBounded, route } from './http';
 import { lookupProducts, normalizeProduct, productInput } from './products';
 import { assist, assistInput, assistOutput, assistPromptPayload, focusedLabelRecoverySchema, geminiResponseJsonSchema, getAgentSystemInstruction, getPackageReconstructionSystemInstruction, linkVisionResponseToCapture, mergeFocusedLabelRecovery, normalizeGeminiPackageRegionCoordinates, normalizeProviderPackageReconstructionShape, parseAgentProviderOutput, providerAssistOutput, providerStatus, replaceReferenceIds, sanitizePackageReconstruction, selectNutritionRecoveryRegion, validateClaims, validateImage, vision, visionInput } from './gemini';
-import { applicationGeminiContext, committedPaidSpendUsd, countGoogleSearchQueries, freeTierSyntheticSmokeContext, resetGeminiUsageLedgerForTests, safeProviderFailure } from './gemini-provider';
+import { applicationGeminiContext, committedPaidSpendUsd, countGoogleSearchQueries, freeTierSyntheticSmokeContext, resetGeminiUsageLedgerForTests, resetGeminiRoutingForTests, safeProviderFailure } from './gemini-provider';
 import { research, researchInput, researchRecalls } from './research';
 import { getNutritionGuidance } from './nutrition-guidance';
 import { packageReconstructionContentSchema, packageSchema, type Observation, type PackageReconstructionContent } from '../contracts';
@@ -12,7 +12,7 @@ import { calculationsFromReconstruction } from '../portion';
 import sharp from 'sharp';
 import { z } from 'zod';
 
-beforeEach(() => { resetGeminiUsageLedgerForTests(); });
+beforeEach(() => { resetGeminiUsageLedgerForTests(); resetGeminiRoutingForTests(); });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 const request = (body: unknown, origin = 'http://127.0.0.1:3400') => new Request('http://127.0.0.1:3400/api/test', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const provisionalPackageReadingNotice='Some numbers are provisional package readings; confirm them in Package details.';
@@ -168,6 +168,15 @@ describe('bounded server boundary', () => {
     expect(() => localGate(request({}), 'concurrency-test', 5)).toThrow(ApiError); a(); b();
     const release = localGate(request({}), 'rate-test', 1); release();
     expect(() => localGate(request({}), 'rate-test', 1)).toThrow(ApiError);
+  });
+  it('distinguishes local throttling from provider quotas and supplies a retry time',async()=>{
+    const release=localGate(request({}),'local-rate-receipt',1);release();
+    const limited=await route(request({}),'local-rate-receipt',async()=>({}),1);
+    expect(limited.status).toBe(429);expect(limited.headers.get('Retry-After')).toBeTruthy();
+    expect(await limited.json()).toMatchObject({code:'local_request_limit'});
+    const a=localGate(request({}),'local-busy-receipt'),b=localGate(request({}),'local-busy-receipt');
+    const busy=await route(request({}),'local-busy-receipt',async()=>({}));a();b();
+    expect(await busy.json()).toMatchObject({code:'local_request_busy'});
   });
   it('does not serialize upstream errors with request data', async () => {
     const result = await route(request({}), 'error-test', async () => { throw new Error('SECRET request image payload'); });

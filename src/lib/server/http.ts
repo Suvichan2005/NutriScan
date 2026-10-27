@@ -24,7 +24,8 @@ export function localGate(request: Request, group: string, limit = 10) {
   for (const [key, value] of budgets) if (now - value.started > 120_000 && !value.active) budgets.delete(key);
   let budget = budgets.get(group);
   if (!budget || now - budget.started > 60_000) { budget = { started: now, used: 0, active: budget?.active ?? 0 }; budgets.set(group, budget); }
-  if (budget.used >= limit || budget.active >= 2) throw new ApiError(429, 'rate_limited', 'Request limit reached. Wait one minute before trying again.');
+  if(budget.active>=2)throw new ApiError(429,'local_request_busy','NutriScan is still handling two requests. Wait for one to finish.',{retryAfterSeconds:2});
+  if(budget.used>=limit)throw new ApiError(429,'local_request_limit','NutriScan’s local request limit was reached. Your scan is preserved.',{retryAfterSeconds:Math.max(1,Math.ceil((budget.started+60_000-now)/1000))});
   budget.used++; budget.active++;
   return () => { budget!.active = Math.max(0, budget!.active - 1); };
 }
@@ -124,7 +125,11 @@ export async function route(request: Request, group: string, work: () => Promise
   const requestId = crypto.randomUUID();
   try { release = localGate(request, group, limit); return reply({ ...await work() as object, requestId }); }
   catch (error) {
-    if (error instanceof ApiError) return reply({ status: error.code === 'provider_disabled' ? 'disabled' : 'unavailable', code: error.code, message: error.message, ...(error.details!==undefined?{details:error.details}:{}), requestId }, error.status);
+    if (error instanceof ApiError) {
+      const response=reply({ status: error.code === 'provider_disabled' ? 'disabled' : 'unavailable', code: error.code, message: error.message, ...(error.details!==undefined?{details:error.details}:{}), requestId }, error.status);
+      if(error.details&&typeof error.details==='object'&&'retryAfterSeconds'in error.details)response.headers.set('Retry-After',String(error.details.retryAfterSeconds));
+      return response;
+    }
     const providerStatus = error && typeof error === 'object' && 'status' in error ? error.status : undefined;
     if (group === 'gemini' && providerStatus === 429) {
       return reply({ status: 'unavailable', code: 'provider_rate_limited', message: 'Google Gemini is rate- or quota-limited. Check the configured Google project before retrying. Local analysis remains available.', requestId }, 429);
