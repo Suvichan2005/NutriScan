@@ -1,4 +1,8 @@
 # Sanitized engineering journal
+## 2026-10-27 — suppress ambiguous OCR-derived package title
+
+- A saved local Amul Lassi photo journey had presented `: Contains milk. F. OSE FLAVOUR` as the package title. Integrated the useful ThinkBook identity provenance rule: only explicit user descriptions/corrections, current clear/provisional reconstruction identity, or an exact image-linked OCR name/brand with confidence≥80 are displayed as supported identity.
+- Presentation tests pass39/39 and typecheck passes. Re-ran the private photo through local-only Chrome at390×844 and1440×900: title now generic,10 OCR observations retained, sodium remains unknown, no provider/external traffic, page errors, Axe findings or overflow. No OCR truth or product identity was inferred.
 ## 2026-10-27 — inspect evidence passed to Gemini's final turn
 
 - Selectively compared published ThinkBook commits with current integration. Source-linked allergy/profile crosswalks, global nutrition guidance, and failure-class provider telemetry were already present. The divergence also removes recent IdeaPad grounding provenance and browser acceptance work; no merge was made.

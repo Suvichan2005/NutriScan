@@ -169,6 +169,7 @@ export function geminiFailureMessage(code: string, timedOut = false): string {
 
 const nutrientWords = /\b(?:energy|kcal|kilojoules?|carbohydrates?|carbs?|protein|proten|fat|sodium|salt|sugars?|fibre|fiber|serving|nutrition|nutritional|quantity|per\s*100)\b/gi;
 const numericMeasurement = /\b\d+(?:[.,]\d+)?\s*(?:g|mg|kcal|kj|ml|%|percent)\b/i;
+const minIdentityOcrConfidence = 80;
 
 function cleanIdentity(value: string | undefined): string | null {
   const cleaned = value?.replace(/\s+/g, ' ').trim();
@@ -192,7 +193,7 @@ function cleanIdentity(value: string | undefined): string | null {
 export type DisplayIdentity = { title: string; source: 'package' | 'gemini' | 'generic' };
 
 export function packageDisplayIdentity(
-  pkg: { name: string; brand?: string; observations?: Pick<Observation,'origin'|'field'|'text'>[]; reconstruction?: { current?: boolean; identity: { name: string | null; brand: string | null; variant: string | null; status: string } } | null },
+  pkg: { name: string; brand?: string; userDescription?: string; observations?: (Pick<Observation,'origin'|'field'|'text'> & Partial<Pick<Observation,'imageId'|'confidence'>>)[]; reconstruction?: { current?: boolean; identity: { name: string | null; brand: string | null; variant: string | null; status: string } } | null },
   candidates: TentativeStructuredCandidate[],
 ): DisplayIdentity {
   // Explicit application-recorded corrections outrank interpretations. Keep
@@ -202,7 +203,8 @@ export function packageDisplayIdentity(
       || observation.text.endsWith('; product name supplied by user: ' + pkg.name)));
   const nameAlsoClassifiedAsAnotherField = !correctedName && pkg.observations?.some(observation =>
     observation.text.trim() === pkg.name && observation.field !== 'name' && observation.field !== 'productName');
-  const supported = cleanIdentity(nameAlsoClassifiedAsAnotherField ? undefined : pkg.name) ?? cleanIdentity(pkg.brand);
+  const brandAlsoClassifiedAsAnotherField = Boolean(pkg.brand) && pkg.observations?.some(observation =>
+    observation.text.trim() === pkg.brand && observation.field !== 'brand');
   if (correctedName && cleanIdentity(pkg.name)) return { title: cleanIdentity(pkg.name)!, source: 'package' };
 
   const interpretation = pkg.reconstruction?.identity;
@@ -213,6 +215,30 @@ export function packageDisplayIdentity(
     if (reconstructed.length) return { title: [...new Set(reconstructed)].join(' '), source: 'gemini' };
   }
 
+  // Parsed name and brand fields can contain copied label fragments. Only an
+  // explicit user detail/correction or a high-confidence photo-linked identity
+  // is strong enough to label the package when reconstruction has no identity.
+  const explicitDescription = cleanIdentity(pkg.userDescription);
+  if (explicitDescription) return { title: explicitDescription, source: 'package' };
+  const photoIdentity = pkg.observations?.some(observation =>
+    !nameAlsoClassifiedAsAnotherField
+    && observation.origin === 'ocr'
+    && observation.field === 'name'
+    && observation.text.trim() === pkg.name
+    && Boolean(observation.imageId)
+    && typeof observation.confidence === 'number'
+    && observation.confidence >= minIdentityOcrConfidence,
+  );
+  const photoBrand = pkg.observations?.some(observation =>
+    !brandAlsoClassifiedAsAnotherField
+    && observation.origin === 'ocr'
+    && observation.field === 'brand'
+    && observation.text.trim() === pkg.brand
+    && Boolean(observation.imageId)
+    && typeof observation.confidence === 'number'
+    && observation.confidence >= minIdentityOcrConfidence,
+  );
+  const supported = photoIdentity ? cleanIdentity(pkg.name) : photoBrand ? cleanIdentity(pkg.brand) : null;
   if (supported) return { title: supported, source: 'package' };
 
   const suggestion = candidates.find(candidate => candidate.kind === 'product-identity' && cleanIdentity(candidate.proposedValue));
