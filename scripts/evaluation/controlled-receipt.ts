@@ -5,7 +5,7 @@ type UsageLedger = { calls: Array<{ id: string; elapsedMs?: number | null }> };
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 /** Explicit study output, separate from the app's metadata-only recorder. */
-export function controlledReceipt<T extends { packageReconstruction: unknown }>(
+export function controlledReceipt<T extends { packageReconstruction: unknown; packageContextSha256?: string }>(
   result: T,
   packageContext: unknown,
   inputFileSha256: string,
@@ -15,7 +15,7 @@ export function controlledReceipt<T extends { packageReconstruction: unknown }>(
   return {
     ...result,
     inputFileSha256,
-    packageContextSha256: digest(packageContext),
+    packageContextSha256: result.packageContextSha256 ?? digest(packageContext),
     responseSha256: digest(result),
     providerRoutes: events.filter(event => event.event === 'provider_route'),
     providerCallMetadata: events.filter(event => ['provider_response', 'provider_error'].includes(String(event.event)))

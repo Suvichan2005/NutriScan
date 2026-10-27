@@ -69,8 +69,9 @@ class EvaluationTests(unittest.TestCase):
    plan={'state':'READY','claimScope':'development-preparation-only','jobs':[{'jobId':'a'}]}
    with self.assertRaises(ValueError):runner.execute(plan,['unused'],Path(directory)/'out')
    import sys
-   runner.execute(plan,[sys.executable,'-c','import sys;sys.exit(2)'],Path(directory)/'out',True)
+   runner.execute(plan,[sys.executable,'-c','import sys,json;print(json.dumps({"privateRecords":[{"path":"controlled-response.json","sha256":"fixture"}],"code":"invalid-output"}));sys.exit(2)'],Path(directory)/'out',True)
    receipt=json.loads((Path(directory)/'out/0000.json').read_text());self.assertEqual(receipt['status'],'failed');self.assertEqual(receipt['exitCode'],2)
+   self.assertEqual(receipt['receipt']['code'],'invalid-output');self.assertEqual(receipt['receipt']['privateRecords'][0]['path'],'controlled-response.json')
  def test_outputs_are_write_once(self):
   with tempfile.TemporaryDirectory() as directory:
    file=Path(directory)/'receipt.json';runner.write_new(file,{'finalResult':False})

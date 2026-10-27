@@ -172,7 +172,9 @@ def execute(prepared,adapter,output,allow_provider=False):
    if not frozen_adapter or job.get('adapter')!=frozen_adapter or adapter!=frozen_adapter['argv']:raise ValueError('Runtime adapter differs from frozen arm configuration')
   try:
    run=subprocess.run(adapter,input=json.dumps(job),text=True,capture_output=True,shell=False,timeout=180,cwd=ROOT)
-   value=json.loads(run.stdout) if run.returncode==0 else None
+   # Trusted frozen adapters may retain controlled response/failure receipts even
+   # when the provider output could not be validated. Raw stderr stays excluded.
+   value=json.loads(run.stdout) if run.stdout.strip() else None
    result={'jobId':job['jobId'],'status':'completed' if run.returncode==0 else 'failed','exitCode':run.returncode,'receipt':value,'errorClass':None if run.returncode==0 else 'adapter-exit'}
    if run.returncode==0 and not isinstance(value,dict):result.update(status='failed',errorClass='invalid-receipt')
    elif run.returncode==0 and prepared['claimScope']=='final-independent':

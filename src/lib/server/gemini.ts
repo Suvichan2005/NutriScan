@@ -1627,6 +1627,7 @@ async function reconstructPackage(
   imageParts:Part[],
   analysisId:string,
   referenceAliases:ReferenceAliases,
+  controlledResponseSink?:(record:Record<string,unknown>)=>void|Promise<void>,
 ){
   const hasTextEvidence=Boolean(data.package.observations.length||data.package.rawText.trim()||data.package.userDescription?.trim()||data.package.barcode||data.package.brand||data.package.name!=='Unidentified package');
   if(!imageParts.length&&!hasTextEvidence)throw new ApiError(400,'package_evidence_required','Add a package photo or label text before reconstructing package details.');
@@ -1652,6 +1653,9 @@ async function reconstructPackage(
     },
   },{analysisId,stage:'package-reconstruction',round:0,profileIncluded});
   const candidate=response.candidates?.[0];
+  // Only the explicit local study entry point supplies this sink. Preserve the
+  // inspectable provider output before normalization/validation, excluding thoughts.
+  if(controlledResponseSink)await controlledResponseSink({diagnosticId:analysisId,stage:'initial-reconstruction-response',model:context.model,modelVersion:response.modelVersion??null,tier:context.tier,finishReason:candidate?.finishReason??null,parts:serializableModelParts(candidate?.content),referenceAliases:Object.fromEntries(referenceAliases.fromModel),packageContextSha256:createHash('sha256').update(JSON.stringify(data.package)).digest('hex'),usageMetadata:response.usageMetadata??null,elapsedMs:Date.now()-started});
   await recordGeminiEvaluationEvent(analysisId,{
     event:'model_response',
     stage:'package-reconstruction',
@@ -2083,7 +2087,7 @@ async function reconstructionImageParts(data:z.infer<typeof assistInput>,referen
 }
 
 /** Local research entry point: identical initial stage, no answer/recovery/tool loop. */
-export async function reconstructPackageForEvaluation(input:unknown){
+export async function reconstructPackageForEvaluation(input:unknown,controlledResponseSink?:(record:Record<string,unknown>)=>void|Promise<void>){
   if(process.env.NODE_ENV!=='development'||process.env.CI||process.env.VERCEL)throw new ApiError(403,'evaluation_local_only','Controlled reconstruction is available only in local development.');
   const parsed=assistInput.parse(input);
   if(!parsed.analysisMethod||parsed.package.reconstruction||parsed.profile||parsed.evidence?.length||parsed.conversationContext?.length)throw new ApiError(400,'evaluation_input','Initial extraction requires a selected method and raw evidence, without prior interpretation, profile, sources or conversation.');
@@ -2094,10 +2098,10 @@ export async function reconstructPackageForEvaluation(input:unknown){
   await startGeminiEvaluation(analysisId,{model:status.model??'unresolved-model-route',taskKind:'package-reconstruction'});
   try{
     const aliases=createReferenceAliases(data),parts=await reconstructionImageParts(data,aliases);
-    const result=await reconstructPackage(data,parts,analysisId,aliases);
-    const receipt={diagnosticId:analysisId,actualStage:'initial-reconstruction',analysisMethod:data.analysisMethod,packageReconstruction:result.content,actualModel:result.model,actualGenerationConfig:result.generationConfig,fallbackOccurred:result.fallbackOccurred,actualTier:result.tier,usage:result.usage,elapsedMs:result.elapsedMs,recoveryCalls:0,answerGenerationCalls:0,actualInputSelection:{analysisMethod:data.analysisMethod,evidence:[...(analysisMethodPolicy(data.analysisMethod!).reader?[analysisMethodPolicy(data.analysisMethod!).reader+'-observations']:[]),...(parts.length?['original-images']:[])]}};
+    const result=await reconstructPackage(data,parts,analysisId,aliases,controlledResponseSink);
+    const receipt={diagnosticId:analysisId,packageContextSha256:createHash('sha256').update(JSON.stringify(data.package)).digest('hex'),actualStage:'initial-reconstruction',analysisMethod:data.analysisMethod,packageReconstruction:result.content,actualModel:result.model,actualGenerationConfig:result.generationConfig,fallbackOccurred:result.fallbackOccurred,actualTier:result.tier,usage:result.usage,elapsedMs:result.elapsedMs,recoveryCalls:0,answerGenerationCalls:0,actualInputSelection:{analysisMethod:data.analysisMethod,evidence:[...(analysisMethodPolicy(data.analysisMethod!).reader?[analysisMethodPolicy(data.analysisMethod!).reader+'-observations']:[]),...(parts.length?['original-images']:[])]}};
     await recordGeminiEvaluationEvent(analysisId,{event:'controlled_reconstruction_receipt',receipt});await finishGeminiEvaluation(analysisId,'completed');return receipt;
-  }catch(error){await recordGeminiEvaluationEvent(analysisId,{event:'analysis_failed',failure:{code:error instanceof ApiError?error.code:'provider-failure'}});await finishGeminiEvaluation(analysisId,'failed');throw error;}
+  }catch(error){const failure={code:error instanceof ApiError?error.code:'provider-failure'};await recordGeminiEvaluationEvent(analysisId,{event:'analysis_failed',failure});await finishGeminiEvaluation(analysisId,'failed');if(controlledResponseSink)await controlledResponseSink({diagnosticId:analysisId,stage:'initial-reconstruction-failed',failure});throw error;}
 }
 
 export async function assist(data: z.infer<typeof assistInput>) {
