@@ -8,6 +8,7 @@ import { portionView, convertPortion } from '../portion-view';
 import { evidencePhotoSelection } from '../reconstruction-evidence';
 import { executeGeminiTool } from '../server/gemini-tools';
 import { supersedePackageAnswers } from '../thread-presentation';
+import { applyNutrientCorrection } from '../correction';
 
 function fixture(basisUnit: 'g' | 'ml' = 'g') {
   const original = parseLabel(`Synthetic package\nNutrition per 100 ${basisUnit}\nCarbohydrate 30 g`, { origin: 'user' });
@@ -40,6 +41,13 @@ function pair(value = 63.29) {
 }
 
 describe('collaborative package consistency', () => {
+  it.each(['carbohydrate','fiber'] as const)('does not re-ask about %s already superseded through the inspector correction path', key => {
+    const {pkg}=pair();
+    pkg.reconstruction!.nutritionRows.forEach(row=>Object.assign(row,{nutrient:key,printedLabel:key,nutrientKey:key}));
+    const corrected=applyNutrientCorrection(pkg,{key,value:69.29,unit:'g',basisAmount:100,basisUnit:'g'});
+    expect(packageConsistencyIssues(corrected)).toEqual([]);
+    expect(corrected.reconstruction!.nutritionRows[0].value).toBe(63.29);
+  });
   it('returns optional native clarification and conditional calculation receipts without waiting for user input', async () => {
     const {pkg}=pair();const issue=packageConsistencyIssues(pkg)[0];
     const context={question:'Explain this portion',package:pkg,visualImages:[],searchTerms:new Set<string>(),prepareImage:async()=>{throw Error('No image recovery needed');}};

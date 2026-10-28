@@ -120,7 +120,8 @@ export function reconstructedNutrientComponent(key:NutrientKey,row:Pick<NonNulla
 
 export function reconstructionNutrientSubject(row: Pick<NonNullable<PackageData['reconstruction']>['nutritionRows'][number], 'nutrient' | 'printedLabel' | 'nutrientKey'>): string {
   const key = row.nutrientKey ?? reconstructedNutrientKey(row.nutrient) ?? reconstructedNutrientKey(row.printedLabel);
-  return key ? reconstructedNutrientComponent(key, row) : `printed:${(row.nutrient || row.printedLabel).normalize('NFKC').toLocaleLowerCase('en').replace(/\s+/g, ' ').trim()}`;
+  if(key){const component=reconstructedNutrientComponent(key,row);return component===`${key}:total`?key:component;}
+  return `printed:${(row.nutrient || row.printedLabel).normalize('NFKC').toLocaleLowerCase('en').replace(/\s+/g, ' ').trim()}`;
 }
 
 /**

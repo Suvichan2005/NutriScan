@@ -62,12 +62,13 @@
     "laterProviderCalls": 0
   },
   "offlineChecks": {
-    "testsPassed": 946,
+    "testsPassed": 948,
     "testsSkipped": 2,
     "typeScript": "passed",
     "optimizedBuild": "passed",
     "reusedBuildDirectory": ".data/study-staging-build",
-    "ownerOverlaysPreserved": true
+    "ownerOverlaysPreserved": true,
+    "inspectorCorrectionPrecedence": "carbohydrate and total fibre regression checks passed; raw readings retained"
   },
   "limitations": [
     "Synthetic UI acceptance is not photo reconstruction accuracy or independent ground truth.",

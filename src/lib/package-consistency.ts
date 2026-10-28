@@ -55,6 +55,7 @@ export function packageConsistencyIssues(original: PackageData): PackageConsiste
   for (const row of current.nutritionRows.filter(eligible)) groups.set(nutrientSubject(row), [...(groups.get(nutrientSubject(row)) ?? []), { row, revision: current.revision, current: true }]);
   const issues: PackageConsistencyIssue[] = [];
   for (const [subject, active] of groups) {
+    if (pkg.nutrients.some(item => item.status === 'corrected' && item.key === subject)) continue;
     if (pkg.clarificationDecisions?.some(item => item.subject === subject && item.decision === 'confirm' && active.some(reading => reading.row.rowId === item.preferredRowId))) continue;
     const historical = (pkg.reconstructionHistory ?? []).flatMap(revision => revision.nutritionRows.filter(row => eligible(row) && nutrientSubject(row) === subject && active.some(reading => sharedSource(reading.row, row))).map(row => ({ row, revision: revision.revision, current: false })));
     const readings = [...active, ...historical];
