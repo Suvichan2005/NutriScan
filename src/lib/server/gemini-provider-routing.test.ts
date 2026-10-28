@@ -27,6 +27,22 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('free-tier Gemini model routing', () => {
+  it('keeps the financial ceiling in development and the independent count cap in production',async()=>{
+    vi.stubEnv('VITEST','true'); // retain the isolated in-memory ledger while testing runtime policies
+    for(const [key,value] of Object.entries({GEMINI_PROVIDER:'paid',ENABLE_PAID_GEMINI:'true',GEMINI_MODEL:'gemini-3.8-flash',GEMINI_FREE_PROJECT_ID:'free-project',GEMINI_PAID_PROJECT_ID:'paid-project',GEMINI_PAID_BUDGET_USD:'1',GEMINI_PAID_MAX_CALLS:'1',GEMINI_PAID_MAX_INPUT_TOKENS:'1000',GEMINI_PAID_MAX_OUTPUT_TOKENS:'100',GEMINI_PAID_INPUT_USD_PER_MILLION:'1',GEMINI_PAID_OUTPUT_USD_PER_MILLION:'1'}))vi.stubEnv(key,value);
+    vi.stubGlobal('fetch',vi.fn(async(target:RequestInfo|URL)=>new Response(String(target).includes('countTokens')?JSON.stringify({totalTokens:10}):success('gemini-3.8-flash'),{status:200,headers:{'content-type':'application/json'}})));
+    vi.stubEnv('NODE_ENV','production');
+    const context=applicationGeminiContext();
+    const input={model:context.model,contents:'Controlled fixture',config:{maxOutputTokens:40}};
+    await generateTracked(context,input);
+    await expect(generateTracked(context,input)).rejects.toMatchObject({code:'paid_request_cap'});
+    resetGeminiUsageLedgerForTests();
+    vi.stubEnv('NODE_ENV','development');
+    await generateTracked(context,input);
+    await generateTracked(context,input);
+    vi.stubEnv('GEMINI_PAID_BUDGET_USD','0.000001');
+    await expect(generateTracked(context,input)).rejects.toMatchObject({code:'paid_spend_cap'});
+  });
   it('gives a single free route 60 seconds while preserving shorter caller deadlines',async()=>{
     vi.stubEnv('GEMINI_FREE_ALLOW_ALTERNATIVES','false');
     vi.stubGlobal('fetch',vi.fn().mockImplementation(async()=>new Response(success('gemini-3.8-flash'),{status:200,headers:{'content-type':'application/json'}})));

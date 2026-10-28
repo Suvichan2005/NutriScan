@@ -453,7 +453,9 @@ async function reserveCall(context: GeminiContext, record: UsageRecord) {
       const budget = positiveNumber('GEMINI_PAID_BUDGET_USD')!;
       const paidCalls = ledger.calls.filter((call) => call.tier === 'paid');
       const reserved = committedPaidSpendUsd(paidCalls);
-      if (paidCalls.length >= maxCalls) throw new ApiError(429, 'paid_request_cap', 'The configured paid Gemini request cap has been reached.');
+      // Controlled local development is budget-bound, per the owner's authorization.
+      // Production retains its independent request-count limit and billing consent.
+      if (process.env.NODE_ENV !== 'development' && paidCalls.length >= maxCalls) throw new ApiError(429, 'paid_request_cap', 'The configured paid Gemini request cap has been reached.');
       if (reserved + record.reservedUsd > budget + 1e-12) throw new ApiError(429, 'paid_spend_cap', 'The conservative paid Gemini spend estimate exceeds the configured cap.');
     }
     ledger.calls.push(record);
