@@ -30,6 +30,10 @@
 .results li { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: .75rem 0; border-top: 1px solid #e8ece4; }
 .results strong { font-size: 1.2rem; white-space: nowrap; }
 .packageNote { padding: .7rem .8rem; margin: .8rem 0 1rem; background: #f4f7f0; border-radius: 8px; font-size: .85rem; line-height: 1.6; color: #52604e; }
+.package { min-width: 0; padding-inline-end: .25rem; box-sizing: border-box; }
+.package > header > div { min-width: 0; }
+.package h2 { overflow-wrap: anywhere; }
+:global(.inspector-tab-panel):has(.package) { scrollbar-gutter: stable; }
 .packageNote p { margin: 0; }
 .packageNote details { margin-top: .4rem; }
 .packageNote summary { cursor: pointer; }

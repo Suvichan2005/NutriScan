@@ -1,3 +1,4 @@
+import { calculatorPresentationForModel } from '../portion-view';
 import { calculationHasPackageEvidence } from '../calculation-provenance';
 import {validateReconstructionSections} from './reconstruction-sections';
 import {checkReconstructionMasses} from '../nutrient-mass';
@@ -1855,7 +1856,9 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
           returnedImage:result.image?{mimeType:result.image.mimeType,byteLength:Buffer.from(result.image.base64,'base64').byteLength,sha256:createHash('sha256').update(Buffer.from(result.image.base64,'base64')).digest('hex'),imageBytesOmitted:true}:null,
         });
         for(const source of groundingSources)referenceAliases.register(source.id,'source');
-        const modelOutput=replaceReferenceIds(toolResultForModel(result.output,[...groundingSources,...(result.evidence??[])]),referenceAliases.toModel);
+        const calculatorPresentation=name==='calculate_nutrition'&&result.status==='ok'&&result.calculations?.[0]
+          ?calculatorPresentationForModel(result.calculations[0],toolContext.package):null;
+        const modelOutput=replaceReferenceIds(toolResultForModel({...result.output,...(calculatorPresentation?{presentation:calculatorPresentation}:{})},[...groundingSources,...(result.evidence??[])]),referenceAliases.toModel);
         const imagePartsForResponse=result.image?[createFunctionResponsePartFromBase64(result.image.base64,result.image.mimeType)]:undefined;
         return createPartFromFunctionResponse(call.id,name,modelOutput,imagePartsForResponse);
       }));

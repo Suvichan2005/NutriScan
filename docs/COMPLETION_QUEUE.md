@@ -320,3 +320,14 @@ M3 local OCR language gap: a non-held-out Spanish-language development photo wit
 
 ### PRODUCT-27 —Finite product-completion candidate (owner superseding mission)
 State: VERIFIED implementation/controlled browser journey; final branch/PR publication is recorded with the actual SHA in the private milestone handoff. Depends on existing M2/M3/M6, does not cancel retained research records. Owned files: application conversation/request/evidence boundaries and associated tests/docs; original owner CSS/next-env overlays excluded. Acceptance: image-first real-photo reconstruction, grounded source use, photo-free quantities, correction and saved reopen, failure retry, desktop/mobile inspector. Evidence: `docs/evidence/product-completion-20261027.json`; private `.data/product-completion-20261027`. Completed within10 paid generations/$0.06542325 estimate. Remaining: broad unseen-product accuracy and semantic source entailment not established; final answer still withheld two quantities; free3.8 availability not confirmed. Do not run another study or expand sources as part of this finite handoff.
+
+
+### M6-UX-20261028 — Context and operation-driven conversation controls
+
+- State: VERIFIED (reviewed publication checkpoint accompanies this record). Priority: P1. Dependencies: existing M3 calculations/corrections and M6 chat/inspector.
+- Outcome: optional context onboarding, visible actual tools, readable answer/evidence hierarchy, and portion controls owned by the returned operation.
+- Owned boundaries: conversation/profile/portion React components; profile request selection; unit normalization/provenance; native calculator presentation metadata. Existing owner overlays are excluded.
+- Acceptance: optional profile fields with explicit AI/local choice; provider inclusion and omission; count/serving/package/mass/volume provenance; invalid/stale input exclusion; desktop/mobile scrolling, keyboard closure and source inspection; corrections propagate.
+- Actual evidence: docs/evidence/ux-context-20261028.json; 924 tests pass/two skipped, TypeScript and optimized build pass; three development application requests using actual Gemini3.8, six paid generations/$0.0240909 estimated. No independent accuracy or clinical claims.
+- Known limitations: withheld numeric wording was not retained; ingredient-absence overclaim remains M2 quality work. Original unsaved browser-view preservation is unconfirmed.
+- Next action: use captured outputs to investigate M2 semantic grounding/quantity rejections under opt-in fixture logging, rather than adding phrase-specific rules or rerunning unchanged cases. Formal research queues are unchanged.

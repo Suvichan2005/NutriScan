@@ -28,12 +28,19 @@ export function normalizeReconstructedServing<T extends ReconstructedServingPort
   const countText = pieceMatch?.[1]?.toLocaleLowerCase('en');
   const parsedCount = countText ? /^\d+$/.test(countText) ? Number(countText) : smallNumberWords[countText] : undefined;
   const pieceDescription = pieceMatch?.[2]?.replace(/\s+/g, ' ').trim();
+  // One printed number cannot simultaneously be a mass/volume and an item count.
+  // Reuse the physical quantity's span instead of adding product-name exceptions.
+  const overlapsMeasuredQuantity = Boolean(pieceMatch && amountMatch && pieceMatch.index! >= amountMatch.index!
+    && pieceMatch.index! < amountMatch.index! + amountMatch[0].length);
   return {
     ...serving,
+    ...(overlapsMeasuredQuantity && serving.pieceCount === parsedCount && serving.pieceDescription === pieceDescription
+      ? { pieceCount: null, pieceDescription: null } // invalidate the same older, dimensionally invalid normalization
+      : {}),
     ...(serving.quantity === null && serving.unit === null && unit && Number.isFinite(amount) && amount > 0 && amount <= 10000
       ? { quantity: amount, unit }
       : {}),
-    ...(serving.pieceCount === null && serving.pieceDescription === null && parsedCount !== undefined && parsedCount > 0 && pieceDescription
+    ...(serving.pieceCount === null && serving.pieceDescription === null && !overlapsMeasuredQuantity && parsedCount !== undefined && parsedCount > 0 && pieceDescription
       ? { pieceCount: parsedCount, pieceDescription }
       : {}),
   } as T;

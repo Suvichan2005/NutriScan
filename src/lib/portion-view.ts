@@ -40,3 +40,19 @@ export function scalePortion(calculation: Calculation, amount: number, option: P
   return scaleCalculationToPortion(calculation, amount * option.quantity, option.basisUnit);
 }
 
+/** Reset an edited card when its numerical inputs or available conversion evidence change. */
+export function portionViewKey(rows: Calculation[], pkg: PackageData): string {
+  return JSON.stringify([rows.map(row => [row.id, row.input, row.inputUnit, row.basisAmount, row.portion, row.result, row.unit, row.inputOrigin]), portionView(rows[0], pkg)]);
+}
+
+/** Tell the agent about the same evidenced controls the application actually renders. */
+export function calculatorPresentationForModel(calculation: Calculation, pkg: PackageData) {
+  if (!calculationHasPackageEvidence(calculation, { package: pkg })) return null;
+  const view = portionView(calculation, pkg);
+  return {
+    component: 'portion-calculator', location: 'below-answer', title: 'Your portion',
+    initial: view.initial,
+    controls: { amount: 'editable', unitChoices: view.options.map(({ unit, label }) => ({ unit, label })) },
+    expandableDetails: 'Calculation & label details',
+  };
+}

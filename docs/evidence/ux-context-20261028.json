@@ -1,0 +1,104 @@
+{
+  "date": "2026-10-28",
+  "scope": "Development UX/context/portion acceptance; not a frozen scientific study",
+  "verification": {
+    "tests": {
+      "passed": 924,
+      "skipped": 2,
+      "files": 80,
+      "command": "vitest run --maxWorkers=2 --testTimeout=15000"
+    },
+    "typescript": "passed",
+    "optimizedProductionBuild": "passed; reused .data/study-staging-build; no production server launched"
+  },
+  "browser": {
+    "desktop": [
+      1440,
+      900
+    ],
+    "mobile": [
+      390,
+      844
+    ],
+    "flows": [
+      "optional onboarding and context editing",
+      "explicit AI sharing and local-only choice",
+      "keyboard Escape and focus return",
+      "internal form/inspector scrolling",
+      "real native tool activity in chat",
+      "package fraction and gram round-trip",
+      "invalid input withholds old results",
+      "correction retains original and invalidates stale results"
+    ],
+    "fixture": "Illustrative typed label and fictional profile; original owner scan inspected only"
+  },
+  "provider": {
+    "applicationRequests": 3,
+    "providerAttempts": 8,
+    "completedPaidGenerations": 6,
+    "failedFreeAttempts": 2,
+    "models": [
+      "gemini-3.8-flash"
+    ],
+    "inputTokens": 30020,
+    "outputTokens": 1335,
+    "reportedCachedInputTokens": 5082,
+    "thinkingTokens": "not reported; unknown, not zero",
+    "estimatedAdditionalPaidUsd": 0.0240909,
+    "paidLedgerCalls": 651,
+    "conservativeCommittedPaidUsd": 8.728600475,
+    "billing": "local SDK-based estimates, not Google billing",
+    "tokenTotalsScope": "Reported metadata only; failed free attempts have unknown usage, not zero."
+  },
+  "outcomes": {
+    "profileIncludedWithConsent": true,
+    "profileFieldOmittedAfterKeepLocal": true,
+    "halfPackageProteinG": 3,
+    "quarterPackageProteinG": 1.5,
+    "quarterPackageAfterUserCorrectionProteinG": 1.8,
+    "correctionGPer100G": 12,
+    "originalGPer100G": 10,
+    "dynamicUiMetadata": "Actual next response named the portion control below and its packages/grams choices"
+  },
+  "limitations": [
+    "No independent photo/nutrition/clinical accuracy claim.",
+    "Scientific sources in this fixture were supplied curated context; not fresh scientific tool lookups.",
+    "Two numerical responses withheld one sentence each; raw rejected wording was not retained, so exact rejection causes remain unknown.",
+    "An earlier response overclaimed ingredient absence from non-listing; remains a model-grounding issue.",
+    "Original owner tab later showed label entry; manual navigation versus hot-refresh reset is unconfirmed. Unsaved-session preservation is not claimed."
+  ],
+  "privateEvidence": [
+    {
+      "file": "context-provider-confirmation.json",
+      "sha256": "e47321bae55fb59321c0e9f63444901465aa38b0c2b99cae7bcf5517fe8fd3f2"
+    },
+    {
+      "file": "portion-provider-confirmation.json",
+      "sha256": "61ca99f8ae7fff263966e31421052e6ae473fb8eb8046a3869ef9101076c342d"
+    },
+    {
+      "file": "correction-provider-confirmation.json",
+      "sha256": "56f41d34bfd98ef9f7b35a203524c3dc0c77de5a05e9d0d36d2fc5dcd939c7e1"
+    },
+    {
+      "file": "production-build-final.json",
+      "sha256": "e77f4e22e4f4045eaec4cf27ca46a8db87bfecfdcfbd6ad39da4885e77cd2556"
+    },
+    {
+      "file": "15-context-mobile-final.png",
+      "sha256": "4483e09948790f65370f46389d9d57297303880424e86bc3f7b66cab7ad6478c"
+    },
+    {
+      "file": "16-context-desktop-final.png",
+      "sha256": "526ec2a8d8251094054cba3cbc685d476e31de77eea0a631a94063449925736f"
+    },
+    {
+      "file": "17-corrected-portion-desktop.png",
+      "sha256": "4a2ab32f509e6641283842c395668a1865c17641ebc314af5a62dbb3e4696308"
+    }
+  ],
+  "protectedSource": {
+    "next-env.d.ts": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
+    "src/app/globals.css": "f0dd350b51c249dc0ec9a0708cda57a9915ecfc93882e533682ac47dba8d5a60"
+  }
+}

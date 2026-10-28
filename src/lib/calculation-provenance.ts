@@ -1,5 +1,6 @@
 import type { Calculation, PackageData, TentativeStructuredCandidate, NutrientKey } from './contracts';
 import { calculationRespectsCorrections } from './correction';
+import { normalizeReconstructedServing } from './portion';
 
 function numericFieldMatches(value: number, expected: number): boolean {
   return Math.abs(value - expected) <= Number.EPSILON * Math.max(1, Math.abs(value), Math.abs(expected)) * 16;
@@ -33,7 +34,7 @@ export function calculationHasPackageEvidence(calculation:Calculation,data:{pack
     sourceObservations.some(id=>observationIds.has(id))||sourceImages.some(id=>imageIds.has(id));
   if(calculation.countedPortion){
     const count=calculation.countedPortion;
-    const serving=data.package.reconstruction?.current?data.package.reconstruction.serving:null;
+    const serving=data.package.reconstruction?.current?normalizeReconstructedServing(data.package.reconstruction.serving):null;
     if(!serving||!['clear','provisional'].includes(serving.status)||!numericFieldMatches(count.servingQuantity,serving.quantity??Number.NaN)
       ||count.servingUnit!==serving.unit||(count.unit==='pieces'&&!numericFieldMatches(count.piecesPerServing!,serving.pieceCount??Number.NaN))
       ||!provenanceMatches(serving.evidence.observationIds,serving.evidence.imageRegions.map(region=>region.imageId))

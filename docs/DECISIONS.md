@@ -1532,3 +1532,8 @@ Portion cards initialize from the operation’s count/serving/package provenance
 ## 28 October 2026 — Budget-bound controlled development
 
 The owner explicitly waived generation-count gating for controlled development while retaining both financial ceilings. Local development therefore keeps the conservative financial reservation guard but does not treat the configured production generation count as a blocker. Production retains its independent request-count cap and billing permission. Paid backup defaults on only in the configured local development client; consumers do not inherit this authorization. No financial limit or credential was changed. Mocked reservation tests cover production count rejection, development continuation and financial rejection. A bounded real development request subsequently completed beyond the old 650-generation threshold under the same financial guard.
+
+
+## 28 October 2026 — App-owned presentation without semantic answer reconstruction
+
+Keep Gemini’s supported prose; never manufacture a recommendation in TypeScript. Known old application footers migrate to answer notes, while numeric/basis checks still run. Render actual tool metadata and source-linked operations; use the same evidence-owned portion view for React controls and tool-response affordances. Do not infer unit choices from product names or question keywords. Keep cited sources in chat and uncited research context in the inspector. Optional context is consented in the context form itself, independently of local remembering. Physical-quantity spans cannot also establish item counts; retain the original observation when invalidating an old derived interpretation.

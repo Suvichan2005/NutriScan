@@ -1,4 +1,9 @@
-import type { Profile } from './contracts';
+import { hasUserContext, type Profile } from './contracts';
+
+/** Keeping context locally is separate from permission to put it in a provider request. */
+export function profileForGemini(profile: Profile, share: boolean): Profile | undefined {
+  return share && hasUserContext(profile) ? profile : undefined;
+}
 
 /**
  * A delayed IndexedDB result may arrive after onboarding has opened. A profile

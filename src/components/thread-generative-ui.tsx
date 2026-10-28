@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { PortionCalculator } from './portion-calculator';
+import { portionViewKey } from '@/lib/portion-view';
 import { BookOpen, ChevronDown, CircleHelp, Eye, PackageSearch, ScanLine, Sparkles } from 'lucide-react';
 import { compareProductNutrition, type ProductComparisonRow } from '@/lib/product-comparison';
 import { productEvidenceSource } from '@/lib/product-evidence';
@@ -95,7 +96,7 @@ export function ThreadGenerativeUI(props: Props) {
     'portion-calculator': component => {
       const rows = component.calculationIds.flatMap(id => calculations.has(id) ? [calculations.get(id)!] : []);
       if (!rows.length) return null;
-      return <div key={component.type}>{[...new Set(rows.map(row => row.portionUnit))].map(unit => <PortionCalculator key={`${unit}-${rows.map(row=>row.id).join('-')}`} rows={rows.filter(row=>row.portionUnit===unit)} pkg={pkg} onReview={props.onOpenInspector} initialPhysical={component.calculatorAmount&&component.calculatorUnit?{amount:component.calculatorAmount,unit:component.calculatorUnit}:undefined}/>)}</div>;
+      return <div key={component.type}>{[...new Set(rows.map(row => row.portionUnit))].map(unit => <PortionCalculator key={portionViewKey(rows.filter(row=>row.portionUnit===unit),pkg)} rows={rows.filter(row=>row.portionUnit===unit)} pkg={pkg} onReview={props.onOpenInspector} onAmountChange={(amount,unit)=>{props.onPortionChange(amount);props.onPortionUnitChange(unit);}} initialPhysical={component.calculatorAmount&&component.calculatorUnit?{amount:component.calculatorAmount,unit:component.calculatorUnit}:undefined}/>)}</div>;
     },
     'ingredient-explorer': component => renderEvidenceExplorer(component, observations, candidates, pkg, props, 'ingredients', 'Ingredient and additive readings', 'Package interpretations are provisional; confirm them against the linked photo before relying on a disputed detail.'),
     'allergen-explanation': component => renderEvidenceExplorer(component, observations, candidates, pkg, props, 'allergens', 'Allergen and warning text', 'These are label statements, not a safety assessment. Missing text does not rule out allergens or cross-contact.'),

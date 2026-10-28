@@ -82,6 +82,17 @@ describe('question-directed portions',()=>{
     expect(resolveQuestionPortion('What about just two biscuits?',{value:100,unit:'g'},undefined,raw)).toEqual({value:13.4,unit:'g'});
     expect(defaultPortion({reconstruction:{current:true,serving:raw},nutrients:[{status:'observed',basis:{amount:100,unit:'g'}}]})).toEqual({value:13.4,unit:'g'});
   });
+  it.each(['Serving size: 30 g','Serving: 250 ml','About 35 grams','200 millilitres'])('does not reinterpret a physical quantity as an item count: %s',printedText=>{
+    const normalized=normalizeReconstructedServing({printedText,quantity:null,unit:null,pieceCount:null,pieceDescription:null,status:'clear'});
+    expect(normalized.pieceCount).toBeNull();
+    expect(normalized.pieceDescription).toBeNull();
+    expect(normalized.quantity).toBeGreaterThan(0);
+  });
+  it('invalidates the older inferred count without changing the original declaration or mass',()=>{
+    const raw={printedText:'Serving size: 30 g',quantity:30,unit:'g' as const,pieceCount:30,pieceDescription:'g',status:'clear'};
+    expect(normalizeReconstructedServing(raw)).toMatchObject({printedText:raw.printedText,quantity:30,unit:'g',pieceCount:null,pieceDescription:null});
+    expect(raw.pieceCount).toBe(30);
+  });
   it('retains the piece count but withholds serving mass when the printed unit is absent',()=>{
     const raw={printedText:'Serving size: 2 biscuits (approx. 13.4)',quantity:null,unit:null,pieceCount:null,pieceDescription:null,status:'provisional'};
     expect(normalizeReconstructedServing(raw)).toMatchObject({quantity:null,unit:null,pieceCount:2,pieceDescription:'biscuits'});

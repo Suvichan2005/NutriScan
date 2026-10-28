@@ -1,3 +1,19 @@
+## 28 October 2026 — Context onboarding and evidence-owned portion UX
+
+Current source branch: `codex/product-completion-20261027`, existing PR #5. Conversation/inspector checkpoint `28b4a2b`; budget-only development policy checkpoint `1b60583`. The latest UI checkpoint follows these commits. Original checkout/source overlays, main and the prior frozen release remain separate.
+
+The context form now serves onboarding and editing; no preset goal is required. Explicit **Use in AI answers** versus **Keep local** controls profile fields in requests. Current status distinguishes AI context on/local context. Local configured paid backup defaults on without a checkbox; consumer production does not inherit development billing permission. Financial caps remain unchanged; local generation count no longer blocks authorized budget-bounded development.
+
+Chat displays recorded tool activity, concise answer-first prose with full explanation disclosure, and application-owned numerical decisions as answer notes. Cited evidence cards remain; uncited context lives in Research. Inspector verification is explained once, with unresolved/conflicting readings and corrections retained. Portion controls use each operation’s typed count/serving/package evidence, preserve amounts across allowed unit changes, and reset on changed source inputs. A real shared bug treating `30 g` as 30 items is fixed by physical-quantity span overlap, including rejection of the same older derived count. Tools now return actual calculator affordances using the same presentation helper as React.
+
+Verification: 924 tests passed, two skipped; TypeScript and optimized production build passed. Reused `.data/study-staging-build`; primary dev server remains port3420. Protected `next-env.d.ts` and owner CSS hashes were restored/retained exactly. Desktop1440×900 and mobile390×844: optional fields, fixed consent actions, internal scrolling, Escape/focus restoration, valid/invalid portion changes, and correction propagation were exercised.
+
+Three controlled application requests: actual Gemini3.8 Flash, six completed paid generations and two failed free attempts, estimated added$0.0240909 (not Google billing). Profile fields were included with consent and correctly acknowledged; the next local-only request omitted its profile field. Half a60g illustrative package showed3g protein, quarter showed1.5g; after a user edit from10 to12g/100g, a real follow-up returned1.8g for a quarter. This is an illustrative fixture, not package-photo accuracy or clinical validation. Supplied WHO references appeared with attribution; no fresh scientific lookup was demonstrated. Receipt: `docs/evidence/ux-context-20261028.json`. Private evidence: original checkout `.data/product-clarity-20261028/audit/`.
+
+Remaining: two quantity responses withheld a sentence; original rejected wording was not captured, so do not guess its cause. One older response overstated ingredient absence from non-listing. M2 grounding quality remains unfinished; do not add word-specific validators. Original owner tab later showed label entry; whether manual or hot-refresh reset is unconfirmed, and the owner was asked once. Do not claim its unsaved view survived. Two unused legacy root goal-state hook slots remain intentionally to avoid another live hook-signature change; remove at a safe fresh-session checkpoint.
+
+---
+
 
 ## 28 October 2026 — Single-model timeout and paid backup verified
 

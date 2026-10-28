@@ -259,7 +259,7 @@ it('offers a user-supplied value for a nutrient the active reading omitted',()=>
   const correctedMarkup=renderToStaticMarkup(<PackageReconstructionView reconstruction={reconstruction} savedNutrients={[{key:'sodium',value:450,unit:'mg',basis:{amount:100,unit:'g'},status:'corrected'}]} onCorrect={()=>true} onInspectEvidence={()=>true}/>);
   expect(correctedMarkup).toContain('Your supplied reading');
   expect(correctedMarkup).toContain('450 mg');
-  expect(correctedMarkup).toContain('Unverified user correction');
+  expect(correctedMarkup).toContain('Your saved reading');
 });
 
 it('keeps raw package-evidence OCR out of the assistant conversation cards', () => {

@@ -14,7 +14,7 @@ export function ConversationAnswer({ answer, diagnostics, provisional }: { answe
   const firstContent = blocks.findIndex(block => block.kind !== 'heading');
   const leadCount = firstContent < 0 ? blocks.length : firstContent + 1;
   // Disclosure follows paragraph boundaries only. No semantic selection or generated summary.
-  const fold = legacy.answer.length > 900 && blocks.length > leadCount;
+  const fold = blocks.length > leadCount && (legacy.answer.length > 900 || blocks.slice(leadCount).some(block => block.kind === 'heading'));
   const withheld = Boolean(diagnostics?.withheldQuantitySentences || legacy.withheld);
   const estimated = Boolean(diagnostics?.provisionalReconstructionQuantitySentences || provisional || legacy.provisional);
   return <div className={styles.answer}>
@@ -28,6 +28,7 @@ export function ConversationAnswer({ answer, diagnostics, provisional }: { answe
 }
 
 const toolLabels: Record<string, string> = {
+  submit_package_reconstruction: 'Read package details',
   calculate_nutrition: 'Calculated portion', get_nutrition_guidance: 'Checked nutrition guidance',
   resolve_ingredient: 'Checked ingredient identity', get_substance_assessments: 'Looked up scientific assessments',
   inspect_package_image: 'Inspected a label photo', search_knowledge: 'Searched reference sources',
@@ -38,7 +39,7 @@ export function ConversationToolActivity({ trace }: { trace?: ThreadAgentTrace[]
   if (!trace?.length) return null;
   const label = (step: ThreadAgentTrace) => toolLabels[step.name] ?? step.name.replace(/_/g, ' ');
   return <details className={styles.activity} aria-label="Tool activity">
-    <summary>{trace.slice(0, 2).map(label).join(' · ')}{trace.length > 2 ? ` · +${trace.length - 2} more` : ''}</summary>
+    <summary>{trace.slice(0, 2).map(step => `${label(step)}${['ok', 'cached'].includes(step.status) ? '' : ` (${step.status})`}`).join(' · ')}{trace.length > 2 ? ` · +${trace.length - 2} more` : ''}</summary>
     <ol>{trace.map((step, index) => <li key={`${step.name}-${index}`}><span>{label(step)}</span><small>{step.status === 'ok' ? 'Completed' : step.status === 'cached' ? 'Reused recorded result' : step.status} · {step.resultCount} result{step.resultCount === 1 ? '' : 's'} · {step.elapsedMs < 1000 ? '<1 s' : `${(step.elapsedMs / 1000).toFixed(1)} s`}<br/><code>{step.name}</code></small></li>)}</ol>
   </details>;
 }

@@ -1,0 +1,20 @@
+:global(dialog):has(.form) { display: flex; flex-direction: column; overflow: hidden; }
+:global(dialog):has(.form) > :global(.dialog-header) { flex: none; }
+.form { display: grid; gap: .9rem; min-height: 0; overflow-y: auto; flex: 1 1 auto; }
+.form :global(.field-label) { margin: 0; }
+.intro { margin: 0; color: var(--muted); line-height: 1.6; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem 1rem; }
+.grid :global(.field-label) { min-width: 0; }
+.grid textarea { min-height: 70px; resize: vertical; }
+.hint { font-size: .78rem; line-height: 1.6; color: var(--muted); margin: -.3rem 0 0; }
+.sharing { border: 1px solid var(--line); border-radius: 10px; background: #f4f7f0; padding: .85rem; }
+.sharing strong { font-size: .875rem; }
+.sharing p { font-size: .8rem; line-height: 1.6; margin: .35rem 0 0; }
+.remember { justify-self: start; font-size: .8rem; }
+.storage { color: var(--muted); font-size: .75rem; line-height: 1.6; }
+.storage summary { cursor: pointer; display: list-item; list-style: disclosure-closed inside; }
+.storage[open] summary { list-style-type: disclosure-open; }
+.actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .65rem; padding: 1rem 1.5rem; flex: none; border-top: 1px solid var(--line); background: var(--surface, #fff); }
+.actions button { min-height: 44px; }
+.actionHint { flex: 1 0 100%; color: var(--muted); font-size: .75rem; line-height: 1.5; }
+@media(max-width:600px) { .grid { grid-template-columns: minmax(0,1fr); } .actions { justify-content: stretch; } .actions button { flex: 1 1 auto; } }

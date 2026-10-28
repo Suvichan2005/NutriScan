@@ -3,7 +3,7 @@ import { packageSchema, packageReconstructionContentSchema, calculationSchema } 
 import { parseLabel } from '../parser';
 import { applyNutrientCorrection } from '../correction';
 import { reconstructedIdentity } from '../reconstruction-presentation';
-import { convertPortion, portionView, scalePortion } from '../portion-view';
+import { calculatorPresentationForModel, convertPortion, portionView, portionViewKey, scalePortion } from '../portion-view';
 
 function fixture(basisUnit: 'g' | 'ml' = 'g') {
   const original = parseLabel(`Synthetic package\nNutrition per 100 ${basisUnit}\nCarbohydrate 30 g`, { origin: 'user' });
@@ -40,6 +40,7 @@ describe('evidence-owned portion presentation', () => {
     expect(convertPortion(3, pieces, grams)).toBe(36);
     expect(convertPortion(convertPortion(3, pieces, grams)!, grams, pieces)).toBe(3);
     expect(view.options.some(item => item.unit === 'ml')).toBe(false);
+    expect(calculatorPresentationForModel(calculation, pkg)).toMatchObject({ location: 'below-answer', initial: { amount: 3, unit: 'pieces' }, controls: { unitChoices: expect.arrayContaining([{ unit: 'pieces', label: 'rice cakes' }]) } });
   });
   it('preserves a fractional serving request instead of presenting it as grams or pieces', () => {
     const { pkg, calculation } = fixture();
@@ -51,8 +52,17 @@ describe('evidence-owned portion presentation', () => {
     const { pkg, calculation } = fixture();
     const changed = structuredClone(pkg); changed.reconstruction!.serving!.quantity = 25;
     expect(portionView(calculation, changed).options.map(item => item.unit)).toEqual(['g']);
+    expect(calculatorPresentationForModel(calculation, changed)).toBeNull();
+    expect(portionViewKey([calculation], changed)).not.toBe(portionViewKey([calculation], pkg));
     const corrected = applyNutrientCorrection(pkg, { key: 'carbohydrate', value: 15, unit: 'g', basisAmount: 100, basisUnit: 'g', sourceObservationIds: calculation.observationIds });
     expect(portionView(calculation, corrected).options.map(item => item.unit)).toEqual(['g']);
+  });
+  it('does not authorize old calculations that treated grams as counted items', () => {
+    const { pkg, calculation } = fixture();
+    pkg.reconstruction!.serving = { ...pkg.reconstruction!.serving!, printedText: 'Serving size: 24 g', quantity: 24, pieceCount: 24, pieceDescription: 'g' };
+    const invalid = calculationSchema.parse({ ...calculation, countedPortion: { ...calculation.countedPortion!, piecesPerServing: 24 }, portion: 3, result: .9 });
+    expect(calculatorPresentationForModel(invalid, pkg)).toBeNull();
+    expect(portionView(invalid, pkg).options.map(option => option.unit)).toEqual(['g']);
   });
   it('supports a partial liquid package only with its matching current net-content declaration', () => {
     const { pkg, calculation } = fixture('ml');
