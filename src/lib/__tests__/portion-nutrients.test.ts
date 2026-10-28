@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { packageSchema, packageReconstructionContentSchema, calculationSchema } from '../contracts';
 import { parseLabel } from '../parser';
 import { applyNutrientCorrection } from '../correction';
-import { portionNutrientChoices } from '../portion-nutrients';
+import { portionNutrientGroups, portionNutrientChoices } from '../portion-nutrients';
 import { portionView, scalePortion } from '../portion-view';
+import { executeGeminiTool } from '../server/gemini-tools';
 import { calculationHasPackageEvidence } from '../calculation-provenance';
 
 function fixture(basisUnit: 'g' | 'ml' = 'g') {
@@ -33,6 +34,34 @@ function extra(pkg: ReturnType<typeof fixture>['pkg'], edits = {}) {
 }
 
 describe('local nutrient exploration', () => {
+  it('selects once per nutrient while preserving agreeing printed bases in details', () => {
+    const {pkg,calculation}=fixture(); extra(pkg);extra(pkg,{rowId:'magnesium-serving',value:19.2,basisAmount:24});
+    const groups=portionNutrientGroups(pkg,[calculation]);
+    const magnesium=groups.find(item=>item.label==='Magnesium')!;
+    expect(groups).toHaveLength(2);expect(magnesium.alternatives).toHaveLength(2);
+    expect(magnesium.conflicted).toBe(false);expect(magnesium.calculation!.result).toBeCloseTo(28.8);
+    expect(magnesium.alternatives.map(item=>item.basis)).toEqual(['per 100 g','per 24 g']);
+  });
+  it('keeps inconsistent bases within one conditional nutrient instead of hiding the disagreement', () => {
+    const {pkg,calculation}=fixture();extra(pkg,{rowId:'carb-serving',nutrient:'Carbohydrate',nutrientKey:'carbohydrate',printedLabel:'Carbohydrate',value:15,unit:'g',basisAmount:24});
+    const groups=portionNutrientGroups(pkg,[calculation]);
+    expect(groups).toHaveLength(1);expect(groups[0].conflicted).toBe(true);expect(groups[0].alternatives).toHaveLength(2);
+    expect(groups[0].alternatives.map(item=>item.calculation!.result)).toEqual([10.8,22.5]);
+  });
+  it('calculates a broad nutrient request once per nutrient through count and package conversions',async()=>{
+    const {pkg,calculation}=fixture();extra(pkg);extra(pkg,{rowId:'magnesium-serving',value:19.2,basisAmount:24});
+    const context={question:'Show nutrients for five cakes and half a pack',package:pkg,visualImages:[],searchTerms:new Set<string>(),prepareImage:async()=>{throw Error('No photo request');}};
+    const pieces=await executeGeminiTool('calculate_nutrition',{amount:5,unit:'pieces'},context);
+    expect(pieces.status).toBe('ok');expect(pieces.calculations).toHaveLength(2);
+    expect(pieces.calculations!.map(item=>item.result)).toEqual([18,48]);
+    expect(pieces.calculations!.every(item=>item.countedPortion?.amount===5&&calculationHasPackageEvidence(item,{package:pkg}))).toBe(true);
+    const pack=await executeGeminiTool('calculate_nutrition',{amount:.5,unit:'package'},context);
+    expect(pack.calculations!.map(item=>item.result)).toEqual([30,80]);
+    expect((pack.output.calculations as typeof pack.calculations)!.every(item=>item.packagePortion?.packageCount===.5)).toBe(true);
+    pkg.reconstruction!.quantityDeclarations=[];
+    expect((await executeGeminiTool('calculate_nutrition',{amount:.5,unit:'package'},context)).status).toBe('withheld');
+    expect((await executeGeminiTool('calculate_nutrition',{amount:5,unit:'pieces'},context)).status).toBe('ok');
+  });
   it('keeps separately printed subcomponents distinct even with the same mapped nutrient key', () => {
     const { pkg, calculation } = fixture();
     extra(pkg, { rowId: 'soluble', nutrient: 'Fibre', nutrientKey: 'fiber', printedLabel: 'Soluble fibre', value: 1, unit: 'g' });

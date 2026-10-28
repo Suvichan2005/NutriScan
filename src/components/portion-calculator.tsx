@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Calculation, PackageData } from '@/lib/contracts';
 import { convertPortion, portionView, scalePortion, type PortionUnit } from '@/lib/portion-view';
-import { portionNutrientChoices } from '@/lib/portion-nutrients';
+import { portionNutrientGroups } from '@/lib/portion-nutrients';
 import { consistencyRange, packageConsistencyIssues } from '@/lib/package-consistency';
 import { PackageClarification, type ClarificationProps } from './package-clarification';
 import styles from './conversation-clarity.module.css';
@@ -15,7 +15,7 @@ export function PortionCalculator({ rows, pkg, onReview, initialPhysical, onAmou
   const start = !rows[0].countedPortion && !rows[0].packagePortion && initialPhysical?.unit === rows[0].portionUnit ? initialPhysical.amount : view.initial.amount;
   const [amount, setAmount] = useState(String(start));
   const [unit, setUnit] = useState<PortionUnit>(view.initial.unit);
-  const choices = portionNutrientChoices(pkg, rows);
+  const choices = portionNutrientGroups(pkg, rows);
   const defaults = choices.filter(choice => choice.initial && choice.calculation).map(({id,subject}) => ({id,subject}));
   const [selected, setSelected] = useState(defaults);
   const selectedIds = new Set(selected.flatMap(selection => {
@@ -54,7 +54,7 @@ export function PortionCalculator({ rows, pkg, onReview, initialPhysical, onAmou
     </div>
     <details className={`${styles.details} ${styles.nutrientPicker}`}><summary>Choose nutrients <span>{visible.length} selected</span></summary>
       <fieldset className={styles.nutrientChoices}><legend>Choose what to display</legend>
-        {choices.map(choice => <label key={choice.id}><input type="checkbox" checked={Boolean(choice.calculation && selectedIds.has(choice.id))} disabled={!choice.calculation} onChange={event => setSelected(current => event.target.checked ? [...current, {id:choice.id,subject:choice.subject}] : current.filter(selection => selection.id !== choice.id && !(selection.subject === choice.subject && !choices.some(item=>item.id===selection.id&&item.calculation))))}/><span>{choice.label}{(choice.reason || choices.filter(other => other.label === choice.label).length > 1) && <small>{choice.calculation ? `${number(choice.calculation.input)} ${choice.calculation.inputUnit} · ` : ''}{choice.basis}{choice.reason ? ` · ${choice.reason}` : ''}</small>}</span></label>)}
+        {choices.map(choice => <label key={choice.id}><input type="checkbox" checked={Boolean(choice.calculation && selectedIds.has(choice.id))} disabled={!choice.calculation} onChange={event => setSelected(current => event.target.checked ? [...current, {id:choice.id,subject:choice.subject}] : current.filter(selection => selection.id !== choice.id && !(selection.subject === choice.subject && !choices.some(item=>item.id===selection.id&&item.calculation))))}/><span>{choice.label}{choice.reason && <small>{choice.reason}</small>}</span></label>)}
       </fieldset>
       <div className={styles.nutrientActions}><button type="button" className="text-button" onClick={() => setSelected(choices.filter(choice => choice.calculation).map(({id,subject})=>({id,subject})))}>Show all available</button><button type="button" className="text-button" onClick={() => setSelected(defaults)}>Reset selection</button></div>
       <p className={styles.pickerHint}>Changes stay on your device. Missing values and printed limits cannot be used as exact amounts.</p>
@@ -67,12 +67,12 @@ export function PortionCalculator({ rows, pkg, onReview, initialPhysical, onAmou
       const value = valid && option ? scalePortion(row, Number(amount), option) : null;
       const issue = issues.find(item => item.readings.some(reading => row.interpretationIds?.includes(reading.row.rowId)));
       const range = issue && valid && option ? consistencyRange(issue, Number(amount) * option.quantity, option.basisUnit, row.unit) : null;
-      return <li key={choice.id}><span>{label(row)}{visible.filter(other => other.label === choice.label).length > 1 && <small className={styles.resultBasis}>{choice.basis}</small>}</span><strong>{range && range[0] !== range[1] ? `${number(range[0])}–${number(range[1])} ${row.unit}` : value === null ? 'Not calculated' : `${number(value)} ${row.unit}`}</strong>{range && <small className={styles.resultBasis}>Depends on the label reading</small>}</li>;
+      return <li key={choice.id}><span>{label(row)}</span><strong>{range && range[0] !== range[1] ? `${number(range[0])}–${number(range[1])} ${row.unit}` : value === null ? 'Not calculated' : `${number(value)} ${row.unit}`}</strong>{range && <small className={styles.resultBasis}>Depends on the label reading</small>}</li>;
     })}</ul>
     <PackageClarification pkg={pkg} ids={relevantIssueIds} onResolve={onResolveClarification} onInspect={onInspectEvidence}/>
     <details className={styles.details}><summary>Calculation &amp; label details</summary>
       {valid && option && <p>{number(Number(amount))} {option.label}{option.unit !== option.basisUnit ? ` = ${number(Number(amount) * option.quantity)} ${option.basisUnit}` : ''}{rows[0].countedPortion && option.basisUnit === rows[0].countedPortion.servingUnit ? ` · ${number(Number(amount) * option.quantity / rows[0].countedPortion.servingQuantity)} label servings` : ''}.</p>}
-      <ul>{displayed.map(row => <li key={row.id}>{label(row)}: {number(row.input)} {row.inputUnit} per {number(row.basisAmount)} {row.portionUnit}. {valid && option && option.basisUnit === row.portionUnit ? `${number(row.input)} × ${number(Number(amount) * option.quantity)} ÷ ${number(row.basisAmount)}.` : 'No mass-to-volume conversion is available.'}</li>)}</ul>
+      <ul>{visible.flatMap(choice => choice.alternatives.flatMap(alternative => alternative.calculation ? [alternative.calculation] : [])).map(row => <li key={row.id}>{label(row)}: {number(row.input)} {row.inputUnit} per {number(row.basisAmount)} {row.portionUnit}. {valid && option && option.basisUnit === row.portionUnit ? `${number(row.input)} × ${number(Number(amount) * option.quantity)} ÷ ${number(row.basisAmount)}.` : 'No mass-to-volume conversion is available.'}</li>)}</ul>
       <p>{estimated ? 'Calculated from label readings that have not been confirmed. Check the linked package details before relying on a disputed value.' : 'Calculated from the saved label values and their measurement basis.'} This calculation is not a recommended portion.</p>
       {onReview && <button type="button" className="text-button" onClick={onReview}>Review label values</button>}
     </details>

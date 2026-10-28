@@ -864,6 +864,13 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(explicit.evidence?.some(source => source.id === 'niddk-celiac-eating-2020')).toBe(false);
   });
 
+  it('retains explicitly stated dietary context for a focused follow-up without inventing a profile',async()=>{
+    const followup={...context('What if there are no alternatives?'),conversationContext:[{question:'How can an adult with diabetes approach refined-grain snacks?'}]};
+    const result=await executeGeminiTool('get_nutrition_guidance',{query:'carbohydrate quality portions',condition:'diabetes'},followup);
+    expect(result.evidence?.some(source=>source.id==='idf-healthy-nutrition-diabetes-2024')).toBe(true);
+    const unknown=await executeGeminiTool('get_nutrition_guidance',{query:'CKD potassium',condition:'CKD'},context('What if there are no alternatives?'));
+    expect(unknown.evidence).toEqual([]);
+  });
   it('uses only the user question or explicitly supplied profile, not invented tool arguments', async () => {
     const irrelevant = await executeGeminiTool('get_nutrition_guidance', {
       query: 'CKD sodium hypertension diabetes potassium',

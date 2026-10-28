@@ -4,6 +4,7 @@ import { reconstructionRowIsSuperseded } from './correction';
 import { packageWithRowCorrections } from './reconstruction-correction';
 import { calculateReconstructedRow } from './reconstruction-calculation';
 import { normalizeReconstructedServing, reconstructionNutrientSubject } from './portion';
+import { packageConsistencyIssues } from './package-consistency';
 
 export type PortionNutrientChoice = { id: string; subject: string; label: string; basis: string; calculation: Calculation | null; reason?: string; initial: boolean };
 const identity = (row: Calculation) => row.interpretationIds?.length === 1 ? `row:${row.interpretationIds[0]}` : `operation:${row.id}`;
@@ -52,6 +53,25 @@ export function portionNutrientChoices(original: PackageData, supplied: Calculat
     const source = pkg.reconstruction?.nutritionRows.find(row => choice.id === `row:${row.rowId}`);
     const conflict = source && pkg.reconstruction?.nutritionRows.some(other => contradictory(source, other));
     return conflict ? { ...choice, reason: 'Different saved reading' } : choice;
+  });
+}
+
+export type PortionNutrientGroup = PortionNutrientChoice & { alternatives: PortionNutrientChoice[]; conflicted: boolean };
+
+/** Selection is by nutrient identity; printed columns remain independently inspectable evidence. */
+export function portionNutrientGroups(pkg: PackageData, supplied: Calculation[]): PortionNutrientGroup[] {
+  const groups = new Map<string, PortionNutrientChoice[]>();
+  for (const choice of portionNutrientChoices(pkg, supplied)) groups.set(choice.subject, [...(groups.get(choice.subject) ?? []), choice]);
+  const issues = packageConsistencyIssues(pkg);
+  return [...groups].map(([subject, alternatives]) => {
+    const available = alternatives.filter(choice => choice.calculation);
+    const preferred = available.find(choice => choice.calculation!.inputOrigin === 'user-correction')
+      ?? available.find(choice => choice.calculation!.basisAmount === 100)
+      ?? available[0] ?? alternatives[0];
+    const conflicted = issues.some(issue => issue.subject === subject);
+    return { ...preferred, id: `nutrient:${subject}`, subject, alternatives, conflicted,
+      initial: alternatives.some(choice => choice.initial),
+      reason: conflicted ? 'Different saved readings' : preferred.calculation ? undefined : preferred.reason };
   });
 }
 
