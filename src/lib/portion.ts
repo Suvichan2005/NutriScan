@@ -110,12 +110,17 @@ export function reconstructedNutrientKey(value: string): NutrientKey | null {
   )) ?? null;
 }
 
-function reconstructedNutrientComponent(key:NutrientKey,row:Pick<NonNullable<PackageData['reconstruction']>['nutritionRows'][number],'nutrient'|'printedLabel'>):string{
+export function reconstructedNutrientComponent(key:NutrientKey,row:Pick<NonNullable<PackageData['reconstruction']>['nutritionRows'][number],'nutrient'|'printedLabel'>):string{
   if(key!=='fiber')return key;
   const label=`${row.nutrient} ${row.printedLabel}`.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[_-]+/g,' ');
   if(/\binsoluble\b/.test(label))return 'fiber:insoluble';
   if(/\bsoluble\b/.test(label))return 'fiber:soluble';
   return 'fiber:total';
+}
+
+export function reconstructionNutrientSubject(row: Pick<NonNullable<PackageData['reconstruction']>['nutritionRows'][number], 'nutrient' | 'printedLabel' | 'nutrientKey'>): string {
+  const key = row.nutrientKey ?? reconstructedNutrientKey(row.nutrient) ?? reconstructedNutrientKey(row.printedLabel);
+  return key ? reconstructedNutrientComponent(key, row) : `printed:${(row.nutrient || row.printedLabel).normalize('NFKC').toLocaleLowerCase('en').replace(/\s+/g, ' ').trim()}`;
 }
 
 /**

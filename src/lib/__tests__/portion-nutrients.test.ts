@@ -73,9 +73,9 @@ describe('local nutrient exploration', () => {
     expect(choices.find(item => item.id === 'row:limit')!.reason).toMatch(/limit/);
     expect(choices.find(item => item.id === 'row:zero')!.calculation!.result).toBe(0);
   });
-  it('withholds same-basis contradictory readings including an initially supplied operation', () => {
+  it('preserves conditional arithmetic for concrete alternative readings' , () => {
     const { pkg, calculation } = fixture(); extra(pkg, { rowId: 'conflicting-carb', nutrient: 'Carbohydrate', nutrientKey: 'carbohydrate', printedLabel: 'Carbohydrate', value: 45, unit: 'g' });
-    expect(portionNutrientChoices(pkg, [calculation]).every(item => item.calculation === null)).toBe(true);
+    expect(portionNutrientChoices(pkg, [calculation]).every(item => item.calculation !== null && item.reason === 'Different saved reading')).toBe(true);
   });
   it('does not assume mass/volume equivalence or permit percentage quantities', () => {
     const { pkg, calculation } = fixture('ml'); extra(pkg, { basisUnit: 'g' }); extra(pkg, { rowId: 'percent', unit: '%' });
@@ -94,4 +94,3 @@ describe('local nutrient exploration', () => {
     expect(portionNutrientChoices(pkg, [calculation]).filter(item => !item.initial).every(item => item.calculation === null)).toBe(true);
   });
 });
-

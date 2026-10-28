@@ -15,7 +15,7 @@ export function calculateReconstructedRow(row:NonNullable<PackageData['reconstru
   if(!calculableNutrientUnits.some(unit=>unit===row.unit))return withheld('The saved row does not use a supported absolute nutrient unit. Percentages and reference-intake percentages are not nutrient quantities.');
   const massConflict=nutrientMassConflict({...row,nutrientKey:row.nutrientKey??nutrient});
   if(massConflict)return withheld(massConflict);
-  const corrected=pkg.reconstructionCorrections?.some(item=>item.rowId===row.rowId&&row.evidence.observationIds.includes(item.observationId));
+  const corrected=pkg.reconstructionCorrections?.some(item=>item.rowId===row.rowId&&row.evidence.observationIds.includes(item.observationId))||pkg.nutrients.some(item=>item.status==='corrected'&&item.key===nutrient&&item.value===row.value&&item.unit===row.unit&&item.basis?.amount===row.basisAmount&&item.basis?.unit===row.basisUnit&&item.observationIds.some(id=>observationIds.includes(id)));
   const result=row.value*args.amount/row.basisAmount;
   if(!Number.isFinite(result)||result>100000)return withheld('The requested calculation exceeds validated numeric limits.');
   const calculation=calculationSchema.parse({
@@ -31,4 +31,3 @@ export function calculateReconstructedRow(row:NonNullable<PackageData['reconstru
   const linked={...calculation,evidenceText:calculationEvidenceText(calculation)};
   return{status:'ok',resultCount:1,calculations:[linked],output:{status:'ok',calculation:linked,note:'Calculated from the exact saved nutrition row. This estimate remains provisional; it does not confirm or overwrite the package reading.'}};
 }
-

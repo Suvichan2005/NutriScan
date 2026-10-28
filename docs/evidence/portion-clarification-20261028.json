@@ -1,0 +1,79 @@
+{
+  "kind": "development-product-polish",
+  "date": "2026-10-28",
+  "privateArtifacts": ".data/nutrient-explorer-20261028/",
+  "scope": [
+    "multi-nutrient selection",
+    "evidence-backed portion conversions",
+    "collaborative numeric consistency",
+    "Vision photo inspection",
+    "saved clarification continuity"
+  ],
+  "realProviderCheck": {
+    "input": "Illustrative development snack text; fictional non-health question",
+    "model": "gemini-3.8-flash",
+    "scope": "Initial calculator request before clarification polish",
+    "completedGenerations": 3,
+    "failedFreeAttempts": 1,
+    "estimatedUsd": 0.014495850000000001,
+    "requestId": "8e6da2df-c36c-42a5-9843-6e1a2e7ae14a",
+    "notGoogleBilling": true
+  },
+  "browserAcceptance": {
+    "input": "Clearly marked synthetic label image; deliberately inconsistent columns",
+    "analysisResponse": "Locally intercepted fixture, not Gemini output",
+    "ocrObservations": 0,
+    "desktop": {
+      "width": 1440,
+      "height": 900
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390
+    },
+    "units": [
+      "g",
+      "servings",
+      "pieces",
+      "packages"
+    ],
+    "pendingSixPieceCarbohydrateG": [
+      25.44258,
+      27.84
+    ],
+    "confirmedSixPieceCarbohydrateG": 27.84,
+    "confirmedPortionRetained": {
+      "amount": 6,
+      "unit": "pieces",
+      "massG": 40.2
+    },
+    "additionalSixPieceResults": {
+      "proteinG": 4.02,
+      "sodiumMg": 201,
+      "magnesiumMg": 32.16
+    },
+    "skipAndRevisit": true,
+    "sourcePhotoFromInspector": true,
+    "escapeRestoresFocus": true,
+    "savedAndReopened": true,
+    "reopenedHalfPackageCarbohydrateG": 20.776119402985074,
+    "repeatedClarificationAfterReopen": false,
+    "laterProviderCalls": 0
+  },
+  "offlineChecks": {
+    "testsPassed": 946,
+    "testsSkipped": 2,
+    "typeScript": "passed",
+    "optimizedBuild": "passed",
+    "reusedBuildDirectory": ".data/study-staging-build",
+    "ownerOverlaysPreserved": true
+  },
+  "limitations": [
+    "Synthetic UI acceptance is not photo reconstruction accuracy or independent ground truth.",
+    "No fresh Gemini adherence check for the new clarification tool or scientific/absence-claim instruction.",
+    "Arithmetic consistency does not establish which printed digit is correct.",
+    "Changed additive names are investigation leads, including possible synonyms; no new scientific or regulatory verdict.",
+    "Transient nutrient selections and portion exploration are not saved per message; confirmed readings and their consequences persist."
+  ]
+}

@@ -36,6 +36,34 @@
 .nutrientChoices small, .resultBasis { display: block; color: #52604e; font-size: .75rem; font-weight: 400; margin-top: .15rem; }
 .nutrientChoices label:has(input:disabled) { color: #62685f; cursor: default; }
 .nutrientActions { display: flex; flex-wrap: wrap; gap: .8rem; }
+.nutrientPicker { border-block: 1px solid #e8ece4; padding: .7rem 0; }
+.nutrientPicker summary { display: flex; justify-content: space-between; align-items: center; gap: .6rem; }
+.nutrientPicker summary span { color: #66715f; font-size: .75rem; }
+.nutrientChoices { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .5rem; }
+.nutrientChoices legend { grid-column: 1/-1; }
+.nutrientChoices label { border: 1px solid #d9dfd5; border-radius: 9px; padding: .55rem; font-size: .85rem; min-width: 0; }
+.nutrientChoices label:has(input:checked) { background: #edf4e8; border-color: #739764; }
+.nutrientChoices label:has(input:focus-visible) { outline: 2px solid #285c40; outline-offset: 2px; }
+.nutrientChoices input { accent-color: #285c40; }
+.nutrientChoices span { overflow-wrap: anywhere; }
+.pickerHint { font-size: .75rem; color: #52604e; line-height: 1.5; }
+.portionSummary { font-size: .8rem; color: #52604e; margin: 1rem 0 .5rem; }
+.resultGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .6rem; }
+.resultGrid li { display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; border: 0; background: #f5f7f2; border-radius: 9px; padding: .8rem; min-width: 0; }
+.resultGrid li > span { font-size: .8rem; color: #52604e; }
+.resultGrid strong { font-size: 1.25rem; white-space: normal; overflow-wrap: anywhere; }
+.resultGrid li:has(>small) { grid-column: 1/-1; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.clarification { margin: 1rem 0; padding: 1rem; border: 1px solid #d9dfd5; border-radius: 10px; background: #fafbf7; }
+.clarification p { font-size: .85rem; line-height: 1.6; color: #52604e; }
+.clarification fieldset { border: 0; padding: 0; margin: .6rem 0; min-width: 0; }
+.readingOption { display: flex; align-items: center; justify-content: space-between; gap: .6rem; border: 1px solid #d9dfd5; border-radius: 8px; margin: .5rem 0; padding: .55rem; }
+.readingOption:has(input:checked) { background: #edf4e8; border-color: #739764; }
+.readingOption label, .customReading { display: flex; align-items: center; gap: .6rem; min-height: 44px; cursor: pointer; }
+.readingOption input, .customReading input { accent-color: #285c40; }
+.readingOption small { display: block; font-size: .75rem; color: #52604e; margin-top: .2rem; }
+.readingOption button { flex-shrink: 0; font-size: .75rem; }
+.clarificationSummary { display: flex; justify-content: space-between; align-items: center; gap: .7rem; margin: 1rem 0; font-size: .8rem; color: #52604e; }
 .packageNote { padding: .7rem .8rem; margin: .8rem 0 1rem; background: #f4f7f0; border-radius: 8px; font-size: .85rem; line-height: 1.6; color: #52604e; }
 .package { min-width: 0; padding-inline-end: .25rem; box-sizing: border-box; }
 .package > header > div { min-width: 0; }

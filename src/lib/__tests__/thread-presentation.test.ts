@@ -265,7 +265,7 @@ describe('operation-bound nutrition UI', () => {
     const servingCalculation: Calculation = {
       id: 'serving-carbohydrate', label: 'Carbohydrate per serving', nutrient: 'carbohydrate', input: 69.29, inputUnit: 'g', basisAmount: 100,
       portion: 13.4, portionUnit: 'g', result: 9.28486, unit: 'g', formula: '69.29 g × 13.4 g ÷ 100 g',
-      observationIds: ['ocr-carbohydrate'], imageIds: ['package-back'], interpretationIds: ['carbohydrate-row'], assumptions: ['Unverified package interpretation.'],
+      observationIds: ['carbohydrate-line'], imageIds: ['package-back'], interpretationIds: ['carbohydrate-row'], assumptions: ['Unverified package interpretation.'],
     };
     const result = prepareAssistantTurnPresentation([], [servingCalculation], reconstructionPackage());
     expect(result.calculations).toContainEqual(servingCalculation);

@@ -14,15 +14,19 @@ export function portionView(calculation: Calculation, pkg: PackageData) {
   const linked = calculationHasPackageEvidence(calculation, { package: pkg });
   const serving = pkg.reconstruction?.current ? normalizeReconstructedServing(pkg.reconstruction.serving) : null;
   const count = calculation.countedPortion;
-  if (linked && count && serving) {
-    options.push({ unit: 'servings', label: 'servings', quantity: count.servingQuantity, basisUnit: count.servingUnit });
+  const retainedObservations = new Set(pkg.observations.map(item => item.id));
+  const retainedImages = new Set([...pkg.observations.flatMap(item => item.imageId ? [item.imageId] : []), ...(pkg.visionCaptures ?? []).map(item => item.imageId), ...(pkg.ocrCaptures ?? []).map(item => item.imageId)]);
+  const evidenced = (evidence: { observationIds: string[]; imageRegions: { imageId: string }[] }) => evidence.observationIds.some(id => retainedObservations.has(id)) || evidence.imageRegions.some(region => retainedImages.has(region.imageId));
+  if (linked && serving && ['clear', 'provisional'].includes(serving.status) && serving.quantity && serving.unit === calculation.portionUnit && evidenced(serving.evidence)) {
+    options.push({ unit: 'servings', label: 'servings', quantity: serving.quantity, basisUnit: serving.unit });
     if (serving.pieceCount && serving.pieceCount > 0) options.push({
       unit: 'pieces', label: serving.pieceDescription?.trim().toLocaleLowerCase('en') || 'pieces',
-      quantity: count.servingQuantity / serving.pieceCount, basisUnit: count.servingUnit,
+      quantity: serving.quantity / serving.pieceCount, basisUnit: serving.unit,
     });
   }
-  if (linked && calculation.packagePortion) options.push({
-    unit: 'packages', label: 'packages', quantity: calculation.packagePortion.netContentPerPackage, basisUnit: calculation.packagePortion.unit,
+  const contents = pkg.reconstruction?.current ? (pkg.reconstruction.quantityDeclarations ?? []).filter(item => item.kind === 'net-content' && ['clear', 'provisional'].includes(item.status) && item.quantity && item.unit === calculation.portionUnit && evidenced(item.evidence)) : [];
+  if (linked && contents.length === 1) options.push({
+    unit: 'packages', label: 'packages', quantity: contents[0].quantity!, basisUnit: calculation.portionUnit,
   });
   const initial = linked && count ? { amount: count.amount, unit: count.unit as PortionUnit }
     : linked && calculation.packagePortion ? { amount: calculation.packagePortion.packageCount, unit: 'packages' as PortionUnit }
@@ -41,9 +45,9 @@ export function scalePortion(calculation: Calculation, amount: number, option: P
   return scaleCalculationToPortion(calculation, amount * option.quantity, option.basisUnit);
 }
 
-/** Reset an edited card when its numerical inputs or available conversion evidence change. */
+/** Retain the selected amount through nutrient edits; reset only when conversion context changes. */
 export function portionViewKey(rows: Calculation[], pkg: PackageData): string {
-  return JSON.stringify([rows.map(row => [row.id, row.input, row.inputUnit, row.basisAmount, row.portion, row.result, row.unit, row.inputOrigin]), portionView(rows[0], pkg)]);
+  return JSON.stringify([rows.map(row => [row.id, row.portionUnit]), portionView(rows[0], pkg)]);
 }
 
 /** Tell the agent about the same evidenced controls the application actually renders. */

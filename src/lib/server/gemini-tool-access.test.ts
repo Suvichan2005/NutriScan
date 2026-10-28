@@ -7,8 +7,8 @@ import {resetGeminiUsageLedgerForTests} from './gemini-provider';
 afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();});
 it('keeps ingredient, condition guidance and detailed core sources accessible in ordinary mode',()=>{
  const ordinary=selectAgentTools(geminiToolDeclarations,true),full=selectAgentTools(geminiToolDeclarations,true,{mode:'specialized'});
- expect(ordinary.names).toHaveLength(12);expect(full.names).toHaveLength(20);expect(ordinary.schemaBytes).toBeLessThan(full.schemaBytes);
- expect(ordinary.names).toEqual(expect.arrayContaining(['get_nutrition_guidance','search_knowledge','get_guideline_pages','get_ingredient_concept','calculate_nutrition','get_product_record','get_food_composition_record']));
+ expect(ordinary.names).toHaveLength(13);expect(full.names).toHaveLength(21);expect(ordinary.schemaBytes).toBeLessThan(full.schemaBytes);
+ expect(ordinary.names).toEqual(expect.arrayContaining(['clarify_package_reading','get_nutrition_guidance','search_knowledge','get_guideline_pages','get_ingredient_concept','calculate_nutrition','get_product_record','get_food_composition_record']));
  expect(ordinary.names).not.toContain('search_jecfa');expect(full.names).toContain('search_jecfa');
  expect(selectAgentTools(geminiToolDeclarations,false).names).not.toContain('inspect_package_image');
 });

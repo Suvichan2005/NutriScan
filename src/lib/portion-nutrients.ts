@@ -1,10 +1,11 @@
-import { calculationSchema, type Calculation, type PackageData } from './contracts';
+import { calculationEvidenceText, calculationSchema, type Calculation, type PackageData } from './contracts';
 import { calculationHasPackageEvidence } from './calculation-provenance';
 import { reconstructionRowIsSuperseded } from './correction';
 import { packageWithRowCorrections } from './reconstruction-correction';
 import { calculateReconstructedRow } from './reconstruction-calculation';
+import { normalizeReconstructedServing, reconstructionNutrientSubject } from './portion';
 
-export type PortionNutrientChoice = { id: string; label: string; basis: string; calculation: Calculation | null; reason?: string; initial: boolean };
+export type PortionNutrientChoice = { id: string; subject: string; label: string; basis: string; calculation: Calculation | null; reason?: string; initial: boolean };
 const identity = (row: Calculation) => row.interpretationIds?.length === 1 ? `row:${row.interpretationIds[0]}` : `operation:${row.id}`;
 type PrintedRow = NonNullable<PackageData['reconstruction']>['nutritionRows'][number];
 const printedIdentity = (row: PrintedRow) => `${row.nutrient}\n${row.printedLabel}`.normalize('NFKC').toLocaleLowerCase('en').replace(/\s+/g, ' ').trim();
@@ -19,20 +20,24 @@ export function portionNutrientChoices(original: PackageData, supplied: Calculat
     if (calculation.portionUnit !== anchor.portionUnit || !calculationHasPackageEvidence(calculation, { package: pkg })) return;
     const source = pkg.reconstruction?.nutritionRows.find(row => calculation.interpretationIds?.includes(row.rowId));
     const id = identity(calculation);
-    choices.set(id, { id, label: source?.printedLabel || source?.nutrient || calculation.nutrientLabel || calculation.nutrient || calculation.label,
+    choices.set(id, { id, subject: source ? reconstructionNutrientSubject(source) : calculation.nutrient ?? calculation.nutrientLabel ?? id, label: source?.printedLabel || source?.nutrient || calculation.nutrientLabel || calculation.nutrient || calculation.label,
       basis: `per ${calculation.basisAmount} ${calculation.portionUnit}`, calculation, initial: initial || choices.get(id)?.initial || false });
   };
-  supplied.forEach(row => add(row, true));
+  const initiallyShown = new Set<string>();
+  supplied.forEach(row => {
+    const source = pkg.reconstruction?.nutritionRows.find(item=>row.interpretationIds?.includes(item.rowId));
+    const subject = source ? reconstructionNutrientSubject(source) : row.nutrient ?? row.nutrientLabel ?? row.id;
+    add(row, !initiallyShown.has(subject)); if(choices.get(identity(row))?.calculation)initiallyShown.add(subject);
+  });
   if (pkg.reconstruction?.current) for (const row of pkg.reconstruction.nutritionRows) {
     const id = `row:${row.rowId}`;
     if (choices.has(id)) continue;
-    const directlyCorrected = pkg.reconstructionCorrections?.some(edit => edit.rowId === row.rowId && row.evidence.observationIds.includes(edit.observationId));
-    const competing = pkg.reconstruction.nutritionRows.some(other => contradictory(row, other));
-    const unavailable = !directlyCorrected && reconstructionRowIsSuperseded(pkg, row) ? 'Replaced by your correction' : competing ? 'Conflicting readings for this basis' : null;
+    const directlyCorrected = pkg.reconstructionCorrections?.some(edit => edit.rowId === row.rowId && row.evidence.observationIds.includes(edit.observationId)) || pkg.nutrients.some(item => item.status === 'corrected' && item.key === row.nutrientKey && item.value === row.value && item.unit === row.unit && item.basis?.amount === row.basisAmount && item.basis?.unit === row.basisUnit && item.observationIds.some(id => row.evidence.observationIds.includes(id)));
+    const unavailable = !directlyCorrected && reconstructionRowIsSuperseded(pkg, row) ? 'Replaced by your correction' : null;
     const result = unavailable ? null : calculateReconstructedRow(row, row.nutrientKey ?? null, { amount: anchor.portion, unit: anchor.portionUnit }, pkg);
     const calculation = result?.calculations?.[0] ?? null;
     if (calculation && calculationHasPackageEvidence(calculation, { package: pkg })) add(calculation);
-    else choices.set(id, { id, label: row.printedLabel || row.nutrient, basis: row.basisAmount && row.basisUnit ? `per ${row.basisAmount} ${row.basisUnit}` : 'Basis missing', calculation: null, initial: false,
+    else choices.set(id, { id, subject: reconstructionNutrientSubject(row), label: row.printedLabel || row.nutrient, basis: row.basisAmount && row.basisUnit ? `per ${row.basisAmount} ${row.basisUnit}` : 'Basis missing', calculation: null, initial: false,
       reason: unavailable || (row.qualifier ? 'A limit, not an exact amount' : row.basisUnit && row.basisUnit !== anchor.portionUnit ? 'Different measurement dimension' : row.value === null ? 'Value missing' : 'Needs a readable value and linked basis') });
   }
   // Current explicit corrections (and original observations before reconstruction) remain usable.
@@ -46,6 +51,40 @@ export function portionNutrientChoices(original: PackageData, supplied: Calculat
   return [...choices.values()].map(choice => {
     const source = pkg.reconstruction?.nutritionRows.find(row => choice.id === `row:${row.rowId}`);
     const conflict = source && pkg.reconstruction?.nutritionRows.some(other => contradictory(source, other));
-    return conflict ? { ...choice, calculation: null, reason: 'Conflicting readings for this basis' } : choice;
+    return conflict ? { ...choice, reason: 'Different saved reading' } : choice;
+  });
+}
+
+/** Recompute an existing operation after a correction, without rewriting its historical prose. */
+export function refreshPortionCalculations(original: PackageData, operations: Calculation[]): Calculation[] {
+  const pkg = packageWithRowCorrections(original);
+  const sourceRows = [...(original.reconstruction?.nutritionRows ?? []), ...(original.reconstructionHistory ?? []).flatMap(item => item.nutritionRows), ...(original.reconstructionCorrections ?? []).map(item => item.original)];
+  const subject = (calculation: Calculation) => {
+    const row = sourceRows.find(item => calculation.interpretationIds?.includes(item.rowId));
+    return row ? reconstructionNutrientSubject(row) : calculation.nutrient ? reconstructionNutrientSubject({ nutrient: calculation.nutrient, printedLabel: calculation.nutrient, nutrientKey: calculation.nutrient }) : null;
+  };
+  const ordered = [...operations.filter(operation => calculationHasPackageEvidence(operation, { package: pkg })), ...operations.filter(operation => !calculationHasPackageEvidence(operation, { package: pkg }))];
+  return ordered.flatMap(operation => {
+    if (calculationHasPackageEvidence(operation, { package: pkg })) return [operation];
+    const family = subject(operation);
+    if (!family) return [];
+    let candidates = portionNutrientChoices(pkg, [operation]).flatMap(item => item.calculation && subject(item.calculation) === family ? [item.calculation] : []);
+    const corrected = candidates.filter(item => item.inputOrigin === 'user-correction');
+    if (corrected.length) candidates = corrected;
+    else candidates = candidates.filter(item => item.basisAmount === operation.basisAmount && item.inputUnit === operation.inputUnit);
+    if (candidates.length !== 1) return [];
+    const next = { ...candidates[0], id: operation.id };
+    const serving = pkg.reconstruction?.current ? normalizeReconstructedServing(pkg.reconstruction.serving) : null;
+    const count = operation.countedPortion;
+    const contents = pkg.reconstruction?.quantityDeclarations?.filter(item => item.kind === 'net-content') ?? [];
+    const evidence = [];
+    if (count && serving?.quantity === count.servingQuantity && serving.unit === count.servingUnit && (count.unit !== 'pieces' || serving.pieceCount === count.piecesPerServing)) { next.countedPortion = count; evidence.push(serving.evidence); }
+    const pack = operation.packagePortion;
+    if (pack && contents.length === 1 && contents[0].quantity === pack.netContentPerPackage && contents[0].unit === pack.unit) { next.packagePortion = pack; evidence.push(contents[0].evidence); }
+    next.observationIds = [...new Set([...next.observationIds, ...evidence.flatMap(item => item.observationIds)])];
+    next.imageIds = [...new Set([...(next.imageIds ?? []), ...evidence.flatMap(item => item.imageRegions.map(region => region.imageId))])];
+    next.evidenceText = calculationEvidenceText(next);
+    const parsed = calculationSchema.safeParse(next);
+    return parsed.success && calculationHasPackageEvidence(parsed.data, { package: pkg }) ? [parsed.data] : [];
   });
 }

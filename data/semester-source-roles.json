@@ -195,7 +195,8 @@
       "lookup_product",
       "get_product_record",
       "search_food_composition",
-      "get_food_composition_record"
+      "get_food_composition_record",
+      "clarify_package_reading"
     ],
     "specialized": "All existing native source tools when explicitly selected; preserve detail interfaces.",
     "research": "Explicit frozen subsets for each experiment; no extra intent-routing model call.",

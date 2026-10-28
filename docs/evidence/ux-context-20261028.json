@@ -100,5 +100,6 @@
   "protectedSource": {
     "next-env.d.ts": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
     "src/app/globals.css": "f0dd350b51c249dc0ec9a0708cda57a9915ecfc93882e533682ac47dba8d5a60"
-  }
+  },
+  "ownerClarification": "Owner subsequently confirmed that the earlier original-tab navigation was an intentional new investigation, not a demonstrated hot-refresh reset."
 }

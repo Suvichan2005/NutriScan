@@ -1,3 +1,4 @@
+import { packageConsistencyIssues, consistencyEstimates } from '../package-consistency';
 import { calculateReconstructedRow as calculateSavedRow } from '../reconstruction-calculation';
 import {nutrientMassConflict} from '../nutrient-mass';
 import { packageWithRowCorrections } from '../reconstruction-correction';
@@ -101,6 +102,7 @@ const cropParameters = {
 };
 
 export const geminiToolDeclarations: FunctionDeclaration[] = [
+ {name:'clarify_package_reading',description:'Show an optional inline choice for a supplied nutrition-consistency issue only when it materially affects this question. Use the exact issueId from package consistency metadata. This never waits for the user: continue with a useful conditional answer and explicit assumptions or returned alternative estimates. Do not repeat skipped or confirmed questions.',parameters:{type:Type.OBJECT,properties:{issueId:{type:Type.STRING}},required:['issueId']}},
  {name:'search_guideline_documents',description:'Search complete pinned WHO guideline text locally: carbohydrate quality (2023), saturated/trans-fat quality and replacement (2023), lower-sodium salt substitutes (2025). No query lists the catalog. Default recommendations scope includes primary recommendations and remarks; all scope includes the full document. Navigation previews are incomplete: use get_guideline_pages for complete population, strength, exceptions and numeric context. This is general guidance, not individualized treatment.',parameters:{type:Type.OBJECT,properties:{query:{type:Type.STRING},documentId:{type:Type.STRING,enum:guidelineCatalog.map(d=>d.id),description:'Exact catalog machine ID, not the document title.'},scope:{type:Type.STRING,enum:['recommendations','all']},limit:{type:Type.INTEGER}}}},
  {name:'get_guideline_pages',description:'Read 1–3 complete PDF text-layer pages from a selected local WHO guideline. Retains source hash, publication, rights, PDF page and full passage attribution. Read adjoining scope/remarks before applying a number. Differentiate adult/child targets, strong/conditional advice, naturally occurring fibre versus extracts, discretionary salt versus manufactured-food salt, and excluded populations. No automatic personal target.',parameters:{type:Type.OBJECT,properties:{documentId:{type:Type.STRING,enum:guidelineCatalog.map(d=>d.id),description:'Exact catalog machine ID, not the document title.'},pages:{type:Type.ARRAY,minItems:'1',maxItems:'3',items:{type:Type.INTEGER},description:'One to three PDF page numbers returned by search/catalog, not printed page labels.'}},required:['documentId','pages']}},
  {name:'search_jecfa',description:'Search WHO JECFA by a substance name or CAS number. Returns identity candidates and record IDs, not personal safety or Indian authorization. Resolve similar salts/mixtures carefully.',parameters:{type:Type.OBJECT,properties:{query:{type:Type.STRING},offset:{type:Type.INTEGER},limit:{type:Type.INTEGER}},required:['query']}},
@@ -136,6 +138,7 @@ export type GeminiToolImage = {
 export type GeminiToolResult = {
   output: Record<string, unknown>;
   evidence?: EvidenceSource[];
+  clarificationIds?: string[];
   calculations?: Calculation[];
   image?: { mimeType: 'image/jpeg'; base64: string };
   /** Canonical terms returned by a successful local identity lookup; only these may extend later research queries. */
@@ -1189,9 +1192,21 @@ export async function executeGeminiTool(name: string, args: unknown, context: Ge
       const parsed=toolArgs.get_assessment_records.safeParse(args);
       return parsed.success?getAssessmentRecords(parsed.data):{status:'error',resultCount:0,output:{status:'invalid_arguments',message:'Select an exact EFSA substance ID, section and bounded source-record page.'}};
     }
+    case 'clarify_package_reading': {
+      const parsed=z.object({issueId:z.string().min(1).max(100)}).strict().safeParse(args);
+      const issue=parsed.success?packageConsistencyIssues(context.package).find(item=>item.id===parsed.data.issueId):undefined;
+      if(!issue||issue.decision)return{status:'withheld',resultCount:0,output:{status:'not_pending',message:'This detail is not pending. Continue from the saved package and stated assumptions.'}};
+      return{status:'ok',resultCount:1,clarificationIds:[issue.id],output:{status:'ok',clarification:issue,message:'An optional card is displayed. Do not wait: answer conditionally using the retained readings. No value is verified by displaying the card.'}};
+    }
     case 'calculate_nutrition': {
       const parsed = toolArgs.calculate_nutrition.safeParse(args);
-      return parsed.success ? calculateNutrition(parsed.data, context) : { status: 'error', resultCount: 0, output: { status: 'invalid_arguments', message: 'The nutrition calculation arguments were invalid.' } };
+      if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments',message:'The nutrition calculation arguments were invalid.'}};
+      const result=calculateNutrition(parsed.data,context);
+      const issues=packageConsistencyIssues(context.package).filter(issue=>parsed.data.nutrient===issue.subject||issue.readings.some(reading=>reading.row.rowId===parsed.data.candidateId)||(result.calculations??[]).some(calc=>issue.readings.some(reading=>calc.interpretationIds?.includes(reading.row.rowId))));
+      if(!issues.length)return result;
+      const alternatives=issues.flatMap(issue=>issue.readings.filter(reading=>reading.current).flatMap(reading=>calculateNutrition({...parsed.data,nutrient:undefined,candidateId:reading.row.rowId},context).calculations??[]));
+      const calculations=[...(result.calculations??[]),...alternatives].filter((item,index,all)=>all.findIndex(other=>other.input===item.input&&other.inputUnit===item.inputUnit&&other.basisAmount===item.basisAmount&&other.portion===item.portion&&other.portionUnit===item.portionUnit&&JSON.stringify(other.interpretationIds)===JSON.stringify(item.interpretationIds))===index);
+      return{...result,...(calculations.length?{status:'ok' as const,resultCount:calculations.length,calculations}:{}),output:{...result.output,...(calculations.length?{status:'ok',conditionalCalculations:calculations}:{}),consistency:issues.map(issue=>({id:issue.id,label:issue.label,decision:issue.decision?.decision??'pending',alternatives:calculations.length?consistencyEstimates(issue,calculations[0].portion,calculations[0].portionUnit):[]})),instruction:'Use conditional estimates and explicit assumptions. An inline review is optional; continue answering now.'}};
     }
     case 'search_guideline_documents': {
       const parsed=toolArgs.search_guideline_documents.safeParse(args);if(!parsed.success)return{status:'error',resultCount:0,output:{status:'invalid_arguments',issues:parsed.error.issues.slice(0,4).map(issue=>({field:issue.path.join('.'),message:issue.message})),availableDocuments:guidelineCatalog,message:'Use an exact catalog documentId (not title), or omit the search documentId; request at most three distinct PDF pages.'}};const result=await searchGuidelines(parsed.data);return{status:result.status==='ok'?'ok':result.status==='empty'?'empty':'unavailable',resultCount:result.results.length,output:result};

@@ -1,3 +1,4 @@
+import { refreshPortionCalculations } from './portion-nutrients';
 import type { AssistantUiComponent, Calculation, Observation, PackageData, SavedConversationTurn, TentativeStructuredCandidate } from './contracts';
 import { calculationsFromReconstruction, normalizeReconstructedServing } from './portion';
 import { calculationRespectsCorrections } from './correction';
@@ -96,10 +97,10 @@ export function savedConversationTurns(messages: ThreadMessage[]): SavedConversa
 }
 
 /** Keep historical answers visible without presenting their old package basis as current. */
-export function supersedePackageAnswers(messages: ThreadMessage[], currentTurnAt?: string): ThreadMessage[] {
+export function supersedePackageAnswers(messages: ThreadMessage[], currentTurnAt?: string, keepLocalCalculator = false): ThreadMessage[] {
   return messages.map(message => message.at === currentTurnAt
     ? { ...message, outdated: false }
-    : { ...message, outdated: true, uiComponents: undefined });
+    : { ...message, outdated: true, uiComponents: keepLocalCalculator ? message.uiComponents?.filter(component => component.type === 'portion-calculator') : undefined });
 }
 
 /** Scale a validated package calculation only within its printed mass/volume basis. */
@@ -123,6 +124,7 @@ export function prepareAssistantTurnPresentation(
   providerCalculations: Calculation[],
   pkg: PackageData,
 ): { components: AssistantUiComponent[]; calculations: Calculation[] } {
+  providerCalculations = refreshPortionCalculations(pkg, providerCalculations);
   const serving = pkg.reconstruction?.current ? normalizeReconstructedServing(pkg.reconstruction.serving) : null;
   const correctedNutrients = new Set(pkg.nutrients.filter(nutrient => nutrient.status === 'corrected').map(nutrient => nutrient.key));
   const savedServingCalculations = serving?.quantity && serving.unit
