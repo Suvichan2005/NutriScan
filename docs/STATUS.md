@@ -1,3 +1,11 @@
+## 28 October 2026 — Local nutrient exploration checkpoint
+
+The portion card can select multiple saved nutrients, including arbitrary reconstructed micronutrients, without another provider request. Shared exact-row arithmetic is used by native tools and local exploration; source links, explicit corrections, limits and dimensions remain checked. Separate printed bases and subcomponents stay distinct. A qualified sugar limit is unavailable for exact arithmetic. The existing renderer regression now supplies the actual linked nutrient fact instead of an unbound calculation fixture.
+
+A controlled illustrative text package (not photo accuracy evidence) completed through actual paid Gemini 3.8 Flash after one free timeout: three generations, two tools, estimated $0.01449585 including reconstruction. Half-package and quarter-package selection checks returned protein/carbohydrate/sodium/magnesium correctly; adding nutrients and changing fractions produced zero further assist requests. Private receipt: `.data/nutrient-explorer-20261028/`. Focused suites and TypeScript pass; final full integration checks follow the requested discrepancy/portion/evidence polish. The owner confirmed the earlier original-tab navigation was intentional; it is not an unresolved hot-refresh failure.
+
+Active next: evidence-backed portion units independent of the agent's selected unit, data-driven discrepancy clarification, Vision-only local photo inspection and improved chooser layout. No formal study or new product-photo provider run.
+
 # Current engineering status
 ## Product completion active — 27 October 2026
 

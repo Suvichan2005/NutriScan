@@ -88,6 +88,7 @@ it('renders a reconciled missing nutrient in the selected-record comparison with
 it('opens at the returned operation rather than silently rescaling to the workspace portion', () => {
   const observation: Observation = { id: 'carbohydrate-row', field: 'ocr-line', text: 'Carbohydrate 60 g per 100 g', side: 'back', confidence: 90, origin: 'ocr', imageId };
   const pkg = packageSchema.parse({ ...parseLabel('Package label', { origin: 'user' }), name: 'Unidentified package', observations: [observation], rawText: observation.text });
+  pkg.nutrients = [{ key: 'carbohydrate', value: 60, unit: 'g', basis: { amount: 100, unit: 'g', description: 'per 100 g' }, observationIds: [observation.id], status: 'observed' }];
   const calculation: Calculation = {
     id: 'calc-carbohydrate-20g', label: 'Carbohydrate in 20 g', nutrient: 'carbohydrate', input: 60, inputUnit: 'g', basisAmount: 100,
     portion: 20, portionUnit: 'g', result: 12, unit: 'g', formula: '60 g × 20 g ÷ 100 g', observationIds: [observation.id],

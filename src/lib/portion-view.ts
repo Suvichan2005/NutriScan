@@ -2,6 +2,7 @@ import type { Calculation, PackageData } from './contracts';
 import { calculationHasPackageEvidence } from './calculation-provenance';
 import { normalizeReconstructedServing } from './portion';
 import { scaleCalculationToPortion } from './thread-presentation';
+import { portionNutrientChoices } from './portion-nutrients';
 
 export type PortionUnit = 'g' | 'ml' | 'pieces' | 'servings' | 'packages';
 export type PortionOption = { unit: PortionUnit; label: string; quantity: number; basisUnit: 'g' | 'ml' };
@@ -52,7 +53,7 @@ export function calculatorPresentationForModel(calculation: Calculation, pkg: Pa
   return {
     component: 'portion-calculator', location: 'below-answer', title: 'Your portion',
     initial: view.initial,
-    controls: { amount: 'editable', unitChoices: view.options.map(({ unit, label }) => ({ unit, label })) },
+    controls: { amount: 'editable', unitChoices: view.options.map(({ unit, label }) => ({ unit, label })), nutrientSelection: 'editable on device', availableNutrients: portionNutrientChoices(pkg, [calculation]).filter(choice => choice.calculation).map(({ label, basis }) => ({ label, basis })) },
     expandableDetails: 'Calculation & label details',
   };
 }

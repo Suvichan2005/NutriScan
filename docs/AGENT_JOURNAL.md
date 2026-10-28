@@ -1425,3 +1425,12 @@ Portion cards initialize from the operation’s count/serving/package provenance
 Implemented optional context-first onboarding with explicit AI/local choice, actual tool activity in chat, expandable explanation/answer notes, a shared inspector notice, and operation-owned portion units. A legacy mass-as-item normalization error and stale count provenance were corrected without changing original evidence. Tool results describe the real calculator controls dynamically.
 
 924 tests passed, two skipped; TypeScript and optimized production build passed. Actual desktop/mobile QA and three Gemini3.8 development requests confirmed profile inclusion/omission, native package calculation, interactive conversion, and corrected-value reuse. Six paid generations cost an estimated$0.0240909; two free attempts failed. Not independent nutritional/scientific validation. Metadata-safe receipt: docs/evidence/ux-context-20261028.json. Numerical-withholding and ingredient-absence limitations remain documented.
+
+## 28 October 2026 — Local nutrient exploration checkpoint
+
+The portion card can select multiple saved nutrients, including arbitrary reconstructed micronutrients, without another provider request. Shared exact-row arithmetic is used by native tools and local exploration; source links, explicit corrections, limits and dimensions remain checked. Separate printed bases and subcomponents stay distinct. A qualified sugar limit is unavailable for exact arithmetic. The existing renderer regression now supplies the actual linked nutrient fact instead of an unbound calculation fixture.
+
+A controlled illustrative text package (not photo accuracy evidence) completed through actual paid Gemini 3.8 Flash after one free timeout: three generations, two tools, estimated $0.01449585 including reconstruction. Half-package and quarter-package selection checks returned protein/carbohydrate/sodium/magnesium correctly; adding nutrients and changing fractions produced zero further assist requests. Private receipt: `.data/nutrient-explorer-20261028/`. Focused suites and TypeScript pass; final full integration checks follow the requested discrepancy/portion/evidence polish. The owner confirmed the earlier original-tab navigation was intentional; it is not an unresolved hot-refresh failure.
+
+Active next: evidence-backed portion units independent of the agent's selected unit, data-driven discrepancy clarification, Vision-only local photo inspection and improved chooser layout. No formal study or new product-photo provider run.
+
