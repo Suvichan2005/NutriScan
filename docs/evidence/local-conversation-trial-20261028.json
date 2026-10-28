@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-28",
+  "kind": "bounded-development-acceptance",
+  "baseline": "67f2ae0",
+  "calculator": {
+    "fixture": "synthetic intercepted output; not provider or photo accuracy",
+    "separateCards": 2,
+    "printedRows": 11,
+    "uniqueNutrientsPerCard": 5,
+    "pieceToMassConversion": "5 cakes -> 50 g; results unchanged",
+    "localSelection": "protein unchecked only on first card",
+    "sourceBases": "both agreeing columns retained in Calculation details",
+    "narrowDocumentWidth": 390,
+    "narrowViewportWidth": 390,
+    "visualLimit": "narrow screenshot scaled; no full mobile accessibility acceptance claimed"
+  },
+  "nano": {
+    "contextWindow": 9216,
+    "smokeCreateMs": 3.5,
+    "smokePromptMs": 1455.8,
+    "labelPromptMs": 11328.3,
+    "labelFailure": "total five-cake quantity rewritten as each cake",
+    "systemContinuityTrial": "timeout; zero completed turns",
+    "structuredActionMs": 8712,
+    "structuredAction": "valid JSON calculation request",
+    "correctionMs": 19806.6,
+    "correctionFailure": "corrected nutrients attributed to guidance excerpt that did not contain them",
+    "decision": "not viable for optional health conversation mode on this evidence; no integration or downloads"
+  },
+  "provider": [
+    {
+      "analysisId": "014e9ae2-5328-4530-9c82-bc59dd0a1886",
+      "completedGenerations": 3,
+      "inputTokens": 25802,
+      "outputTokens": 73,
+      "models": [
+        "gemini-3.5-flash-lite"
+      ],
+      "tiers": [
+        "free"
+      ],
+      "toolResults": [
+        {
+          "name": "calculate_nutrition",
+          "status": "ok",
+          "resultCount": 5
+        },
+        {
+          "name": "calculate_nutrition",
+          "status": "ok",
+          "resultCount": 5
+        },
+        {
+          "name": "get_nutrition_guidance",
+          "status": "ok",
+          "resultCount": 1
+        }
+      ],
+      "failureRetained": true
+    },
+    {
+      "analysisId": "2b95180c-003e-4252-b657-0e957c2c38b4",
+      "completedGenerations": 2,
+      "inputTokens": 12936,
+      "outputTokens": 256,
+      "models": [
+        "gemini-3.5-flash-lite"
+      ],
+      "tiers": [
+        "free"
+      ],
+      "toolResults": [
+        {
+          "name": "get_nutrition_guidance",
+          "status": "ok",
+          "resultCount": 1
+        }
+      ],
+      "failureRetained": false
+    }
+  ],
+  "sourceAcceptance": {
+    "http": 200,
+    "elapsedMs": 11126,
+    "sourceId": "idf-healthy-nutrition-diabetes-2024",
+    "rendering": "exact real provider response replayed into UI without another generation; source disclosure opened",
+    "scope": "one explicit guidance request; not reliable spontaneous retrieval across arbitrary questions"
+  },
+  "privacy": "No real profiles/photos. No paid fallback in controlled requests. Nano has no external tool access. Existing cloud path preserved."
+}

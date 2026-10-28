@@ -61,7 +61,7 @@ export function PortionCalculator({ rows, pkg, onReview, initialPhysical, onAmou
     </details>
     {!valid && <p role="status">Enter a positive amount to calculate.</p>}
     {!displayed.length && <p role="status">Choose a nutrient to see its amount.</p>}
-    {valid && option && <p className={styles.portionSummary}>In this portion{option.unit !== option.basisUnit ? ` · ${number(Number(amount) * option.quantity)} ${option.basisUnit}` : ''}</p>}
+    {valid && option && <p className={styles.portionSummary}>For {number(Number(amount))} {option.label}{option.unit !== option.basisUnit ? ` · ${number(Number(amount) * option.quantity)} ${option.basisUnit}` : ''}</p>}
     <ul className={`${styles.results} ${styles.resultGrid}`} aria-live="polite">{visible.map(choice => {
       const row = choice.calculation!;
       const value = valid && option ? scalePortion(row, Number(amount), option) : null;

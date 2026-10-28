@@ -1,3 +1,10 @@
+## 28 October — Browser acceptance and Nano decision
+Browser access recovered after owner restarted desktop. Calculator: clean page renders two independent portion cards, one selectable result per nutrient; five cakes->50g conversion retains values and local selection changes only its card. Both source bases remain in details. Real browser exposed duplicate React keys for multiple portion cards; keys now include calculation IDs. Portion summary explicitly displays selected amount/unit. Synthetic intercepted data, not photo accuracy.
+
+Real free Flash-Lite: composite request calculated both portions and retrieved guidance, but timed out at final synthesis (failure retained). Focused guidance request completed HTTP200 in11.1s, selected IDF guidance and cited it with applicability limits. Exact returned response replayed into browser; actual answer/source disclosure verified. This is one explicit guidance request, not broad spontaneous-tool reliability.
+
+Nano measured locally:9216context; smoke1.46s; label response11.33s incorrectly turned a total five-cake quantity into each-cake quantity. JSON action8.71s valid; correction/source response19.81s misattributed package nutrients to a guidance excerpt. System-prompt continuity trial timed out. Optional local health chat is NOT viable on this evidence, so not integrated. Gemini path intact; no model downloads/paid calls. Receipt:docs/evidence/local-conversation-trial-20261028.json. Privacy split remains future work, not a delivered guarantee. Remaining broad scientific grounding and provider latency limitations preserved.
+
 ## 28 October — Nutrient grouping and source-context follow-up
 Implemented on current feature branch: one choice/result per nutrient subject; printed bases retained in expandable details; broad nutrient request through existing calculator; separate cards for separate requested physical portions. Corrections and discrepancy ranges preserved. Guidance execution now receives bounded earlier USER questions, excluding assistant prose, so model-selected follow-up retrieval can use already stated context. No keyword-triggered retrieval or extra synthesis loop.
 
