@@ -1,3 +1,11 @@
+## 29 October — AI orchestration audit and targeted refinement complete
+
+Audited the production prompt/context/tool/retrieval/citation/numeric path against a preserved baseline. Kept the natural agent, 13 ordinary tools (12 without images), explicit specialized/research exposure, 0.4 development retrieval floor, corrections and UI. A broader prompt rewrite was tested and rejected for lack of reliable grounding improvement. Accepted: truthful source-format instruction; reduced duplicate submit/guidance descriptions; focused guidance query handling with separate user-source identity; canonical nutrient keys in automatic guidance; authorized health-label identifiers and comparator-preserving numeric evidence.
+
+Free Flash-Lite development acceptance: 12 matched adapter outcomes plus feasibility and two actual assist checks, 22 generations total; no paid calls. The actual follow-up changed from uncited free-sugars-only context to an IDF citation/source card after canonical topic binding. Zero new retrieval calls in both actual checks: automatic context is not autonomous tool use. Overly strict serving advice remains; neither citations nor retained numerical text prove clinical entailment. Identical-output replay withholds 15 versus 6 sentences; supported limit retained, false exact promotion rejected. Full offline suite 956 passed/2 skipped; TypeScript passed. No fresh optimized build/browser acceptance is claimed. Report and protected overlays hash-unchanged.
+
+Audit: docs/AI_ORCHESTRATION_AUDIT_20261029.md; sanitized receipt: docs/evidence/ai-orchestration-audit-20261029.json; private exact requests/responses and verified archive: .data/orchestration-audit-20261029/. Stop here; larger model/OCR studies and academic revisions require the next separate mission.
+
 ## Final report audit — 29 October
 
 The substantive report is unchanged after a final claim/source and requirement audit (9,258 extracted words including tables/front matter). Private evidence archive v2 corrects stale preparation metadata, retains the checked DOCX/PDF bytes, and verifies all 68 file entries. No new model calls or product changes. Only confirmed current authors/guide/date/contributions and genuine institutional approvals remain blocked; one consolidated owner question is already pending. Evidence: docs/evidence/submission-report-20261029.json.

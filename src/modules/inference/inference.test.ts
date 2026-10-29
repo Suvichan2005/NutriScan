@@ -1051,3 +1051,12 @@ describe('provider-independent inference output validation', () => {
     expect(validateInferenceOutput(output, { package: fixturePackage, profile }).uiComponents).toEqual(output.uiComponents);
   });
 });
+
+
+it('keeps a reconstructed printed limit attached to its quantity and rejects exact promotion',()=>{
+ const r=reconstructionFixture();
+ r.nutritionRows=r.nutritionRows.map(row=>({...row,nutrient:'Protein',nutrientKey:'protein' as const,printedLabel:'Protein',printedValue:'< 0.5',value:0.5,unit:'g' as const,qualifier:'<',basisAmount:100,basisUnit:'g' as const,basisText:'per 100 g'}));
+ const pkg=packageSchema.parse({...fixturePackage,nutrients:[],reconstruction:{...r,revision:1,updatedAt:'2026-10-25T00:00:00.000Z',model:'fixture-model',current:true}});
+ for(const answer of ['Protein is below 0.5 g per 100 g.','Protein is < 0.5 g per 100 g.'])expect(validateNaturalAnswerText(answer,{package:pkg}).answer).toBe(answer);
+ for(const answer of ['Protein is 0.5 g per 100 g.','Protein is at most 0.5 g per 100 g.','Protein is below 0.5 g per 100 ml.'])expect(validateNaturalAnswerText(answer,{package:pkg}).withheldUnsupportedQuantitySentenceCount).toBe(1);
+});

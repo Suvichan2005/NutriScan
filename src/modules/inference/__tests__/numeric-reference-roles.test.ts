@@ -1,7 +1,7 @@
 import {it,expect} from 'vitest';
 import {parseLabel} from '../../../lib/parser';
 import {validateNaturalAnswerText} from '../core';
-import type {EvidenceSource} from '../../../lib/contracts';
+import {defaultProfile,type EvidenceSource} from '../../../lib/contracts';
 import {evidenceSources} from '../../knowledge';
 const context={package:parseLabel('Developer fixture; composition unknown.'),question:'For a fictional adult with type 2 diabetes, explain what is needed.',evidence:[]as EvidenceSource[],calculations:[]};
 
@@ -81,4 +81,12 @@ it('replays the saved study sentence beside unsupported package and claim-rule a
  expect(result.answer).not.toContain('at least 1 g');
  expect(result.acceptedSentenceCount).toBe(1);
  expect(result.withheldUnsupportedQuantitySentenceCount).toBe(2);
+});
+
+
+it('retains identifiers from authorized profile without using profile numbers as quantity evidence',()=>{
+ const ctx={...context,question:'Explain what matters for this snack.',profile:{...defaultProfile,healthConsiderations:'type 2 diabetes; stage 3.',goals:'Aim for 2 servings.'}};
+ for(const answer of ['For type-2 diabetes, portions still matter.','The user stated type 2 diabetes.','The user supplied stage 3.'])expect(validateNaturalAnswerText(answer,ctx).answer).toBe(answer);
+ for(const answer of ['It contains 2 g sugar.','The portion is 3 g.','The user has type 1 diabetes.','There are 2 servings per pack.'])expect(validateNaturalAnswerText(answer,ctx).withheldUnsupportedQuantitySentenceCount).toBe(1);
+ expect(validateNaturalAnswerText('For type-2 diabetes, portions still matter.',{...context,question:'Explain this snack.'}).withheldUnsupportedQuantitySentenceCount).toBe(1);
 });

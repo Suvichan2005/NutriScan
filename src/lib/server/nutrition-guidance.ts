@@ -300,17 +300,20 @@ function jurisdictionCompatible(record: EvidenceSource, jurisdiction: string | u
 
 export function getNutritionGuidance(input: {
   query: string;
+  /** User-supplied source identity only; never extra topical ranking terms. */
+  sourceContext?: string;
   condition?: string;
   goal?: string;
   jurisdiction?: string;
   maxResults?: number;
 }): EvidenceSource[] {
   const query = input.query.trim();
+  const sourceRequest = [query, input.sourceContext ?? ''].join(' ');
   const contextualText = [query, input.condition ?? '', input.goal ?? ''].filter(Boolean).join(' ');
   const maxResults = Math.max(1, Math.min(5, input.maxResults ?? 3));
   const ranked = entries
     .map(entry => {
-      const explicitSource = explicitlyNamesSource(query, entry.source);
+      const explicitSource = explicitlyNamesSource(sourceRequest, entry.source);
       const matchedTerms = entry.terms.filter(term => mentions(contextualText, term));
       if(input.condition&&entry.conditions.length&&!entry.conditions.some(condition=>mentions(input.condition!,condition)))return {entry,score:0,matchedTerms};
       if (!jurisdictionCompatible(entry.source, input.jurisdiction, explicitSource)) return { entry, score: 0, matchedTerms };
@@ -325,7 +328,7 @@ export function getNutritionGuidance(input: {
   const conditionSpecificIntent = entries.some(entry => entry.conditions.some(condition => mentions(contextualText, condition)));
   const relevant = conditionSpecificIntent
     ? ranked.filter(item => item.entry.conditions.some(condition => mentions(contextualText, condition))
-      || explicitlyNamesSource(query, item.entry.source) && item.matchedTerms.length > 0
+      || explicitlyNamesSource(sourceRequest, item.entry.source) && item.matchedTerms.length > 0
       // General population guidance may complement a condition-specific record
       // when multiple terms match or a declared numeric topic matches directly.
       || item.entry.conditions.length === 0 && (

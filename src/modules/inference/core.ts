@@ -673,6 +673,18 @@ function numericOccurrences(text:string){
   });
 }
 
+/** Serialize one typed label quantity, keeping its comparator attached to its unit.
+ * Raw printedValue beside a second numeric value splits "< 0.5" from "0.5 g"
+ * and can both reject the true limit and admit a false exact amount.
+ */
+function nutritionRowNumericEvidence(row:PackageReconstructionContent['nutritionRows'][number]):string {
+  const qualifier=row.qualifier?.trim()??'';
+  const operator=numericComparisonOperator(qualifier,qualifier.length)
+    ??numericOccurrences(row.printedValue??'')[0]?.operator??null;
+  if(qualifier&&!operator)return ''; // An unparsed qualifier is not an exact amount.
+  return `${row.nutrient} ${row.printedLabel} ${operator??''}${row.value} ${row.unit} per ${row.basisAmount??''} ${row.basisUnit??''} ${row.columnLabel??''} ${row.basisText??''}`;
+}
+
 function isApproximateNumericClaim(text:string,index:number){
   return /(?:~|≈|\b(?:about|around|approximately|approx\.?|nearly|roughly))\s*$/i.test(text.slice(Math.max(0,index-24),index));
 }
@@ -877,7 +889,7 @@ function typedCountMentions(text:string,pkg:PackageData,calculations:readonly Ca
  */
 export function validateNaturalAnswerText(
   answer: string,
-  context: Pick<AssistValidationContext, 'package' | 'question' | 'evidence' | 'calculations'> & {
+  context: Pick<AssistValidationContext, 'package' | 'question' | 'profile' | 'evidence' | 'calculations'> & {
     /** Source-derived numbers may support only sentences that cite that source. */
     sourceIdsForSentence?: (sentence: string) => readonly string[];
     onWithheldSentence?: (decision: { text: string; reason: 'unsupported-quantity' | 'unsupported-basis' }) => void;
@@ -894,7 +906,7 @@ export function validateNaturalAnswerText(
       && ['clear','provisional'].includes(row.status)
       && (row.evidence.observationIds.length > 0 || row.evidence.imageRegions.length > 0)
       && !row.evidence.observationIds.some(id => pkg.observations.some(observation => observation.id === id && observation.origin === 'user')),
-    ).map(row => `${row.nutrient} ${row.printedValue ?? ''} ${row.value} ${row.unit} ${row.basisAmount ?? ''} ${row.basisUnit ?? ''}`),
+    ).map(nutritionRowNumericEvidence),
     ...pkg.reconstruction.ingredients.filter(item => ['clear','provisional'].includes(item.status)
       && (item.evidence.observationIds.length > 0 || item.evidence.imageRegions.length > 0)
       && item.printedPercentage !== null).map(item => `${item.name} ${item.printedPercentage}%`),
@@ -940,7 +952,7 @@ export function validateNaturalAnswerText(
       ...pkg.reconstruction.nutritionRows.filter(row =>
         !reconstructionRowIsSuperseded(pkg,row) && row.value !== null && row.unit && ['clear', 'provisional'].includes(row.status)
         && (row.evidence.observationIds.length > 0 || row.evidence.imageRegions.length > 0),
-      ).map(row => `${row.nutrient} ${row.printedLabel} ${row.printedValue ?? ''} ${row.value} ${row.unit} ${row.columnLabel ?? ''} ${row.basisText ?? ''} ${row.basisAmount ?? ''} ${row.basisUnit ?? ''}`),
+      ).map(nutritionRowNumericEvidence),
       ...pkg.reconstruction.ingredients.filter(item => ['clear', 'provisional'].includes(item.status)
         && (item.evidence.observationIds.length > 0 || item.evidence.imageRegions.length > 0))
         .map(item => `${item.name} ${item.printedText} ${item.printedPercentage ?? ''}%`),
@@ -982,7 +994,10 @@ export function validateNaturalAnswerText(
     { id:item.id,value:item.result,unit:item.unit,nutrient:item.nutrient,role:'result' as const },
     { id:item.id,value:item.portion,unit:item.portionUnit,nutrient:null,role:'portion' as const },
   ]);
-  const contextText=numericPresentationText(context.question??'');
+  // Authorized profile labels are context too (e.g. numbered conditions or
+  // reference groups). Admit only exact identifier relationships below, never
+  // profile numerals as nutrient amounts, doses, portions or targets.
+  const contextText=numericPresentationText([context.question??'',context.profile?.healthConsiderations??''].join('; '));
   const contextIdentifiers=new Set(numericOccurrences(contextText).flatMap(item=>{
     if(item.mention.dimension!=='unitless'||item.mention.literalUnit||item.operator!==null||item.timeBasis!==null)return[];
     const identifier=numericIdentifier(contextText,item.index,item.mention.rawValue);return identifier?[identifier]:[];

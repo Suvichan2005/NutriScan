@@ -11,7 +11,7 @@ export function profileGuidanceContextSources(input: {
   package: {
     nutrients: Array<Pick<PackageData['nutrients'][number], 'key'>>;
     reconstruction?: {
-      nutritionRows: Array<Pick<NonNullable<PackageData['reconstruction']>['nutritionRows'][number], 'nutrient' | 'printedLabel'>>;
+      nutritionRows: Array<Pick<NonNullable<PackageData['reconstruction']>['nutritionRows'][number], 'nutrient' | 'printedLabel'> & Partial<Pick<NonNullable<PackageData['reconstruction']>['nutritionRows'][number], 'nutrientKey'>>>;
     } | null;
   };
   profile?: Pick<Profile, 'healthConsiderations' | 'goals' | 'country'>;
@@ -21,7 +21,7 @@ export function profileGuidanceContextSources(input: {
 
   const packageTopics = [
     ...input.package.nutrients.map(nutrient => nutrient.key),
-    ...(input.package.reconstruction?.nutritionRows ?? []).map(row => `${row.nutrient} ${row.printedLabel}`),
+    ...(input.package.reconstruction?.nutritionRows ?? []).map(row => `${row.nutrientKey ?? ''} ${row.nutrient} ${row.printedLabel}`),
   ];
   return getNutritionGuidance({
     query: [input.question, ...packageTopics].filter(Boolean).join(' '),
@@ -37,7 +37,7 @@ export function addProfileGuidanceContextSources(input: {
   package: {
     nutrients: Array<Pick<PackageData['nutrients'][number], 'key'>>;
     reconstruction?: {
-      nutritionRows: Array<Pick<NonNullable<PackageData['reconstruction']>['nutritionRows'][number], 'nutrient' | 'printedLabel'>>;
+      nutritionRows: Array<Pick<NonNullable<PackageData['reconstruction']>['nutritionRows'][number], 'nutrient' | 'printedLabel'> & Partial<Pick<NonNullable<PackageData['reconstruction']>['nutritionRows'][number], 'nutrientKey'>>>;
     } | null;
   };
   profile?: Pick<Profile, 'healthConsiderations' | 'goals' | 'country'>;

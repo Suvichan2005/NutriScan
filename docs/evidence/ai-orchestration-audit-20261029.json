@@ -1,0 +1,124 @@
+{
+  "baselineCommit": "53d39b8d0c91294cbc9f0785faabb6e8613661b9",
+  "ordinaryTools": 13,
+  "ordinaryWithoutImages": 12,
+  "allDeclaredTools": 21,
+  "systemCharacters": {
+    "before": 1850,
+    "after": 1904
+  },
+  "reconstructionInstructionCharacters": {
+    "before": 2189,
+    "after": 2189
+  },
+  "ordinarySchemaBytes": {
+    "before": 13026,
+    "after": 12754
+  },
+  "matchedCases": 2,
+  "matchedLogicalOutcomes": 12,
+  "matchedProviderGenerations": 19,
+  "matchedInputsIdenticalWithinCase": true,
+  "allMatchedModels": [
+    "gemini-3.5-flash-lite"
+  ],
+  "freeProviderGenerations": 22,
+  "inputTokens": 170067,
+  "outputTokens": 3525,
+  "paidCalls": 0,
+  "externalToolNetworkAttempts": 0,
+  "newFormalExperiments": false,
+  "broaderPromptRewrite": "REJECTED: no reliable grounding improvement; preserve original policy except truthful source-format distinction",
+  "productionConfirmation": [
+    {
+      "elapsedMs": 4292,
+      "model": "gemini-3.5-flash-lite",
+      "sources": [
+        "who-free-sugars-guideline-2015"
+      ],
+      "toolCalls": 0,
+      "withheldSentences": 2,
+      "sourceCards": []
+    },
+    {
+      "elapsedMs": 13154,
+      "model": "gemini-3.5-flash-lite",
+      "sources": [
+        "idf-healthy-nutrition-diabetes-2024",
+        "who-free-sugars-guideline-2015"
+      ],
+      "toolCalls": 0,
+      "withheldSentences": 0,
+      "sourceCards": [
+        [
+          "idf-healthy-nutrition-diabetes-2024"
+        ]
+      ]
+    }
+  ],
+  "limits": [
+    "Small exposed development sample; no independent ratings or clinical validation",
+    "Matched native-tool wrapper uses production helpers but is not HTTP/browser acceptance",
+    "Final before/after confirmations use actual assist(); no new browser acceptance or optimized build claimed",
+    "Automatic evidence use differs from autonomous retrieval; both actual production calls had zero tool calls",
+    "Residual overly strict serving advice remains; numeric/citation checks do not prove semantics",
+    "Latency is single-observation, service/cache/load effects uncontrolled"
+  ],
+  "validationReplay": {
+    "rawAnswers": 12,
+    "withheldBefore": 15,
+    "withheldAfter": 6,
+    "charactersBefore": 7196,
+    "charactersAfter": 8790,
+    "notAnAccuracyScore": true
+  },
+  "verification": {
+    "fullTestsPassed": 956,
+    "skipped": 2,
+    "files": 82,
+    "typecheckPassed": true,
+    "optimizedBuildRun": false,
+    "browserAcceptanceRun": false
+  },
+  "acceptedSourceFiles": [
+    {
+      "path": "src/lib/server/gemini.ts",
+      "sha256": "5674b20d56230af6ec06852bd22d9b0ccd2dd0aa935776fcc38dc3a037f73f73"
+    },
+    {
+      "path": "src/lib/server/gemini-tools.ts",
+      "sha256": "94911b8d8fa5b54a0f457b713666fdbc938c146d08a30f8f9796909f8d296c73"
+    },
+    {
+      "path": "src/lib/server/nutrition-guidance.ts",
+      "sha256": "a8f931a48b93206c86f8e5850f1a01c31571902ed6bac8b01850c5820cecd368"
+    },
+    {
+      "path": "src/lib/server/profile-guidance-context.ts",
+      "sha256": "4865f1b6812ee3d83952fa0862048f369fb018ec7459d19d34df4abbfc38028c"
+    },
+    {
+      "path": "src/modules/inference/core.ts",
+      "sha256": "bc1c0e8d59bd38a7f1e4245780661840166156128d687576d5454d90661fa2b0"
+    }
+  ],
+  "privateEvidenceDirectory": ".data/orchestration-audit-20261029",
+  "reportArtifactsChanged": false,
+  "UIChanged": false,
+  "toolSchemasOrExposureMembershipChanged": false,
+  "acceptedChanges": [
+    "Truthful source-format system instruction",
+    "Reduced duplicate reconstruction/guidance tool text",
+    "Focused local guidance query with separate explicit source context",
+    "Canonical nutrient identities in profile-guidance topics",
+    "Authorized health-label identifiers in quantity validation",
+    "Comparator-preserving typed numeric evidence"
+  ],
+  "limitations": [
+    "Grounding and clinical restraint remain partial; stricter serving advice still observed",
+    "Automatic guidance is not autonomous tool retrieval",
+    "All source-cited comparisons need semantic support review beyond record identity",
+    "Broader prompt rewrite tested and rejected",
+    "0.4 floor remains explicitly uncalibrated; no arbitrary tuning"
+  ]
+}

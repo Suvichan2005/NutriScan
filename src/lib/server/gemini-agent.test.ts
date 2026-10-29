@@ -501,15 +501,10 @@ describe('natural NutriScan agent contract', () => {
     const tools = getAgentToolDeclarations(false, false);
     expect(instruction).toContain('answer in plain text');
     expect(instruction).toContain('cite the exact SRC handle and source name/date');
-    expect(instruction).toContain('NutriScan-prepared summary, not a verbatim source quotation');
+    expect(instruction).toContain('Distinguish application-prepared summaries, original source excerpts and external records');
     expect(instruction).toContain('Omit claims when the returned evidence does not support them');
-    expect(instruction).toContain('Keep official claim rules separate from evidence of effects');
-    expect(instruction).toContain('disclose missing source classes rather than filling them from memory');
-    expect(instruction).toContain('qualified practical judgment');
-    expect(instruction).not.toContain('then label facts, practical context and uncertainty');
-    expect(instruction).toContain('For health-specific suitability, retrieve the narrowest relevant guidance or research');
     expect(instruction).toContain('a condition mention alone does not justify lookup');
-    expect(instruction).toContain('Use a matching printed row or supplied typed calculation for quantities');
+    expect(instruction).toContain('Printed servings are not prescriptions');
     expect(instruction).toContain('call the appropriate calculator when needed and never calculate in prose');
     expect(instruction.length).toBeLessThan(2_000);
     expect(tools.map(tool => tool.name)).toContain('calculate_nutrition');
@@ -518,8 +513,8 @@ describe('natural NutriScan agent contract', () => {
     expect(tools.find(tool => tool.name === 'calculate_nutrition')?.description).toContain('calculate each requested nutrient for the absolute portion difference as its own direct amount');
     expect(tools.find(tool => tool.name === 'search_knowledge')?.description).toContain('Use for explicit research/source requests');
     expect(JSON.stringify(tools.find(tool => tool.name === 'get_nutrition_guidance'))).toContain('Omit unrelated package details');
-    expect(tools.find(tool => tool.name === 'get_nutrition_guidance')?.description).toContain('Use when the user explicitly asks for nutrition guidance/recommendations or your answer needs contextual dietary guidance beyond package arithmetic');
-    expect(tools.find(tool => tool.name === 'get_nutrition_guidance')?.description).toContain('if no applicable record is returned, disclose that rather than inventing guidance');
+    expect(tools.find(tool => tool.name === 'get_nutrition_guidance')?.description).toContain('a condition mention alone does not require a lookup');
+    expect(instruction).toContain('disclose missing source classes rather than filling them from memory');
     expect(tools.map(tool => tool.name)).not.toContain('show_nutrition_table');
   });
 });

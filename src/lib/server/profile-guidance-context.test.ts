@@ -93,3 +93,13 @@ describe('profile-aware local guidance context', () => {
     expect(merged.slice(0, supplied.length)).toEqual(supplied);
   });
 });
+
+
+it('uses canonical nutrient identity as well as printed wording for authorized profile context',()=>{
+ const profile={healthConsiderations:'type 2 diabetes',goals:'',country:'India'};
+ const before=profileGuidanceContextSources({question:'What if there are no alternatives?',profile,package:{nutrients:[],reconstruction:{nutritionRows:[{nutrient:'Carbohydrates',printedLabel:'CARBOHYDRATES'}]}}});
+ const after=profileGuidanceContextSources({question:'What if there are no alternatives?',profile,package:{nutrients:[],reconstruction:{nutritionRows:[{nutrient:'Carbohydrates',printedLabel:'CARBOHYDRATES',nutrientKey:'carbohydrate'}]}}});
+ expect(before.some(source=>source.id==='idf-healthy-nutrition-diabetes-2024')).toBe(false);
+ expect(after.some(source=>source.id==='idf-healthy-nutrition-diabetes-2024')).toBe(true);
+ expect(profileGuidanceContextSources({question:'What if there are no alternatives?',package:{nutrients:[],reconstruction:{nutritionRows:[{nutrient:'Carbohydrates',printedLabel:'CARBOHYDRATES',nutrientKey:'carbohydrate'}]}}})).toEqual([]);
+});

@@ -36,8 +36,8 @@ function context(question: string, line = 'INGREDIENTS: REFINED WHEAT FLOUR; 019
 describe('Gemini tool retrieval boundaries', () => {
   it('keeps explicit profile guidance requests actionable when package calculations are present',()=>{
     const declaration=getAgentToolDeclarations(false,false,{mode:'ordinary'}).find(tool=>tool.name==='get_nutrition_guidance');
-    expect(declaration?.description).toContain('explicitly asks for guidance and supplies a relevant authorized health condition');
-    expect(declaration?.description).toContain('even if package calculations or evidence for another condition are already present');
+    expect(declaration?.description).toContain('when the answer needs evidence beyond label facts or arithmetic');
+    expect(declaration?.description).toContain('Reuse applicable supplied evidence');
   });
 
   it('makes exact ontology relationships and attribution accessible without treating taxonomy as health evidence',async()=>{
@@ -1326,4 +1326,15 @@ describe('Gemini tool retrieval boundaries', () => {
     expect(result.status).toBe('withheld');
     expect(fetcher).not.toHaveBeenCalled();
   });
+});
+
+
+it('honors a focused guidance query without requiring a personal condition argument',async()=>{
+ const toolContext=context('Could you explain the sweetness of this drink?');
+ const result=await executeGeminiTool('get_nutrition_guidance',{query:'free sugars added sugar intake'},toolContext);
+ expect(result.evidence?.some(source=>source.id==='who-free-sugars-guideline-2015')).toBe(true);
+ const label=await executeGeminiTool('get_nutrition_guidance',{query:'per-serving RDA label references',jurisdiction:'India'},context('What do the percentages on this Indian nutrition label mean?'));
+ expect(label.evidence?.some(source=>source.id==='fssai-labelling-rda-reference-viii-2025')).toBe(true);
+ const invented=await executeGeminiTool('get_nutrition_guidance',{query:'CKD potassium',condition:'CKD'},toolContext);
+ expect(invented.evidence).toEqual([]);
 });
