@@ -1,3 +1,9 @@
+## 29 October — Substantive KIIT submission draft verified
+
+The actual supplied template was used as the DOCX base; previous-semester writing/format was inspected without inferring current authorship. The rewritten private report contains six authored chapters, 41 rendered pages, 11 tables and five figures. Actual Gemini and local-model measurements are separated, with candidate-reference agreement, AI-assisted judgments and synthetic interaction evidence explicitly limited. Operational branch/checkout/commit prose is excluded from academic chapters; exact revisions and 14 reconciled original anchors plus five supplemental anchors are in the private evidence index. Word export, all-page visual review and final raster comparison passed. The 66-file private archive passes CRC and per-file SHA-256 reconciliation. No new provider calls or production changes.
+
+Formal owner fields, contribution/signatures, genuine originality report and guide methodology disposition remain pending. One consolidated owner question was issued after independently executable work finished. Subham deliverables are not assumed. Evidence: docs/evidence/submission-report-20261029.json. Private outputs: .data/final-submission-20261029-v1/. Do not call the unsigned draft approved for institutional submission.
+
 ## 29 October — Local trials completed and report rewrite begun
 
 Completed 118 local functional outcomes, including all 81 portfolio turns and nine retrieval transfers. Original and compact calibration protocols remain separate; 9B timed out once. Exact request bytes and source/input hashes verified. Archived 310 files (1,925,264 bytes), SHA-256 `5f3f6df9866fa320658d53dc2dad5ac252eb6a80c97bd736517c73eec191cc39`. No cloud/paid calls; models unloaded. Representative failures include wrong portion/ingredient associations and validation losses; no local provider was added. Sanitized evidence is tracked, raw material remains ignored.

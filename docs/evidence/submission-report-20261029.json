@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-29",
+  "kind": "private report artifact acceptance, not new product/model accuracy acceptance",
+  "report": {
+    "pages": 41,
+    "chapters": 6,
+    "tables": 11,
+    "figures": 5,
+    "docxSha256": "853e4616ab3adacda18be8d38bb90bddf3822e5d32dfbc5c395c696884920b4d",
+    "pdfSha256": "9b8d41b3266c426ea3af5f0ef22cee0070b45e3a7b34d7e3d4bfde7c15586500"
+  },
+  "base": "Actual owner-supplied Project_Report-format.docx; original cover assets retained; original bytes unchanged",
+  "styleReference": "Actual owner-supplied previous-semester report; no authorship inferred",
+  "privateArchive": {
+    "relativePath": ".data/final-submission-20261029-v1/NutriScan_KIIT_Submission_Evidence_20261029_v1.zip",
+    "bytes": 3562819,
+    "sha256": "c80704be5ee15e9ef37353d6bc663164b2840a632be03b71721f116b5bbe642b",
+    "files": 66,
+    "allManifestHashesVerified": true
+  },
+  "implementationSourceSha": "a093c6fbb411307f5bce78509f2156f6728d693d",
+  "historicalMeasurementRevisionsRetained": true,
+  "originalAnchorsReconciled": 14,
+  "supplementalAnchors": 5,
+  "rendering": "Microsoft Word COM and Poppler; 41 pages visually checked; final-only page change independently inspected",
+  "newProviderCalls": 0,
+  "productionSourceChanged": false,
+  "formalPending": [
+    "Confirmed current authors/roll numbers/guide/date",
+    "Actual individual contribution statements and signatures",
+    "Genuine institutional originality report",
+    "Guide disposition of methodological amendment"
+  ],
+  "independentHumanGroundTruth": false,
+  "methodologyAmendmentApproved": false,
+  "status": "SUBSTANTIVE_DRAFT_VERIFIED; FORMAL_OWNER_FIELDS_PENDING"
+}
