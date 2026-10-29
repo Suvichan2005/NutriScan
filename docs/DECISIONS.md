@@ -1594,3 +1594,8 @@ Verification: 948 passed / 2 skipped; TypeScript and optimized production build 
 ## 29 October 2026 — Research preparation boundaries
 
 The completed AI audit is not repeated. Original five-arm/nine-conversation/nine-pair definitions remain authoritative. This preparation freeze adds a separately identified transfer suite and larger candidate intake; no reduced-methodology amendment, execution/model freeze or human approval is implied. Keep Grade 1/2/3 separate, source identity versus applicability separate, and use existing nutrient/retrieval/reviewer/receipt gates. Official GriTS is pinned evaluation-only; no application dependency change.
+
+
+## 30 October 2026 — Matched benchmark parity and disclosure
+Use frozen logical requests and shared teacher-forced context across models. Preserve prior receipts and reject hash-mismatched reuse. Do not equate completed responses, citations or tool counts with correctness. Keep cloud tiers explicit, independent annotations absent, and provider/CPU failures in denominators. No production or academic-report changes during this mission.
+
