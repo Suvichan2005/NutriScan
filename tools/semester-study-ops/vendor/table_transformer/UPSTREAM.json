@@ -1,0 +1,18 @@
+{
+  "repository": "https://github.com/microsoft/table-transformer",
+  "commit": "16d124f616109746b7785f03085100f1f6247575",
+  "license": "MIT",
+  "modifications": "none",
+  "files": [
+    {
+      "path": "grits.py",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/table-transformer/16d124f616109746b7785f03085100f1f6247575/src/grits.py",
+      "sha256": "75c13031657252c251f5d0b483aca2601e229a06d46e60d0aa3c739418f543d7"
+    },
+    {
+      "path": "LICENSE",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/table-transformer/16d124f616109746b7785f03085100f1f6247575/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    }
+  ]
+}

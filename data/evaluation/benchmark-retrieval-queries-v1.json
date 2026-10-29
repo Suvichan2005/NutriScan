@@ -1,0 +1,611 @@
+{
+  "schemaVersion": 1,
+  "status": "QUESTION_PROTOCOL_FROZEN_QRELS_UNJUDGED",
+  "source": {
+    "path": "data/semantic-evaluation-queries.json",
+    "sha256": "d4d852dc91fd4fb963d77780f3b1b413efb7988a0bf8182ab6809411d40ee1e6"
+  },
+  "queries": [
+    {
+      "queryId": "sodium-exact",
+      "query": "sodium salt adult daily intake reference",
+      "developerSuggestedPoolOnly": [
+        "who-sodium"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "sodium-paraphrase",
+      "query": "Should someone with raised blood pressure cut down on salty foods?",
+      "developerSuggestedPoolOnly": [
+        "who-sodium"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "sodium-conversion",
+      "query": "How much sodium is present in a gram of salt?",
+      "developerSuggestedPoolOnly": [
+        "who-sodium"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "diabetes-exact",
+      "query": "diabetes carbohydrate meals glucose medication",
+      "developerSuggestedPoolOnly": [
+        "niddk-meals"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "diabetes-paraphrase",
+      "query": "How should a person whose blood sugar is high decide the amount and timing of food?",
+      "developerSuggestedPoolOnly": [
+        "niddk-meals"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "diabetes-carb-counting-options",
+      "query": "Does everyone with diabetes need to count carbs? What other meal planning methods are available?",
+      "developerSuggestedPoolOnly": [
+        "niddk-meals"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "fibre-paraphrase",
+      "query": "How much naturally occurring fibre should an adult get from foods each day?",
+      "developerSuggestedPoolOnly": [
+        "who-carbohydrate-2023"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "fibre-package-limit",
+      "query": "Does one packaged snack with 5 g fibre satisfy the daily dietary fibre guidance?",
+      "developerSuggestedPoolOnly": [
+        "who-carbohydrate-2023"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "free-sugar-definition",
+      "query": "What does WHO count as free sugars?",
+      "developerSuggestedPoolOnly": [
+        "who-sugars-2015"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "free-sugar-juice",
+      "query": "Do sugars naturally present in honey or fruit juice count as free sugars?",
+      "developerSuggestedPoolOnly": [
+        "who-sugars-2015"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "free-sugar-package-scope",
+      "query": "Can I treat the sugars in one snack as my daily WHO free-sugar amount?",
+      "developerSuggestedPoolOnly": [
+        "who-sugars-2015"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "fssai-high-protein-claim",
+      "query": "What does high protein mean as a claim on an Indian packaged food label?",
+      "developerSuggestedPoolOnly": [
+        "fssai-advertising-claims-compendium-2022"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "sweetener-exact",
+      "query": "WHO non-sugar sweeteners weight control guideline existing diabetes exclusion",
+      "developerSuggestedPoolOnly": [
+        "who-nss"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "sweetener-paraphrase",
+      "query": "Does replacing sugar with artificial sweet taste help prevent obesity?",
+      "developerSuggestedPoolOnly": [
+        "who-nss"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "sucralose-exact",
+      "query": "INS 955",
+      "developerSuggestedPoolOnly": [
+        "fao-955"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "sucralose-name",
+      "query": "What additive is trichlorogalactosucrose?",
+      "developerSuggestedPoolOnly": [
+        "fao-955"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "citric-identity",
+      "query": "INS 330 citric acid identity",
+      "developerSuggestedPoolOnly": [
+        "fao-330"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "msg-identity",
+      "query": "MSG monosodium glutamate INS 621",
+      "developerSuggestedPoolOnly": [
+        "fao-621"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "xanthan-identity",
+      "query": "What is the number for xanthan gum?",
+      "developerSuggestedPoolOnly": [
+        "fao-415"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "lecithin-family-identity",
+      "query": "INS 322",
+      "developerSuggestedPoolOnly": [
+        "fao-322"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "silica-identity",
+      "query": "What additive identity does INS 551 or silica refer to?",
+      "developerSuggestedPoolOnly": [
+        "fao-551"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "oat-beta-glucan-cholesterol",
+      "query": "What does oat beta-glucan do for cholesterol in adults?",
+      "developerSuggestedPoolOnly": [
+        "pubmed-oat-beta-glucan-lipids-2022"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "oat-beta-glucan-glucose-peak",
+      "query": "Do oat beta-glucans reduce post-meal glucose peaks and what amounts were studied?",
+      "developerSuggestedPoolOnly": [
+        "efsa-oat-beta-glucan-glycaemic-peak-2026"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    },
+    {
+      "queryId": "oat-beta-glucan-iAUC-dose",
+      "query": "What did EFSA conclude about a lower oat beta-glucan dose and postprandial glycaemic response?",
+      "developerSuggestedPoolOnly": [
+        "efsa-oat-barley-beta-glucan-glycaemic-2025"
+      ],
+      "judgments": {},
+      "applicability": {},
+      "judgmentStatus": "unjudged",
+      "poolComplete": false,
+      "rankedIds": [],
+      "k": 5,
+      "exposure": "existing development query; not independently unseen",
+      "assessmentAxes": [
+        "identity",
+        "topic relevance",
+        "source population",
+        "outcome",
+        "dose/exposure",
+        "jurisdiction/date",
+        "entailment"
+      ],
+      "assessorCode": null,
+      "assessmentArtifact": null
+    }
+  ],
+  "blinding": "Do not show developerSuggestedPoolOnly or retrieval-condition ordering to assessors. Use union of returned candidates and catalog sources; retain irrelevance and unknown applicability. No current metrics claim."
+}

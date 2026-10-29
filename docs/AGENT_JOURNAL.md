@@ -1481,3 +1481,7 @@ Verification: 948 passed / 2 skipped; TypeScript and optimized production build 
 
 
 29 October 2026: corrected calculator declaration contradiction for optional candidateId/all-nutrient overview; runtime unchanged. Existing focused tool, citation and conversation-provenance tests pass (120/1 skipped). Owner-authorized local Ollama trial remains active. Original receipts preserved; overnight interruption and intentional adapter-audit cancellation are not model-quality failures. Repairing citation/history/input binding before further comparison. No Gemini/paid call or default-provider change.
+
+## 2026-10-29 — Mission 1 research preparation
+
+Normal-TLS official acquisition completed: 38 candidate groups,102 unique originals,23 reused hash-verified and79 new. Prepared blank independent-reader/adjudication packets, exact canonical questions, candidate contexts, nine paired tool policies and literature-backed protocol. Existing runner remains blocked with no references/approvals; new supplementary tests cover genuine association/unknown/state failures. Offline checks only; production/report untouched. Private package and sanitized receipt linked from current state. Stop at owner-requested preparation checkpoint.

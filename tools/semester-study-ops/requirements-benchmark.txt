@@ -1,0 +1,10 @@
+# Offline evaluation only; not imported or bundled by the production application.
+# Microsoft GriTS is MIT. PyMuPDF is AGPL/commercial: private evaluation use only;
+# review its license before redistributing an environment or serving it remotely.
+numpy==2.3.5
+PyMuPDF==1.26.7
+jsonschema==4.25.1
+referencing==0.36.2
+attrs==25.3.0
+rpds-py==0.27.1
+jsonschema-specifications==2025.9.1

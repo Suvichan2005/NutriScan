@@ -1608,3 +1608,7 @@ Portion cards initialize from the operation’s count/serving/package provenance
 Implemented optional context-first onboarding with explicit AI/local choice, actual tool activity in chat, expandable explanation/answer notes, a shared inspector notice, and operation-owned portion units. A legacy mass-as-item normalization error and stale count provenance were corrected without changing original evidence. Tool results describe the real calculator controls dynamically.
 
 924 tests passed, two skipped; TypeScript and optimized production build passed. Actual desktop/mobile QA and three Gemini3.8 development requests confirmed profile inclusion/omission, native package calculation, interactive conversion, and corrected-value reuse. Six paid generations cost an estimated$0.0240909; two free attempts failed. Not independent nutritional/scientific validation. Metadata-safe receipt: docs/evidence/ux-context-20261028.json. Numerical-withholding and ingredient-absence limitations remain documented.
+
+## 29 October 2026 — Research foundation
+
+Prepared actual private 38-group/102-original dataset and independent annotation queues, canonical conversation/pair inputs and supplementary scoring. No human truth or model benchmark fabricated. All final execution gates remain blocked. See docs/semester-study-ops/BENCHMARK_PREPARATION_20261029.md.

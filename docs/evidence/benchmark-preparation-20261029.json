@@ -1,0 +1,112 @@
+{
+  "mission": "Research Benchmark and Ground-Truth Preparation",
+  "date": "2026-10-29",
+  "applicationBaselineCommit": "6a9638ddeb625af49f8d960f2abb5308e064b20a",
+  "productionModified": false,
+  "reportModified": false,
+  "collection": {
+    "groups": 38,
+    "images": 102,
+    "imageBytes": 131718367,
+    "reusedVerifiedOriginals": 23,
+    "newlyDownloadedOriginals": 79,
+    "strata": {
+      "noodles": 5,
+      "snacks": 5,
+      "biscuits": 5,
+      "cereals": 5,
+      "dairy": 5,
+      "beverages": 5,
+      "staples-flour": 5,
+      "pulses": 3
+    },
+    "proposedSplits": {
+      "development": 20,
+      "prospective-held-out": 11,
+      "calibration": 7
+    },
+    "conservativeBrandSplitBlocks": 28,
+    "independentHumanPasses": 0,
+    "grade1References": 0,
+    "grade2References": 0,
+    "grade3ConversationSnapshots": 3,
+    "nutritionAssignments": 204,
+    "textAssignments": 204,
+    "preparedCollectionSha256": "aa34d3ad63b5dff191077f9c80d760e45e97270229b511a1f658e06ac8169d2b"
+  },
+  "quality": {
+    "scope": "offline preparation quality, not model or package accuracy",
+    "imageFilesHashVerified": 102,
+    "uniqueImageHashes": 102,
+    "productGroups": 38,
+    "familyBlocks": 28,
+    "readerAssignmentSets": 2,
+    "nutritionAssignments": 204,
+    "supplementAssignments": 204,
+    "canonicalUserTurnsUnchanged": 27,
+    "matchedKnowledgePairsPrepared": 9,
+    "transferCases": 12,
+    "retrievalQueriesUnjudged": 24,
+    "schemaDefinitionsChecked": [
+      "data/ocr-annotation-pass.schema.json",
+      "data/evaluation/package-text-pass.schema.json"
+    ],
+    "sourceAndCalculatorNetworkAttempts": 0,
+    "independentReferences": 0,
+    "metadataReadiness": "BLOCKED",
+    "finalRunnerGate": "BLOCKED",
+    "preparedFiveArmJobsNotExecuted": 190,
+    "finalGateBlockerCount": 705,
+    "semanticImageInspection": false,
+    "GriTSUpstreamUnmodified": true,
+    "modelCalls": 0,
+    "paidCalls": 0,
+    "fullImageDecodeIntegrityChecks": 102,
+    "semanticLabelInspection": false,
+    "adapterRawPayloadStatus": "Not prepared; later real OCR/image input preparation and execution freeze required"
+  },
+  "verification": {
+    "studyOpsTests": {
+      "passed": 64,
+      "failed": 0,
+      "claimScope": "offline structural and negative tests only"
+    },
+    "existingRunnerTests": {
+      "passed": 12,
+      "failed": 0
+    },
+    "typecheck": "passed --noEmit --incremental false",
+    "nodeSyntax": "passed",
+    "productionBuild": "not run; no application changes",
+    "providerCalls": 0,
+    "estimatedProviderCostUsd": 0,
+    "billingClaim": "no provider request made"
+  },
+  "preparedProtocol": "data/evaluation/benchmark-protocol-v1.json",
+  "privateEvidenceDirectory": ".data/benchmark-preparation-20261029-v1/",
+  "executionStatus": "BLOCKED_UNANNOTATED_AND_UNFROZEN; no experiment results",
+  "remainingHumanWork": [
+    "rights/embedded artwork, market, variant, family/exposure review",
+    "actual layout/bases/readability and coverage classification",
+    "two independent image transcriptions and distinct adjudication",
+    "graded scientific relevance/applicability and blinded answer assessment"
+  ],
+  "remainingExecutionWork": [
+    "actual uncorrected OCR capture and validated role=reconstruction-input payloads",
+    "reviewed/locked references, rights and product splits",
+    "approved identical model/configuration and active-source snapshot",
+    "independent retrieval applicability/answer judgments",
+    "11 prospective held-out groups fall below legacy 12-group minimum; expand eligible independent families or obtain explicit reduced-study approval"
+  ],
+  "nextAction": "Stop; next owner mission required",
+  "privateArchive": {
+    "archive": ".data/benchmark-preparation-20261029-v1-private.zip",
+    "bytes": 132048436,
+    "sha256": "8adb62dcf3f50c7112c7e3355288ce184e8467d201e41707448d219153bda0ce",
+    "entries": 253,
+    "allArchivedHashesVerified": true,
+    "manifestSha256": "8b1e17dcabdf073b8342dd13ed0f2ad96f734fe6108f047e4674bfc5ffc98935",
+    "noSecretsOrEnvironmentsIntentionallyIncluded": true,
+    "scope": "private local research inputs; not public redistribution approval"
+  }
+}

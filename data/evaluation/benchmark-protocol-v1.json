@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "protocolId": "nutriscan-research-foundation-20261029-v1",
+  "status": "PREPARATION_PROTOCOL_FROZEN_EXECUTION_NOT_FROZEN",
+  "evaluationOnly": true,
+  "applicationBaselineCommit": "6a9638ddeb625af49f8d960f2abb5308e064b20a",
+  "supersedesExperimentalDefinitions": false,
+  "existingDefinitions": [
+    {
+      "path": "data/evaluation/semester-experiments.json",
+      "sha256": "a546d8e4fb7c7ded88a50d873db57227a94fde39d1a6b1f91898b5ab79d2f595"
+    },
+    {
+      "path": "data/evaluation/semester-conversations.json",
+      "sha256": "96e7f2cc3ee936a111b09721f6d12a3ffd24698c9740c0f0e793ad030d466687"
+    },
+    {
+      "path": "data/evaluation/experiment-plan.json",
+      "sha256": "6b49ceaf5722ecb667a987b5d47cacfecc6465a82476cf7582ceb6b4cd606f02"
+    },
+    {
+      "path": "data/ocr-annotation-pass.schema.json",
+      "sha256": "882a0b169a8e0186418c3171dc3844e9434469f37b937dc594045dfc567e363e"
+    },
+    {
+      "path": "data/evaluation/package-text-pass.schema.json",
+      "sha256": "a8711b6e0f3c2ea679b7cbad9dca5c474e3cc452f1e3a8402553f7875b2c7033"
+    }
+  ],
+  "dataset": {
+    "targetDistinctProducts": [
+      24,
+      40
+    ],
+    "unit": "exact product variant/revision group; conservative brand/family split blocking",
+    "collection": "private .data/benchmark-preparation-20261029-v1/dataset/prepared-v2-collection.json",
+    "referenceGrades": {
+      "1": "independent original-image transcription by two actual readers and distinct adjudication; provenance-backed",
+      "2": "owner/developer visually verified literal declarations with original coordinates; not independent",
+      "3": "model-assisted or external database candidate; agreement only"
+    },
+    "unscorable": "Unreadable, absent or unverified declaration; never zero",
+    "splitPolicy": "Connected components of every declared brand alias and family identifier; all known exposed components remain development. Development takes precedence over calibration, then prospective held-out. Actual family/exposure/variant review and split lock pending.",
+    "photoClasses": "original source file does not prove camera photograph or readability; photograph/render and difficult-layout strata require human review",
+    "knownDevelopmentBrands": {
+      "brands": [
+        "bisk",
+        "bagrr",
+        "saffola",
+        "maggi",
+        "amul"
+      ],
+      "basis": "existing owner-visible development histories and original intake; conservative exposure blocking, not scientific/intent classification"
+    }
+  },
+  "reconstruction": {
+    "arms": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "definition": "data/evaluation/semester-experiments.json",
+    "stage": "initial-reconstruction",
+    "hiddenRecovery": false,
+    "primaryEndpoint": "existing exact complete nutrient/value/qualifier/unit/basis/column association precision/recall, with clear-field denominators",
+    "aggregation": "per-product first; macro mean over identical completed/scorable product intersection across methods; separately report all attempted failures, omissions, unscorable cells and partial subsets",
+    "noAccuracyFrom": "OCR character volume, database agreement, software tests or candidate references",
+    "structure": "Pinned upstream GriTS content/topology/location only for explicit independently annotated/predicted grids; location unavailable when no genuine cell geometry",
+    "text": "one-to-one literal category/text/code matches; ingredient sequence exactness; semantic paraphrases require separate human adjudication"
+  },
+  "conversation": {
+    "canonicalManifest": "data/evaluation/semester-conversations.json",
+    "conversations": 9,
+    "logicalTurns": 27,
+    "knowledgePairs": 9,
+    "questionChanges": false,
+    "profileNature": "fictional; no personal targets",
+    "candidateContexts": "three retained exposed actual application package snapshots, Grade 3, schema/hash checked; exact package facts not independently established",
+    "extensionManifest": "data/evaluation/benchmark-conversation-extensions-v1.json",
+    "extensionScope": "separate evaluation-only transfer/adversarial suite, not silently added to original denominators",
+    "reviewDimensions": [
+      "factualCorrectness",
+      "packageEvidenceCorrectness",
+      "conditionRelevance",
+      "sourceApplicability",
+      "uncertainty",
+      "numericalCorrectness",
+      "practicalUsefulness",
+      "naturalnessReadability",
+      "multiTurnConsistency"
+    ],
+    "ratingScale": {
+      "0": "material failure/unusable or contradicted",
+      "1": "major omissions/errors; limited usefulness",
+      "2": "mixed/partially correct; consequential gaps",
+      "3": "mostly correct/useful; minor issues",
+      "4": "correct, relevant, complete for question, evidence-calibrated",
+      "null": "not applicable with reason, or unfilled pending; never substitute a model opinion"
+    },
+    "atomicClaimPolicy": "separate package, calculation, scientific and interpretation claims; quote actual displayed response; supplied support verdicts with source IDs and rationale; segregate human/developer/AI-assisted judgments",
+    "toolPolicy": "evaluate eligible/offered, selected arguments, execution status, returned evidence, applicability, synthesis, validation and display separately; valid alternative plans and relevant evidence reuse allowed; no forced lookup per health word"
+  },
+  "retrieval": {
+    "scorer": "scripts/evaluation/run_experiments.py:retrieval",
+    "gradedRelevance": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "labels": {
+      "0": "irrelevant or contradicts requested identity/topic",
+      "1": "topically related but insufficient to answer",
+      "2": "partly answers; material scope/applicability limit",
+      "3": "directly useful for the question with applicable scope"
+    },
+    "separateApplicability": [
+      "applicable",
+      "not-applicable",
+      "unknown"
+    ],
+    "metrics": [
+      "Recall@k within complete judged pool",
+      "MRR@k",
+      "nDCG@k",
+      "negative false matches",
+      "unjudged coverage",
+      "inapplicable returned"
+    ],
+    "independentHumanLabelsRequiredForFinalMetrics": true,
+    "judgmentPool": "blind union of retrieval conditions plus predeclared relevant candidates; randomized source ordering; include negatives; incomplete pool => metrics null"
+  },
+  "statistics": {
+    "samplingUnit": "product group, not photograph/field/turn treated as independent person",
+    "report": "raw numerator/denominator plus per-product/per-conversation results; do not pool reference grades, assessor types, code/model versions",
+    "pairedUncertainty": "Report raw paired differences. Any later resampling must cluster related product groups/brand blocks and be predeclared; no intervals generated in preparation.",
+    "noSelectiveExclusions": true,
+    "multipleComparisons": "exploratory unless preregistered; no superiority claim from isolated pilot"
+  },
+  "performance": {
+    "stages": [
+      "OCR cold-init",
+      "OCR warm",
+      "provider generation",
+      "tool execution",
+      "end-to-end logical turn"
+    ],
+    "tokens": [
+      "input",
+      "output",
+      "thinking",
+      "cached",
+      "total"
+    ],
+    "cost": "actual returned usage and dated price estimate; billed unknown stays null; no double-counting overlapping total/output/thinking; free/paid separated",
+    "failures": "retain timeout, unavailable, adapter/schema rejection, withholding, fallback and retries; changed model/config => noncomparable; never silently drop failed arms"
+  },
+  "executionFreeze": {
+    "approvedModel": null,
+    "generationConfig": null,
+    "providerAuthorization": false,
+    "finalImplementationCommit": null,
+    "splitApproval": null,
+    "referenceApproval": null,
+    "knowledgeStoreSnapshot": null,
+    "status": "BLOCKED_BY_DESIGN; next owner mission authorizes execution"
+  },
+  "literature": [
+    {
+      "id": "food-label-ocr",
+      "url": "https://arxiv.org/abs/2510.03570"
+    },
+    {
+      "id": "GriTS",
+      "url": "https://arxiv.org/abs/2203.12555"
+    },
+    {
+      "id": "ARES",
+      "url": "https://aclanthology.org/2024.naacl-long.20/"
+    },
+    {
+      "id": "RAGAS",
+      "url": "https://aclanthology.org/2024.eacl-demo.16/"
+    },
+    {
+      "id": "BFCL",
+      "url": "https://gorilla.cs.berkeley.edu/blogs/13_bfcl_v3_multi_turn.html"
+    },
+    {
+      "id": "FActScore",
+      "url": "https://arxiv.org/abs/2305.14251"
+    },
+    {
+      "id": "NutriBench",
+      "url": "https://proceedings.iclr.cc/paper_files/paper/2025/hash/ef3a57e4f26b640e6f90d78cbb011feb-Abstract-Conference.html"
+    },
+    {
+      "id": "NGQA",
+      "url": "https://aclanthology.org/2025.acl-long.296/"
+    }
+  ]
+}

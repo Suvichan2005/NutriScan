@@ -7,8 +7,8 @@ import study_ops as ops
 SECTIONS=('nutrition','ingredients','allergens','additives','warnings','claims','serving','identity')
 
 
-def prepare(original_root,output):
-    original_root=original_root.resolve();collection_file=original_root/'.data/semester-evaluation-acquisition-20261026/collection-manifest.json';collection=ops.load(collection_file)
+def prepare(original_root,output,collection_path=None):
+    original_root=original_root.resolve();collection_file=collection_path.resolve() if collection_path else original_root/'.data/semester-evaluation-acquisition-20261026/collection-manifest.json';collection=ops.load(collection_file)
     index_file=ops.local(original_root,collection['annotationPreparation']['index']);index=ops.load(index_file)
     groups=collection['products'];image_count=sum(len(g['images']) for g in groups)
     if index['products']!=len(groups) or index['images']!=image_count:raise ValueError('Annotation assignment index differs from retained collection')
@@ -28,7 +28,7 @@ def prepare(original_root,output):
         (output/'groups'/f'candidate-{i+1:02d}.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
     (output/'reviews.json').write_text(json.dumps(reviews,indent=2)+'\n',encoding='utf-8')
     (output/'readiness-before-human-review.json').write_text(json.dumps(readiness,indent=2)+'\n',encoding='utf-8')
-    handoff=original_root/'.data/semester-evaluation-acquisition-20261026/HUMAN_HANDOFF.md';text=handoff.read_text(encoding='utf-8-sig')
+    handoff=original_root/'.data/semester-evaluation-acquisition-20261026/HUMAN_HANDOFF.md';text=handoff.read_text(encoding='utf-8-sig') if handoff.is_file() else ''
     stale='10 candidate groups' in text and len(groups)!=10
     receipt={'scope':'custodian metadata preparation only; zero independent labels/approvals','groups':len(groups),'images':image_count,'nutritionPassAssignments':index['nutritionPassAssignments'],'supplementPassAssignments':index['supplementPassAssignments'],'originalCollectionSha256':collection_hash,'originalAnnotationIndexSha256':index_hash,'originalHumanHandoffMayBeStale':stale,'sourceCopies':0,'imagesDecoded':False,'humanReferences':'PENDING'}
     (output/'manifest.json').write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
@@ -37,5 +37,5 @@ def prepare(original_root,output):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--original-root',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();print(json.dumps(prepare(a.original_root,a.output),indent=2))
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--original-root',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--collection',type=Path);a=p.parse_args();print(json.dumps(prepare(a.original_root,a.output,a.collection),indent=2))
 if __name__=='__main__':main()

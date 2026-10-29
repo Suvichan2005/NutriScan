@@ -1,0 +1,2 @@
+# Preserve hash-pinned, unmodified third-party evaluation bytes on Windows.
+tools/semester-study-ops/vendor/table_transformer/* -text -whitespace
