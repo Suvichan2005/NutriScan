@@ -1,3 +1,7 @@
+## LOCAL-CONVERSATION-20261028 — ACTIVE (29 October continuation)
+
+Owner requests bounded CPU Ollama trials and optional selector integration only if useful. Inputs: existing development package snapshots, nine-conversation manifest, calculators, local guidance and corrections. Completed acquisition and exploratory calibration receipts are private; no independent package ground truth or human ratings are claimed. Repair initial harness citation/history/request-binding gaps, then execute matched sequential cases and assess actual responses, latency, Windows available/committed RAM and paging. Preserve interrupted/canceled cases separately. Gemini remains available; no paid/cloud calls or unrelated feature expansion. Owned boundary: local-provider adapter/isolated trial, then UI only if feasibility passes. Next executable action: verify repaired adapter offline and run bounded real local acceptance. Private handoff: `.data/ollama-trial-20261028/RESUME.md`.
+
 ## 28 October — Browser acceptance and Nano decision
 Browser access recovered after owner restarted desktop. Calculator: clean page renders two independent portion cards, one selectable result per nutrient; five cakes->50g conversion retains values and local selection changes only its card. Both source bases remain in details. Real browser exposed duplicate React keys for multiple portion cards; keys now include calculation IDs. Portion summary explicitly displays selected amount/unit. Synthetic intercepted data, not photo accuracy.
 

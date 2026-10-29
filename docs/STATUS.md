@@ -1,3 +1,7 @@
+## 29 October — Calculator overview contract and local-model trial
+
+The native calculator declaration no longer says candidateId is required whenever nutrient is omitted; that contradicted the supported overview operation. No executor/schema or numerical behavior changed. Focused existing tool/provenance/citation suites pass (120 passed, one skipped); this is software contract verification, not model accuracy. Ollama development trial remains ACTIVE and private; initial adapter diagnostics and interrupted runs are not final model comparisons. No cloud calls, optional local UI, release replacement or model-quality completion claim.
+
 ## 28 October — Browser acceptance and Nano decision
 Browser access recovered after owner restarted desktop. Calculator: clean page renders two independent portion cards, one selectable result per nutrient; five cakes->50g conversion retains values and local selection changes only its card. Both source bases remain in details. Real browser exposed duplicate React keys for multiple portion cards; keys now include calculation IDs. Portion summary explicitly displays selected amount/unit. Synthetic intercepted data, not photo accuracy.
 

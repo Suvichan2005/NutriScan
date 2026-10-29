@@ -1,3 +1,7 @@
+## 29 October — One overview operation must have one consistent tool contract
+
+Omitting nutrient and candidateId intentionally requests all usable nutrients for the supplied portion. candidateId is optional and selects one nonstandard printed row; its description must not contradict the overview instruction or amount/unit-only required schema. Preserve deterministic execution, missing-data behavior and provenance. Local model trials use actual executors and require production citation/history helpers before final answer judgments; native selection and precomputed synthesis remain separately reported. No model becomes the default from a few development responses.
+
 ## 28 October — Browser acceptance and Nano decision
 Browser access recovered after owner restarted desktop. Calculator: clean page renders two independent portion cards, one selectable result per nutrient; five cakes->50g conversion retains values and local selection changes only its card. Both source bases remain in details. Real browser exposed duplicate React keys for multiple portion cards; keys now include calculation IDs. Portion summary explicitly displays selected amount/unit. Synthetic intercepted data, not photo accuracy.
 

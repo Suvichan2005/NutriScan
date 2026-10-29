@@ -1,3 +1,9 @@
+## 29 October — Local CPU trial active; calculator tool contract corrected
+
+Owner authorized sequential Ollama trials on the ThinkBook after reboot. Official Granite4 3B, Phi4 Mini and Qwen3.5 4B Q4_K_M are installed; inference is loopback-only with cloud disabled. No Gemini/paid request or production-provider replacement. Early local observations are development diagnostics, not independent accuracy evidence. Initial adapter limitations (citation-handle format, source selection/rendering, calculation carry-forward and request snapshotting) are being repaired before further comparisons; raw receipts are preserved privately. The interrupted overnight Granite native segment is noncomparable, and the later batch was deliberately stopped for adapter audit. Do not resume or count canceled/unexecuted cases as model failures.
+
+A real shared tool-description contradiction is corrected: candidateId is optional for all-nutrient overview and selects a specific nonstandard row when needed. Runtime arguments/arithmetic are unchanged. Existing calculator, conversation-provenance and citation suites pass (120 passed/1 skipped). No live-model improvement is claimed yet. Source/owner overlays, Gemini path and frozen release are retained. Private execution state: `.data/ollama-trial-20261028/RESUME.md`.
+
 ## 28 October — Browser acceptance and Nano decision
 Browser access recovered after owner restarted desktop. Calculator: clean page renders two independent portion cards, one selectable result per nutrient; five cakes->50g conversion retains values and local selection changes only its card. Both source bases remain in details. Real browser exposed duplicate React keys for multiple portion cards; keys now include calculation IDs. Portion summary explicitly displays selected amount/unit. Synthetic intercepted data, not photo accuracy.
 
