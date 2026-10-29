@@ -90,4 +90,3 @@ export function portionTables(pkg:PackageData,calculations:Calculation[]){
    labelCaution:'Approximate when based on unconfirmed package readings; printed serving is not a personal recommendation.'};
  });
 }
-

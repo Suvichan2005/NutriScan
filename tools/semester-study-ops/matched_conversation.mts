@@ -16,7 +16,7 @@ const nativeFetch=globalThis.fetch;const networkEvents:any[]=[];globalThis.fetch
 
 const fixedAt='2026-10-29T00:00:00.000Z';
 
-async function tool(name:string,args:any,pkg:PackageData,question:string,profile:any,history:any[]){return executeGeminiTool(name,args,{package:pkg,question,profile,conversationContext:history.map(t=>({question:t.question})),visualImages:[],searchTerms:new Set(),prepareImage:async()=>{throw Error('No images in conversation benchmark');}});}
+async function tool(name:string,args:any,pkg:PackageData,question:string,profile:any,history:any[],searchTerms=new Set<string>()){const result=await executeGeminiTool(name,args,{package:pkg,question,profile,conversationContext:history.map(t=>({question:t.question})),visualImages:[],searchTerms,prepareImage:async()=>{throw Error('No images in conversation benchmark');}});for(const term of result.searchTerms??[])searchTerms.add(term);return result;}
 
 const operations:Record<string,any[]>={
 
@@ -144,15 +144,17 @@ async function run(){
 
  const provider=await import('../../src/lib/server/gemini-provider');generate=provider.generateTracked;googleContext=provider.applicationGeminiContext(false,model as any);if(googleContext.tier!==tier)throw Error('Tier mismatch');ledgerStart=await load('.data/gemini-usage.json');}
 
- const config={model,tier,condition,phase,repeat,freezeSha256:sha(await readFile(path.join(base,'freeze.json'))),adapterSha256:sha(await readFile(new URL(import.meta.url))),helperSha256:sha(await readFile(new URL('./conversation-evaluation-views.mts',import.meta.url))),selection,temperature:0,seed:20261029,outputCeiling:768,localContext:16384,thinking:google?(model==='gemini-3.8-flash'?'low':'minimal'):'disabled',cloudPerGenerationTimeoutMs:google?60000:null,logicalTurnDeadlineMs:480000,automaticAdapterRetry:false,productionShortQuotaRetry:'one existing Retry-After<=1.5s retry, observable in network/ledger',historyPolicy:freeze.historyPolicy};await save(path.join(dest,'execution.json'),config);
+ const interTurnDelayMs=Math.max(0,Math.min(20000,Number(process.argv.find(x=>x.startsWith('--inter-turn-ms='))?.slice(16)??0)));
+ const config={model,tier,condition,phase,repeat,interTurnDelayMs,freezeSha256:sha(await readFile(path.join(base,'freeze.json'))),adapterSha256:sha(await readFile(new URL(import.meta.url))),helperSha256:sha(await readFile(new URL('./conversation-evaluation-views.mts',import.meta.url))),selection,temperature:0,seed:20261029,outputCeiling:768,localContext:16384,thinking:google?(model==='gemini-3.8-flash'?'low':'minimal'):'disabled',cloudPerGenerationTimeoutMs:google?60000:null,logicalTurnDeadlineMs:480000,automaticAdapterRetry:false,productionShortQuotaRetry:'one existing Retry-After<=1.5s retry, observable in network/ledger',historyPolicy:freeze.historyPolicy};await save(path.join(dest,'execution.json'),config);
 
  for(let index=0;index<selection.length;index++){
 
   if(await stat(path.join(base,'STOP')).then(()=>true).catch(()=>false))break;
 
+  if(index>0&&interTurnDelayMs)await new Promise(resolve=>setTimeout(resolve,interTurnDelayMs));
   const c=await load(path.join(base,'cases',selection[index]+'.json'));const mode=condition==='synthesis'?'synthesis':'native';const logical=c.requests[mode].logical;if(sha(logical)!==c.requests[mode].sha256)throw Error('Frozen request changed');
 
-  const currentEvidenceIds=new Set<string>();const calculations:Calculation[]=mode==='synthesis'?c.calculations:[];const evidence:EvidenceSource[]=mode==='synthesis'?c.evidence:[];for(const s of evidence)currentEvidenceIds.add(s.id);const forwardAliases=new Map<string,string>(c.aliases?.[mode]??[]);const aliases=new Map<string,string>([...forwardAliases].map(([k,v])=>[v,k]));
+  const searchTerms=new Set<string>();const currentEvidenceIds=new Set<string>();const calculations:Calculation[]=mode==='synthesis'?c.calculations:[];const evidence:EvidenceSource[]=mode==='synthesis'?c.evidence:[];for(const s of evidence)currentEvidenceIds.add(s.id);const forwardAliases=new Map<string,string>(c.aliases?.[mode]??[]);const aliases=new Map<string,string>([...forwardAliases].map(([k,v])=>[v,k]));
 
   const declarations=condition==='knowledge-off'?logical.tools.filter((t:any)=>['calculate_nutrition','clarify_package_reading'].includes(t.name)):logical.tools;let messages:any[]=[{role:'system',content:logical.system},{role:'user',content:logical.user}];let contents:any[]=[{role:'user',parts:[{text:logical.user}]}];
 
@@ -172,7 +174,7 @@ async function run(){
 
      const partsConfig:any={systemInstruction:logical.system,temperature:0,seed:20261029,maxOutputTokens:768,thinkingConfig:{thinkingLevel:model==='gemini-3.8-flash'?'low':'minimal'},...(declarations.length?{tools:[{functionDeclarations:getAgentToolDeclarations(false,false).filter(t=>declarations.some((d:any)=>d.name===t.name))}]}:{}),abortSignal:AbortSignal.timeout(Math.max(1,deadline-Date.now()))};
 
-     const request={model,contents,config:partsConfig};const requestSnapshot={model,contents:structuredClone(contents),config:JSON.parse(JSON.stringify({...partsConfig,abortSignal:'bounded signal'}))};const a=performance.now();const priorLedger=await load('.data/gemini-usage.json');const r=await generate(googleContext,request,{analysisId:'matched-'+id+'-'+c.id,stage:'matched-conversation-'+condition,round,deadlineAt:deadline});const rawContent=r.candidates?.[0]?.content;const text=(rawContent?.parts??[]).filter((p:any)=>!p.thought).map((p:any)=>p.text??'').join('');g={request:requestSnapshot,requestSha256:sha(requestSnapshot),response:r,actualModel:r.modelVersion,text,calls:(r.functionCalls??[]).map((x:any)=>({name:x.name,args:x.args??{},id:x.id})),content:rawContent,elapsedMs:performance.now()-a,ttftMs:null,ttftUnavailableReason:'production tracked provider uses non-streaming response',inputTokens:r.usageMetadata?.promptTokenCount??null,outputTokens:r.usageMetadata?.candidatesTokenCount??null,thoughtTokens:r.usageMetadata?.thoughtsTokenCount??null,cachedTokens:r.usageMetadata?.cachedContentTokenCount??null,finishReason:r.candidates?.[0]?.finishReason,ledgerRecords:(await load('.data/gemini-usage.json')).calls.filter((x:any)=>!priorLedger.calls.some((p:any)=>p.id===x.id)),providerRouteCapture:'sanitized production diagnostics and evaluation events keyed by matched analysis ID'};
+     const request={model,contents,config:partsConfig};const requestSnapshot={model,contents:structuredClone(contents),config:JSON.parse(JSON.stringify({...partsConfig,abortSignal:'bounded signal'}))};const a=performance.now();const priorLedger=await load('.data/gemini-usage.json');const r=await generate(googleContext,request,{analysisId:'matched-'+id+'-'+c.id,stage:'matched-conversation-'+condition,round,profileIncluded:Object.values(c.profile).some(v=>typeof v==='string'&&v.trim().length>0),deadlineAt:deadline});const rawContent=r.candidates?.[0]?.content;const text=(rawContent?.parts??[]).filter((p:any)=>!p.thought).map((p:any)=>p.text??'').join('');g={request:requestSnapshot,requestSha256:sha(requestSnapshot),response:r,actualModel:r.modelVersion,text,calls:(r.functionCalls??[]).map((x:any)=>({name:x.name,args:x.args??{},id:x.id})),content:rawContent,elapsedMs:performance.now()-a,ttftMs:null,ttftUnavailableReason:'production tracked provider uses non-streaming response',inputTokens:r.usageMetadata?.promptTokenCount??null,outputTokens:r.usageMetadata?.candidatesTokenCount??null,thoughtTokens:r.usageMetadata?.thoughtsTokenCount??null,cachedTokens:r.usageMetadata?.cachedContentTokenCount??null,finishReason:r.candidates?.[0]?.finishReason,ledgerRecords:(await load('.data/gemini-usage.json')).calls.filter((x:any)=>!priorLedger.calls.some((p:any)=>p.id===x.id)),providerRouteCapture:'sanitized production diagnostics and evaluation events keyed by matched analysis ID'};
 
     }
 
@@ -180,7 +182,7 @@ async function run(){
 
     if(google)contents.push(g.content);else messages.push(g.message);const functionParts=[];
 
-    for(const call of g.calls){const at=performance.now();const actualArgs=replaceReferenceIds(call.args,aliases);const allowed=declarations.some((t:any)=>t.name===call.name);const result=!allowed?{status:'error',resultCount:0,output:{status:'not-offered'}}:c.events.some((e:any)=>e.kind==='source-unavailable')&&call.name!=='calculate_nutrition'&&call.name!=='clarify_package_reading'?{status:'unavailable',resultCount:0,output:{status:'unavailable',reason:'frozen source-unavailable intervention'}}:await tool(call.name,actualArgs,c.package,c.question,c.profile,c.history);
+    for(const call of g.calls){const at=performance.now();const actualArgs=replaceReferenceIds(call.args,aliases);const allowed=declarations.some((t:any)=>t.name===call.name);const result=!allowed?{status:'error',resultCount:0,output:{status:'not-offered'}}:c.events.some((e:any)=>e.kind==='source-unavailable')&&call.name!=='calculate_nutrition'&&call.name!=='clarify_package_reading'?{status:'unavailable',resultCount:0,output:{status:'unavailable',reason:'frozen source-unavailable intervention'}}:await tool(call.name,actualArgs,c.package,c.question,c.profile,c.history,searchTerms);
 
      trace.push({name:call.name,args:actualArgs,status:result.status,resultCount:result.resultCount,elapsedMs:performance.now()-at,result});for(const calc of result.calculations??[])calculations.push(calc);for(const source of result.evidence??[]){if(!evidence.some(s=>s.id===source.id))evidence.push(source);currentEvidenceIds.add(source.id);}
 
@@ -213,4 +215,3 @@ async function run(){
 }
 
 if(process.argv[2]==='run')await run();
-

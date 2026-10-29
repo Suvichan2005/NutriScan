@@ -1598,4 +1598,3 @@ The completed AI audit is not repeated. Original five-arm/nine-conversation/nine
 
 ## 30 October 2026 — Matched benchmark parity and disclosure
 Use frozen logical requests and shared teacher-forced context across models. Preserve prior receipts and reject hash-mismatched reuse. Do not equate completed responses, citations or tool counts with correctness. Keep cloud tiers explicit, independent annotations absent, and provider/CPU failures in denominators. No production or academic-report changes during this mission.
-
