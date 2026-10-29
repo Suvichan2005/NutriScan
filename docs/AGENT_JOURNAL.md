@@ -1,3 +1,9 @@
+## 29 October — Local trials completed and report rewrite begun
+
+Completed 118 local functional outcomes, including all 81 portfolio turns and nine retrieval transfers. Original and compact calibration protocols remain separate; 9B timed out once. Exact request bytes and source/input hashes verified. Archived 310 files (1,925,264 bytes), SHA-256 `5f3f6df9866fa320658d53dc2dad5ac252eb6a80c97bd736517c73eec191cc39`. No cloud/paid calls; models unloaded. Representative failures include wrong portion/ingredient associations and validation losses; no local provider was added. Sanitized evidence is tracked, raw material remains ignored.
+
+Inspected the genuine KIIT template and prior-semester submission; preserved originals. Created a new DOCX with six authored chapters and native template cover XML, and began replacing stale operational prose with measured results. Rendering found and prompted cover/numbering fixes. Final figures, citation audit, local-results insertion and complete page QA remain. No final-report completion claimed.
+
 ## 28 October — Browser acceptance and Nano decision
 Browser access recovered after owner restarted desktop. Calculator: clean page renders two independent portion cards, one selectable result per nutrient; five cakes->50g conversion retains values and local selection changes only its card. Both source bases remain in details. Real browser exposed duplicate React keys for multiple portion cards; keys now include calculation IDs. Portion summary explicitly displays selected amount/unit. Synthetic intercepted data, not photo accuracy.
 

@@ -1,3 +1,9 @@
+## 29 October — Local trial closed; KIIT submission report active
+
+The bounded CPU trial recorded 118 outcomes: three 27-turn portfolios, nine local retrieval transfers, native/precomputed calibration, a compact-context comparison and one 9B timeout. Median portfolio times: Phi-4 Mini 63.482 s, Granite 4 3B 87.544 s, Qwen 3.5 4B 94.134 s. Incorrect portion, ingredient and evidence associations remain; no optional local health-chat provider was accepted. Gemini and owner overlays are unchanged. No cloud/paid calls; all models unloaded. Request/input hashes and the private 310-file archive were verified. Receipt: `docs/evidence/local-model-functional-trial-20261029.json`.
+
+Next: finish the actual KIIT submission report from the original template. A new private DOCX has six authored chapters; result tables, final local findings, citations and all-page rendering still need completion. Read `.data/final-submission-20261029-v1/WORKING_STATUS.md`. Do not restart inference. Genuine authorship, signatures and originality approval remain human-owned; no guide methodology approval is recorded.
+
 ## 29 October — Local CPU trial active; calculator tool contract corrected
 
 Owner authorized sequential Ollama trials on the ThinkBook after reboot. Official Granite4 3B, Phi4 Mini and Qwen3.5 4B Q4_K_M are installed; inference is loopback-only with cloud disabled. No Gemini/paid request or production-provider replacement. Early local observations are development diagnostics, not independent accuracy evidence. Initial adapter limitations (citation-handle format, source selection/rendering, calculation carry-forward and request snapshotting) are being repaired before further comparisons; raw receipts are preserved privately. The interrupted overnight Granite native segment is noncomparable, and the later batch was deliberately stopped for adapter audit. Do not resume or count canceled/unexecuted cases as model failures.

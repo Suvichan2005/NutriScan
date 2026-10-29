@@ -1,0 +1,110 @@
+{
+  "date": "2026-10-29",
+  "kind": "CPU-only local conversation functional trial",
+  "sourceCommit": "a093c6fbb411307f5bce78509f2156f6728d693d",
+  "hardware": "Intel Core i7-1255U;24GBRAM;integrated graphics;noGPUoffload",
+  "runtime": "Ollama0.40.12",
+  "configuration": {
+    "contextTokens": 8192,
+    "outputTokens": 384,
+    "temperature": 0,
+    "cpuThreads": 6,
+    "batch": 512,
+    "qwenThinking": false,
+    "generationDeadlineSeconds": 240,
+    "nativeMaxToolRounds": 3
+  },
+  "logicalOutcomes": 118,
+  "mainPortfolio": [
+    {
+      "model": "phi4-mini",
+      "turns": 27,
+      "nonTruncatedCompleted": 26,
+      "truncated": 1,
+      "transportFailures": 0,
+      "medianSeconds": 63.482,
+      "minSeconds": 32.967,
+      "maxSeconds": 147.919,
+      "citedResponses": 14,
+      "minAvailableMB": 6045,
+      "peakCommittedBytes": 23467307008,
+      "peakProcessWorkingSetBytes": 4027473920,
+      "peakProcessPrivateBytes": 4684816384,
+      "minPagefileMB": 109,
+      "maxPagefileMB": 115,
+      "maxPromptTokens": 3566
+    },
+    {
+      "model": "granite4:3b",
+      "turns": 27,
+      "nonTruncatedCompleted": 23,
+      "truncated": 4,
+      "transportFailures": 0,
+      "medianSeconds": 87.544,
+      "minSeconds": 44.025,
+      "maxSeconds": 201.565,
+      "citedResponses": 19,
+      "minAvailableMB": 6094,
+      "peakCommittedBytes": 24037531648,
+      "peakProcessWorkingSetBytes": 3417321472,
+      "peakProcessPrivateBytes": 3850469376,
+      "minPagefileMB": 104,
+      "maxPagefileMB": 118,
+      "maxPromptTokens": 3698
+    },
+    {
+      "model": "qwen3.5:4b",
+      "turns": 27,
+      "nonTruncatedCompleted": 26,
+      "truncated": 1,
+      "transportFailures": 0,
+      "medianSeconds": 94.134,
+      "minSeconds": 43.45,
+      "maxSeconds": 143.84,
+      "citedResponses": 19,
+      "minAvailableMB": 5556,
+      "peakCommittedBytes": 24889966592,
+      "peakProcessWorkingSetBytes": 5048438784,
+      "peakProcessPrivateBytes": 6089252864,
+      "minPagefileMB": 104,
+      "maxPagefileMB": 114,
+      "maxPromptTokens": 3738
+    }
+  ],
+  "additionalConditions": {
+    "nativeCalibration": 9,
+    "precomputedCalibration": 9,
+    "packedContextCalibration": 9,
+    "localRetrievalTransfer": 9,
+    "nineBPracticality": {
+      "attempts": 1,
+      "outcome": "timeout",
+      "deadlineSeconds": 240
+    }
+  },
+  "independentHumanRatings": 0,
+  "independentPackageReferences": 0,
+  "apiAdditionalEstimatedUsd": 0,
+  "requestByteHashesVerified": true,
+  "originalInputAndSourceHashesVerified": true,
+  "adapterExternalFetchAttempts": 0,
+  "allModelsUnloadedAfterTrial": true,
+  "decision": "No model accepted as a production health-conversation provider under tested configuration; retain Gemini and existing local deterministic UI.",
+  "limitations": [
+    "Previously exposed Grade 3 package snapshots, not independently established truth",
+    "Precomputed production tools in the 81-turn portfolio; native tools separately calibrated",
+    "Vegetarian constraint added for functional profile-following; not original formal-study initial condition",
+    "Historical Flash-Lite and 3.8 observations are unmatched; no causal model superiority claim",
+    "Known concurrent Codex/report work; not isolated laboratory speed measurement",
+    "Numerical/source checks do not establish semantic correctness",
+    "No optional local-provider browser route delivered or accepted"
+  ],
+  "privacy": "Private raw inputs/responses and fictional profiles remain ignored; only operational aggregates are tracked. Existing cloud conversation remains unchanged and is not a newly delivered local-health privacy boundary.",
+  "archive": {
+    "relativePath": ".data/ollama-trial-20261028/NutriScan_Local_LLM_Results_20261029_v1.zip",
+    "bytes": 1925264,
+    "sha256": "5f3f6df9866fa320658d53dc2dad5ac252eb6a80c97bd736517c73eec191cc39",
+    "entries": 310,
+    "crcAndEntryHashesVerified": true
+  }
+}
