@@ -1,3 +1,7 @@
+## Final report audit — 29 October
+
+The substantive report is unchanged after a final claim/source and requirement audit (9,258 extracted words including tables/front matter). Private evidence archive v2 corrects stale preparation metadata, retains the checked DOCX/PDF bytes, and verifies all 68 file entries. No new model calls or product changes. Only confirmed current authors/guide/date/contributions and genuine institutional approvals remain blocked; one consolidated owner question is already pending. Evidence: docs/evidence/submission-report-20261029.json.
+
 ## 29 October — Substantive KIIT submission draft verified
 
 The actual supplied template was used as the DOCX base; previous-semester writing/format was inspected without inferring current authorship. The rewritten private report contains six authored chapters, 41 rendered pages, 11 tables and five figures. Actual Gemini and local-model measurements are separated, with candidate-reference agreement, AI-assisted judgments and synthetic interaction evidence explicitly limited. Operational branch/checkout/commit prose is excluded from academic chapters; exact revisions and 14 reconciled original anchors plus five supplemental anchors are in the private evidence index. Word export, all-page visual review and final raster comparison passed. The 66-file private archive passes CRC and per-file SHA-256 reconciliation. No new provider calls or production changes.
