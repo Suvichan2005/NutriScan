@@ -1,10 +1,8 @@
 import {
   conversationEvidenceSourceSchema,
   localEvidenceResponseSchema,
-  type Audit,
   type ConversationEvidenceSource,
   type EvidenceSource,
-  type PackageData,
 } from './contracts';
 
 export type LocalEvidenceCandidate = { source: ConversationEvidenceSource; score: number; exactIdentity: boolean };
@@ -72,13 +70,6 @@ export function isLocalEvidenceTopicallyRelevant(
   return queryTokens.some(token => sourceTokens.has(token));
 }
 
-/** Only unsupported package-only answers use the curated local evidence index. */
-export function shouldSearchLocalEvidence(audit: Audit): boolean {
-  return audit.trace.some((item) =>
-    item.tool === 'local_rule_answer' && /unsupported local question/i.test(item.reason)
-  );
-}
-
 export function isSafeEvidenceUrl(value: string): boolean {
   try {
     const url = new URL(value);
@@ -137,21 +128,6 @@ export function parseLocalEvidenceResponse(value: unknown, query?: string, expli
   };
 }
 
-export function buildLocalEvidenceFollowUp(
-  baseAnswer: string,
-  sources: ConversationEvidenceSource[],
-): string {
-  const first = sources[0];
-  if (!first) {
-    return baseAnswer + ' No strong match came from the local evidence library. That does not mean relevant evidence does not exist.';
-  }
-  return baseAnswer + ' A related source is available in Evidence & tools: ' + first.publisher + ', ' + first.title + '. Review its jurisdiction and scope there.';
-}
-
-export function buildLocalEvidenceUnavailableFollowUp(baseAnswer: string): string {
-  return baseAnswer + ' The local evidence library was unavailable, so this remains a package-only response.';
-}
-
 /** Keep bounded, safe source records when restoring or preparing answer/source context. */
 export function safeConversationEvidence(sources: readonly EvidenceSource[] | undefined, limit = 3): ConversationEvidenceSource[] {
   if (!sources) return [];
@@ -164,196 +140,4 @@ export function safeConversationEvidence(sources: readonly EvidenceSource[] | un
     seen.add(parsed.data.id);
     return [parsed.data];
   }).slice(0, boundedLimit);
-}
-
-/** Carry source-linked audit context into the local chat reply without adding unsupported findings. */
-export function buildLocalAuditConversationReply(audit: Audit, question: string, pkg?: PackageData): {
-  answer: string;
-  evidence?: ConversationEvidenceSource[];
-} {
-  const asksForEvidenceContext = /\b(?:compare|comparison|guidance|recommend\w*|daily|per day|whole[- ]day|reference|population|limit|according to|WHO|official|evidence|research|suitab\w*|safe|safety|health|risk|personal|me|my|allerg\w*|intoleran\w*|diabetes|blood pressure|claim\w*|criteria|regulat\w*|rules?|compliance|mean(?:ing)?|explain|interpret|may\s+contain|cross[- ]?contact|cross[- ]?contamination|precautionary)\b/i.test(question);
-  const relevantFindings = audit.findings.filter((finding) => finding.sourceIds.length > 0 && (
-    (asksForEvidenceContext && ['context', 'uncertain'].includes(finding.status)) || finding.status === 'calculated'
-  ));
-  const referencedSourceIds = new Set(relevantFindings.flatMap((finding) => finding.sourceIds));
-  const queryTopicTokens = new Set(evidenceTokens(question).filter(token => token.length >= 3 && !genericEvidenceTerms.has(token)));
-  const evidence = safeConversationEvidence(audit.sources.filter((source) => {
-    if (!referencedSourceIds.has(source.id)) return false;
-    // An explicit audit finding may link a source whose title directly names
-    // the asked topic. In that case, unrelated exclusions elsewhere in its
-    // summary must not veto the established finding-to-source relationship.
-    const titleDirectlyNamesTopic = evidenceTokens(source.title).some(token => queryTopicTokens.has(token));
-    return isLocalEvidenceTopicallyRelevant(source, question, titleDirectlyNamesTopic)
-      && isGuidanceEvidenceInScope(source, question);
-  }));
-  // Start with a concise package response. The source-linked finding below
-  // supplies only the local audit's already-scoped interpretation, not a full
-  // source summary.
-  const lead = audit.answer.trim().split(/\n\s*\n/, 1)[0]?.trim() ?? '';
-  const sentence = lead.match(/^(.{1,700}?[.!?])(?:\s|$)/s)?.[1];
-  const directRegulatoryAbstention = /^Current legal or regulatory status is unresolved\./i.test(lead);
-  const explicitMissingTextCaveat = /^No readable\b[\s\S]*?(?:does not establish that the package has none|absence from the extraction is not evidence that it is absent from the product)/i.test(audit.answer.trim());
-  const asksDirectGuidance = (evidence.length > 0 || directRegulatoryAbstention)
-    && /\b(?:recommend(?:ation|ations|ed|s)?|guidelines?|guidance|according\s+to|what\s+does\s+(?:WHO|FSSAI)\s+say|mean(?:ing)?|explain|interpret|criteria|thresholds?|definitions?|requirements?|compliance|compliant|qualif\w*|meets?|regulat\w*|law|rules?)\b/i.test(question)
-    && !/\b(?:compare|comparison|compared|versus|\bvs\b|portion|serving)\b/i.test(question);
-  let answer = (asksDirectGuidance
-    ? lead.slice(0, 1200)
-    : explicitMissingTextCaveat
-      ? audit.answer.trim().slice(0, 1200)
-      : sentence ?? lead.slice(0, 700)).trim();
-
-  // A package-only response should say when the requested nutrient was not
-  // captured, while preserving the distinction between missing evidence and
-  // an actual zero or absence from the product.
-  const requestedNutrient = question.match(/\b(calcium|iron|potassium|magnesium|zinc|cholesterol|trans\s+fat|saturated\s+fat|vitamin\s+[a-z](?:\d{1,2})?|protein|carbohydrates?|carbs?|sugars?|sodium|salt|fibre|fiber|fat|energy|calories?)\b/i)?.[1]?.toLocaleLowerCase('en-IN').replace(/\s+/g, ' ');
-  const nutrientAliases: Record<string, string> = { carbs: 'carbohydrate', carbohydrate: 'carbohydrate', carbohydrates: 'carbohydrate', sugar: 'sugars', calories: 'energy', calorie: 'energy', fibre: 'fiber', 'saturated fat': 'saturatedFat' };
-  const requestedKey = requestedNutrient ? nutrientAliases[requestedNutrient] ?? requestedNutrient : undefined;
-  const hasRequestedCalculation = !!requestedKey && audit.calculations.some(calculation => calculation.nutrient === requestedKey);
-  const asksForNutrientValue = /\b(?:how\s+much|amount|quantity|numeric(?:al)?\s+value|calculate|calculation|per\s*(?:100|serving|portion)|in\s+(?:a|this|my)\s+(?:serving|portion))\b/i.test(question)
-    || /\b(?:is|are|does|do)\b.{0,80}\b(?:listed|recorded|shown|printed|stated)\b/i.test(question);
-  if (pkg && requestedNutrient && !hasRequestedCalculation && asksForNutrientValue) {
-    const labelText = [pkg.rawText, ...pkg.observations.map(observation => observation.text)].join('\n');
-    const missing = labelText.toLocaleLowerCase('en-IN').includes(requestedNutrient)
-      ? `The entered label text mentions ${requestedNutrient}, but no usable ${requestedNutrient} amount is recorded for calculation. Check that line in the package inspector or add a clearer label reading.`
-      : `No ${requestedNutrient} amount is recorded in the available label evidence so far. That does not establish that the package contains none; add a clearer nutrition-panel reading to check it.`;
-    answer = missing;
-  }
-
-  const asksAllergenContext = /\b(?:allerg\w*|intoler\w*|may\s+contain|cross[- ]?contact|cross[- ]?contamination|safe|suitab\w*)\b/i.test(question);
-  if (asksAllergenContext) {
-    const suitabilityLimit = audit.answer.match(/[^.!?]*cannot establish individual suitability[^.!?]*[.!?]/i)?.[0]?.trim();
-    if (suitabilityLimit && !answer.includes(suitabilityLimit)) answer = `${answer} ${suitabilityLimit}`.trim();
-  }
-  if (asksAllergenContext) {
-    const finding = audit.findings.find(item => /^(?:food allergy|food intolerance|avoided ingredient):/i.test(item.title) && item.detail.trim());
-    if (finding && !answer.includes(finding.detail)) answer = `${answer} ${finding.detail}`.trim();
-  }
-  const selectedSourceIds = new Set(evidence.map(source => source.id));
-  const selectedContext = relevantFindings
-    .filter(finding => finding.status === 'context' && finding.detail.trim() && finding.sourceIds.some(id => selectedSourceIds.has(id)))
-    .map(finding => finding.detail.trim())
-    .filter(detail => !answer.includes(detail))
-    .slice(0, 2);
-  if (selectedContext.length) answer = [answer, ...selectedContext].filter(Boolean).join('\n\n');
-  answer = answer.slice(0, 1500);
-
-  return { answer, ...(evidence.length ? { evidence } : {}) };
-}
-
-/** Give a failed cloud turn a concise, traceable package snapshot without presenting it as an AI assessment. */
-export function buildLocalPackageFallbackReply(audit: Audit, question: string, pkg: PackageData): {
-  answer: string;
-  evidence?: ConversationEvidenceSource[];
-} {
-  const compact = (value: string | null | undefined, maxLength: number) => (value ?? '').replace(/\s+/g, ' ').trim().slice(0, maxLength);
-  const linked = (value: { observationIds: string[]; imageRegions: { imageId: string }[] }) =>
-    value.observationIds.length > 0 || value.imageRegions.length > 0;
-  const current = pkg.reconstruction?.current ? pkg.reconstruction : undefined;
-  const facts: string[] = [];
-  const identity = current?.identity;
-  const asksIdentity = /\b(?:brand|product name|what product|identify|identity)\b/i.test(question);
-  if (asksIdentity && identity && ['clear', 'provisional'].includes(identity.status) && linked(identity.evidence)) {
-    const name = [identity.brand, identity.name, identity.variant].map(part => compact(part, 100)).filter(Boolean).join(' ').slice(0, 240);
-    if (name) facts.push(`The saved label reading appears to identify ${name}.`);
-  }
-  const serving = current?.serving;
-  const asksServing = /\b(?:serving|portion|how much|how many|biscuits?|pieces?)\b/i.test(question);
-  const foodChoice = /\b(?:good|healthy|suitable|daily|every\s+day|regular(?:ly)?|snack(?:ing)?|fit\s+my\s+goals?|should\s+i|can\s+i\s+(?:eat|have))\b/i.test(question);
-  if ((asksServing || foodChoice) && serving && ['clear', 'provisional'].includes(serving.status) && linked(serving.evidence)) {
-    const pieces = serving.pieceCount ? `${serving.pieceCount} ${serving.pieceDescription ?? 'pieces'}` : '';
-    const mass = serving.quantity && serving.unit ? `about ${serving.quantity} ${serving.unit}` : '';
-    const text = compact(serving.printedText, 180) || (pieces && mass ? `${pieces} (${mass})` : pieces || mass);
-    if (text) facts.push(`It appears to define a serving as ${text}.`);
-  }
-  const asksIngredients = /\b(?:ingredient|made of|contains what)\b/i.test(question);
-  const ingredients = current?.ingredients
-    .filter(item => ['clear', 'provisional'].includes(item.status) && linked(item.evidence))
-    .sort((a, b) => a.position - b.position)
-    .slice(0, asksIngredients || foodChoice ? 2 : 0) ?? [];
-  if (ingredients.length) {
-    const text = ingredients.map(item => `${compact(item.name, 110)}${item.printedPercentage === null ? '' : ` (printed ${item.printedPercentage}%)`}`).join(', ');
-    facts.push(`The reading lists ${text}${ingredients[0].position === 0 ? ' among the first ingredients' : ' in the ingredient list'}.`);
-  } else if ((asksIngredients || foodChoice) && pkg.ingredients.length) {
-    facts.push(`The recorded ingredient list begins with ${pkg.ingredients.slice(0, 2).map(item => compact(item, 120)).join(', ')}.`);
-  }
-  const asksClaim = /\b(?:claim|sugar[- ]free|no added sugar|low[- ]fat|high[- ]protein)\b/i.test(question);
-  const claim = (asksClaim || foodChoice) ? current?.statements.find(item => item.kind === 'claim' && ['clear', 'provisional'].includes(item.status) && linked(item.evidence)) : undefined;
-  if (claim) facts.push(`The package reading includes the claim “${compact(claim.text, 140)}”.`);
-  else if ((asksClaim || foodChoice) && pkg.claims.length) facts.push(`The recorded package claim is “${compact(pkg.claims[0], 140)}”.`);
-
-  const requestedMatches = [...question.matchAll(/\b(added\s+sugars?|saturated\s+fat|trans\s+fat|total\s+sugars?|total\s+fat|protein|carbohydrates?|carbs?|sugars?|sodium|salt|dietary\s+fib(?:er|re)|fibre|fiber|fat|energy|calories?)\b/gi)];
-  const nutrientAliases: Record<string, string> = {
-    carb: 'carbohydrate', carbs: 'carbohydrate', carbohydrate: 'carbohydrate', carbohydrates: 'carbohydrate', sugar: 'sugars', sugars: 'sugars',
-    'total sugar': 'sugars', 'total sugars': 'sugars', 'added sugar': 'addedSugars', 'added sugars': 'addedSugars',
-    'saturated fat': 'saturatedFat', 'trans fat': 'transFat', 'total fat': 'fat',
-    'dietary fiber': 'fiber', 'dietary fibre': 'fiber', calories: 'energy', calorie: 'energy', fibre: 'fiber',
-  };
-  const nutrientDisplayNames: Record<string, string> = {
-    carbohydrate: 'carbohydrate', sugars: 'sugar', addedSugars: 'added sugar', saturatedFat: 'saturated fat',
-    transFat: 'trans fat', fat: 'fat', energy: 'energy', fiber: 'fiber',
-  };
-  const allRequestedNutrients = [...new Map<string, { key: string; phrase: string; label: string }>(requestedMatches.map(match => {
-    const phrase = match[0].toLocaleLowerCase('en-IN').replace(/\s+/g, ' ');
-    const key = nutrientAliases[phrase] ?? phrase;
-    return [key, { key, phrase, label: nutrientDisplayNames[key] ?? phrase }];
-  })).values()];
-  const requestedNutrients = allRequestedNutrients.slice(0, 5);
-  const normalizeNutrientLabel = (value: string) => value.toLocaleLowerCase('en-IN').replace(/[^a-z0-9]/g, '');
-  const matchesRequest = (calculation: typeof audit.calculations[number], request: typeof requestedNutrients[number]) =>
-    calculation.nutrient === request.key
-      || (calculation.nutrient === null && normalizeNutrientLabel(calculation.nutrientLabel ?? '') === normalizeNutrientLabel(request.phrase));
-  const requestIndex = (calculation: typeof audit.calculations[number]) => requestedNutrients.findIndex(request => matchesRequest(calculation, request));
-  const defaultOrder = ['carbohydrate', 'sugars', 'sodium', 'salt', 'protein', 'fat', 'fiber', 'energy'];
-  const calculations = [...audit.calculations]
-    .filter(calculation => requestedNutrients.length ? requestIndex(calculation) >= 0 : defaultOrder.includes(calculation.nutrient ?? ''))
-    .sort((a, b) => requestedNutrients.length
-      ? requestIndex(a) - requestIndex(b)
-      : defaultOrder.indexOf(a.nutrient ?? '') - defaultOrder.indexOf(b.nutrient ?? ''))
-    .slice(0, requestedNutrients.length ? requestedNutrients.length : foodChoice ? 2 : 1);
-  if (calculations.length) {
-    const details = calculations.map(calculation => {
-      const nutrient = (calculation.nutrientLabel??calculation.nutrient??'nutrient').replace(/([A-Z])/g, ' $1').toLocaleLowerCase('en-IN');
-      const result = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(calculation.result);
-      const input = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(calculation.input);
-      const basis = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(calculation.basisAmount);
-      const portion = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(calculation.portion);
-      const qualifier = calculation.interpretationIds?.length ? 'provisional image reading' : 'saved label reading';
-      return `${result} ${calculation.unit} ${nutrient} for ${portion} ${calculation.portionUnit}, scaled from ${input} ${calculation.inputUnit} per ${basis} ${calculation.portionUnit} (${qualifier})`;
-    });
-    facts.push(`The recorded calculation${calculations.length === 1 ? '' : 's'} ${calculations.length === 1 ? 'gives' : 'give'} ${details.join('; ')}.`);
-    facts.push('This is a package-only calculation; a combined meal total needs separate amounts and nutrition data for any other foods.');
-  }
-
-  if (asksClaim && requestedNutrients.length) {
-    facts.push('The printed claim and the requested nutrition-panel amount are separate package details; the claim wording alone does not establish that amount.');
-  }
-
-  const labelText = [pkg.rawText, ...pkg.observations.map(observation => observation.text)].join('\n').toLocaleLowerCase('en-IN');
-  const labelTermsByNutrient: Record<string, string[]> = {
-    energy: ['energy', 'calorie'], carbohydrate: ['carbohydrate', 'carb'], sugars: ['sugar'], addedSugars: ['added sugar'],
-    saturatedFat: ['saturated fat'], transFat: ['trans fat'], fiber: ['fiber', 'fibre'],
-  };
-  for (const request of requestedNutrients) {
-    if (calculations.some(calculation => matchesRequest(calculation, request))) continue;
-    const labelTerms = labelTermsByNutrient[request.key] ?? [request.label];
-    const mentionsNutrient = labelTerms.some(term => labelText.includes(term));
-    facts.push(mentionsNutrient
-      ? `The entered label text mentions ${request.label}, but no usable ${request.label} amount is recorded for calculation. Check that line in the package inspector or add a clearer label reading.`
-      : `No ${request.label} amount is recorded in the available label evidence so far. That does not establish that the package contains none; add a clearer nutrition-panel reading to check it.`);
-  }
-
-  if (foodChoice && !requestedNutrients.some(request => request.key === 'carbohydrate') && !calculations.some(calculation => calculation.nutrient === 'carbohydrate')) {
-    facts.push('A usable carbohydrate amount for the selected portion is not present in this saved reading.');
-  }
-  if (allRequestedNutrients.length > requestedNutrients.length) {
-    facts.push('This short local fallback shows up to five requested nutrient values; open Package details for additional values.');
-  }
-  const answer = facts.length
-    ? `${facts.join(' ')} ${foodChoice ? 'This on-device summary describes unverified label readings; it does not determine individual suitability.' : 'These on-device package readings remain unverified.'}`.slice(0, 1500)
-    : 'Gemini could not complete this answer, and the saved package record has no linked structured detail suitable for a short local summary. Open Package details to inspect the retained readings, or retry the analysis.';
-  const sourceIds = new Set(audit.findings.filter(finding => finding.status === 'context' && finding.sourceIds.length > 0).flatMap(finding => finding.sourceIds));
-  const evidence = safeConversationEvidence(audit.sources.filter(source => sourceIds.has(source.id)
-    && isLocalEvidenceTopicallyRelevant(source, question)
-    && isGuidanceEvidenceInScope(source, question)));
-  return { answer, ...(evidence.length ? { evidence } : {}) };
 }

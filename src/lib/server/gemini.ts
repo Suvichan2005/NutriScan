@@ -2309,14 +2309,11 @@ export async function assist(data: z.infer<typeof assistInput>) {
         :answerCheck.answer
           ?answerCheck.withheldUnsupportedQuantitySentenceCount?'answer-with-quantity-withheld':'answer-ready'
           :'answer-quantities-withheld';
-    const answerNotices=[
-      ...(!answerCheck.answer&&answerCheck.withheldUnsupportedQuantitySentenceCount?['I could not verify the precise quantities in that response, so I have not used them. The reconstructed package remains available to inspect.']:[]),
-      ...(sourceScopeCheck.withheldSentenceCount?['I left out one or more statements because their cited record was unavailable, unrelated to this question, or outside the stated scope.']:[]),
-    ];
-    const answer=[
-      ...(answerCheck.answer?[renderAnswerEvidenceReferences(answerCheck.answer,referenceAliases.fromModel,effectiveEvidence,effectiveCalculations)]:[]),
-      ...answerNotices,
-    ].join('\n\n');
+    // Only validated model prose belongs to the conversational answer.
+    // Application withholding notices are separate UI state/diagnostics.
+    const answer=answerCheck.answer
+      ?renderAnswerEvidenceReferences(answerCheck.answer,referenceAliases.fromModel,effectiveEvidence,effectiveCalculations)
+      :'';
     const parsedComponents=assistantUiComponentSchema.array().max(6).safeParse(generated.uiComponents);
     let uiComponents=parsedComponents.success?parsedComponents.data:[];
     const answerCalculationIds=new Set(answerCheck.calculationIds);

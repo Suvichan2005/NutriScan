@@ -43,7 +43,7 @@ export function conversationContextForAssist(
     question: turn.question.trim().slice(0, 1000),
     // A package revision invalidates the assistant's earlier conclusions,
     // not the user's question or the context they explicitly supplied.
-    answer: turn.outdated ? '' : turn.answer.slice(0, 2000),
+    answer: turn.outdated || turn.answerOrigin !== 'gemini' ? '' : turn.answer.slice(0, 2000),
   }));
 }
 
@@ -90,7 +90,7 @@ export function resolveLocalFollowUpQuestion(
  */
 export function conversationEvidenceForAssist(turns: SavedConversationTurn[], include: boolean) {
   if (!include) return [];
-  return safeConversationEvidence(turns.slice(-4).reverse().filter(turn => !turn.outdated)
+  return safeConversationEvidence(turns.slice(-4).reverse().filter(turn => !turn.outdated && turn.answerOrigin === 'gemini')
     .flatMap(turn => selectCitedEvidence(turn.answer, turn.evidence ?? [])));
 }
 

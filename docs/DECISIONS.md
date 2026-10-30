@@ -1,3 +1,7 @@
+## 30 October — Model inference owns conversational prose
+
+No deterministic audit/fallback builder may answer chat questions. Deterministic tools supply facts/calculations and structured UI; real Gemini (or a future explicitly accepted local LLM) supplies conversational reasoning. Unavailable inference is a retry state, not a locally composed answer. Keep numerical/source validation, with application notices separate from model prose. Retain actual answer model independently of selector choice and preserve historical observations/corrections. See docs/INFERENCE_ONLY_CHAT_20261030.md for checked paths and bounded acceptance.
+
 ## 29 October — AI orchestration audit and targeted refinement complete
 
 Audited the production prompt/context/tool/retrieval/citation/numeric path against a preserved baseline. Kept the natural agent, 13 ordinary tools (12 without images), explicit specialized/research exposure, 0.4 development retrieval floor, corrections and UI. A broader prompt rewrite was tested and rejected for lack of reliable grounding improvement. Accepted: truthful source-format instruction; reduced duplicate submit/guidance descriptions; focused guidance query handling with separate user-source identity; canonical nutrient keys in automatic guidance; authorized health-label identifiers and comparator-preserving numeric evidence.

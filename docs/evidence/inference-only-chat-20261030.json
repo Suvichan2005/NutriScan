@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-30",
+  "baseline": "23af3ac9767904b4df4e8e0a3da269c05a9747e5",
+  "scope": "Inference-only chat correction, not a new model benchmark or extraction accuracy study",
+  "verified": {
+    "httpAssistSuccesses": 5,
+    "freeModel": "gemini-3.5-flash-lite",
+    "reportedGenerationCount": 12,
+    "paidCalls": 0,
+    "simulatedHttp503": 1,
+    "simulatedFailureIsProviderObservation": false,
+    "inferenceOffApiRequests": 0,
+    "labelMergeWithoutQuestionApiRequests": 0,
+    "syntheticChecks": [
+      "missing piece-to-mass clarification",
+      "corrected 12 g/100g -> 3.6 g protein for 30 g",
+      "initial text entry -> 3 g protein for 20 g",
+      "saved record re-open with model and correction"
+    ],
+    "realPhotoChecks": [
+      "original oats label -> 30g portion",
+      "saved reconstruction -> 20g follow-up; no visualImages; calculator only"
+    ],
+    "independentPackageAccuracyEstablished": false,
+    "tests": {
+      "files": 82,
+      "passed": 949,
+      "skipped": 2
+    },
+    "typecheck": "passed",
+    "freshOptimizedBuild": "not run",
+    "ownerOverlaysUnchanged": {
+      "next-env.d.ts": true,
+      "src/app/globals.css": true
+    }
+  },
+  "privateEvidenceDirectory": ".data/inference-only-chat-20261030-v1/",
+  "paused": [
+    "matched benchmark",
+    "statistical analysis",
+    "KIIT report"
+  ],
+  "limitations": [
+    "Bounded functional acceptance, not broad model adherence or clinical validation",
+    "Model-produced typo in synthetic product name retained in raw response",
+    "Historical local turns preserved in storage; no longer rendered as model answers or passed as assistant context",
+    "Legacy engine Audit.answer retained for offline compatibility but not consumed by chat"
+  ]
+}

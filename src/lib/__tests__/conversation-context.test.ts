@@ -4,6 +4,7 @@ import { answerEvidenceForConversation, conversationEvidenceForAssist, conversat
 import type { SavedConversationTurn } from '../contracts';
 
 const turns: SavedConversationTurn[] = Array.from({ length: 6 }, (_, index) => ({
+  answerOrigin: 'gemini',
   question: `Question ${index + 1}`,
   answer: `Answer ${index + 1}`,
   at: `2026-10-21T00:00:0${index}.000Z`,
@@ -123,4 +124,11 @@ describe('answerEvidenceForConversation',()=>{
   it('does not advertise unused candidates as answer citations',()=>{
     expect(answerEvidenceForConversation('This is a package-only observation.',candidates)).toEqual([]);
   });
+});
+
+it('retains a legacy user question without passing rule-generated answers or citations to Gemini', () => {
+ const source=evidenceSources[0];const legacy={question:'What about 5 biscuits?',answer:'Per 100g: 60 g carbohydrate',at:'2026-10-30T00:00:00.000Z',answerOrigin:'local' as const,evidence:[source]};
+ expect(conversationContextForAssist([legacy],true)).toEqual([{question:legacy.question,answer:''}]);
+ expect(conversationEvidenceForAssist([legacy],true)).toEqual([]);
+ expect(conversationContextForAssist([{...legacy,answerOrigin:undefined}],true)?.[0].answer).toBe('');
 });

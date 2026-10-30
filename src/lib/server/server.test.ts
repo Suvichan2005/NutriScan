@@ -795,7 +795,7 @@ describe('provider validation, independent of provider invocation', () => {
     const data=assistInput.parse({consent:true,question,conversationContext:[{question:'How does carbohydrate relate to diabetes?',answer:'Earlier context cited IDF guidance.'}],evidence:[source!],package:{id:'source-scope-answer',name:'Unidentified package',ingredients:['Peanuts'],additives:[],allergens:[],claims:[],nutrients:[],reconstruction,observations:[observation],rawText:observation.text,warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
 
     const result=await assist(data);
-    expect(result.answer).toBe('The entered label text lists peanuts.\n\nI left out one or more statements because their cited record was unavailable, unrelated to this question, or outside the stated scope.');
+    expect(result.answer).toBe('The entered label text lists peanuts.');
     expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-with-source-scope-withheld',acceptedSentences:1,withheldSourceScopeSentences:1});
     expect(result.agentEvidence.map(item=>item.id)).toContain(source!.id);
     expect(result.uiComponents.some(item=>item.type==='source-reference-cards')).toBe(false);
@@ -906,7 +906,7 @@ describe('provider validation, independent of provider invocation', () => {
     vi.stubGlobal('fetch',fetcher);
     const data=assistInput.parse({consent:true,question,evidence:[source!],package:{id:'source-claim-sentence-scope',name:'Unidentified package',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString()}});
     const result=await assist(data);
-    expect(result.answer).toBe(`WHO describes sodium reduction as population guidance for the whole diet, not an individual prescription ${source!.title}.\n\nI left out one or more statements because their cited record was unavailable, unrelated to this question, or outside the stated scope.`);
+    expect(result.answer).toBe(`WHO describes sodium reduction as population guidance for the whole diet, not an individual prescription ${source!.title}.`);
     expect(result.agentDiagnostics).toMatchObject({answerStatus:'answer-with-source-scope-withheld',acceptedSentences:1,withheldSourceScopeSentences:1});
     expect(result.uiComponents).toContainEqual({type:'source-reference-cards',observationIds:[],sourceIds:[source!.id],calculationIds:[]});
     expect(fetcher).toHaveBeenCalledTimes(1);

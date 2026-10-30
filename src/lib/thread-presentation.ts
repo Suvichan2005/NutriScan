@@ -11,6 +11,19 @@ export type ThreadMessage = SavedConversationTurn & {
   diagnosticId?: string;
 };
 
+/** Conversation states describe inference, never substitute generated prose. */
+export function createConversationTurn(question: string, at: string, enabled: boolean): ThreadMessage {
+  return enabled
+    ? {question, at, answer: '', answerOrigin: 'gemini', status: 'pending'}
+    : unavailableConversationTurn({question, at, answer: ''}, 'AI conversation is off or unavailable. Your package readings and calculators remain available. Enable Gemini, then retry to ask the model.');
+}
+
+export function unavailableConversationTurn(turn: ThreadMessage, detail: string): ThreadMessage {
+  return {...turn, answer: '', answerOrigin: undefined, answerModel: undefined, status: 'fallback', statusDetail: detail,
+    uiComponents: undefined, calculations: undefined, evidence: undefined, retrievedEvidence: undefined,
+    agentTrace: undefined, agentDiagnostics: undefined, diagnosticId: undefined};
+}
+
 export type ThreadAgentTrace = { name: string; status: string; resultCount: number; elapsedMs: number };
 export type ThreadAgentDiagnostics = {
   provider?:{model:string;tier:string;inputTokens:number|null;outputTokens:number|null;estimatedUsd:number|null;scope:'answer-only'};
@@ -18,6 +31,7 @@ export type ThreadAgentDiagnostics = {
   answerStatus: string;
   acceptedSentences: number;
   withheldQuantitySentences: number;
+  withheldSourceScopeSentences?: number;
   provisionalReconstructionQuantitySentences?: number;
   generationCount: number;
   toolCallCount: number;
@@ -33,11 +47,12 @@ export function preservePreviousAnswerAfterRejectedRecheck(
   fallbackDetail: string,
   diagnostics: Pick<ThreadMessage, 'agentTrace' | 'agentDiagnostics' | 'diagnosticId'> = {},
 ): ThreadMessage {
-  if (previous?.answerOrigin === 'gemini' && previous.answer.trim()) return { ...previous, ...diagnostics };
+  if (previous?.answerOrigin === 'gemini' && previous.answer.trim()) return { ...previous }; // Preserve the original answer's provider/tool identity, not the rejected attempt's.
   return {
     ...pending,
     answer: '',
-    answerOrigin: 'local',
+    answerOrigin: undefined,
+    answerModel: undefined,
     status: 'fallback',
     statusDetail: fallbackDetail,
     uiComponents: undefined,
@@ -69,6 +84,7 @@ export function parseThreadAgentDiagnostics(value: unknown): ThreadAgentDiagnost
     || typeof record.answerStatus !== 'string' || !/^[a-z-]{1,80}$/.test(record.answerStatus)
     || !count('acceptedSentences') || !count('withheldQuantitySentences') || !count('generationCount')
     || !count('toolCallCount') || !count('retrievedSourceCount') || !count('calculationCount')
+    || (record.withheldSourceScopeSentences !== undefined && !count('withheldSourceScopeSentences'))
     || (record.provisionalReconstructionQuantitySentences !== undefined && !count('provisionalReconstructionQuantitySentences'))
     || !(record.packageReconstructionRevision === null || (typeof record.packageReconstructionRevision === 'number' && Number.isInteger(record.packageReconstructionRevision) && record.packageReconstructionRevision >= 1 && record.packageReconstructionRevision <= 1000))) return undefined;
   return {
@@ -80,6 +96,7 @@ export function parseThreadAgentDiagnostics(value: unknown): ThreadAgentDiagnost
     answerStatus: record.answerStatus,
     acceptedSentences: record.acceptedSentences as number,
     withheldQuantitySentences: record.withheldQuantitySentences as number,
+    ...(count('withheldSourceScopeSentences') ? {withheldSourceScopeSentences:record.withheldSourceScopeSentences as number}:{}),
     ...(count('provisionalReconstructionQuantitySentences') ? { provisionalReconstructionQuantitySentences: record.provisionalReconstructionQuantitySentences as number } : {}),
     generationCount: record.generationCount as number,
     toolCallCount: record.toolCallCount as number,

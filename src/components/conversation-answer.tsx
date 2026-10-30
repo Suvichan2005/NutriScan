@@ -16,12 +16,14 @@ export function ConversationAnswer({ answer, diagnostics, provisional }: { answe
   // Disclosure follows paragraph boundaries only. No semantic selection or generated summary.
   const fold = blocks.length > leadCount && (legacy.answer.length > 900 || blocks.slice(leadCount).some(block => block.kind === 'heading'));
   const withheld = Boolean(diagnostics?.withheldQuantitySentences || legacy.withheld);
+  const sourceWithheld = Boolean(diagnostics?.withheldSourceScopeSentences);
   const estimated = Boolean(diagnostics?.provisionalReconstructionQuantitySentences || provisional || legacy.provisional);
   return <div className={styles.answer}>
     {(fold ? blocks.slice(0, leadCount) : blocks).map((block, index) => <TextBlock key={index} {...block}/>)}
     {fold && <details className={styles.details}><summary>Read full explanation</summary>{blocks.slice(leadCount).map((block, index) => <TextBlock key={index} {...block}/>)}</details>}
-    {(withheld || estimated) && <details className={styles.notes}><summary>{estimated ? 'Label estimates' : 'Answer notes'}{withheld ? ' · some details excluded' : ''}</summary>
+    {(withheld || estimated || sourceWithheld) && <details className={styles.notes}><summary>{estimated ? 'Label estimates' : 'Answer notes'}{withheld || sourceWithheld ? ' · some details excluded' : ''}</summary>
       {estimated && <p>Some figures come from unconfirmed label readings. You can inspect or correct them in Package details.</p>}
+      {sourceWithheld && <p>The application excluded statements whose cited records were unavailable, unrelated or outside the stated scope.</p>}
       {withheld && <p>The application withheld numerical statements that did not match the available values, units or measurement basis. The remaining answer is shown above.</p>}
     </details>}
   </div>;

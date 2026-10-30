@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { geminiFailureMessage, hasVisibleProvisionalPackageAmounts, mergeRecheckedPackageCandidates, packageDisplayIdentity, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, scaleCalculationToPortion, supersedePackageAnswers, type ThreadMessage } from '../thread-presentation';
+import { createConversationTurn, unavailableConversationTurn, geminiFailureMessage, hasVisibleProvisionalPackageAmounts, mergeRecheckedPackageCandidates, packageDisplayIdentity, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, scaleCalculationToPortion, supersedePackageAnswers, type ThreadMessage } from '../thread-presentation';
 import { packageSchema, savedConversationTurnSchema, type AssistantUiComponent, type Calculation, type TentativeStructuredCandidate } from '../contracts';
 
 const identityCandidate = (proposedValue: string): TentativeStructuredCandidate => ({
@@ -149,6 +149,8 @@ describe('rejected package rechecks', () => {
     expect(result.answer).toBe(previous.answer);
     expect(result.answerOrigin).toBe('gemini');
     expect(result.status).toBeUndefined();
+    const retained=preservePreviousAnswerAfterRejectedRecheck(pending,{...previous,answerModel:'gemini-3.5-flash-lite'},'Rejected',{agentTrace:[{name:'submit_package_reconstruction',status:'ok',resultCount:1,elapsedMs:12}]});
+    expect(retained.answerModel).toBe('gemini-3.5-flash-lite');expect(retained.agentTrace).toBeUndefined();
   });
 
   it('shows a retry fallback when no successful earlier answer exists', () => {
@@ -348,5 +350,21 @@ describe('Gemini failure explanations', () => {
     expect(message).toMatch(/scan is still here/i);
     expect(message).not.toMatch(/saved/i);
     expect(message).not.toMatch(/paid|billing|upgrade/i);
+  });
+});
+
+describe('inference-only conversation states', () => {
+  it('does not substitute package arithmetic for an unavailable answer', () => {
+    const pending=createConversationTurn('Show protein and carbohydrate in 5 biscuits', '2026-10-30T00:00:00.000Z',true);
+    expect(pending.status).toBe('pending');
+    const failed=unavailableConversationTurn({...pending,answer:'A stale per-100g summary',answerModel:'gemini-3.5-flash-lite'},'Provider unavailable');
+    expect(failed.answer).toBe('');expect(failed.answerOrigin).toBeUndefined();expect(failed.answerModel).toBeUndefined();
+    expect(failed.status).toBe('fallback');expect(failed.uiComponents).toBeUndefined();expect(failed.evidence).toBeUndefined();
+    const disabled=createConversationTurn(pending.question,pending.at,false);
+    expect(disabled.answer).toBe('');expect(disabled.status).toBe('fallback');expect(disabled.answerOrigin).toBeUndefined();
+  });
+  it('persists the answering model rather than the current selector choice', () => {
+    const turn={question:'How much protein?',answer:'3 g',at:'2026-10-30T00:00:00.000Z',answerOrigin:'gemini' as const,answerModel:'gemini-3.5-flash-lite'};
+    expect(savedConversationTurns([turn])[0].answerModel).toBe('gemini-3.5-flash-lite');
   });
 });
