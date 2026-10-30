@@ -1,3 +1,7 @@
+## 30 October — Close research without manufacturing validation
+
+Use immutable raw attempts as denominators, reconcile provider truncations without editing originals, separate Grade 3 agreement from independent accuracy, and keep source selection distinct from applicability/entailment. Preserve incompatible legacy cohorts rather than pooling them. Six new free-Lite application requests resolve the missing fixed-evidence/retrieval diagnostic; their negative findings do not justify more tuning calls. Deliver the private reproducible evidence package and stop; do not edit production or the KIIT report. See RESEARCH_CLOSURE_20261030.md.
+
 ## 30 October — Bound final product correction
 
 Keep model-generated chat; normalize reference syntax, separate publisher preference from retrieval relevance, and keep curated summaries/indexes synchronized. Explicit free Flash-Lite is the accepted runtime configuration for this checkpoint. Claim-source selection and conservative quantitative filtering remain known limitations; do not claim scientific completion or resume tuning automatically. See FINAL_FLASH_LITE_ACCEPTANCE_20261030.md.

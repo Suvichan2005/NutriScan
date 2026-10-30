@@ -1,3 +1,7 @@
+## 30 October — Final research evidence delivered
+
+Closed the finite owner-authorized evidence mission using retained raw receipts and six new free-Lite application requests (eight generations). No production or report edits. Independent raw recomputation, failure/status reconciliation, three-product candidate reconstruction analysis, negative RAG/source-applicability findings and four inspected plots are packaged privately with complete hashes. Independent accuracy/answer judgments remain unscored. See docs/RESEARCH_CLOSURE_20261030.md. Stop at evidence handoff; no CPU/report continuation.
+
 ## 30 October — Final Flash-Lite checkpoint
 
 Reconciled accepted orchestration/chat corrections and reviewed evaluation infrastructure on codex/final-flash-lite-20261030. One focused correction: citation-handle typography, topic-versus-publisher retrieval gate and verified WHO salt-equivalent source/index consistency. Six identical before/after real application-route cases and two untouched optimized-production browser turns retained. Arithmetic/corrections/missing weight work; claim source use and some numerical filtering remain partial/unresolved, explicitly documented. All inference free Flash-Lite, no paid calls. 952 tests passed/2 skipped, TypeScript and clean optimized build passed; protected overlays hash-unchanged. Evidence: docs/FINAL_FLASH_LITE_ACCEPTANCE_20261030.md and docs/evidence/final-flash-lite-20261030.json. Stop; no CPU benchmark/report continuation.
