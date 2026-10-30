@@ -107,4 +107,15 @@ class EvaluationTests(unittest.TestCase):
    prepared={'state':'READY','claimScope':'final-independent','manifest':manifest,'jobs':[{'jobId':'a','config':config,'arm':'initial'}]}
    with self.assertRaisesRegex(ValueError,'Frozen run inputs changed'):runner.execute(prepared,['unused'],Path(directory)/'out',True)
 
+ def test_retrieval_precision_fixed_k_and_unjudged_abstention(self):
+  judged={'queryId':'judged','rankedIds':['good','bad'],'judgments':{'good':3,'bad':0},'judgmentStatus':'independent-human','poolComplete':True,'k':5}
+  r=runner.retrieval([judged])['perQuery'][0]
+  self.assertEqual(r['precisionAtK'],.2);self.assertEqual(r['precisionReturned'],.5)
+  unknown={**judged,'queryId':'unjudged','judgments':{},'judgmentStatus':'unjudged','poolComplete':False}
+  r=runner.retrieval([unknown])['perQuery'][0]
+  self.assertIsNone(r['precisionAtK']);self.assertIsNone(r['precisionReturned'])
+  empty={**judged,'queryId':'negative','rankedIds':[],'judgments':{}}
+  r=runner.retrieval([empty])['perQuery'][0]
+  self.assertEqual(r['precisionAtK'],0);self.assertIsNone(r['precisionReturned']);self.assertFalse(r['negativeFalseMatch'])
+
 if __name__=='__main__':unittest.main()
