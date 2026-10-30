@@ -1,3 +1,7 @@
+## 30 October — Keep one stable checkout and limit polish to presentation
+
+Use codex/stable as the canonical GitHub/default and everyday local line; preserve main and the original frozen tag. Keep the original protected worktree/corpus because the active checkout links to its models/source stores. Superseded PR tips are already in stable history; unique subject-scope commits remain separate. UI polish must not rewrite Gemini answers, change prompts/retrieval/calculations, hide uncertainty or add heuristic chat. Keep short answers visible, detailed evidence expandable and Vision counts truthful. No worktree/data deletion; optional exact cleanup commands only.
+
 ## 30 October — Close research without manufacturing validation
 
 Use immutable raw attempts as denominators, reconcile provider truncations without editing originals, separate Grade 3 agreement from independent accuracy, and keep source selection distinct from applicability/entailment. Preserve incompatible legacy cohorts rather than pooling them. Six new free-Lite application requests resolve the missing fixed-evidence/retrieval diagnostic; their negative findings do not justify more tuning calls. Deliver the private reproducible evidence package and stop; do not edit production or the KIIT report. See RESEARCH_CLOSURE_20261030.md.

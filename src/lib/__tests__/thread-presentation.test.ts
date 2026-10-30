@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createConversationTurn, unavailableConversationTurn, geminiFailureMessage, hasVisibleProvisionalPackageAmounts, mergeRecheckedPackageCandidates, packageDisplayIdentity, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, scaleCalculationToPortion, supersedePackageAnswers, type ThreadMessage } from '../thread-presentation';
+import { createConversationTurn, unavailableConversationTurn, geminiFailureMessage, hasVisibleProvisionalPackageAmounts, mergeRecheckedPackageCandidates, packageDisplayIdentity, packageInspectorSummary, parseThreadAgentTrace, prepareAssistantTurnPresentation, preservePreviousAnswerAfterRejectedRecheck, savedConversationTurns, scaleCalculationToPortion, supersedePackageAnswers, type ThreadMessage } from '../thread-presentation';
 import { packageSchema, savedConversationTurnSchema, type AssistantUiComponent, type Calculation, type TentativeStructuredCandidate } from '../contracts';
 
 const identityCandidate = (proposedValue: string): TentativeStructuredCandidate => ({
@@ -366,5 +366,17 @@ describe('inference-only conversation states', () => {
   it('persists the answering model rather than the current selector choice', () => {
     const turn={question:'How much protein?',answer:'3 g',at:'2026-10-30T00:00:00.000Z',answerOrigin:'gemini' as const,answerModel:'gemini-3.5-flash-lite'};
     expect(savedConversationTurns([turn])[0].answerModel).toBe('gemini-3.5-flash-lite');
+  });
+});
+
+
+describe('package inspector evidence counts', () => {
+  it('does not call a Vision-only package empty just because there are no OCR observations', () => {
+    const pkg = packageSchema.parse({id:'count-test',name:'Label',rawText:'',observations:[],nutrients:[],ingredients:[],additives:[],allergens:[],claims:[],warnings:[],synthetic:false,createdAt:'2026-10-30T00:00:00.000Z'});
+    expect(packageInspectorSummary(pkg)).toEqual({count:0,text:'0 observations'});
+    // Minimal structural fixture; not photo/provider acceptance.
+    const reconstruction = {nutritionRows:[{}],ingredients:[],additives:[],statements:[],serving:null,identity:{name:null,brand:null},current:true};
+    expect(packageInspectorSummary({...pkg,reconstruction} as unknown as typeof pkg)).toEqual({count:1,text:'1 label field'});
+    expect(packageInspectorSummary({...pkg,reconstruction:{...reconstruction,current:false}} as unknown as typeof pkg)).toEqual({count:0,text:'0 observations'});
   });
 });

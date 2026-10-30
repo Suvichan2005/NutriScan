@@ -3,6 +3,18 @@ import type { AssistantUiComponent, Calculation, Observation, PackageData, Saved
 import { calculationsFromReconstruction, normalizeReconstructedServing } from './portion';
 import { calculationRespectsCorrections } from './correction';
 
+/** Inspector counts distinguish structured Vision readings from OCR observations. */
+export function packageInspectorSummary(pkg: PackageData) {
+  const reconstruction = pkg.reconstruction?.current ? pkg.reconstruction : null;
+  const fields = reconstruction ? reconstruction.nutritionRows.length + reconstruction.ingredients.length
+    + reconstruction.additives.length + reconstruction.statements.length + (reconstruction.serving ? 1 : 0)
+    + (reconstruction.quantityDeclarations?.length ?? 0)
+    + (reconstruction.identity.name || reconstruction.identity.brand ? 1 : 0) : 0;
+  const observations = pkg.observations.length;
+  const parts = [fields ? `${fields} label field${fields === 1 ? '' : 's'}` : '', observations || !fields ? `${observations} observation${observations === 1 ? '' : 's'}` : ''].filter(Boolean);
+  return { count: fields || observations, text: parts.join(' · ') };
+}
+
 export type ThreadMessage = SavedConversationTurn & {
   status?: 'pending' | 'fallback';
   statusDetail?: string;

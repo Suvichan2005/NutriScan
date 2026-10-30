@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-30",
+  "scope": "final presentation UX acceptance, no new benchmark/report",
+  "sourceBaseline": "182d2f458e31717357785c40b00a8cb5089b8807",
+  "branch": "codex/stable",
+  "desktopViewport": [
+    1440,
+    1000
+  ],
+  "mobileEmulatedViewport": [
+    390,
+    844
+  ],
+  "realImageSha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+  "inputScope": "retained genuine nutrition-panel photo, not a synthetic fixture; no independent accuracy claim",
+  "applicationRequests": 4,
+  "providerGenerations": 10,
+  "models": [
+    "gemini-3.5-flash-lite"
+  ],
+  "tiers": [
+    "free"
+  ],
+  "paidCalls": 0,
+  "paidFallbackEnabledForAcceptance": false,
+  "followupImageBytes": 0,
+  "followupImageHandles": 1,
+  "followupReconstructionToolCalls": 0,
+  "correction": "same printed 8.8 g protein per 100 g confirmed through correction contract; no invented replacement value",
+  "halfServing": {
+    "massG": 19,
+    "proteinG": 1.67,
+    "carbohydrateG": 13.15,
+    "sodiumMg": 433.77
+  },
+  "source": "WHO automatic guidance context; follow-up model tools were calculations",
+  "tests": {
+    "passed": 955,
+    "skipped": 2
+  },
+  "typecheck": "passed",
+  "optimizedBuild": "passed through TypeScript, static generation, optimization and traces",
+  "finalConsoleWarningsErrors": 0,
+  "horizontalOverflow390px": false,
+  "keyboardInspectorEscapeFocus": "passed",
+  "productionProviderJourneys": 2,
+  "auditProviderJourneys": 2,
+  "lastBuildLayoutAcceptance": "saved real responses restored; final header/picker-only changes verified without duplicate inference",
+  "ownerProtectedFilesHashChecks": 7,
+  "ownerProtectedFilesUnchanged": true,
+  "productionPromptsRetrievalCalculationsChanged": false,
+  "reportChanged": false,
+  "benchmarksStarted": false,
+  "knownLimits": [
+    "partial reconstruction field coverage",
+    "existing numeric withholding/source selection limits",
+    "saved chat omits photos and transient tool traces/validation diagnostics",
+    "mobile emulation, not physical camera/phone acceptance",
+    "no complete accessibility compliance claim"
+  ],
+  "githubPlan": {
+    "defaultBranch": "codex/stable",
+    "integration": "fast-forward only",
+    "main": "unchanged",
+    "releaseTag": "unchanged",
+    "supersededPRs": [
+      4,
+      5
+    ]
+  },
+  "worktreesDeleted": 0,
+  "cleanupExecuted": false,
+  "privateEvidenceRoot": ".data/presentation-readiness-20261030-v1/"
+}

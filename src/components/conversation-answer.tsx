@@ -14,7 +14,7 @@ export function ConversationAnswer({ answer, diagnostics, provisional }: { answe
   const firstContent = blocks.findIndex(block => block.kind !== 'heading');
   const leadCount = firstContent < 0 ? blocks.length : firstContent + 1;
   // Disclosure follows paragraph boundaries only. No semantic selection or generated summary.
-  const fold = blocks.length > leadCount && (legacy.answer.length > 900 || blocks.slice(leadCount).some(block => block.kind === 'heading'));
+  const fold = blocks.length > leadCount && legacy.answer.length > 900;
   const withheld = Boolean(diagnostics?.withheldQuantitySentences || legacy.withheld);
   const sourceWithheld = Boolean(diagnostics?.withheldSourceScopeSentences);
   const estimated = Boolean(diagnostics?.provisionalReconstructionQuantitySentences || provisional || legacy.provisional);
@@ -22,9 +22,9 @@ export function ConversationAnswer({ answer, diagnostics, provisional }: { answe
     {(fold ? blocks.slice(0, leadCount) : blocks).map((block, index) => <TextBlock key={index} {...block}/>)}
     {fold && <details className={styles.details}><summary>Read full explanation</summary>{blocks.slice(leadCount).map((block, index) => <TextBlock key={index} {...block}/>)}</details>}
     {(withheld || estimated || sourceWithheld) && <details className={styles.notes}><summary>{estimated ? 'Label estimates' : 'Answer notes'}{withheld || sourceWithheld ? ' · some details excluded' : ''}</summary>
-      {estimated && <p>Some figures come from unconfirmed label readings. You can inspect or correct them in Package details.</p>}
-      {sourceWithheld && <p>The application excluded statements whose cited records were unavailable, unrelated or outside the stated scope.</p>}
-      {withheld && <p>The application withheld numerical statements that did not match the available values, units or measurement basis. The remaining answer is shown above.</p>}
+      {estimated && <p>Unconfirmed label readings. Review or correct them in Package details.</p>}
+      {sourceWithheld && <p>Statements with unavailable or inapplicable citations are not shown.</p>}
+      {withheld && <p>Some numerical statements could not be verified against the saved amounts, units or bases and are not shown.</p>}
     </details>}
   </div>;
 }

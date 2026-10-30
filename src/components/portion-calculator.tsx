@@ -34,8 +34,10 @@ export function PortionCalculator({ rows, pkg, onReview, initialPhysical, onAmou
   const label = (row: Calculation) => {
     const source = pkg.reconstruction?.nutritionRows.find(item => row.interpretationIds?.includes(item.rowId));
     const text = source?.printedLabel || source?.nutrient || row.nutrientLabel || (row.nutrient ? row.nutrient.replace(/([a-z])([A-Z])/g, '$1 $2') : row.label);
-    return text.slice(0, 1).toLocaleUpperCase('en') + text.slice(1);
+    const title = text.replace(/\s*\((g|mg|mcg|µg|ug|kcal|kj)\)\s*$/i, (suffix, unit: string) => unit.toLocaleLowerCase('en') === row.unit.toLocaleLowerCase('en') ? '' : suffix);
+    return title.slice(0, 1).toLocaleUpperCase('en') + title.slice(1);
   };
+  const portionLabel = (quantity: number) => quantity === 1 && (option?.unit === 'servings' || option?.unit === 'packages') ? option.label.slice(0, -1) : option?.label;
   return <section className={`thread-ui-card ${styles.portion}`} aria-label="Portion calculator" data-testid="thread-ui-component-portion-calculator">
     <div className={styles.portionHeading}><strong>Your portion</strong>{estimated && <span className={styles.badge}>Label estimate</span>}</div>
     <div className={styles.controls}>
@@ -54,14 +56,14 @@ export function PortionCalculator({ rows, pkg, onReview, initialPhysical, onAmou
     </div>
     <details className={`${styles.details} ${styles.nutrientPicker}`}><summary>Choose nutrients <span>{visible.length} selected</span></summary>
       <fieldset className={styles.nutrientChoices}><legend>Choose what to display</legend>
-        {choices.map(choice => <label key={choice.id}><input type="checkbox" checked={Boolean(choice.calculation && selectedIds.has(choice.id))} disabled={!choice.calculation} onChange={event => setSelected(current => event.target.checked ? [...current, {id:choice.id,subject:choice.subject}] : current.filter(selection => selection.id !== choice.id && !(selection.subject === choice.subject && !choices.some(item=>item.id===selection.id&&item.calculation))))}/><span>{choice.label}{choice.reason && <small>{choice.reason}</small>}</span></label>)}
+        {choices.map(choice => <label key={choice.id}><input type="checkbox" checked={Boolean(choice.calculation && selectedIds.has(choice.id))} disabled={!choice.calculation} onChange={event => setSelected(current => event.target.checked ? [...current, {id:choice.id,subject:choice.subject}] : current.filter(selection => selection.id !== choice.id && !(selection.subject === choice.subject && !choices.some(item=>item.id===selection.id&&item.calculation))))}/><span>{choice.calculation ? label(choice.calculation) : choice.label}{choice.reason && <small>{choice.reason}</small>}</span></label>)}
       </fieldset>
       <div className={styles.nutrientActions}><button type="button" className="text-button" onClick={() => setSelected(choices.filter(choice => choice.calculation).map(({id,subject})=>({id,subject})))}>Show all available</button><button type="button" className="text-button" onClick={() => setSelected(defaults)}>Reset selection</button></div>
       <p className={styles.pickerHint}>Changes stay on your device. Missing values and printed limits cannot be used as exact amounts.</p>
     </details>
     {!valid && <p role="status">Enter a positive amount to calculate.</p>}
     {!displayed.length && <p role="status">Choose a nutrient to see its amount.</p>}
-    {valid && option && <p className={styles.portionSummary}>For {number(Number(amount))} {option.label}{option.unit !== option.basisUnit ? ` · ${number(Number(amount) * option.quantity)} ${option.basisUnit}` : ''}</p>}
+    {valid && option && <p className={styles.portionSummary}>For {number(Number(amount))} {portionLabel(Number(amount))}{option.unit !== option.basisUnit ? ` · ${number(Number(amount) * option.quantity)} ${option.basisUnit}` : ''}</p>}
     <ul className={`${styles.results} ${styles.resultGrid}`} aria-live="polite">{visible.map(choice => {
       const row = choice.calculation!;
       const value = valid && option ? scalePortion(row, Number(amount), option) : null;
@@ -71,7 +73,7 @@ export function PortionCalculator({ rows, pkg, onReview, initialPhysical, onAmou
     })}</ul>
     <PackageClarification pkg={pkg} ids={relevantIssueIds} onResolve={onResolveClarification} onInspect={onInspectEvidence}/>
     <details className={styles.details}><summary>Calculation &amp; label details</summary>
-      {valid && option && <p>{number(Number(amount))} {option.label}{option.unit !== option.basisUnit ? ` = ${number(Number(amount) * option.quantity)} ${option.basisUnit}` : ''}{rows[0].countedPortion && option.basisUnit === rows[0].countedPortion.servingUnit ? ` · ${number(Number(amount) * option.quantity / rows[0].countedPortion.servingQuantity)} label servings` : ''}.</p>}
+      {valid && option && <p>{number(Number(amount))} {portionLabel(Number(amount))}{option.unit !== option.basisUnit ? ` = ${number(Number(amount) * option.quantity)} ${option.basisUnit}` : ''}{rows[0].countedPortion && option.basisUnit === rows[0].countedPortion.servingUnit ? ` · ${number(Number(amount) * option.quantity / rows[0].countedPortion.servingQuantity)} label servings` : ''}.</p>}
       <ul>{visible.flatMap(choice => choice.alternatives.flatMap(alternative => alternative.calculation ? [alternative.calculation] : [])).map(row => <li key={row.id}>{label(row)}: {number(row.input)} {row.inputUnit} per {number(row.basisAmount)} {row.portionUnit}. {valid && option && option.basisUnit === row.portionUnit ? `${number(row.input)} × ${number(Number(amount) * option.quantity)} ÷ ${number(row.basisAmount)}.` : 'No mass-to-volume conversion is available.'}</li>)}</ul>
       <p>{estimated ? 'Calculated from label readings that have not been confirmed. Check the linked package details before relying on a disputed value.' : 'Calculated from the saved label values and their measurement basis.'} This calculation is not a recommended portion.</p>
       {onReview && <button type="button" className="text-button" onClick={onReview}>Review label values</button>}

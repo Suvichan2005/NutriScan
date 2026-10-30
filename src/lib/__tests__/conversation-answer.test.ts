@@ -27,4 +27,10 @@ describe('presentConversationAnswer', () => {
     expect(presentConversationAnswer('## Printed values\n\n- **Energy:** 139 kcal\n- **Carbohydrate:** 23.1 g\n\n*(Approximate values.)*'))
       .toBe('Printed values\n\n• Energy: 139 kcal\n• Carbohydrate: 23.1 g\n\n(Approximate values.)');
   });
+  it('cleans malformed heading emphasis while preserving footnotes, comparisons and multiplication',()=>{
+    expect(presentConversationAnswer('**Limitations:*\nThe value is <0.5 g.\nAverage values*\n2 * 3 = 6'))
+      .toBe('Limitations:\nThe value is <0.5 g.\nAverage values*\n2 * 3 = 6');
+    expect(presentConversationAnswer('**Limitations:* This is not individual medical advice.'))
+      .toBe('Limitations: This is not individual medical advice.');
+  });
 });

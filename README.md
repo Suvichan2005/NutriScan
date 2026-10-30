@@ -2,7 +2,26 @@
 
 Local-first packaged-food evidence workspace. A standalone Next.js / React / TypeScript application for reading labels, checking calculations and inspecting supporting sources.
 
-## Run on Windows
+## Run the current application
+
+**Canonical branch: `codex/stable`.** GitHub opens this branch by default. `main` and `nutriscan-rc-20261027` retain historical checkpoints. Read [the local run and cleanup guide](docs/LOCAL_DEVELOPMENT.md) before switching or deleting older checkouts.
+
+On the owner's ThinkBook, use this one existing folder:
+
+```powershell
+Set-Location -LiteralPath 'C:\Users\KIIT0001\Documents\Seventh Semester Project NutriScan\NutriScan-study-ops'
+npm run dev
+```
+
+Open http://127.0.0.1:3400. Stop with Ctrl+C. No branch switching, parent-folder environment argument or custom launch script is needed. The private `.env.local` in this checkout supplies server-side credentials. It currently selects the explicit free Gemini 3.5 Flash-Lite route, with paid fallback disabled. Keep this file private.
+
+For a fresh installation, clone the `codex/stable` branch. Run `npm ci` once, copy `.env.example` to `.env.local` only if no private configuration exists, and configure your own authorized server-side key and enable flag. The example keeps remote inference disabled. Do not overwrite an existing configuration.
+
+For the presentation build, stop the dev server, run `npm run build`, then `npm start`. Both servers use port 3400 and bind only to loopback. A later dev run can replace `.next` artifacts; build again before production startup. Next.js loads the root `.env.local` automatically. Do not put `--env-file` in `NODE_OPTIONS`.
+
+The existing local models and source stores are retained. Dependency installation and corpus/model downloads are not part of an everyday launch. The following commands are optional setup and validation commands, not a startup checklist.
+
+## Setup and validation
 
 Requires Node.js 22.13+ (developed with 24.4.1) and npm. The bounded Gazette-PDF text reader uses the pinned PDF.js Node build.
 
@@ -43,6 +62,6 @@ Add up to 10 JPG, PNG or WebP images, use the camera affordance, describe a prod
 
 Ask an amount in your first question or in a follow-up to set the portion without rescanning. Product comparisons normalize compatible package and community-record values only when both bases are explicit; missing or conflicting values remain incomparable. Evidence expands to original observations, coordinates, assumptions, formulae and sources. Public product and scientific queries are user initiated. Country filters use an explicitly entered country and community country tags; they never establish local retail stock. FDA records are US historical candidate reports, never a global brand verdict. FSSAI research uses bounded selectable-text extraction for allowlisted official PDFs and displays publication and effective dates separately. The live ORS route retrieves the 2022 direction and superseded 2024 order; the scanned 2025 PDFs need OCR, and current legal status remains unresolved. Separately, the listed 2026 Gazette amendment PDF currently returns HTML to the local research fetch and remains navigation-only.
 
-Gemini is off. Copy `.env.example` to `.env.local` and configure an owner-authorized key, selected compatible model and explicit enable flag only when API usage/cost is approved. The UI requires per-investigation consent. Model-requested image handles/crops are resolved by the browser, with a separate visible send action. Provider paths have not been accepted against a real Gemini account. See [integrations](docs/INTEGRATIONS.md).
+Gemini requires an enabled private configuration and a disclosed remote action in the UI. Real Flash-Lite photo, correction, calculation and source-inspection journeys are recorded in [presentation acceptance](docs/PRESENTATION_READINESS_20261030.md). Model-requested image handles/crops are resolved in the browser, with a separate visible send action. These development checks do not establish universal extraction accuracy or clinical validity. See [integrations](docs/INTEGRATIONS.md) for the broader configuration history.
 
 The optional profile starts empty and keeps dietary preference, food allergies, food intolerances, health context, goals and reference details separate. Profile information stays in session memory and is sent to Gemini only after the disclosed per-request consent. Scan history is opt-in; a separate conversation option restores up to 30 recent local turns. Profile fields, photos and Gemini answers are excluded, and clearing history removes saved turns. Read [status](docs/STATUS.md), [acceptance](docs/ACCEPTANCE.md), [UX audit](docs/UX_AUDIT.md), [privacy](docs/PRIVACY_DATA_FLOW.md), [owner actions](docs/OWNER_ACTIONS.md) and the [chronological engineering journal](docs/agent-journal/2026-10-21-generalization.md). No public deployment or private journal bridge is configured.

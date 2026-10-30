@@ -27,7 +27,13 @@ describe('conversation clarity without semantic rewriting', () => {
     expect(html).toContain('A retained supported answer.');
     expect(html).toContain('Label estimates · some details excluded');
     expect(html).not.toContain('I omitted one or more');
-    expect(html).toContain('The application withheld numerical statements');
+    expect(html).toContain('Some numerical statements could not be verified');
+  });
+  it('keeps short structured answers visible instead of adding an explanation gate for a heading', () => {
+    const html = renderToStaticMarkup(createElement(ConversationAnswer, { answer: 'For half the printed serving:\n- Protein: 1.67 g\n- Carbohydrate: 13.15 g\n## Label context\nThese remain package readings.' }));
+    expect(html).not.toContain('Read full explanation');
+    expect(html).toContain('Protein: 1.67 g');
+    expect(html).toContain('These remain package readings.');
   });
   it('shows only actual recorded activity and distinguishes a failed tool from completion', () => {
     expect(renderToStaticMarkup(createElement(ConversationToolActivity, { trace: [] }))).toBe('');

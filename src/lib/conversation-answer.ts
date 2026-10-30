@@ -39,6 +39,9 @@ export function presentConversationAnswer(answer: string) {
     .replace(/^\s{0,3}#{1,6}\s+/gm, '')
     .replace(/^\s*(?:---+|\*\*\*+|___+)\s*$/gm, '')
     .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '$1')
+    // Tolerate an unbalanced emphasis marker around a heading, not arbitrary
+    // asterisks in label text (footnotes and multiplication remain intact).
+    .replace(/^\s*\*{1,2}([A-Za-z][\w /&()-]{0,70}:)\*{1,2}(?=\s|$)/gm, '$1')
     .replace(/(\*\*|__)(.*?)\1/gs, '$2')
     .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '$1')
     .replace(/`([^`\n]+)`/g, '$1')

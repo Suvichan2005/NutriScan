@@ -1,3 +1,7 @@
+## 30 October — Final presentation checkpoint
+
+Real desktop/mobile browser pass and minimal display fixes completed. 955 tests passed/2 skipped; TypeScript and optimized build passed. Free Lite real-photo reconstruction and corrected saved-package follow-up retained; no mock answers/paid calls/new benchmark/report edits. Daily checkout codex/stable; npm run dev on port 3400. Scope, screenshots, known limits and repository reconciliation: docs/PRESENTATION_READINESS_20261030.md. Stop after this checkpoint.
+
 ## 30 October — Final research evidence delivered
 
 Closed the finite owner-authorized evidence mission using retained raw receipts and six new free-Lite application requests (eight generations). No production or report edits. Independent raw recomputation, failure/status reconciliation, three-product candidate reconstruction analysis, negative RAG/source-applicability findings and four inspected plots are packaged privately with complete hashes. Independent accuracy/answer judgments remain unscored. See docs/RESEARCH_CLOSURE_20261030.md. Stop at evidence handoff; no CPU/report continuation.
