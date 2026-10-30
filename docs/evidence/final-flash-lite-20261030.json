@@ -1,0 +1,100 @@
+{
+  "date": "2026-10-30",
+  "baseline": "d4a3af4",
+  "productionSourceSha": "c562228270e818137bd85b1fc66d0ce8537dd8d1",
+  "branch": "codex/final-flash-lite-20261030",
+  "matchedCases": 6,
+  "productionBrowserTransferTurns": 2,
+  "allRequestsMatched": true,
+  "provider": {
+    "baseline-v1": {
+      "providerResponses": 9,
+      "models": [
+        "gemini-3.5-flash-lite"
+      ]
+    },
+    "after-v1": {
+      "providerResponses": 10,
+      "models": [
+        "gemini-3.5-flash-lite"
+      ]
+    },
+    "production-browser": {
+      "providerResponses": 5,
+      "models": [
+        "gemini-3.5-flash-lite"
+      ]
+    }
+  },
+  "paidCalls": 0,
+  "failedPreflight": {
+    "status": 403,
+    "cause": "acceptance client omitted same-origin header; rejected before provider; retained separately"
+  },
+  "references": "Controlled synthetic package declarations; no independent extraction or clinical accuracy claim",
+  "tests": {
+    "passed": 952,
+    "skipped": 2,
+    "workers": 2
+  },
+  "build": "Clean exported tracked source: optimized build, TypeScript, static generation and tracing passed; production browser used that output",
+  "knownBuildWarning": "Nested export inferred parent tracing root; build completed; not a hosted-deployment claim",
+  "ownerHashesUnchanged": true,
+  "outcomes": [
+    {
+      "case": "portion",
+      "judgment": "PASS arithmetic, correction and associations in both",
+      "beforeMs": 3641,
+      "afterMs": 6422,
+      "sameRequest": true
+    },
+    {
+      "case": "sodium",
+      "judgment": "PARTIAL: sodium correct and relevant sources returned; correct reference/comparison withheld in paired outputs",
+      "beforeMs": 6578,
+      "afterMs": 4109,
+      "sameRequest": true
+    },
+    {
+      "case": "claim",
+      "judgment": "FAIL source-use acceptance: no lookup/evidence in either; threshold withheld; no legal compliance established",
+      "beforeMs": 2641,
+      "afterMs": 2921,
+      "sameRequest": true
+    },
+    {
+      "case": "allergen",
+      "judgment": "PARTIAL: main presence/absence conclusion useful; baseline overstrong free-from exception; no source lookup",
+      "beforeMs": 2187,
+      "afterMs": 7063,
+      "sameRequest": true
+    },
+    {
+      "case": "negative",
+      "judgment": "PASS nutrition-library boundary; no historical source cards; awkward leftover introductory wording",
+      "beforeMs": 2844,
+      "afterMs": 2281,
+      "sameRequest": true
+    },
+    {
+      "case": "missing",
+      "judgment": "PASS: no invented package weight or half-package nutrient amount",
+      "beforeMs": 4172,
+      "afterMs": 12765,
+      "sameRequest": true
+    }
+  ],
+  "untouchedTransfer": {
+    "counted": "3 rice cakes=30g; protein2.4g,carbohydrate15g,sodium180mg visible in calculator",
+    "corrected": "protein8->10g/100g; half80g package=40g; protein4g,carbohydrate20g,sodium240mg; WHO2000mg/day and5g salt/day retained with source card",
+    "sourceMode": "automatically supplied WHO context, model calculator call; not fresh autonomous research",
+    "limitation": "Some correct table/percentage statements still withheld; no general source-use reliability claim"
+  },
+  "stopped": [
+    "CPU benchmarks",
+    "local model work",
+    "report writing",
+    "additional tuning"
+  ],
+  "privateDirectory": ".data/final-lite-acceptance-20261030/"
+}

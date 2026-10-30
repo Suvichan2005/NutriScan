@@ -1,3 +1,7 @@
+## 30 October — Final Flash-Lite checkpoint
+
+Reconciled accepted orchestration/chat corrections and reviewed evaluation infrastructure on codex/final-flash-lite-20261030. One focused correction: citation-handle typography, topic-versus-publisher retrieval gate and verified WHO salt-equivalent source/index consistency. Six identical before/after real application-route cases and two untouched optimized-production browser turns retained. Arithmetic/corrections/missing weight work; claim source use and some numerical filtering remain partial/unresolved, explicitly documented. All inference free Flash-Lite, no paid calls. 952 tests passed/2 skipped, TypeScript and clean optimized build passed; protected overlays hash-unchanged. Evidence: docs/FINAL_FLASH_LITE_ACCEPTANCE_20261030.md and docs/evidence/final-flash-lite-20261030.json. Stop; no CPU benchmark/report continuation.
+
 ## 30 October — Inference-only chat correction verified
 
 Owner correction takes precedence: matched benchmark remains paused; queued analytics/report rewriting is superseded until this product checkpoint. Removed local audit/fallback prose and automatic local-answer evidence appenders; enabled text questions now call Gemini. Disabled/failed inference gives an empty answer with explicit retry state. Deterministic calculations, parsing, corrections, structured inspector and source/numeric validation remain. Application withholding notices are separate Answer notes. Actual answering model persists per successful turn; historical local answers are not model history.

@@ -1,3 +1,7 @@
+## FINAL-LITE-20261030 — VERIFIED bounded checkpoint; grounding PARTIAL
+
+Owner scope: one reconciled working branch, six matched application cases, one correction cycle, two untouched production browser turns and clean build. Evidence: docs/FINAL_FLASH_LITE_ACCEPTANCE_20261030.md. Source-use/validator gaps remain explicitly unresolved; this does not mark broader scientific grounding DONE. No blocker to preserving/publishing this finite checkpoint. Next: owner review only; stop. CPU benchmarks/report work remain paused.
+
 ## CHAT-INFERENCE-20261030 — VERIFIED
 
 Outcome: remove heuristic chat prose and verify real selected-model conversation, correction reuse and explicit unavailable states. Priority: owner override; dependencies: current production conversation contracts. Owner: integration; boundaries: chat component, presentation/context, saved-turn contract and server answer notices. Prior work/receipts retained in private pre-change snapshot. Acceptance/evidence: docs/INFERENCE_ONLY_CHAT_20261030.md and docs/evidence/inference-only-chat-20261030.json; five live free Flash-Lite assist requests plus simulated failure/offline checks, 949 passed/2 skipped and TypeScript. No independent accuracy or fresh build claim. Remaining product blocker: none identified for this bounded correction. Next action: owner review of checkpoint; stop.

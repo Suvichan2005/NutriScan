@@ -1,3 +1,7 @@
+## 30 October — Bound final product correction
+
+Keep model-generated chat; normalize reference syntax, separate publisher preference from retrieval relevance, and keep curated summaries/indexes synchronized. Explicit free Flash-Lite is the accepted runtime configuration for this checkpoint. Claim-source selection and conservative quantitative filtering remain known limitations; do not claim scientific completion or resume tuning automatically. See FINAL_FLASH_LITE_ACCEPTANCE_20261030.md.
+
 ## 30 October — Model inference owns conversational prose
 
 No deterministic audit/fallback builder may answer chat questions. Deterministic tools supply facts/calculations and structured UI; real Gemini (or a future explicitly accepted local LLM) supplies conversational reasoning. Unavailable inference is a retry state, not a locally composed answer. Keep numerical/source validation, with application notices separate from model prose. Retain actual answer model independently of selector choice and preserve historical observations/corrections. See docs/INFERENCE_ONLY_CHAT_20261030.md for checked paths and bounded acceptance.
