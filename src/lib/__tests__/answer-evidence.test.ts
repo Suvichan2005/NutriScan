@@ -1,3 +1,4 @@
+import { normalizeAnswerReferenceHandles } from '../answer-evidence';
 import {describe,expect,it} from 'vitest';
 import {filterAnswerBySourceScope,prioritizeCitedEvidence,renderAnswerEvidenceReferences,selectCitedEvidence} from '../answer-evidence';
 import {isGuidanceEvidenceInScope,isLocalEvidenceTopicallyRelevant} from '../followup-evidence';
@@ -167,4 +168,10 @@ it('prioritizes exact cited records before applying a bounded evidence limit',()
   expect(retained).toHaveLength(20);
   expect(retained[0]).toEqual(sources[20]);
   expect(retained.map(item=>item.id).includes(sources[19].id)).toBe(false);
+});
+
+it('canonicalizes citation typography without inventing a source match',()=>{
+ expect(normalizeAnswerReferenceHandles('WHO guidance [SRC 1], calculation CALC-2.')).toBe('WHO guidance [SRC_1], calculation CALC_2.');
+ expect(normalizeAnswerReferenceHandles('No record [SRC 999].')).toBe('No record [SRC_999].');
+ expect(normalizeAnswerReferenceHandles('Protein 3.6 g per 30 g.')).toBe('Protein 3.6 g per 30 g.');
 });

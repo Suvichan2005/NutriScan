@@ -174,3 +174,9 @@ export function filterAnswerBySourceScope<T extends SourceIdentity & Pick<Eviden
     withheldSentenceCount,
   };
 }
+
+/** Normalize protocol handle typography, never source identities or claim text.
+ * Unknown handles remain explicit so scope validation can reject them. */
+export function normalizeAnswerReferenceHandles(answer:string):string {
+  return answer.replace(/\b(SRC|CALC)[ _-]+([A-Z0-9]*\d[A-Z0-9]*)\b/gi,(_,kind,id)=>`${kind.toUpperCase()}_${id.toUpperCase()}`);
+}

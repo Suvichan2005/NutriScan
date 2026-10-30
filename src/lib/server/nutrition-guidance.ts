@@ -314,12 +314,15 @@ export function getNutritionGuidance(input: {
   const ranked = entries
     .map(entry => {
       const explicitSource = explicitlyNamesSource(sourceRequest, entry.source);
-      const matchedTerms = entry.terms.filter(term => mentions(contextualText, term));
+      const topicalText=normalize(contextualText).replaceAll(normalize(entry.source.publisher),' ');
+      const matchedTerms = entry.terms.filter(term => mentions(topicalText, term));
       if(input.condition&&entry.conditions.length&&!entry.conditions.some(condition=>mentions(input.condition!,condition)))return {entry,score:0,matchedTerms};
       if (!jurisdictionCompatible(entry.source, input.jurisdiction, explicitSource)) return { entry, score: 0, matchedTerms };
-      const matchedCondition = entry.conditions.some(condition => mentions(contextualText, condition));
+      const matchedCondition = entry.conditions.some(condition => mentions(topicalText, condition));
       if (entry.topicTerms?.length && !entry.topicTerms.some(term => mentions(contextualText, term)) && !explicitSource) return { entry, score: 0, matchedTerms };
       if (entry.conditions.length > 0 && !matchedCondition && !explicitSource) return { entry, score: 0, matchedTerms };
+      // Publisher identity is a preference, not evidence of topical relevance.
+      if (!matchedTerms.length && !matchedCondition) return {entry,score:0,matchedTerms};
       const score = matchedTerms.length + (matchedCondition ? 3 : 0) + (explicitSource ? 2 : 0);
       return { entry, score, matchedTerms };
     })

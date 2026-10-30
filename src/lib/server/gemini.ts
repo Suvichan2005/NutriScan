@@ -18,7 +18,7 @@ import { ApiError } from './http';
 import { recordGeminiDiagnostic } from './gemini-diagnostics';
 import { finishGeminiEvaluation, recordGeminiEvaluationEvent, startGeminiEvaluation } from './gemini-evaluation-recorder';
 import { calculationsForSavedPortionDifferences, calculationsFromReconstruction, defaultPortion, hasExplicitPortionRequest, resolveQuestionPortion } from '../portion';
-import { filterAnswerBySourceScope, prioritizeCitedEvidence, renderAnswerEvidenceReferences, selectCitedEvidence } from '../answer-evidence';
+import { normalizeAnswerReferenceHandles, filterAnswerBySourceScope, prioritizeCitedEvidence, renderAnswerEvidenceReferences, selectCitedEvidence } from '../answer-evidence';
 import { reconstructionRowIsSuperseded } from '../correction';
 import { workspacePortionSchema } from '../contracts';
 import { addProfileGuidanceContextSources } from './profile-guidance-context';
@@ -2276,10 +2276,11 @@ export async function assist(data: z.infer<typeof assistInput>) {
     const agentTrace=[...reconstructionTrace,...generated.trace].slice(0,24);
     const allEvidence=new Map([...(data.evidence??[]),...generated.evidence].map(source=>[source.id,source]));
     const allCalculations=new Map([...generated.calculations,...(data.calculations??[])].map(calculation=>[calculation.id,calculation]));
-    const effectiveEvidence=prioritizeCitedEvidence(generated.answer,[...allEvidence.values()],referenceAliases.fromModel,30);
+    const referenceNormalizedAnswer=normalizeAnswerReferenceHandles(generated.answer);
+    const effectiveEvidence=prioritizeCitedEvidence(referenceNormalizedAnswer,[...allEvidence.values()],referenceAliases.fromModel,30);
     const effectiveCalculations=[...allCalculations.values()].slice(0,20);
     const sourceScopeCheck=filterAnswerBySourceScope(
-      generated.answer,
+      referenceNormalizedAnswer,
       effectiveEvidence,
       referenceAliases.fromModel,
       [data.question,...Object.values(data.profile??{})].join(' '),
