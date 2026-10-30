@@ -1,0 +1,91 @@
+{
+  "date": "2026-10-30",
+  "scope": "Final bounded product-completion pass; no research/report work",
+  "baseline": "75936b9142f2ad803b2ab58a4622a79877e0c038",
+  "branch": "codex/stable",
+  "changes": [
+    "Automatic local history and latest restore; individual deletion and confirmed clear",
+    "Persist up to eight cited records and bounded answer caution counts",
+    "Keep bounded internal calculator evidence through answer validation; prioritize accepted operations before applying the 20-result response limit"
+  ],
+  "reasoningPromptsToolsRetrievalDefinitionsChanged": false,
+  "numericalValidationRulesRelaxed": false,
+  "softwareChecks": {
+    "testsPassed": 961,
+    "testsSkipped": 2,
+    "testFiles": 84,
+    "command": "npm test -- --maxWorkers=2 --testTimeout=20000",
+    "initialTimeoutsPreserved": true,
+    "typecheck": "passed",
+    "productionBuild": "passed through final traces"
+  },
+  "browser": {
+    "production": true,
+    "desktop": [
+      1440,
+      1000
+    ],
+    "mobileEmulated": [
+      390,
+      844
+    ],
+    "realPhoto": "Retained authorized Saffola development nutrition panel; no independent accuracy claim",
+    "realPhotoSha256": "6979fd096ca7f3f9c2b86cc424cd2c32d495820693371b2b3318b74f65225fde",
+    "correction": "Same printed 8.8 g protein per 100 g visually confirmed through correction contract; original retained",
+    "autoRestore": true,
+    "manualReopen": true,
+    "correctionRestored": true,
+    "sourceAndAnswerNotesRestored": true,
+    "photosPersisted": false,
+    "restoreAssistRequests": 0,
+    "individualDeletion": "Passed on synthetic disposable history at separate localhost origin",
+    "clearCancel": "Passed; one record remained",
+    "clearConfirmed": "Passed; empty after refresh",
+    "mobileHorizontalOverflow": false,
+    "applicationConsoleErrors": 0,
+    "unrelatedExtensionConsoleErrors": 1
+  },
+  "liveProvider": {
+    "applicationRequests": 3,
+    "generations": 8,
+    "models": [
+      "gemini-3.5-flash-lite"
+    ],
+    "tiers": [
+      "free"
+    ],
+    "paidCalls": 0,
+    "estimatedAdditionalPaidUsd": 0,
+    "paidFallbackEnabled": false,
+    "followupPhotoBytes": 0,
+    "freshScientificToolLookup": false,
+    "sourceUse": "Automatically supplied WHO guidance cited and inspected; not a demonstration of spontaneous source-tool selection"
+  },
+  "comparison": {
+    "syntheticExactOutputReproduction": "Before: second valid portion sentence removed; after: both retained, public calculation bound preserved",
+    "liveBefore": "2 of 6 requested nutrient/portion values in displayed comparison",
+    "liveAfter": "5 of 6 requested nutrient/portion values in displayed comparison",
+    "sameQuestionPackageEvidenceCalculationsAndHistory": true,
+    "requestDifference": "Stale image handle absent after reload; no photo bytes in either follow-up",
+    "interpretation": "Limited development confirmation, not controlled statistical or scientific improvement",
+    "remainingOmission": "Half-serving protein missing from model answer; selecting Protein in calculator gave 1.67 g for 19 g locally without inference"
+  },
+  "ownerProtectedFilesUnchanged": true,
+  "limitations": [
+    "Combined panel cannot establish noodle/seasoning sodium allocation",
+    "Nutrition education does not establish legal sugar claim definitions",
+    "Milk-origin ingredient does not establish individual allergy/intolerance risk",
+    "Source identity and numeric checks do not establish semantic entailment",
+    "One real-photo journey is not independent extraction/scientific validation",
+    "Free-provider availability remains an external dependency"
+  ],
+  "privateEvidence": ".data/product-freeze-20261030-v1/",
+  "stop": "Freeze after this checkpoint. No new benchmarks, local models or report writing.",
+  "screenshots": [
+    ".data\\product-freeze-20261030-v1\\12-mobile-history.png",
+    ".data\\product-freeze-20261030-v1\\13-desktop-calculators.png",
+    ".data\\product-freeze-20261030-v1\\14-desktop-answer.png",
+    ".data\\product-freeze-20261030-v1\\15-mobile-saved-conversation.png",
+    ".data\\product-freeze-20261030-v1\\16-mobile-source.png"
+  ]
+}

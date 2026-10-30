@@ -1158,6 +1158,25 @@ describe('provider validation, independent of provider invocation', () => {
     expect(result.uiComponents).toContainEqual(expect.objectContaining({type:'portion-calculator',calculatorAmount:scenario.requested,calculatorUnit:scenario.unit}));
     expect(result.agentDiagnostics.generationCount).toBe(2);
   });
+  it('validates both compared portions before applying the saved calculation limit',async()=>{
+    vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
+    const labels: Array<[string,number,string]>=[['Energy',380,'kcal'],['Carbohydrate',60,'g'],['Total sugars',5,'g'],['Added sugars',2,'g'],['Dietary fibre',12,'g'],['Soluble dietary fibre',4,'g'],['Insoluble dietary fibre',8,'g'],['Total fat',10,'g'],['Saturated fat',3,'g'],['Trans fat',0.1,'g'],['Cholesterol',0,'mg'],['Sodium',300,'mg'],['Protein',10,'g']];
+    const evidence={observationIds:['synthetic-panel'],imageRegions:[]};
+    const reconstruction={identity:{brand:null,name:null,variant:null,status:'unreadable',evidence},serving:null,
+      nutritionRows:labels.map(([nutrient,value,unit],i)=>({rowId:`row-${i}`,nutrient,printedLabel:nutrient,printedValue:`${value} ${unit}`,value,unit,columnLabel:'per 100 g',basisText:'per 100 g',basisAmount:100,basisUnit:'g',qualifier:null,status:'provisional',evidence})),
+      ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Synthetic wide-panel fixture.',revision:1,updatedAt:new Date().toISOString(),model:'fixture',current:true};
+    const answer='For 19 g, protein is 1.9 g and sodium is 57 mg. For 38 g, protein is 3.8 g and sodium is 114 mg.';
+    const fetcher=vi.fn()
+      .mockResolvedValueOnce(new Response(modelResponse([toolCallPart('small','calculate_nutrition',{amount:19,unit:'g'}),toolCallPart('large','calculate_nutrition',{amount:38,unit:'g'})]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(modelResponse([{text:answer}]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetcher);
+    const result=await assist(assistInput.parse({consent:true,question:'Compare the protein and sodium in these two portions.',package:{id:'wide-panel-comparison',name:'Synthetic panel',ingredients:[],additives:[],allergens:[],claims:[],nutrients:[],observations:[{id:'synthetic-panel',field:'label-note',text:'Synthetic nutrition panel',side:'text',origin:'user',confidence:null}],rawText:'',warnings:[],synthetic:true,createdAt:new Date().toISOString(),reconstruction}}));
+    expect(result.answer).toBe(answer);
+    expect(result.agentDiagnostics.withheldQuantitySentences).toBe(0);
+    expect(result.calculations.length).toBeLessThanOrEqual(20);
+    for(const resultValue of [1.9,3.8,57,114])expect(result.calculations.some(c=>Math.abs(c.result-resultValue)<1e-8)).toBe(true);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
   it('carries an unmapped nutrient through native calculation, natural answer and interactive presentation',async()=>{
     vi.stubEnv('ENABLE_GEMINI','true');vi.stubEnv('GEMINI_PROVIDER','free');vi.stubEnv('GEMINI_MODEL','gemini-3.8-flash');vi.stubEnv('FREE_GEMINI_API_KEY','offline-test-key');
     const answer='Based on the provisional label reading, 75 ml provides 71 mg calcium.';

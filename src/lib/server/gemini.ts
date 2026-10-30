@@ -1940,7 +1940,10 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
       evidence,
       // Historical operations must not crowd a newly requested result out of
       // numeric validation or the interactive calculator's bounded response.
-      calculations:[...modelCalculatedPortions,...[...calculations.values()].filter(item=>!calledCalculationIds.has(item.id))].slice(0,20),
+      // Tool rounds/results are already bounded. Keep their typed evidence
+      // through validation: a wide panel at two portions can exceed the
+      // persisted 20-result limit and otherwise lose a valid comparison.
+      calculations:[...modelCalculatedPortions,...[...calculations.values()].filter(item=>!calledCalculationIds.has(item.id))],
       trace,
       calledCalculationIds:[...calledCalculationIds],
       uiComponents,
@@ -2278,7 +2281,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
     const allCalculations=new Map([...generated.calculations,...(data.calculations??[])].map(calculation=>[calculation.id,calculation]));
     const referenceNormalizedAnswer=normalizeAnswerReferenceHandles(generated.answer);
     const effectiveEvidence=prioritizeCitedEvidence(referenceNormalizedAnswer,[...allEvidence.values()],referenceAliases.fromModel,30);
-    const effectiveCalculations=[...allCalculations.values()].slice(0,20);
+    const effectiveCalculations=[...allCalculations.values()];
     const sourceScopeCheck=filterAnswerBySourceScope(
       referenceNormalizedAnswer,
       effectiveEvidence,
@@ -2357,7 +2360,12 @@ export async function assist(data: z.infer<typeof assistInput>) {
       referencedCalculationIds.add(id);
       representedCalculations.push(calculation);
     }
-    const responseCalculations=effectiveCalculations.filter(calculation=>referencedCalculationIds.has(calculation.id)).slice(0,20);
+    // Apply the public/saved bound only after validating the answer. Preserve
+    // the operations actually used by accepted prose before other card rows.
+    const responseCalculations=[
+      ...effectiveCalculations.filter(calculation=>referencedCalculationIds.has(calculation.id)&&answerCalculationIds.has(calculation.id)),
+      ...effectiveCalculations.filter(calculation=>referencedCalculationIds.has(calculation.id)&&!answerCalculationIds.has(calculation.id)),
+    ].slice(0,20);
     const agentEvidence=effectiveEvidence
       .map(toConversationEvidence)
       .filter((source):source is NonNullable<typeof source>=>source!==null)

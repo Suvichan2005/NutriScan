@@ -13,6 +13,12 @@ const historyKey = 'nutriscan.history.v1';
 const rememberedProfileKey = 'nutriscan.user-context.v1';
 const sessionProfileKey = 'nutriscan.user-context.session.v1';
 const onboardingCompleteKey = 'nutriscan.onboarding.complete.v1';
+let historyWrites: Promise<unknown> = Promise.resolve();
+function queueHistoryWrite(operation: () => Promise<unknown>): Promise<void> {
+  const next = historyWrites.catch(() => {}).then(operation);
+  historyWrites = next;
+  return next.then(() => {});
+}
 
 function validHistory(data: unknown): SavedScan[] {
   return Array.isArray(data) ? data.flatMap(item => {
@@ -21,19 +27,20 @@ function validHistory(data: unknown): SavedScan[] {
   }).slice(0, 20) : [];
 }
 export async function readHistory(): Promise<SavedScan[]> {
+  await historyWrites.catch(() => {});
   return validHistory(await get(historyKey));
 }
 export async function saveScan(input: SavedScan) {
   const scan = savedScanSchema.parse(input);
   // Keep the read and write in one IndexedDB transaction, including across tabs.
   // A later clear/remove must not be undone by an earlier save's stale read.
-  await update(historyKey, (data: unknown) =>
-    [scan, ...validHistory(data).filter(item => item.id !== scan.id)].slice(0, 20));
+  await queueHistoryWrite(() => update(historyKey, (data: unknown) =>
+    [scan, ...validHistory(data).filter(item => item.id !== scan.id)].slice(0, 20)));
 }
 export async function removeSavedScan(id: string) {
-  await update(historyKey, (data: unknown) => validHistory(data).filter(scan => scan.id !== id));
+  await queueHistoryWrite(() => update(historyKey, (data: unknown) => validHistory(data).filter(scan => scan.id !== id)));
 }
-export async function clearHistory() { await del(historyKey); }
+export async function clearHistory() { await queueHistoryWrite(() => del(historyKey)); }
 
 /** Optional user context is stored separately from scan and conversation history. */
 export async function readRememberedProfile(): Promise<Profile | null> {

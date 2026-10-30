@@ -8,7 +8,7 @@ function TextBlock({ text, kind }: { text: string; kind: 'paragraph' | 'heading'
   return kind === 'heading' ? <p><strong>{text}</strong></p> : <p>{text}</p>;
 }
 
-export function ConversationAnswer({ answer, diagnostics, provisional }: { answer: string; diagnostics?: ThreadAgentDiagnostics; provisional?: boolean }) {
+export function ConversationAnswer({ answer, diagnostics, provisional }: { answer: string; diagnostics?: Pick<ThreadAgentDiagnostics, 'withheldQuantitySentences' | 'withheldSourceScopeSentences' | 'provisionalReconstructionQuantitySentences'>; provisional?: boolean }) {
   const legacy = separateLegacyAnswerNotice(answer);
   const blocks = conversationAnswerBlocks(legacy.answer);
   const firstContent = blocks.findIndex(block => block.kind !== 'heading');

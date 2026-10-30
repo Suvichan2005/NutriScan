@@ -121,7 +121,14 @@ export function parseThreadAgentDiagnostics(value: unknown): ThreadAgentDiagnost
 export function savedConversationTurns(messages: ThreadMessage[]): SavedConversationTurn[] {
   return messages
     .filter(message => message.status !== 'pending' && message.answer.trim().length > 0)
-    .map(({ status: _status, statusDetail: _statusDetail, agentTrace: _agentTrace, agentDiagnostics: _agentDiagnostics, diagnosticId: _diagnosticId, ...message }) => message)
+    .map(({ status: _status, statusDetail: _statusDetail, agentTrace: _agentTrace, agentDiagnostics, diagnosticId: _diagnosticId, ...message }) => ({
+      ...message,
+      ...(agentDiagnostics ? { answerNotes: {
+        withheldQuantitySentences: agentDiagnostics.withheldQuantitySentences,
+        withheldSourceScopeSentences: agentDiagnostics.withheldSourceScopeSentences,
+        provisionalReconstructionQuantitySentences: agentDiagnostics.provisionalReconstructionQuantitySentences,
+      } } : {}),
+    }))
     .slice(-30);
 }
 

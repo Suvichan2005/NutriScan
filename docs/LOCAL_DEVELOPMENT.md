@@ -11,7 +11,7 @@ Open http://127.0.0.1:3400. Stop with Ctrl+C. Do not switch branches to launch t
 
 Install with `npm ci` only on a fresh clone or after dependency changes. The installation prepares local OCR assets. Do not overwrite the existing `.env.local`. A fresh clone receives `.env.example`, which disables remote inference until explicitly configured. The model selector reflects the locally configured routes, not guaranteed entitlement to every nominal model.
 
-For an optimized demo, stop the dev server, run `npm run build`, then `npm start`. Use the same URL. A dev run may replace the `.next` build; rebuild before the next production start. Avoid editing code during an unsaved demonstration: development hot refresh can reload the page. Save the investigation through the application's opt-in local storage controls before refreshing or restarting.
+For an optimized demo, stop the dev server, run `npm run build`, then `npm start`. Use the same URL. A dev run may replace the `.next` build; rebuild before the next production start. Avoid editing code during a demonstration: hot refresh can reload the page. Investigations, completed conversations and corrections now save automatically in this browser. Wait for “Saved on this device” before closing; the latest investigation restores on reopening. Photos remain session-only and must be reattached for further visual inspection. Recent scans provides individual deletion and confirmed clear-history.
 
 ## Which repository pointers matter?
 

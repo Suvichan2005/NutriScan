@@ -1,11 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { parseLabel } from '../parser';
 import { savedScanSchema, type SavedScanRecord } from '../contracts';
+import { savedConversationTurns, type ThreadMessage } from '../thread-presentation';
 
 const pkg = parseLabel('Synthetic saved-session label\nNutrition information per 100 g\nEnergy 380 kcal', { origin: 'user' });
 const base: SavedScanRecord = { id: pkg.id, name: pkg.name, createdAt: pkg.createdAt, package: pkg, portion: 30, unit: 'g' };
 
 describe('locally saved investigation context', () => {
+  it('retains all eight bounded cited records and answer cautions after serialization', () => {
+    const source = { id: 'source', title: 'Evidence', url: 'https://www.who.int/example', publisher: 'WHO', category: 'guideline' as const, summary: 'A source summary.', jurisdiction: 'Global', publishedAt: '2024', effectiveAt: '', retrievedAt: '2026-10-30', limitations: 'General guidance only.' };
+    const turn: ThreadMessage = { question: 'Question', answer: 'Answer', at: '2026-10-30T12:00:00.000Z', answerOrigin: 'gemini', answerModel: 'gemini-3.5-flash-lite',
+      evidence: Array.from({ length: 8 }, (_, i) => ({ ...source, id: `source-${i}` })),
+      agentDiagnostics: { contract: 'native-tools-and-natural-text', answerStatus: 'answer-with-quantity-withheld', acceptedSentences: 1, withheldQuantitySentences: 2, withheldSourceScopeSentences: 1, provisionalReconstructionQuantitySentences: 3, generationCount: 2, toolCallCount: 1, packageReconstructionRevision: 1, retrievedSourceCount: 8, calculationCount: 0 },
+    };
+    const saved = savedScanSchema.parse(JSON.parse(JSON.stringify({ ...base, conversation: savedConversationTurns([turn]) })));
+    expect(saved.conversation![0].evidence).toHaveLength(8);
+    expect(saved.conversation![0].answerNotes).toEqual({ withheldQuantitySentences: 2, withheldSourceScopeSentences: 1, provisionalReconstructionQuantitySentences: 3 });
+    expect(saved.conversation![0].answerModel).toBe('gemini-3.5-flash-lite');
+    expect(saved.conversation![0]).not.toHaveProperty('agentDiagnostics');
+    expect(savedScanSchema.safeParse({ ...base, conversation: [{ ...saved.conversation![0], evidence: Array(9).fill(source) }] }).success).toBe(false);
+    expect(savedConversationTurns(saved.conversation!)[0].answerNotes).toEqual(saved.conversation![0].answerNotes);
+  });
   it('accepts the existing package-only history record shape', () => {
     expect(savedScanSchema.parse(base)).toEqual(base);
   });

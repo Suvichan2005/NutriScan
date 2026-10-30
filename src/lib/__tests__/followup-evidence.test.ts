@@ -186,7 +186,7 @@ describe('local evidence follow-ups', () => {
     expect(savedConversationTurnSchema.parse({ ...turn, evidence: sources }).evidence).toEqual(sources);
     expect(savedConversationTurnSchema.parse({ ...turn, retrievedEvidence: retrieved }).retrievedEvidence).toEqual(retrieved);
     expect(savedConversationTurnSchema.safeParse({ ...turn, retrievedEvidence: [...retrieved, source] }).success).toBe(false);
-    expect(savedConversationTurnSchema.safeParse({ ...turn, evidence: [...sources, source] }).success).toBe(false);
+    expect(savedConversationTurnSchema.safeParse({ ...turn, evidence: [...retrieved, source] }).success).toBe(false);
     expect(savedConversationTurnSchema.safeParse({ ...turn, evidence: [{ ...source, summary: 'x'.repeat(1601) }] }).success).toBe(false);
   });
 });
