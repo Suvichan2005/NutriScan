@@ -12,7 +12,9 @@ export function ConversationAnswer({ answer, diagnostics, provisional }: { answe
   const legacy = separateLegacyAnswerNotice(answer);
   const blocks = conversationAnswerBlocks(legacy.answer);
   const firstContent = blocks.findIndex(block => block.kind !== 'heading');
-  const leadCount = firstContent < 0 ? blocks.length : firstContent + 1;
+  let leadCount = firstContent < 0 ? blocks.length : firstContent + 1;
+  // An introductory colon and its list form one answer; keep both visible.
+  if (firstContent >= 0 && /:\s*$/.test(blocks[firstContent].text) && blocks[leadCount]?.kind === 'list') leadCount++;
   // Disclosure follows paragraph boundaries only. No semantic selection or generated summary.
   const fold = blocks.length > leadCount && legacy.answer.length > 900;
   const withheld = Boolean(diagnostics?.withheldQuantitySentences || legacy.withheld);

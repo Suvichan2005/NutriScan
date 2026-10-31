@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { ingredientContext, ingredientContextInput } from './ingredient-context';
 
 describe('automatic local ingredient context', () => {
+  it('explains common ingredient functions without treating a function as a substance identity',async()=>{
+    const result=await ingredientContext({items:[{name:'emulsifier',code:null},{name:'raising agents',code:null},{name:'edible vegetable oil',code:null}],question:''});
+    expect(result.items.every(item=>item.consumerReference?.url.startsWith('https://'))).toBe(true);
+    expect(result.items[0].consumerReference?.explanation).toContain('does not identify');
+  });
   it('links explicit additive identity and milk source terminology without a safety verdict', async () => {
     const result = await ingredientContext(ingredientContextInput.parse({items:[{name:'whey',code:null},{name:'tertiary butylhydroquinone',code:'319'}],question:'What is in this package?'}));
     expect(result.items[0].families.some(match=>match.family==='milk')).toBe(true);

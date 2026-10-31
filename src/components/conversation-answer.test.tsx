@@ -14,6 +14,11 @@ describe('conversation clarity without semantic rewriting', () => {
     expect(html).toContain('Check the original package before relying on this reading.');
     expect(html).not.toContain(' open=');
   });
+  it('keeps a portion list visible after its introductory sentence', () => {
+    const answer = 'Two biscuits provide approximately:\n- Carbohydrate: 9.28 g\n- Protein: 1.53 g\n' + 'Further context. '.repeat(100);
+    const html = renderToStaticMarkup(createElement(ConversationAnswer, {answer}));
+    expect(html.indexOf('Carbohydrate: 9.28 g')).toBeLessThan(html.indexOf('<summary>Read full explanation</summary>'));
+  });
   it('renders text rather than third-party markup and keeps short answers fully visible', () => {
     const html = renderToStaticMarkup(createElement(ConversationAnswer, { answer: '<script>alert(1)</script>\nA short answer.' }));
     expect(html).not.toContain('<script>');

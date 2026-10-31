@@ -1624,3 +1624,6 @@ Use frozen logical requests and shared teacher-forced context across models. Pre
 ## 31 October — Package identity and research
 
 Use reconstructed package readings as lookup inputs and preserve their provenance. Local ingredient identities and hazard records are candidates, not package-specific dose or safety findings. Community product records remain separate. Supply bounded local evidence before synthesis and distinguish retrieved from cited sources.
+## 31 October — Keep answer provenance controls visible
+
+The answer model name and current-evidence recheck action should be present in the conversation without requiring an extra disclosure click. Remove only the outer Answer details summary; retain independent answer-length and evidence-note disclosures.

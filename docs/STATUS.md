@@ -1,3 +1,7 @@
+## 31 October — Answer controls restored to the conversation surface
+
+Removed the collapsing Answer details summary so the recorded answering model and Recheck with current evidence action are visible by default again. Answer content folding and evidence-note disclosures remain unchanged. Focused component tests and TypeScript validation are required before handoff.
+
 ## 30 October — Final presentation checkpoint
 
 Real desktop/mobile browser pass and minimal display fixes completed. 955 tests passed/2 skipped; TypeScript and optimized build passed. Free Lite real-photo reconstruction and corrected saved-package follow-up retained; no mock answers/paid calls/new benchmark/report edits. Daily checkout codex/stable; npm run dev on port 3400. Scope, screenshots, known limits and repository reconciliation: docs/PRESENTATION_READINESS_20261030.md. Stop after this checkpoint.

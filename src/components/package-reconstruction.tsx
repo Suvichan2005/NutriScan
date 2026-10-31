@@ -11,6 +11,8 @@ import { normalizeReconstructedServing } from '@/lib/portion';
 import { reconstructedIdentity } from '@/lib/reconstruction-presentation';
 import styles from './conversation-clarity.module.css';
 import type { ingredientContext } from '@/lib/server/ingredient-context';
+import { nutrientExplanation, statementExplanation } from '@/lib/label-explanations';
+
 
 type Props = {
   reconstruction: PackageReconstruction;
@@ -25,19 +27,43 @@ type Props = {
   researchQuestion?: string;
 };
 
+type Passage = {id:string;text:string;title:string;publisher:string;url:string;page:number;license:string};
+const passageCache = new Map<string, Passage[]>();
+function SourcePassages({query}:{query:string}) {
+  const [passages,setPassages]=useState<Passage[]|null>(passageCache.get(query)??null);
+  const [failed,setFailed]=useState(false);
+  useEffect(()=>{if(passageCache.has(query))return;const controller=new AbortController();
+    fetch('/api/source-passages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:query.slice(0,180)}),signal:controller.signal})
+      .then(async response=>{if(!response.ok)throw new Error('lookup failed');return response.json();})
+      .then(data=>{if(data.status==='unavailable'){setFailed(true);return;}const results=Array.isArray(data.passages)?data.passages:[];passageCache.set(query,results);setPassages(results);})
+      .catch(()=>{if(!controller.signal.aborted)setFailed(true);});return()=>controller.abort();
+  },[query]);
+  if(failed)return <p>Source passages are currently unavailable.</p>;
+  if(!passages)return <p>Searching local sources…</p>;
+  const direct=passages.filter(p=>p.title.toLocaleLowerCase()===query.toLocaleLowerCase()||p.title.toLocaleLowerCase()===`${query.toLocaleLowerCase()} — nutrition definitions`);
+  if(!direct.length)return null;
+  return <div className="nutrition-reading-help">{direct.map(p=><div key={p.id}><p>“{p.text}”</p><details><summary>Source evidence</summary><p><a href={p.url} target="_blank" rel="noreferrer">{p.title} ↗</a> · {p.publisher}{p.page ? ` · PDF page ${p.page}` : ''}</p><small>{p.license}</small></details></div>)}</div>;
+}
+
 type IngredientResult = Awaited<ReturnType<typeof ingredientContext>>['items'][number];
-function IngredientDetails({ result, pending }: { result?: IngredientResult; pending: boolean }) {
-  return <details className="ingredient-context-details"><summary>About this ingredient</summary>
-    {pending ? <p>Checking local ingredient references…</p> : !result ? <p>This ingredient could not be checked in the local reference lookup.</p> : <>
-      {result.identity && <p>Identity match: {result.identity.name} · INS {result.identity.code}. {result.identity.note}</p>}
-      {result.matches.map(match => <p key={match.id}>FoodOn identity candidate: <a href={`https://purl.obolibrary.org/obo/${match.id}`} target="_blank" rel="noreferrer">{match.label} ↗</a> · {match.matchedBy.replaceAll('-', ' ')}. Check the label before treating this as the same ingredient.</p>)}
-      {result.families.map((family,index) => <p key={`${family.sourceId}-${index}`}>{result.derivedFamilyMatch?'Possible terminology match: ':''}The reference lists {family.matchedName} in its {family.family} information. {result.derivedFamilyMatch?'The package wording includes an additional processing term; check the label and source. ':''}This does not establish an individual reaction.</p>)}
-      {result.relations.map(relation => <div key={relation.id}><p>{relation.outcome}</p><small>{relation.population} {relation.limitations}</small></div>)}
-      {result.openFoodTox?.name && <p><a href={result.openFoodTox.source} target="_blank" rel="noreferrer">EFSA OpenFoodTox ↗</a> has a matching substance record for {result.openFoodTox.name}. This is a hazard reference, not the amount in this package or a personal safety conclusion.</p>}
-      {result.openFoodTox?.status==='unavailable' && <p>The local EFSA substance index is unavailable; no conclusion about this substance follows.</p>}
-      {result.sources.map(source => <p key={source.id}><a href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a> · {source.publisher}</p>)}
-      {!result.identity && !result.matches.length && !result.sources.length && <p>{result.foodonStatus==='unavailable'?'The local ingredient identity index is unavailable.':'No matching local reference was found.'} This does not establish that the ingredient has no effects or allergen relevance.</p>}
+function IngredientDetails({ label, name, code, evidence, onInspect }: { label: string; name:string; code:string|null; evidence?: {observationIds:string[];imageRegions:Array<{imageId:string}>}; onInspect?: Props['onInspectEvidence'] }) {
+  const [open,setOpen]=useState(false);
+  const [result,setResult]=useState<IngredientResult|undefined>();
+  const [pending,setPending]=useState(false);
+  useEffect(()=>{if(!open||result)return;const controller=new AbortController();setPending(true);fetch('/api/ingredient-context',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:[{name,code}],question:''}),signal:controller.signal}).then(response=>response.ok?response.json():null).then(data=>{if(!controller.signal.aborted)setResult(data?.items?.[0]);}).catch(()=>{}).finally(()=>{if(!controller.signal.aborted)setPending(false);});return()=>controller.abort();},[open,name,code,result]);
+  return <details className="ingredient-context-details" onToggle={e=>setOpen(e.currentTarget.open)}><summary>{label}</summary>
+    {open&&!result?.consumerReference&&<SourcePassages query={name}/>}
+    {pending ? <p>Checking references…</p> : !result ? null : <>
+
+      {result.consumerReference && <p>{result.consumerReference.explanation} <a href={result.consumerReference.url} target="_blank" rel="noreferrer">{result.consumerReference.source} ↗</a></p>}
+      {result.identity && <p>Substance record: {result.identity.name} · INS {result.identity.code}</p>}
+      {(result.openFoodTox?.name || result.sources.length > 0) && <details><summary>Sources</summary>
+        {result.openFoodTox?.name && <p><a href={result.openFoodTox.source} target="_blank" rel="noreferrer">EFSA OpenFoodTox ↗</a> · {result.openFoodTox.name}. A hazard record does not establish exposure or personal risk.</p>}
+        {result.sources.map(source => <p key={source.id}><a href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a> · {source.publisher}</p>)}
+      </details>}
+
     </>}
+    {evidence && onInspect && (evidence.observationIds.length>0||evidence.imageRegions.length>0) && <p><button type="button" className="text-button" onClick={()=>onInspect(evidence.observationIds,evidence.imageRegions)}>View label</button></p>}
   </details>;
 }
 
@@ -71,6 +97,7 @@ function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
   onInspectEvidence: Props['onInspectEvidence'];
 }) {
   const [editing, setEditing] = useState(false);
+  const [detailsOpen,setDetailsOpen]=useState(false);
   const [value, setValue] = useState(row.value === null ? '' : String(row.value));
   const [basisAmount, setBasisAmount] = useState(row.basisAmount === null ? '' : String(row.basisAmount));
   const [basisUnit, setBasisUnit] = useState<'g' | 'ml'>(row.basisUnit ?? 'g');
@@ -87,17 +114,17 @@ function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
   const massConflict=nutrientMassConflict({nutrientKey:key,value:Number(value),unit,basisAmount:Number(basisAmount),basisUnit});
   const canSave = Boolean(!massConflict && key && value.trim() && Number.isFinite(Number(value)) && Number(value) >= 0
     && basisAmount.trim() && Number.isFinite(Number(basisAmount)) && Number(basisAmount) > 0);
-  return <article className="reconstruction-row" data-reconstruction-row={row.rowId} data-reading-status={row.status} title={statusLabel(row.status)}>
-    <div className="reconstruction-row-main">
-      <div><strong>{row.nutrient || row.printedLabel}</strong>{row.columnLabel && <small>{row.columnLabel}</small>}</div>
+  return <article className="reconstruction-row" data-reconstruction-row={row.rowId} data-reading-status={row.status} title={statusLabel(row.status)}><details className="nutrition-reading-details" onToggle={e=>setDetailsOpen(e.currentTarget.open)}>
+    <summary className="reconstruction-row-main">
+      <div><strong>{row.nutrient || row.printedLabel}</strong>{row.columnLabel && (row.basisAmount===null || !row.basisUnit) && <small>{row.columnLabel}</small>}</div>
       <div className="reconstruction-value">
-        <strong>{row.value === null ? row.printedValue ?? 'Not read' : `${row.value} ${row.unit ?? ''}`.trim()}</strong>
+        <strong>{row.value === null ? row.printedValue ?? 'Not read' : `${row.qualifier && row.qualifier !== '_' ? row.qualifier+' ' : ''}${row.value} ${row.unit ?? ''}`.trim()}</strong>
         <small>{row.basisAmount !== null && row.basisUnit ? `per ${row.basisAmount} ${row.basisUnit}` : row.basisText ?? (row.value===null?'':'Basis not established')}</small>
       </div>
-    </div>
-    {row.qualifier && <p className="reconstruction-qualifier">{row.qualifier}</p>}
+    </summary>
+    {detailsOpen&&(nutrientExplanation(key)?<p className="nutrition-reading-help">{nutrientExplanation(key)!.text} <a href={nutrientExplanation(key)!.url} target="_blank" rel="noreferrer">{nutrientExplanation(key)!.source} ↗</a></p>:<SourcePassages query={row.nutrient || row.printedLabel}/>)}
     <div className="reconstruction-row-meta">{['ambiguous','conflict'].includes(row.status)&&<span className={styles.needsReview}>{statusLabel(row.status)} · review this reading</span>}
-      {(row.evidence.observationIds.length > 0 || row.evidence.imageRegions.length > 0) && <button type="button" className="text-button" onClick={() => onInspectEvidence(row.evidence.observationIds,row.evidence.imageRegions)}><ScanLine size={13}/>Inspect evidence</button>}
+      {(row.evidence.observationIds.length > 0 || row.evidence.imageRegions.length > 0) && <button type="button" className="text-button" onClick={() => onInspectEvidence(row.evidence.observationIds,row.evidence.imageRegions)}><ScanLine size={13}/>View label</button>}
     </div>
     {saved?.status === 'corrected' && saved.basis && <p className="reconstruction-correction"><strong>Your confirmed correction:</strong> {saved.value} {saved.unit} per {saved.basis.amount} {saved.basis.unit}. The original interpretation remains above.</p>}
     {key && !editing && <button className="text-button reconstruction-edit" type="button" aria-label={`Review ${row.nutrient || row.printedLabel} ${row.columnLabel || row.basisText || "reading"}`} onClick={startEditing}>{saved?.status === 'corrected' ? 'Edit your correction' : 'Review value'}</button>}
@@ -116,7 +143,7 @@ function InterpretedRow({ row, saved, onCorrect, onInspectEvidence }: {
       {massConflict&&<p className="reconstruction-caveat" role="alert">{massConflict}</p>}
       <small>This creates a user-confirmed reading with its own evidence link. It does not verify the model interpretation.</small>
     </form>}
-  </article>;
+  </details></article>;
 }
 
 const nutrientLabels: Array<[NutrientKey, string]> = [
@@ -180,7 +207,7 @@ function ExtraNutrientRow({row,correction,onSave,onInspect}:{row:PackageReconstr
  const valid=!!draft.label.trim()&&draft.value.trim()!==''&&Number.isFinite(Number(draft.value))&&Number(draft.value)>=0&&Number(draft.value)<=100000&&Number(draft.basis)>0&&Number(draft.basis)<=10000&&correctionUnits.includes(draft.unit as typeof correctionUnits[number])&&['g','ml'].includes(draft.basisUnit)&&['','<','<=','>','>='].includes(draft.qualifier);
  return <article className="reconstruction-row" data-reconstruction-row={row.rowId} data-reading-status={row.status} title={statusLabel(row.status)}>
   <div className="reconstruction-row-main"><div><strong>{source.nutrient}</strong>{source.columnLabel&&<small>{source.columnLabel}</small>}</div><div className="reconstruction-value"><strong>{source.value===null?source.printedValue??'Not read':`${source.value} ${source.unit??''}`}</strong><small>{source.basisAmount!==null&&source.basisUnit?`per ${source.basisAmount} ${source.basisUnit}`:source.basisText??(source.value===null?'':'Basis not established')}</small></div></div>
-  <div className="reconstruction-row-meta">{['ambiguous','conflict'].includes(source.status)&&<span className={styles.needsReview}>{statusLabel(source.status)} · review this reading</span>}{(source.evidence.observationIds.length>0||source.evidence.imageRegions.length>0)&&<button type="button" className="text-button" onClick={()=>onInspect(source.evidence.observationIds,source.evidence.imageRegions)}><ScanLine size={13}/>Inspect evidence</button>}</div>
+  <div className="reconstruction-row-meta">{['ambiguous','conflict'].includes(source.status)&&<span className={styles.needsReview}>{statusLabel(source.status)} · review this reading</span>}{(source.evidence.observationIds.length>0||source.evidence.imageRegions.length>0)&&<button type="button" className="text-button" onClick={()=>onInspect(source.evidence.observationIds,source.evidence.imageRegions)}><ScanLine size={13}/>View label</button>}</div>
   {correction&&<p className="reconstruction-correction"><strong>Your correction · revision {correction.revision}:</strong> {current.nutrient} {current.qualifier}{current.value} {current.unit} per {current.basisAmount} {current.basisUnit}. Original reading retained.</p>}
   {!editing&&onSave&&<button type="button" className="text-button reconstruction-edit" aria-label={`Review ${source.nutrient} ${source.columnLabel || source.basisText || "reading"}`} onClick={start}>{correction?'Edit your correction':'Review value'}</button>}
   {editing&&<form className="reconstruction-edit-form" onSubmit={event=>{event.preventDefault();if(valid&&onSave?.({rowId:row.rowId,label:draft.label,value:Number(draft.value),unit:draft.unit as ReconstructionRowEdit['unit'],basisAmount:Number(draft.basis),basisUnit:draft.basisUnit as 'g'|'ml',qualifier:draft.qualifier||null}))setEditing(false);}}>
@@ -196,21 +223,11 @@ function ExtraNutrientRow({row,correction,onSave,onInspect}:{row:PackageReconstr
  </article>;
 }
 
+function StatementPassage({text,kind,status,children}:{text:string;kind:string;status:string;children:React.ReactNode}){const [open,setOpen]=useState(false);return <details className="ingredient-context-details" onToggle={e=>setOpen(e.currentTarget.open)}><summary>{text}<small> · {kind}{['ambiguous','conflict','unreadable'].includes(status)?` · ${statusLabel(status)}`:''}</small></summary>{open&&(statementExplanation(kind,text)?<p>{statementExplanation(kind,text)!.text} <a href={statementExplanation(kind,text)!.url} target="_blank" rel="noreferrer">{statementExplanation(kind,text)!.source} ↗</a></p>:<SourcePassages query={text}/>)}{children}</details>;}
+
 export function PackageReconstructionView({ reconstruction, history = [], savedNutrients, onCorrect, onInspectEvidence, onActivateRevision, corrections=[], onCorrectRow, retainedRows=[], researchQuestion='' }: Props) {
   const [selectedRevision, setSelectedRevision] = useState<number | null>(null);
   const displayed = selectedRevision === null ? reconstruction : history.find(item => item.revision === selectedRevision) ?? reconstruction;
-  const queryItems = JSON.stringify([...displayed.ingredients.map(item=>({name:item.normalizedName||item.name,code:null})),...displayed.additives.map(item=>({name:item.normalizedName||item.printedName,code:item.code}))].filter(item=>item.name.trim().length>=2).slice(0,40));
-  const [ingredientResults,setIngredientResults]=useState<IngredientResult[]>([]);
-  const [ingredientPending,setIngredientPending]=useState(false);
-  useEffect(()=>{
-    const items=JSON.parse(queryItems) as Array<{name:string;code:string|null}>;
-    if(!items.length){setIngredientResults([]);setIngredientPending(false);return;}
-    const controller=new AbortController();setIngredientResults([]);setIngredientPending(true);
-    void fetch('/api/ingredient-context',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items,question:researchQuestion.slice(0,1200)}),signal:controller.signal})
-      .then(async response=>response.ok?await response.json():null).then(data=>{if(!controller.signal.aborted)setIngredientResults(Array.isArray(data?.items)?data.items:[]);})
-      .catch(()=>{}).finally(()=>{if(!controller.signal.aborted)setIngredientPending(false);});
-    return ()=>controller.abort();
-  },[queryItems,researchQuestion]);
   const isActive = selectedRevision === null;
   const isEvidenceMerge = isActive && reconstruction.model.startsWith('local evidence merge');
   const identity = reconstructedIdentity(displayed.identity);
@@ -221,27 +238,27 @@ export function PackageReconstructionView({ reconstruction, history = [], savedN
     && !displayed.nutritionRows.some(row => (row.nutrientKey === undefined ? nutrientKey(row.nutrient || row.printedLabel) : row.nutrientKey) === item.key))
     : [];
   return <section className={`package-reconstruction ${styles.package}`} aria-label="Gemini package reconstruction">
-    <header><div><span className="eyebrow">PACKAGE UNDERSTANDING</span><h2>{identity || 'Package details'}</h2></div></header>
+    <header><div><h2>{identity || 'Package details'}</h2></div></header>
     {!isActive && <p className="reconstruction-caveat">You are reviewing an earlier reading.</p>}
     <div className={styles.packageNote}><p>AI label readings · not independently verified. Review uncertain or missing values before relying on them.</p>
       <details><summary>About these readings</summary><p>Readings are linked to the original evidence. A readable value is still an interpretation; your confirmed corrections are saved separately. Missing values are not zero.</p><p className={styles.packageMeta}>Revision {displayed.revision} · {isActive ? 'active' : 'alternative'}{displayed.analysisMethod?` · ${analysisMethodPolicy(displayed.analysisMethod).label}`:''} · {displayed.model}</p>{isEvidenceMerge&&<p>Compatible saved readings are combined. Conflicting values remain excluded from calculations.</p>}</details>
     </div>
-    {retainedRows.length>0&&<details className="reconstruction-history"><summary>Other printed readings retained</summary><ul>{retainedRows.map(row=><li key={row.rowId}>{row.printedLabel||row.nutrient}: {row.printedValue??row.value} {row.unit} per {row.basisAmount} {row.basisUnit} <button type="button" className="text-button" onClick={()=>onInspectEvidence(row.evidence.observationIds,row.evidence.imageRegions)}>Inspect evidence</button></li>)}</ul><small>Your selected reading is used for calculations; these alternatives have not been overwritten.</small></details>}
+    {retainedRows.length>0&&<details className="reconstruction-history"><summary>Other printed readings retained</summary><ul>{retainedRows.map(row=><li key={row.rowId}>{row.printedLabel||row.nutrient}: {row.printedValue??row.value} {row.unit} per {row.basisAmount} {row.basisUnit} <button type="button" className="text-button" onClick={()=>onInspectEvidence(row.evidence.observationIds,row.evidence.imageRegions)}>View label</button></li>)}</ul><small>Your selected reading is used for calculations; these alternatives have not been overwritten.</small></details>}
     {history.length > 0 && <details className="reconstruction-history"><summary>{history.length} earlier or alternative interpretation{history.length === 1 ? '' : 's'}</summary><ol>{[...history].sort((a,b)=>b.revision-a.revision).map(item=>{
       const title=reconstructedIdentity(item.identity)||'Unidentified package';
       return <li key={item.revision}><div><strong>Revision {item.revision}</strong><span>{title}</span><small>{item.nutritionRows.length} nutrition rows · {item.ingredients.length} ingredients · {item.model}</small></div><button type="button" className="text-button" onClick={()=>setSelectedRevision(item.revision)}>{selectedRevision===item.revision?'Viewing':'Review'}</button></li>;
     })}</ol></details>}
     {!isActive && <div className="reconstruction-alternative-actions"><button type="button" className="text-button" onClick={()=>setSelectedRevision(null)}>Return to active reading</button>{onActivateRevision&&<button type="button" className="text-button" onClick={()=>{if(onActivateRevision(displayed.revision))setSelectedRevision(null);}}>Use this reading</button>}</div>}
-    {serving && <section className="reconstruction-serving"><strong>Serving</strong><span>{serving.pieceCount ? `${serving.pieceCount} ${serving.pieceDescription ?? 'pieces'}` : serving.printedText ?? 'Amount unresolved'}{(serving.pieceCount || !serving.printedText) && serving.quantity !== null && serving.unit ? ` · about ${serving.quantity} ${serving.unit}` : ''}</span>{['ambiguous','conflict','unreadable'].includes(serving.status)&&<small className={styles.needsReview}>{statusLabel(serving.status)}</small>}{(serving.evidence.observationIds.length > 0 || serving.evidence.imageRegions.length > 0) && <button type="button" className="text-button" onClick={() => onInspectEvidence(serving.evidence.observationIds,serving.evidence.imageRegions)}>Inspect evidence</button>}</section>}
+    {serving && <section className="reconstruction-serving"><strong>Serving</strong><span>{serving.pieceCount ? `${serving.pieceCount} ${serving.pieceDescription ?? 'pieces'}` : serving.printedText ?? 'Amount unresolved'}{(serving.pieceCount || !serving.printedText) && serving.quantity !== null && serving.unit ? ` · about ${serving.quantity} ${serving.unit}` : ''}</span>{['ambiguous','conflict','unreadable'].includes(serving.status)&&<small className={styles.needsReview}>{statusLabel(serving.status)}</small>}{(serving.evidence.observationIds.length > 0 || serving.evidence.imageRegions.length > 0) && <button type="button" className="text-button" onClick={() => onInspectEvidence(serving.evidence.observationIds,serving.evidence.imageRegions)}>View label</button>}</section>}
     {quantityDeclarations.length > 0 && <section><h3>Printed package quantities</h3><ul className="reconstruction-quantity-list">{quantityDeclarations.map((item, index) => <li key={`${item.kind}-${item.quantity}-${item.unit}-${index}`}>
       <div><strong>{quantityKindLabel(item.kind)}</strong><span>{item.quantity !== null && item.unit ? `${item.quantity} ${item.unit}` : item.printedText ?? 'Quantity unresolved'}</span>{item.printedText && item.quantity !== null && <small>Printed wording: {item.printedText}</small>}</div>
       {['ambiguous','conflict','unreadable'].includes(item.status)&&<small className={styles.needsReview}>{statusLabel(item.status)}</small>}
-      {(item.evidence.observationIds.length > 0 || item.evidence.imageRegions.length > 0) && <button type="button" className="text-button" onClick={() => onInspectEvidence(item.evidence.observationIds,item.evidence.imageRegions)}>Inspect evidence</button>}
+      {(item.evidence.observationIds.length > 0 || item.evidence.imageRegions.length > 0) && <button type="button" className="text-button" onClick={() => onInspectEvidence(item.evidence.observationIds,item.evidence.imageRegions)}>View label</button>}
     </li>)}</ul></section>}
     {(displayed.nutritionRows.length > 0 || isActive) && <section><h3>Nutrition as printed</h3>{displayed.nutritionRows.length > 0 && <div className="reconstruction-rows">{displayed.nutritionRows.map(row => {const key=row.nutrientKey===undefined?nutrientKey(row.nutrient || row.printedLabel):row.nutrientKey;if(!key)return <ExtraNutrientRow key={row.rowId} row={row} correction={corrections.find(item=>item.rowId===row.rowId)} onSave={isActive?onCorrectRow:undefined} onInspect={onInspectEvidence}/>;return <InterpretedRow key={row.rowId} row={row} saved={key? savedByKey.get(key):undefined} onCorrect={onCorrect} onInspectEvidence={onInspectEvidence}/>;})}</div>}{addedReadings.length > 0 && <div className="reconstruction-rows" aria-label="User-supplied readings">{addedReadings.map(item => <article className="reconstruction-row" key={item.key}><div className="reconstruction-row-main"><div><strong>{nutrientLabels.find(([key])=>key===item.key)?.[1] ?? item.key}</strong><small>Your supplied reading</small></div><div className="reconstruction-value"><strong>{item.value} {item.unit}</strong><small>{item.basis ? `per ${item.basis.amount} ${item.basis.unit}` : 'Basis unresolved'}</small></div></div><small>Your saved reading</small></article>)}</div>}{isActive && <AddMissingNutrient savedNutrients={savedNutrients} onCorrect={onCorrect}/>}</section>}
-    {displayed.ingredients.length > 0 && <section><h3>Ingredients read from your package</h3><ol className="reconstruction-ingredients">{displayed.ingredients.slice(0, 40).map((item, index) => <li key={`${item.position}-${index}`}><span>{item.normalizedName || item.name}</span>{item.printedPercentage !== null && <strong>{item.printedPercentage}%</strong>}{['ambiguous','conflict','unreadable'].includes(item.status)&&<small className={styles.needsReview}>{statusLabel(item.status)}</small>}{(item.evidence.observationIds.length>0||item.evidence.imageRegions.length>0)&&<button type="button" className="text-button" onClick={()=>onInspectEvidence(item.evidence.observationIds,item.evidence.imageRegions)}>Inspect evidence</button>}<IngredientDetails result={ingredientResults.find(result=>result.name===(item.normalizedName||item.name)&&!result.code)} pending={ingredientPending}/></li>)}</ol></section>}
-    {displayed.additives.length > 0 && <section><h3>Additives identified on the label</h3><ul className="reconstruction-statements">{displayed.additives.slice(0, 20).map((item, index) => <li key={`${item.printedName}-${index}`}><span>{item.normalizedName || item.printedName}{item.code ? ` · ${item.code}` : ''}</span>{['ambiguous','conflict','unreadable'].includes(item.status)&&<small className={styles.needsReview}>{statusLabel(item.status)}</small>}<IngredientDetails result={ingredientResults.find(result=>result.name===(item.normalizedName||item.printedName)&&result.code===item.code)} pending={ingredientPending}/></li>)}</ul></section>}
-    {displayed.statements.length > 0 && <section><h3>Claims and other details</h3><ul className="reconstruction-statements">{displayed.statements.slice(0, 24).map((item, index) => <li key={`${item.kind}-${index}`}><span>{item.text}</span><small>{item.kind}{['ambiguous','conflict','unreadable'].includes(item.status)?` · ${statusLabel(item.status)}`:''}</small></li>)}</ul></section>}
+    {displayed.ingredients.length > 0 && <section><h3>Ingredients read from your package</h3><ol className="reconstruction-ingredients">{displayed.ingredients.slice(0, 40).map((item, index) => <li key={`${item.position}-${index}`}><IngredientDetails label={`${item.normalizedName || item.name}${item.printedPercentage !== null ? ` · ${item.printedPercentage}%` : ''}${['ambiguous','conflict','unreadable'].includes(item.status)?` · ${statusLabel(item.status)}`:''}`} evidence={item.evidence} onInspect={onInspectEvidence} name={item.normalizedName||item.name} code={null}/></li>)}</ol></section>}
+    {displayed.additives.length > 0 && <section><h3>Additives identified on the label</h3><ul className="reconstruction-statements">{displayed.additives.slice(0, 20).map((item, index) => <li key={`${item.printedName}-${index}`}><IngredientDetails label={`${item.normalizedName || item.printedName}${item.code ? ` · ${item.code}` : ''}${['ambiguous','conflict','unreadable'].includes(item.status)?` · ${statusLabel(item.status)}`:''}`} evidence={item.evidence} onInspect={onInspectEvidence} name={item.normalizedName||item.printedName} code={item.code}/></li>)}</ul></section>}
+    {displayed.statements.length > 0 && <section><h3>Claims and other details</h3><ul className="reconstruction-statements">{displayed.statements.slice(0, 24).map((item, index) => {return <li key={`${item.kind}-${index}`}><StatementPassage text={item.text} kind={item.kind} status={item.status}>{(item.evidence.observationIds.length>0||item.evidence.imageRegions.length>0)&&<p><button className="text-button" type="button" onClick={()=>onInspectEvidence(item.evidence.observationIds,item.evidence.imageRegions)}>View label</button></p>}</StatementPassage></li>;})}</ul></section>}
     {displayed.unresolved.length > 0 && <details className="reconstruction-unresolved"><summary>{displayed.unresolved.length} details still need clearer evidence</summary><ul>{displayed.unresolved.slice(0, 20).map((item, index) => <li key={`${item.field}-${index}`}><strong>{item.field}</strong> · {item.reason}</li>)}</ul></details>}
   </section>;
 }

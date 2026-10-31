@@ -505,6 +505,9 @@ describe('natural NutriScan agent contract', () => {
     expect(instruction).toContain('Omit claims when the returned evidence does not support them');
     expect(instruction).toContain('a condition mention alone does not justify lookup');
     expect(instruction).toContain('Printed servings are not prescriptions');
+    expect(instruction).toContain('distinguish allergy from intolerance');
+    expect(instruction).toContain('Never assume an unknown amount or known allergen is safe');
+    expect(instruction).toContain('Give evidence-supported actions');
     expect(instruction).toContain('call the appropriate calculator when needed and never calculate in prose');
     expect(instruction.length).toBeLessThan(2_000);
     expect(tools.map(tool => tool.name)).toContain('calculate_nutrition');

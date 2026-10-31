@@ -1530,3 +1530,6 @@ Reviewed six retained sodium/sugar-claim/milk-risk failures. Qualitative attribu
 ## 31 October — Ingredient context integration
 
 Added bounded local ingredient lookup, inspector expansions and pre-answer evidence selection. Browser checks used a restored package and fictional questions; sources were retrieved for diabetes, sodium and an additive. Responses included an unsupported amount assumption and treated transcription omissions as absent physical-label data. No patient details or photo bytes recorded here.
+## 31 October — Answer provenance controls restored
+
+Removed the outer Answer details collapsing summary from the conversation answer surface. The recorded model name and Recheck with current evidence action are visible by default again; answer-length folding and evidence notes remain independently scoped.

@@ -1,7 +1,8 @@
 .controls{display:flex;flex:1 1 280px;flex-wrap:wrap;align-items:center;gap:8px;min-width:0;max-width:460px}
 .control{display:grid;flex:1 1 130px;gap:3px;min-width:0;max-width:225px;font-size:10px;color:var(--muted)}
 .control select{width:100%;min-width:0;height:34px;padding:4px 7px;border:1px solid var(--line);border-radius:8px;background:var(--surface,#fff);color:var(--ink);font:inherit;font-size:12px}
-.disclosure{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px;margin:5px auto;font-size:10px;line-height:1.4;color:var(--muted)}
+.disclosure{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:2px 12px;margin:3px auto;max-width:880px;font-size:10px;line-height:1.4;color:var(--muted)}
+.medicalNote{text-align:center}.sharing{display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px}.sharing button{min-height:24px;padding:2px 3px}
 .disclosure button{font:inherit;text-decoration:underline;text-underline-offset:2px}
 .packageActions{flex:0 1 auto;min-width:0}
 .paidBackup{display:flex;flex:1 1 100%;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
