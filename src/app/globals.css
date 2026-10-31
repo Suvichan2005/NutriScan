@@ -482,7 +482,9 @@ dialog.onboarding-dialog{width:min(620px,calc(100% - 24px));max-width:none;max-h
 @media(max-width:700px){
  .thread-package-identity>strong{grid-column:1/-1;max-width:none!important;white-space:normal;overflow-wrap:anywhere;text-overflow:clip;line-height:1.2}
  .empty-thread-disclosure{min-height:0;padding:0 6px;line-height:1.35}
- .thread-footer-actions{min-height:30px;margin-top:4px;padding-top:2px}
+ .empty-thread-compose{padding:8px 0 max(12px,env(safe-area-inset-bottom))}
+ .empty-thread-disclosure{margin:6px auto 4px;line-height:1.45}
+ .thread-footer-actions{min-height:34px;margin-top:6px;padding:4px 2px;flex-wrap:wrap}
 }
 .thread-reconstructed-nutrition-list{display:grid;gap:4px;margin:0;padding:0;list-style:none}
 .thread-reconstructed-nutrition-list li{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 10px;border-radius:8px;background:#f7f9f5}

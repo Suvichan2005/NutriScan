@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { buildProductLookupRequest, defaultProductLookup, productIdentityDisclosure, productQuerySource } from '../product-query';
+import { automaticProductLookup, buildProductLookupRequest, defaultProductLookup, productIdentityDisclosure, productQuerySource } from '../product-query';
 
 describe('product catalog request construction', () => {
+  it('uses the current evidence-linked reconstruction instead of the unidentified placeholder', () => {
+    const data = { name:'Unidentified package', barcode:undefined, identityConflict:false, observations:[], reconstruction:{current:true,identity:{brand:'Example Farm',name:'Cream Cracker',variant:'Sugar Free',status:'clear',evidence:{observationIds:[],imageRegions:[{imageId:'photo'}]}}} } as unknown as Parameters<typeof defaultProductLookup>[0];
+    expect(defaultProductLookup(data)).toBe('Example Farm Cream Cracker Sugar Free');
+    expect(automaticProductLookup(data)).toBe('Example Farm Cream Cracker Sugar Free');
+    expect(automaticProductLookup({ ...data, barcode: '3017620422003' })).toBe('3017620422003');
+    expect(automaticProductLookup({ ...data, identityConflict: true })).toBe('');
+    expect(automaticProductLookup({ ...data, reconstruction: { ...data.reconstruction!, current: false } })).toBe('');
+    expect(automaticProductLookup({ ...data, reconstruction: undefined, userDescription: 'private details' })).toBe('');
+    expect(productQuerySource(data)).toBe('reconstruction');
+    expect(defaultProductLookup({...data,identityConflict:true})).toBe('');
+    expect(defaultProductLookup({...data,reconstruction:{...data.reconstruction!,current:false}})).toBe('');
+  });
   it('keeps exact barcode lookup separate from candidate search', () => {
     expect(buildProductLookupRequest({ text: ' 3017620422003 ' })).toEqual({ barcode: '3017620422003' });
   });
@@ -29,7 +41,7 @@ describe('product catalog request construction', () => {
   it('does not offer OCR barcode candidates when evidence conflicts or the check digit is invalid', () => {
     const observation = { id: 'ocr-line', field: 'ocr-line', text: '4006381333932', side: 'back' as const, confidence: 81, origin: 'ocr' as const, imageId: 'photo-back' };
     expect(defaultProductLookup({ barcode: undefined, identityConflict: true, name: 'Example', userDescription: undefined, observations: [observation] })).toBe('');
-    expect(defaultProductLookup({ barcode: undefined, identityConflict: false, name: 'Unidentified package', userDescription: undefined, observations: [observation] })).toBe('Unidentified package');
+    expect(defaultProductLookup({ barcode: undefined, identityConflict: false, name: 'Unidentified package', userDescription: undefined, observations: [observation] })).toBe('');
     expect(productQuerySource({ barcode: undefined, identityConflict: false, name: 'Unidentified package', userDescription: undefined, observations: [observation] })).toBe('label-text');
   });
   it('reports user-entered identity text separately from OCR-recognized package text', () => {

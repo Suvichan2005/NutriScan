@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { addProfileGuidanceContextSources, profileGuidanceContextSources } from './profile-guidance-context';
+import { addProfileGuidanceContextSources, packageIngredientContextSources, profileGuidanceContextSources } from './profile-guidance-context';
+
+it('selects an ingredient study only for a compatible package ingredient and outcome', () => {
+  const pkg = { ingredients: ['oats'], reconstruction: undefined };
+  expect(packageIngredientContextSources({ question: 'How do these affect cholesterol?', package: pkg }).map(source => source.id)).toContain('pubmed-oat-beta-glucan-lipids-2022');
+  expect(packageIngredientContextSources({ question: 'What is the serving size?', package: pkg })).toEqual([]);
+  expect(packageIngredientContextSources({ question: 'How does this affect cholesterol?', package: { ...pkg, ingredients: ['wheat flour'] } })).toEqual([]);
+});
 
 describe('profile-aware local guidance context', () => {
+  it('selects relevant local guidance for conditions in the question without requiring profile sharing', () => {
+    const input = { question: 'How do these carbohydrates fit with diabetes?', package: { nutrients: [{ key: 'carbohydrate' as const }], reconstruction: null } };
+    expect(profileGuidanceContextSources(input).some(source => source.id === 'idf-healthy-nutrition-diabetes-2024')).toBe(true);
+    expect(addProfileGuidanceContextSources({ ...input, allowAutomaticGuidance: false })).toEqual([]);
+  });
   it('does not inject profile guidance when its capability is excluded, while preserving explicitly supplied evidence', () => {
     const input = {
       question: 'What should I consider for this food?',

@@ -12,8 +12,15 @@ function sameSourceRow(row:Row,original:Row){
 
 /** User readings are an overlay; the original and rechecked model objects stay immutable. */
 export function packageWithRowCorrections(pkg:PackageData):PackageData{
- if(!pkg.reconstruction?.current||(!pkg.reconstructionCorrections?.length&&!pkg.clarificationDecisions?.some(item=>item.decision==='confirm')))return pkg;
- let rows=[...pkg.reconstruction.nutritionRows];
+ if(!pkg.reconstruction?.current)return pkg;
+ // Some saved model responses use "_" as an empty-field placeholder. Treat it
+ // as absent only when the printed value is an unqualified exact number and
+ // unit matching the parsed row; preserve all genuine or ambiguous qualifiers.
+ let rows=pkg.reconstruction.nutritionRows.map(row=>{
+  if(row.qualifier?.trim()!=='_'||row.value===null||!row.unit)return row;
+  const printed=row.printedValue?.trim().match(/^(\d+(?:\.\d+)?)\s*([a-zA-Zµμ]+)$/u);
+  return printed&&Number(printed[1])===row.value&&printed[2].toLowerCase()===row.unit.toLowerCase()?{...row,qualifier:null}:row;
+ });
  for(const correction of pkg.reconstructionCorrections??[]){
   rows=rows.filter(row=>!sameSourceRow(row,correction.original));
   rows.push(correction.reading);

@@ -272,6 +272,11 @@ function mentions(text: string, term: string): boolean {
   return normalizedTerm.length > 0 && normalizedText.includes(' ' + normalizedTerm + ' ');
 }
 
+/** Recognize only conditions covered by the local guidance index. */
+export function containsGuidanceCondition(text: string): boolean {
+  return entries.some(entry => entry.conditions.some(condition => mentions(text, condition)));
+}
+
 function explicitlyNamesSource(query: string, record: EvidenceSource): boolean {
   const normalized = normalize(query);
   const publisherAliases: Record<string, string[]> = {

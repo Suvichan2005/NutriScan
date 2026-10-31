@@ -35,6 +35,8 @@ export function ThreadPublicProductRecord({
       ? 'Only a checksum-valid number recognized in package OCR was sent as a possible barcode. It is not confirmed as the package barcode; photos and personal context stayed in this browser.'
     : querySource === 'user-detail'
       ? 'Only the product detail you entered was sent to Open Food Facts. Photos and personal context stayed in this browser.'
+    : querySource === 'reconstruction'
+      ? 'The unverified product name, brand and variant interpreted from the package were sent to Open Food Facts. Photos and personal context stayed in this browser.'
       : 'Only the product text recognized from the package was sent to Open Food Facts. Photos and personal context stayed in this browser.';
 
   return (

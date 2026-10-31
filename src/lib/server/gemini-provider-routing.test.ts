@@ -27,6 +27,28 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('free-tier Gemini model routing', () => {
+  it.each(['gemini-3.5-flash-lite','gemini-3.8-flash'] as const)('uses only %s on both free and paid routes',async model=>{
+    for(const [key,value] of Object.entries({GEMINI_SAME_MODEL_FALLBACK:'true',GEMINI_FREE_MODEL_ORDER:'gemini-3.5-flash-lite,gemini-3.8-flash',ENABLE_PAID_GEMINI:'true',ENABLE_PAID_GEMINI_FALLBACK:'true',GEMINI_MODEL:'gemini-3.5-flash-lite',GEMINI_FREE_PROJECT_ID:'free-test-project',GEMINI_PAID_PROJECT_ID:'paid-test-project',GEMINI_PAID_BUDGET_USD:'1',GEMINI_PAID_MAX_CALLS:'3',GEMINI_PAID_MAX_INPUT_TOKENS:'1000',GEMINI_PAID_MAX_OUTPUT_TOKENS:'100',GEMINI_PAID_INPUT_USD_PER_MILLION:'1',GEMINI_PAID_OUTPUT_USD_PER_MILLION:'4'}))vi.stubEnv(key,value);
+    const fetcher=vi.fn(async(target:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(target), key=new Headers(init?.headers).get('x-goog-api-key');
+      if(url.includes('countTokens'))return new Response(JSON.stringify({totalTokens:10}),{status:200,headers:{'content-type':'application/json'}});
+      if(key==='free-test-key')return new Response(JSON.stringify({error:{code:503,status:'UNAVAILABLE'}}),{status:503,headers:{'content-type':'application/json'}});
+      return new Response(success(model),{status:200,headers:{'content-type':'application/json'}});
+    });vi.stubGlobal('fetch',fetcher);
+    expect(providerStatus().model).toBe('gemini-3.5-flash-lite');
+    const context=applicationGeminiContext(true,model);
+    await generateTracked(context,{model,contents:'synthetic route test',config:{maxOutputTokens:40}});
+    expect(context.tier).toBe('paid');expect(context.model).toBe(model);
+    for(const [target] of fetcher.mock.calls) expect(String(target)).toContain(model);
+  });
+  it('keeps Auto on Flash-Lite when same-model fallback is enabled',async()=>{
+    vi.stubEnv('GEMINI_SAME_MODEL_FALLBACK','true');vi.stubEnv('GEMINI_FREE_MODEL_ORDER','gemini-3.5-flash-lite,gemini-3.8-flash');
+    const fetcher=vi.fn().mockResolvedValue(new Response(JSON.stringify({error:{code:503,status:'UNAVAILABLE'}}),{status:503,headers:{'content-type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
+    const context=applicationGeminiContext(false);
+    expect(context.model).toBe('gemini-3.5-flash-lite');
+    await expect(generateTracked(context,{model:context.model,contents:'synthetic auto route',config:{maxOutputTokens:40}})).rejects.toMatchObject({code:'free_models_exhausted'});
+    expect(fetcher).toHaveBeenCalledTimes(1);expect(String(fetcher.mock.calls[0][0])).toContain('gemini-3.5-flash-lite');
+  });
   it('keeps the financial ceiling in development and the independent count cap in production',async()=>{
     vi.stubEnv('VITEST','true'); // retain the isolated in-memory ledger while testing runtime policies
     for(const [key,value] of Object.entries({GEMINI_PROVIDER:'paid',ENABLE_PAID_GEMINI:'true',GEMINI_MODEL:'gemini-3.8-flash',GEMINI_FREE_PROJECT_ID:'free-project',GEMINI_PAID_PROJECT_ID:'paid-project',GEMINI_PAID_BUDGET_USD:'1',GEMINI_PAID_MAX_CALLS:'1',GEMINI_PAID_MAX_INPUT_TOKENS:'1000',GEMINI_PAID_MAX_OUTPUT_TOKENS:'100',GEMINI_PAID_INPUT_USD_PER_MILLION:'1',GEMINI_PAID_OUTPUT_USD_PER_MILLION:'1'}))vi.stubEnv(key,value);

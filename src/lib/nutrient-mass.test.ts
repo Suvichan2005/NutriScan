@@ -4,11 +4,26 @@ import {parseLabel} from './parser';
 import {applyNutrientCorrection,calculationRespectsCorrections} from './correction';
 import {calculationsFromReconstruction} from './portion';
 import {executeGeminiTool,type GeminiToolContext} from './server/gemini-tools';
+import {packageWithRowCorrections} from './reconstruction-correction';
+import {validateNaturalAnswerText} from '../modules/inference';
 import type {PackageReconstructionContent} from './contracts';
 const evidence={observationIds:['source'],imageRegions:[]};
 const row={rowId:'carb',nutrient:'Carbohydrate',nutrientKey:'carbohydrate' as const,printedLabel:'Carbohydrate',printedValue:'860',value:860,unit:'g',columnLabel:null,basisText:'per 100 g',basisAmount:100,basisUnit:'g' as const,qualifier:null,status:'provisional' as const,evidence};
 const content:PackageReconstructionContent={identity:{name:'Developer unit-invariant fixture',brand:null,variant:null,status:'provisional',evidence},serving:null,nutritionRows:[row,{...row,rowId:'sodium',nutrient:'Sodium',nutrientKey:'sodium',value:860,unit:'mg'}],ingredients:[],additives:[],statements:[],regions:[],unresolved:[],interpretationNote:'Developer fixture, not independent photo truth'};
 function packet(){const pkg=parseLabel('Developer unit-invariant fixture.');pkg.observations.push({id:'source',field:'raw-text',text:'Developer quantity input',origin:'fixture',side:'text',confidence:null});pkg.reconstruction={...structuredClone(content),revision:1,updatedAt:'2026-10-26T00:00:00Z',model:'fixture',current:true};return pkg;}
+
+it('recognises a saved empty qualifier marker only when the printed value is exactly consistent',async()=>{
+ const pkg=packet();const base=pkg.reconstruction!.nutritionRows[0];
+ pkg.reconstruction!.nutritionRows=[{...base,value:10,printedValue:'10g',qualifier:'_'},{...base,rowId:'limit',value:0.5,printedValue:'<0.5g',qualifier:'<'},{...base,rowId:'ambiguous',value:10,printedValue:'<10g',qualifier:'_'},{...base,rowId:'mismatch',value:10,printedValue:'11g',qualifier:'_'}];
+ const effective=packageWithRowCorrections(pkg);
+ expect(effective.reconstruction!.nutritionRows.map(r=>r.qualifier)).toEqual([null,'<','_','_']);
+ expect(pkg.reconstruction!.nutritionRows[0].qualifier).toBe('_');
+ const context:GeminiToolContext={question:'Calculate protein',package:pkg,visualImages:[],searchTerms:new Set(),prepareImage:async image=>image.base64};
+ const result=await executeGeminiTool('calculate_nutrition',{candidateId:'carb',amount:20,unit:'g'},context);
+ expect(result.status).toBe('ok');expect(result.calculations?.[0].result).toBe(2);
+ const checked=validateNaturalAnswerText('20 g contains 2 g carbohydrate.',{package:effective,calculations:result.calculations});
+ expect(checked.withheldUnsupportedQuantitySentenceCount).toBe(0);
+});
 
 it('converts compatible mass units and preserves zero, exact mass, and dimension limits',()=>{
  expect(nutrientMassConflict(row)).toBeTruthy();expect(nutrientMassConflict({...row,value:102,nutrientKey:'fiber'})).toBeTruthy();

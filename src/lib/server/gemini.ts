@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { createHash, randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { packageForAssist, packageReconstructionFactReferences, validateInferenceOutput, validateNaturalAnswerText, InferenceModuleError, assistOutput, initialPackageAssistOutput, providerAssistOutput } from '../../modules/inference';
+import { packageWithRowCorrections } from '../reconstruction-correction';
 import { assistantUiComponentSchema, calculationEvidenceText, calculationSchema, conversationEvidenceSourceSchema, evidenceSpanSchema, normalizedCropSchema, observationSchema, packageReconstructionContentSchema, packageSchema, profileSchema, reconstructedAdditiveSchema, reconstructedIngredientSchema, reconstructedNutritionRowSchema, reconstructedServingSchema, reconstructedStatementSchema, sourceSchema, tentativeStructuredCandidateSchema, visionCaptureSchema, type AssistantUiComponent, type Calculation, type NutrientKey, type Observation, type PackageReconstructionContent, type VisionCapture } from '../contracts';
 import { applicationGeminiContext, generateTracked, providerStatus, safeProviderFailure, modelPrice, estimateGeminiTokenCostUsd } from './gemini-provider';
 import { calculateSavedServing, executeGeminiTool, geminiToolDeclarations, type GeminiToolImage, type GeminiToolResult } from './gemini-tools';
@@ -21,7 +22,7 @@ import { calculationsForSavedPortionDifferences, calculationsFromReconstruction,
 import { normalizeAnswerReferenceHandles, filterAnswerBySourceScope, prioritizeCitedEvidence, renderAnswerEvidenceReferences, selectCitedEvidence } from '../answer-evidence';
 import { reconstructionRowIsSuperseded } from '../correction';
 import { workspacePortionSchema } from '../contracts';
-import { addProfileGuidanceContextSources } from './profile-guidance-context';
+import { addProfileGuidanceContextSources, packageIngredientContextSources } from './profile-guidance-context';
 
 export { providerStatus };
 
@@ -2269,6 +2270,19 @@ export async function assist(data: z.infer<typeof assistInput>) {
       if(prioritized.length)data=assistInput.parse({...data,package:activePackage,calculations:prioritized});
     }
 
+    // Select local guidance and source-linked ingredient evidence after the
+    // current reconstruction exists, including on the first photo turn.
+    const beforeEvidence=data.evidence??[];
+    const selectedGuidance=addProfileGuidanceContextSources({question:data.question,package:activePackage,profile:data.profile,evidence:beforeEvidence,allowAutomaticGuidance});
+    const allowIngredientEvidence=data.toolAccess?.mode!=='research'||Boolean(data.toolAccess.names?.includes('search_knowledge'));
+    const ingredientEvidence=allowIngredientEvidence?packageIngredientContextSources({question:data.question,package:activePackage,profile:data.profile}):[];
+    const additions=ingredientEvidence.filter(source=>!selectedGuidance.some(existing=>existing.id===source.id));
+    const selectedEvidence=[...selectedGuidance,...additions].slice(0,30);
+    const selectedIds=selectedEvidence.filter(source=>!beforeEvidence.some(existing=>existing.id===source.id)).map(source=>source.id);
+    if(selectedIds.length){
+      for(const source of selectedEvidence)referenceAliases.register(source.id,'source');
+      data=assistInput.parse({...data,evidence:selectedEvidence,currentEvidenceIds:[...new Set([...(data.currentEvidenceIds??[]),...selectedIds])]});
+    }
     const generated=await generateAgentOutput(data,analysisId,referenceAliases);
     const reconstructionTrace:GeminiToolTrace[]=packageReconstruction?[{
       name:'submit_package_reconstruction',
@@ -2293,7 +2307,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
     );
     const withheldSpans: Array<{text:string;reason:'unsupported-quantity'|'unsupported-basis'}> = [];
     const answerCheck=validateNaturalAnswerText(sourceScopeCheck.answer,{
-      package:activePackage,
+      package:packageWithRowCorrections(activePackage),
       question:data.question,
       profile:data.profile,
       evidence:effectiveEvidence,

@@ -86,8 +86,8 @@ export function parseGeminiRetryAfter(value: string | null, now = Date.now()): n
 
 function selectableFreeModels() {
   const configured = process.env.GEMINI_FREE_MODEL_ORDER?.split(',').map(value => value.trim()).filter(Boolean);
-  const allow = configured?.length?new Set(configured):null;
-  return FREE_GEMINI_MODEL_PREFERENCE.filter(model=>!allow||allow.has(model));
+  if (!configured?.length) return [...FREE_GEMINI_MODEL_PREFERENCE];
+  return [...new Set(configured.filter((model): model is GeminiModelChoice => geminiModelChoiceSchema.safeParse(model).success))];
 }
 function configuredFreeModels() {
   const models=selectableFreeModels();
@@ -329,7 +329,7 @@ export function providerStatus() {
     projectIdentity: tier === 'paid' ? (paidProjectId ? 'declared' : 'unknown') : (freeProjectId ? 'declared' : 'unknown'),
     paidProjectIdentity: paidProjectId ? 'declared' : 'unknown',
     paidFallbackEnabled: paidFallbackReady(),
-    paidFallbackModel: validModel(process.env.GEMINI_PAID_MODEL)??validModel(process.env.GEMINI_MODEL),
+    paidFallbackModel: process.env.GEMINI_SAME_MODEL_FALLBACK==='true' ? null : (validModel(process.env.GEMINI_PAID_MODEL)??validModel(process.env.GEMINI_MODEL)),
     paidFallbackReason: paidFallbackReady() ? null : 'Paid fallback requires ENABLE_PAID_GEMINI_FALLBACK=true, distinct declared project IDs and the complete paid cap configuration.',
     searchEnabled, searchRequested: searchEnabled, message,
   };
@@ -787,10 +787,11 @@ export async function generateTracked(context: GeminiContext, params: GenerateCo
   const requestedTier = context.tier;
   const attempts: ModelRouteAttempt[] = [];
   const requestedModel = context.model;
+  const sameModelOnly=process.env.GEMINI_SAME_MODEL_FALLBACK==='true';
   const models = requestedTier === 'free' && context.purpose === 'application'
-    ? context.modelPinned?[context.model]:configuredFreeModels()
+    ? (context.modelPinned||sameModelOnly)?[context.model]:configuredFreeModels()
     : [context.model];
-  const paidBackupModel=validModel(process.env.GEMINI_PAID_MODEL)??validModel(process.env.GEMINI_MODEL);
+  const paidBackupModel=sameModelOnly?validModel(requestedModel):(validModel(process.env.GEMINI_PAID_MODEL)??validModel(process.env.GEMINI_MODEL));
   const paidBackupEligible=requestedTier==='free'&&context.purpose==='application'&&context.allowPaidFallback===true&&paidFallbackReady()
     &&Boolean(paidBackupModel&&(!context.modelPinned||context.model===paidBackupModel));
   let lastRetryableError: unknown = null;
