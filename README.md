@@ -1,67 +1,98 @@
 # NutriScan
 
-Local-first packaged-food evidence workspace. A standalone Next.js / React / TypeScript application for reading labels, checking calculations and inspecting supporting sources.
+> **An India-first food-package intelligence workspace for reading labels, checking portions and exploring evidence.**
 
-## Run the current application
+NutriScan brings package photographs, structured label readings, user corrections, deterministic nutrition calculations and a Gemini-assisted conversation into one local-first application. It is a seventh-semester Computer Science and Engineering project at KIIT Deemed to be University.
 
-**Canonical branch: `codex/stable`.** GitHub opens this branch by default. `main` and `nutriscan-rc-20261027` retain historical checkpoints. Read [the local run and cleanup guide](docs/LOCAL_DEVELOPMENT.md) before switching or deleting older checkouts.
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs)](https://nextjs.org/) [![React](https://img.shields.io/badge/React-19-149eca?logo=react)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Gemini](https://img.shields.io/badge/Gemini-configurable-8e75b2?logo=googlegemini&logoColor=white)](https://ai.google.dev/)
 
-On the owner's ThinkBook, use this one existing folder:
+## Why NutriScan
 
-```powershell
-Set-Location -LiteralPath 'C:\Users\KIIT0001\Documents\Seventh Semester Project NutriScan\NutriScan-study-ops'
-npm run dev
+A package can present its ingredients, nutrition table, serving size and claims on different sides. A number is useful only when its nutrient, unit, qualifier and serving basis remain attached to it. NutriScan combines image reading with a structured evidence record so users can inspect what was read, correct it, calculate a portion and ask follow-up questions without losing the original context.
+
+## What you can do
+
+- **Read a package:** add multiple photos, paste label text, or use local Tesseract or PaddleOCR alongside configured Gemini Vision reconstruction.
+- **Review the reading:** inspect nutrition rows, ingredients, additives, claims and their linked observations or source photos. Correct uncertain values without erasing the original reading.
+- **Explore a portion:** calculate compatible nutrient quantities for grams, millilitres, servings, pieces or packages when the necessary conversion is known.
+- **Ask follow-up questions:** use a configured Gemini model with the saved package state, calculator tools and applicable source evidence. The model selector and analysis method remain separate controls.
+- **Inspect evidence:** expand source cards, calculations and tool activity. Open Food Facts records are community-supplied comparison candidates, separate from photographed label readings.
+- **Return to an investigation:** conversations and corrections are saved in the browser, with individual deletion and a confirmed clear-history action. Original photos and profile fields are not saved in scan history.
+
+## How it works
+
+```mermaid
+flowchart LR
+  A[Package photos or label text] --> B[Local OCR or Gemini Vision]
+  B --> C[Structured package and evidence links]
+  C --> D[Review and corrections]
+  D --> E[Deterministic portion calculations]
+  D --> F[Gemini conversation and typed tools]
+  E --> F
+  G[Local guidance and research index] --> F
+  H[Open Food Facts candidate] -. separate context .-> F
+  F --> I[Answer, calculations and source cards]
+  D --> J[Local investigation history]
 ```
 
-Open http://127.0.0.1:3400. Stop with Ctrl+C. No branch switching, parent-folder environment argument or custom launch script is needed. The private `.env.local` in this checkout supplies server-side credentials. It currently selects the explicit free Gemini 3.5 Flash-Lite route, with paid fallback disabled. Keep this file private.
+The browser manages the investigation and local history. The local Next.js server validates requests, handles configured Gemini access and runs the research and calculation tools. Package observations, community records and scientific sources have different provenance; an external catalog match does not replace a photographed reading.
 
-For a fresh installation, clone the `codex/stable` branch. Run `npm ci` once, copy `.env.example` to `.env.local` only if no private configuration exists, and configure your own authorized server-side key and enable flag. The example keeps remote inference disabled. Do not overwrite an existing configuration.
+Gemini can use the saved reconstruction rather than resending photographs for ordinary follow-ups. Ingredient and guidance retrieval can supply relevant source-linked context, but source availability and a citation do not guarantee that a generated claim is correct or applicable.
 
-For the presentation build, stop the dev server, run `npm run build`, then `npm start`. Both servers use port 3400 and bind only to loopback. A later dev run can replace `.next` artifacts; build again before production startup. Next.js loads the root `.env.local` automatically. Do not put `--env-file` in `NODE_OPTIONS`.
+## Privacy and model access
 
-The existing local models and source stores are retained. Dependency installation and corpus/model downloads are not part of an everyday launch. The following commands are optional setup and validation commands, not a startup checklist.
+- Photos and optional profile details stay in the browser until a disclosed remote action is chosen. Initial Gemini reconstruction can send the selected photos or label text; optional profile sharing requires separate consent.
+- After reconstruction, a usable product barcode or interpreted identity can be sent to Open Food Facts for a community-record lookup. The lookup does not intentionally send the profile or photographs.
+- The example configuration keeps Gemini disabled. Keys are server-side; do not commit `.env.local` or place credentials in browser-visible variables.
+- Optional paid access and fallback require explicit server configuration and spending limits. The selected model, account entitlements and provider availability determine which calls can run and whether charges apply.
+- Local history is specific to the browser profile and may contain sensitive questions. The application does not claim encrypted history or cloud synchronization.
 
-## Setup and validation
+## Run locally
 
-Requires Node.js 22.13+ (developed with 24.4.1) and npm. The bounded Gazette-PDF text reader uses the pinned PDF.js Node build.
+Requirements: Node.js 22.13 or newer and npm. The development server binds to loopback at port 3400.
 
-```powershell
+```bash
+git clone https://github.com/Suvichan2005/NutriScan.git
+cd NutriScan
 npm ci
-npm run embeddings:prepare
 npm run dev
 ```
 
-Open http://127.0.0.1:3400. `npm ci` copies the pinned Tesseract worker, WASM and English language file to `public/ocr/`. Fonts are bundled locally. Embedding preparation downloads a pinned, approximately 24 MB open model once into ignored `.data/models/`; runtime queries never download models or send query text to Hugging Face. Ordinary scans work without preparing embeddings.
+Open [http://127.0.0.1:3400](http://127.0.0.1:3400). Local label reading can be used without enabling Gemini. For optional Gemini access, copy `.env.example` to `.env.local` **only if you do not already have a configuration**, then supply your own server-side credentials and settings. `.env.example` documents the free and paid controls; do not commit private keys.
 
-```powershell
+`npm ci` prepares the locally served English Tesseract assets. Optional PaddleOCR and semantic-search assets have their own availability and setup requirements; normal startup does not require downloading an entire research corpus.
+
+## Verification
+
+```bash
 npm run typecheck
 npm test
-npm run evaluate
-npm run ocr:evaluate
-npm run embeddings:evaluate
-npm run acceptance:core-journey
 npm run build
 npm start
 ```
 
-Stop the dev server before `npm start` because both bind port 3400. `npm start` serves the production build on loopback only. The API origin gate is intentionally local-only; this is not a publicly deployable authenticated service.
+Stop the development server before running `npm start`, since both use port 3400. Browser acceptance, provider-backed checks and experiments should be described with their actual inputs and configurations; passing software tests does not establish label-reading or medical accuracy. Historical evaluation and acceptance notes are under [`docs/`](docs/).
 
-`npm run ocr:evaluate` reruns a local diagnostic on five real packaging photos provisioned under ignored `docs/evidence/private/`. It verifies their manifest hashes and writes field-level results without storing photo bytes or raw OCR text. See [the evaluation report](docs/REAL_OCR_EVALUATION.md) for the measured limits; this Node diagnostic is not browser acceptance.
+## Repository map
 
-For new reference labels, open `http://127.0.0.1:3400/research/ocr-annotation`. The tool hashes and displays the chosen image locally, exports one strict single-reader annotation pass without image bytes, and does not run OCR. Keep two reader passes separate until blind annotation is complete; compare them with `npm run ocr:compare-annotations -- <reader-a.json> <reader-b.json>`, then adjudicate against the pixels. Read the [annotation guide](docs/OCR_ANNOTATION_GUIDE.md) and [experiment protocol](docs/OCR_RESEARCH_PROTOCOL.md) before assigning product groups to a held-out split. A comparison pass is not an adjudicated reference or an OCR accuracy result.
+```text
+src/components/          Scanner, package inspector, chat and evidence UI
+src/lib/                 Shared contracts, calculations, corrections and storage
+src/lib/server/          Gemini orchestration, retrieval and API support
+src/modules/ocr/         OCR implementations and evaluation contracts
+src/modules/inference/   Inference validation and evidence handling
+src/modules/knowledge/   Ingredient and source knowledge
+src/app/api/             Local application API routes
+data/                    Tracked indexes and evaluation definitions
+docs/                    Design, evaluation and operational documentation
+```
 
-An optional French/Spanish model probe is available as `npm run ocr:evaluate:languages`. It requires separately installing the two language packages with the command in the evaluation report. They are not normal project dependencies and are not included in the browser app. A separate `npm run ocr:evaluate:regulatory-pdf` diagnostic checks local OCR on public scanned FSSAI PDFs; it requires Poppler (`pdftoppm`) on `PATH` or an explicit `NUTRISCAN_POPPLER_BIN` path. Its aggregate receipt is not integrated into the product or a verified legal transcript.
+## Scope and limitations
 
-The local semantic evidence search uses a conservative 0.30 candidate floor and routes common current-law terms to a no-match message. This development guard is not calibrated on independent user questions and does not replace source applicability review; see [retrieval evaluation](docs/RETRIEVAL_EVALUATION.md).
+NutriScan is a local-first project prototype, not an authenticated public hosting service or a medical device. OCR and model interpretations can be wrong; missing values are not zero. Ingredient presence alone does not establish a dose, health effect or personal safety. Community records may refer to a different package or be incomplete, and local guidance may not cover every question. Check the package and original sources when a decision depends on them.
 
-`npm run ocr:evaluate:preprocessing` compares local upscaling, grayscale and channel-isolation variants on one real label. See the recorded results before changing the production image pipeline.
+## Project team
 
-## Use
+Suvansh Agarwal · Subham Kumar Dash · Yug Agarwal · Yashovardhan Singh
 
-Add up to 10 JPG, PNG or WebP images, use the camera affordance, describe a product, paste label text, or combine these. No image side is required. OCR reads the selected images locally at up to 3,000 px with progress and cancellation; optional per-image hints can guide it. Rotate, improve contrast, invert dark-pack text, or crop a chosen image. Ask a question in your own words before or after reading. The sample label is clearly synthetic. Values with unclear bases, columns or conflicting readings are withheld; manual correction remains available when a photo or record cannot resolve them.
-
-Ask an amount in your first question or in a follow-up to set the portion without rescanning. Product comparisons normalize compatible package and community-record values only when both bases are explicit; missing or conflicting values remain incomparable. Evidence expands to original observations, coordinates, assumptions, formulae and sources. Public product and scientific queries are user initiated. Country filters use an explicitly entered country and community country tags; they never establish local retail stock. FDA records are US historical candidate reports, never a global brand verdict. FSSAI research uses bounded selectable-text extraction for allowlisted official PDFs and displays publication and effective dates separately. The live ORS route retrieves the 2022 direction and superseded 2024 order; the scanned 2025 PDFs need OCR, and current legal status remains unresolved. Separately, the listed 2026 Gazette amendment PDF currently returns HTML to the local research fetch and remains navigation-only.
-
-Gemini requires an enabled private configuration and a disclosed remote action in the UI. Real Flash-Lite photo, correction, calculation and source-inspection journeys are recorded in [presentation acceptance](docs/PRESENTATION_READINESS_20261030.md). Model-requested image handles/crops are resolved in the browser, with a separate visible send action. These development checks do not establish universal extraction accuracy or clinical validity. See [integrations](docs/INTEGRATIONS.md) for the broader configuration history.
-
-The optional profile starts empty and keeps dietary preference, food allergies, food intolerances, health context, goals and reference details separate. Profile information stays in session memory and is sent to Gemini only after the disclosed per-request consent. Scan history is opt-in; a separate conversation option restores up to 30 recent local turns. Profile fields, photos and Gemini answers are excluded, and clearing history removes saved turns. Read [status](docs/STATUS.md), [acceptance](docs/ACCEPTANCE.md), [UX audit](docs/UX_AUDIT.md), [privacy](docs/PRIVACY_DATA_FLOW.md), [owner actions](docs/OWNER_ACTIONS.md) and the [chronological engineering journal](docs/agent-journal/2026-10-21-generalization.md). No public deployment or private journal bridge is configured.
+School of Computer Engineering, KIIT Deemed to be University. Guide: Prof. Prasenjit Maiti.
