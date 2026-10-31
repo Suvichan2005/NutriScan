@@ -16,7 +16,7 @@ A package can present its ingredients, nutrition table, serving size and claims 
 - **Review the reading:** inspect nutrition rows, ingredients, additives, claims and their linked observations or source photos. Correct uncertain values without erasing the original reading.
 - **Explore a portion:** calculate compatible nutrient quantities for grams, millilitres, servings, pieces or packages when the necessary conversion is known.
 - **Ask follow-up questions:** use a configured Gemini model with the saved package state, calculator tools and applicable source evidence. The model selector and analysis method remain separate controls.
-- **Inspect evidence:** expand source cards, calculations and tool activity. Open Food Facts records are community-supplied comparison candidates, separate from photographed label readings.
+- **Inspect evidence:** expand ingredient details, source cards, calculations and tool activity. Local ingredient lookups use FoodOn, curated source relationships and available EFSA substance records; Open Food Facts entries remain separate community-supplied comparison candidates.
 - **Return to an investigation:** conversations and corrections are saved in the browser, with individual deletion and a confirmed clear-history action. Original photos and profile fields are not saved in scan history.
 
 ## How it works
@@ -37,7 +37,7 @@ flowchart LR
 
 The browser manages the investigation and local history. The local Next.js server validates requests, handles configured Gemini access and runs the research and calculation tools. Package observations, community records and scientific sources have different provenance; an external catalog match does not replace a photographed reading.
 
-Gemini can use the saved reconstruction rather than resending photographs for ordinary follow-ups. Ingredient and guidance retrieval can supply relevant source-linked context, but source availability and a citation do not guarantee that a generated claim is correct or applicable.
+Gemini can use the saved reconstruction rather than resending photographs for ordinary follow-ups. Automatic local enrichment uses the current question, a separately shared profile if provided, and bounded package ingredients to supply candidate identities and applicable source-linked context. Coverage depends on available indexes and source records; retrieval and a citation do not guarantee that a generated claim is correct or applicable.
 
 ## Privacy and model access
 

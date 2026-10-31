@@ -487,6 +487,13 @@ dialog.onboarding-dialog{width:min(620px,calc(100% - 24px));max-width:none;max-h
  .thread-footer-actions{min-height:34px;margin-top:6px;padding:4px 2px;flex-wrap:wrap}
 }
 .thread-reconstructed-nutrition-list{display:grid;gap:4px;margin:0;padding:0;list-style:none}
+.reconstruction-ingredients li>.ingredient-context-details,.reconstruction-statements li>.ingredient-context-details{grid-column:1/-1;margin:3px 0 0;padding:0;border:1px solid #dce7d9;border-radius:8px;background:#f7faf5;font-size:12px;line-height:1.5;min-width:0}
+.ingredient-context-details>summary{cursor:pointer;padding:8px 10px;color:#285b42;font-weight:600;list-style:none}
+.ingredient-context-details>summary::after{content:'＋';float:right}
+.ingredient-context-details[open]>summary::after{content:'−'}
+.ingredient-context-details>p,.ingredient-context-details>div{margin:0;padding:6px 10px;overflow-wrap:anywhere}
+.ingredient-context-details a{color:#285b42;text-decoration:underline}
+.ingredient-context-details small{font-size:11px;line-height:1.5}
 .thread-reconstructed-nutrition-list li{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 10px;border-radius:8px;background:#f7f9f5}
 .thread-reconstructed-nutrition-list li>span{display:grid;gap:3px;min-width:0}
 .thread-reconstructed-nutrition-list li strong{font-size:12px;font-weight:600}

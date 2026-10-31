@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {nutrientMassConflict} from '@/lib/nutrient-mass';
 import {analysisMethodPolicy} from '@/lib/analysis-method';
 import { correctionUnits, type ReconstructionRowEdit } from '@/lib/reconstruction-correction';
@@ -10,6 +10,7 @@ import type { NutrientCorrection } from '@/lib/correction';
 import { normalizeReconstructedServing } from '@/lib/portion';
 import { reconstructedIdentity } from '@/lib/reconstruction-presentation';
 import styles from './conversation-clarity.module.css';
+import type { ingredientContext } from '@/lib/server/ingredient-context';
 
 type Props = {
   reconstruction: PackageReconstruction;
@@ -21,7 +22,24 @@ type Props = {
   corrections?:ReconstructionCorrection[];
   onCorrectRow?:(edit:ReconstructionRowEdit)=>boolean;
   onActivateRevision?: (revision: number) => boolean;
+  researchQuestion?: string;
 };
+
+type IngredientResult = Awaited<ReturnType<typeof ingredientContext>>['items'][number];
+function IngredientDetails({ result, pending }: { result?: IngredientResult; pending: boolean }) {
+  return <details className="ingredient-context-details"><summary>About this ingredient</summary>
+    {pending ? <p>Checking local ingredient references…</p> : !result ? <p>This ingredient could not be checked in the local reference lookup.</p> : <>
+      {result.identity && <p>Identity match: {result.identity.name} · INS {result.identity.code}. {result.identity.note}</p>}
+      {result.matches.map(match => <p key={match.id}>FoodOn identity candidate: <a href={`https://purl.obolibrary.org/obo/${match.id}`} target="_blank" rel="noreferrer">{match.label} ↗</a> · {match.matchedBy.replaceAll('-', ' ')}. Check the label before treating this as the same ingredient.</p>)}
+      {result.families.map((family,index) => <p key={`${family.sourceId}-${index}`}>{result.derivedFamilyMatch?'Possible terminology match: ':''}The reference lists {family.matchedName} in its {family.family} information. {result.derivedFamilyMatch?'The package wording includes an additional processing term; check the label and source. ':''}This does not establish an individual reaction.</p>)}
+      {result.relations.map(relation => <div key={relation.id}><p>{relation.outcome}</p><small>{relation.population} {relation.limitations}</small></div>)}
+      {result.openFoodTox?.name && <p><a href={result.openFoodTox.source} target="_blank" rel="noreferrer">EFSA OpenFoodTox ↗</a> has a matching substance record for {result.openFoodTox.name}. This is a hazard reference, not the amount in this package or a personal safety conclusion.</p>}
+      {result.openFoodTox?.status==='unavailable' && <p>The local EFSA substance index is unavailable; no conclusion about this substance follows.</p>}
+      {result.sources.map(source => <p key={source.id}><a href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a> · {source.publisher}</p>)}
+      {!result.identity && !result.matches.length && !result.sources.length && <p>{result.foodonStatus==='unavailable'?'The local ingredient identity index is unavailable.':'No matching local reference was found.'} This does not establish that the ingredient has no effects or allergen relevance.</p>}
+    </>}
+  </details>;
+}
 
 const nutrientAliases: Array<[NutrientKey, RegExp]> = [
   ['addedSugars', /added\s+sugars?/i], ['saturatedFat', /saturat(?:ed)?\s+fat/i],
@@ -178,9 +196,21 @@ function ExtraNutrientRow({row,correction,onSave,onInspect}:{row:PackageReconstr
  </article>;
 }
 
-export function PackageReconstructionView({ reconstruction, history = [], savedNutrients, onCorrect, onInspectEvidence, onActivateRevision, corrections=[], onCorrectRow, retainedRows=[] }: Props) {
+export function PackageReconstructionView({ reconstruction, history = [], savedNutrients, onCorrect, onInspectEvidence, onActivateRevision, corrections=[], onCorrectRow, retainedRows=[], researchQuestion='' }: Props) {
   const [selectedRevision, setSelectedRevision] = useState<number | null>(null);
   const displayed = selectedRevision === null ? reconstruction : history.find(item => item.revision === selectedRevision) ?? reconstruction;
+  const queryItems = JSON.stringify([...displayed.ingredients.map(item=>({name:item.normalizedName||item.name,code:null})),...displayed.additives.map(item=>({name:item.normalizedName||item.printedName,code:item.code}))].filter(item=>item.name.trim().length>=2).slice(0,40));
+  const [ingredientResults,setIngredientResults]=useState<IngredientResult[]>([]);
+  const [ingredientPending,setIngredientPending]=useState(false);
+  useEffect(()=>{
+    const items=JSON.parse(queryItems) as Array<{name:string;code:string|null}>;
+    if(!items.length){setIngredientResults([]);setIngredientPending(false);return;}
+    const controller=new AbortController();setIngredientResults([]);setIngredientPending(true);
+    void fetch('/api/ingredient-context',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items,question:researchQuestion.slice(0,1200)}),signal:controller.signal})
+      .then(async response=>response.ok?await response.json():null).then(data=>{if(!controller.signal.aborted)setIngredientResults(Array.isArray(data?.items)?data.items:[]);})
+      .catch(()=>{}).finally(()=>{if(!controller.signal.aborted)setIngredientPending(false);});
+    return ()=>controller.abort();
+  },[queryItems,researchQuestion]);
   const isActive = selectedRevision === null;
   const isEvidenceMerge = isActive && reconstruction.model.startsWith('local evidence merge');
   const identity = reconstructedIdentity(displayed.identity);
@@ -209,8 +239,8 @@ export function PackageReconstructionView({ reconstruction, history = [], savedN
       {(item.evidence.observationIds.length > 0 || item.evidence.imageRegions.length > 0) && <button type="button" className="text-button" onClick={() => onInspectEvidence(item.evidence.observationIds,item.evidence.imageRegions)}>Inspect evidence</button>}
     </li>)}</ul></section>}
     {(displayed.nutritionRows.length > 0 || isActive) && <section><h3>Nutrition as printed</h3>{displayed.nutritionRows.length > 0 && <div className="reconstruction-rows">{displayed.nutritionRows.map(row => {const key=row.nutrientKey===undefined?nutrientKey(row.nutrient || row.printedLabel):row.nutrientKey;if(!key)return <ExtraNutrientRow key={row.rowId} row={row} correction={corrections.find(item=>item.rowId===row.rowId)} onSave={isActive?onCorrectRow:undefined} onInspect={onInspectEvidence}/>;return <InterpretedRow key={row.rowId} row={row} saved={key? savedByKey.get(key):undefined} onCorrect={onCorrect} onInspectEvidence={onInspectEvidence}/>;})}</div>}{addedReadings.length > 0 && <div className="reconstruction-rows" aria-label="User-supplied readings">{addedReadings.map(item => <article className="reconstruction-row" key={item.key}><div className="reconstruction-row-main"><div><strong>{nutrientLabels.find(([key])=>key===item.key)?.[1] ?? item.key}</strong><small>Your supplied reading</small></div><div className="reconstruction-value"><strong>{item.value} {item.unit}</strong><small>{item.basis ? `per ${item.basis.amount} ${item.basis.unit}` : 'Basis unresolved'}</small></div></div><small>Your saved reading</small></article>)}</div>}{isActive && <AddMissingNutrient savedNutrients={savedNutrients} onCorrect={onCorrect}/>}</section>}
-    {displayed.ingredients.length > 0 && <section><h3>Ingredients read from your package</h3><ol className="reconstruction-ingredients">{displayed.ingredients.slice(0, 40).map((item, index) => <li key={`${item.position}-${index}`}><span>{item.normalizedName || item.name}</span>{item.printedPercentage !== null && <strong>{item.printedPercentage}%</strong>}{['ambiguous','conflict','unreadable'].includes(item.status)&&<small className={styles.needsReview}>{statusLabel(item.status)}</small>}{(item.evidence.observationIds.length>0||item.evidence.imageRegions.length>0)&&<button type="button" className="text-button" onClick={()=>onInspectEvidence(item.evidence.observationIds,item.evidence.imageRegions)}>Inspect evidence</button>}</li>)}</ol></section>}
-    {displayed.additives.length > 0 && <section><h3>Additives identified on the label</h3><ul className="reconstruction-statements">{displayed.additives.slice(0, 20).map((item, index) => <li key={`${item.printedName}-${index}`}>{item.normalizedName || item.printedName}{item.code ? ` · ${item.code}` : ''}{['ambiguous','conflict','unreadable'].includes(item.status)&&<small className={styles.needsReview}>{statusLabel(item.status)}</small>}</li>)}</ul></section>}
+    {displayed.ingredients.length > 0 && <section><h3>Ingredients read from your package</h3><ol className="reconstruction-ingredients">{displayed.ingredients.slice(0, 40).map((item, index) => <li key={`${item.position}-${index}`}><span>{item.normalizedName || item.name}</span>{item.printedPercentage !== null && <strong>{item.printedPercentage}%</strong>}{['ambiguous','conflict','unreadable'].includes(item.status)&&<small className={styles.needsReview}>{statusLabel(item.status)}</small>}{(item.evidence.observationIds.length>0||item.evidence.imageRegions.length>0)&&<button type="button" className="text-button" onClick={()=>onInspectEvidence(item.evidence.observationIds,item.evidence.imageRegions)}>Inspect evidence</button>}<IngredientDetails result={ingredientResults.find(result=>result.name===(item.normalizedName||item.name)&&!result.code)} pending={ingredientPending}/></li>)}</ol></section>}
+    {displayed.additives.length > 0 && <section><h3>Additives identified on the label</h3><ul className="reconstruction-statements">{displayed.additives.slice(0, 20).map((item, index) => <li key={`${item.printedName}-${index}`}><span>{item.normalizedName || item.printedName}{item.code ? ` · ${item.code}` : ''}</span>{['ambiguous','conflict','unreadable'].includes(item.status)&&<small className={styles.needsReview}>{statusLabel(item.status)}</small>}<IngredientDetails result={ingredientResults.find(result=>result.name===(item.normalizedName||item.printedName)&&result.code===item.code)} pending={ingredientPending}/></li>)}</ul></section>}
     {displayed.statements.length > 0 && <section><h3>Claims and other details</h3><ul className="reconstruction-statements">{displayed.statements.slice(0, 24).map((item, index) => <li key={`${item.kind}-${index}`}><span>{item.text}</span><small>{item.kind}{['ambiguous','conflict','unreadable'].includes(item.status)?` · ${statusLabel(item.status)}`:''}</small></li>)}</ul></section>}
     {displayed.unresolved.length > 0 && <details className="reconstruction-unresolved"><summary>{displayed.unresolved.length} details still need clearer evidence</summary><ul>{displayed.unresolved.slice(0, 20).map((item, index) => <li key={`${item.field}-${index}`}><strong>{item.field}</strong> · {item.reason}</li>)}</ul></details>}
   </section>;

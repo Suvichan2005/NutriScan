@@ -14,6 +14,10 @@ describe('profile-aware local guidance context', () => {
     expect(profileGuidanceContextSources(input).some(source => source.id === 'idf-healthy-nutrition-diabetes-2024')).toBe(true);
     expect(addProfileGuidanceContextSources({ ...input, allowAutomaticGuidance: false })).toEqual([]);
   });
+  it('retains an explicitly mentioned condition for a follow-up without inventing a profile',()=>{
+    const sources=profileGuidanceContextSources({question:'What about this portion?',historyQuestions:['Could this fit with diabetes?'],package:{nutrients:[{key:'carbohydrate'}],reconstruction:null}});
+    expect(sources.some(source=>source.id==='idf-healthy-nutrition-diabetes-2024')).toBe(true);
+  });
   it('does not inject profile guidance when its capability is excluded, while preserving explicitly supplied evidence', () => {
     const input = {
       question: 'What should I consider for this food?',

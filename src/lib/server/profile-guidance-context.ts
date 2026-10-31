@@ -25,6 +25,7 @@ export function packageIngredientContextSources(input: {
  */
 export function profileGuidanceContextSources(input: {
   question: string;
+  historyQuestions?: readonly string[];
   package: {
     nutrients: Array<Pick<PackageData['nutrients'][number], 'key'>>;
     reconstruction?: {
@@ -33,7 +34,7 @@ export function profileGuidanceContextSources(input: {
   };
   profile?: Pick<Profile, 'healthConsiderations' | 'goals' | 'country'>;
 }) {
-  const condition = [input.profile?.healthConsiderations.trim(), containsGuidanceCondition(input.question) ? input.question : ''].filter(Boolean).join(' ');
+  const condition = [input.profile?.healthConsiderations.trim(), ...[input.question,...(input.historyQuestions??[]).slice(-4)].filter(containsGuidanceCondition)].filter(Boolean).join(' ');
   if (!condition) return [];
 
   const packageTopics = [
@@ -51,6 +52,7 @@ export function profileGuidanceContextSources(input: {
 
 export function addProfileGuidanceContextSources(input: {
   question: string;
+  historyQuestions?: readonly string[];
   package: {
     nutrients: Array<Pick<PackageData['nutrients'][number], 'key'>>;
     reconstruction?: {

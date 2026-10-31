@@ -1620,3 +1620,7 @@ Use frozen logical requests and shared teacher-forced context across models. Pre
 
 
 30 October 2026 — Final product freeze: save completed investigations locally by default through the existing history contract, including corrections, actual answer model, up to eight citations and bounded caution counts. Photos/profile fields remain separate; saved conversational text can itself be sensitive. Use automatic latest restore, individual deletion and confirmed clear-history. Keep all evidence from bounded calculator rounds until answer validation; apply the 20-result public limit afterward, prioritizing accepted operations. Do not weaken nutrient/basis/correction checks. Preserve unresolved qualitative source-applicability failures and the partial real-answer omission as limitations. No new prompts, forced retrieval, heuristic chat, research or report work. Stop after the tested checkpoint.
+
+## 31 October — Package identity and research
+
+Use reconstructed package readings as lookup inputs and preserve their provenance. Local ingredient identities and hazard records are candidates, not package-specific dose or safety findings. Community product records remain separate. Supply bounded local evidence before synthesis and distinguish retrieved from cited sources.

@@ -23,6 +23,7 @@ import { normalizeAnswerReferenceHandles, filterAnswerBySourceScope, prioritizeC
 import { reconstructionRowIsSuperseded } from '../correction';
 import { workspacePortionSchema } from '../contracts';
 import { addProfileGuidanceContextSources, packageIngredientContextSources } from './profile-guidance-context';
+import { ingredientContext } from './ingredient-context';
 
 export { providerStatus };
 
@@ -1715,7 +1716,7 @@ async function reconstructPackage(
   return{content,elapsedMs:Date.now()-started,model:response.modelVersion??context.model,tier:context.tier,fallbackOccurred:context.model!==requestedModel||context.tier!==requestedTier,usage:response.usageMetadata??null,generationConfig:{maxOutputTokens:9000,thinkingConfig:{thinkingLevel:ThinkingLevel.LOW},functionCallingMode:FunctionCallingConfigMode.ANY,allowedFunctionNames:['submit_package_reconstruction']}};
 }
 
-async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:string,referenceAliases:ReferenceAliases):Promise<GeneratedAgentOutput>{
+async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:string,referenceAliases:ReferenceAliases,ingredientResearch?:Awaited<ReturnType<typeof ingredientContext>>):Promise<GeneratedAgentOutput>{
   const context=applicationGeminiContext(data.allowPaidFallback,data.requestedModel);
   const access=selectAgentTools(geminiToolDeclarations,(data.visualImages?.length??0)>0,data.toolAccess);
   const allowedToolNames=new Set(access.names);
@@ -1726,7 +1727,8 @@ async function generateAgentOutput(data:z.infer<typeof assistInput>,analysisId:s
   const deadline=started+maxAgentWallMs;
   // The agent starts from the persisted typed package object. Photos are held
   // only by bounded inspection tools and are never replayed in this prompt.
-  const contents:Content[]=[{role:'user',parts:[{text:JSON.stringify(assistPromptPayload(data,referenceAliases.toModel))}]}];
+  const compactIngredientContext=ingredientResearch?replaceReferenceIds({note:ingredientResearch.note,items:ingredientResearch.items.map(({name,code,identity,foodonStatus,matches,families,derivedFamilyMatch,relations,openFoodTox})=>({name,code,identity,foodonStatus,matches,families,derivedFamilyMatch,relations,openFoodTox}))},referenceAliases.toModel):undefined;
+  const contents:Content[]=[{role:'user',parts:[{text:JSON.stringify({...assistPromptPayload(data,referenceAliases.toModel),...(compactIngredientContext?{automaticIngredientContext:compactIngredientContext}:{})})}]}];
   const toolEvidence=new Map<string,z.infer<typeof sourceSchema>>();
   const calculations=new Map((data.calculations??[]).map(calculation=>[calculation.id,calculation]));
   const calledCalculationIds=new Set<string>();
@@ -2157,7 +2159,7 @@ export async function assist(data: z.infer<typeof assistInput>) {
   const callerCalculationCount=data.calculations?.length??0;
   const allowAutomaticGuidance=data.toolAccess?.mode!=='research'||Boolean(data.toolAccess.names?.includes('get_nutrition_guidance'));
   const originalEvidenceIds=new Set(data.evidence?.map(source=>source.id)??[]);
-  const evidence=addProfileGuidanceContextSources({question:data.question,package:data.package,profile:data.profile,evidence:data.evidence,allowAutomaticGuidance});
+  const evidence=addProfileGuidanceContextSources({question:data.question,historyQuestions:data.conversationContext?.map(turn=>turn.question),package:data.package,profile:data.profile,evidence:data.evidence,allowAutomaticGuidance});
   if(evidence.length!==(data.evidence?.length??0))data=assistInput.parse({...data,evidence,currentEvidenceIds:[...new Set([...(data.currentEvidenceIds??[]),...evidence.filter(source=>!originalEvidenceIds.has(source.id)).map(source=>source.id)])]});
   const savedServingCalculations=data.workspacePortion?[]:calculateSavedServing(data.package);
   if(savedServingCalculations.length){
@@ -2273,17 +2275,28 @@ export async function assist(data: z.infer<typeof assistInput>) {
     // Select local guidance and source-linked ingredient evidence after the
     // current reconstruction exists, including on the first photo turn.
     const beforeEvidence=data.evidence??[];
-    const selectedGuidance=addProfileGuidanceContextSources({question:data.question,package:activePackage,profile:data.profile,evidence:beforeEvidence,allowAutomaticGuidance});
+    const selectedGuidance=addProfileGuidanceContextSources({question:data.question,historyQuestions:data.conversationContext?.map(turn=>turn.question),package:activePackage,profile:data.profile,evidence:beforeEvidence,allowAutomaticGuidance});
     const allowIngredientEvidence=data.toolAccess?.mode!=='research'||Boolean(data.toolAccess.names?.includes('search_knowledge'));
     const ingredientEvidence=allowIngredientEvidence?packageIngredientContextSources({question:data.question,package:activePackage,profile:data.profile}):[];
-    const additions=ingredientEvidence.filter(source=>!selectedGuidance.some(existing=>existing.id===source.id));
+    const current=activePackage.reconstruction?.current?activePackage.reconstruction:null;
+    const names=current?[...current.ingredients.filter(item=>['clear','provisional'].includes(item.status)).map(item=>({name:item.normalizedName||item.name,code:null})),...current.additives.filter(item=>['clear','provisional'].includes(item.status)).map(item=>({name:item.normalizedName||item.printedName,code:item.code}))].filter(item=>item.name.trim().length>=2&&item.name.length<=180).slice(0,24):[];
+    const ingredientResearch=allowIngredientEvidence&&names.length?await ingredientContext({items:names,question:[data.question,data.profile?.healthConsiderations,data.profile?.goals].filter(Boolean).join(' ').slice(0,1200)}):undefined;
+    const linkedIds=new Set(ingredientResearch?.items.flatMap(item=>item.relations.flatMap(relation=>relation.sourceIds))??[]);
+    const allergyContext=` ${[data.question,data.profile?.allergies,data.profile?.intolerances,data.profile?.avoidedIngredients].filter(Boolean).join(' ').normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu,' ').trim()} `;
+    for(const item of ingredientResearch?.items??[])for(const family of item.families){const label=family.family.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu,' ').trim();if(label&&allergyContext.includes(` ${label} `))linkedIds.add(family.sourceId);}
+    const linkedResearch=ingredientResearch?.items.flatMap(item=>item.sources.filter(source=>linkedIds.has(source.id)))??[];
+    const researchQuery=[data.question,data.profile?.healthConsiderations,data.profile?.goals].filter(Boolean).join(' ').slice(0,180);
+    const normalizedQuestion=` ${data.question.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu,' ').trim()} `;
+    const asksAboutIngredient=names.some(item=>[item.name,item.code??''].some(value=>{const term=value.normalize('NFKC').toLocaleLowerCase('en-IN').replace(/[^\p{L}\p{N}]+/gu,' ').trim();return term.length>=3&&normalizedQuestion.includes(` ${term} `);}));
+    const researchResult=allowIngredientEvidence&&data.toolAccess?.mode!=='research'&&(selectedGuidance.length===0||asksAboutIngredient)&&researchQuery.length>=2?await executeGeminiTool('search_knowledge',{query:researchQuery},{question:data.question,package:activePackage,profile:data.profile,conversationContext:data.conversationContext?.map(turn=>({question:turn.question})),interpretedCandidates:data.interpretedCandidates??[],visualImages:[],searchTerms:new Set<string>(),prepareImage:validateImage}):null;
+    const additions=[...ingredientEvidence,...linkedResearch,...(researchResult?.evidence??[])].filter((source,index,all)=>!selectedGuidance.some(existing=>existing.id===source.id)&&all.findIndex(other=>other.id===source.id)===index);
     const selectedEvidence=[...selectedGuidance,...additions].slice(0,30);
     const selectedIds=selectedEvidence.filter(source=>!beforeEvidence.some(existing=>existing.id===source.id)).map(source=>source.id);
     if(selectedIds.length){
       for(const source of selectedEvidence)referenceAliases.register(source.id,'source');
       data=assistInput.parse({...data,evidence:selectedEvidence,currentEvidenceIds:[...new Set([...(data.currentEvidenceIds??[]),...selectedIds])]});
     }
-    const generated=await generateAgentOutput(data,analysisId,referenceAliases);
+    const generated=await generateAgentOutput(data,analysisId,referenceAliases,ingredientResearch);
     const reconstructionTrace:GeminiToolTrace[]=packageReconstruction?[{
       name:'submit_package_reconstruction',
       status:'ok',
